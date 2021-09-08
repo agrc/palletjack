@@ -10,11 +10,11 @@ from os.path import basename, splitext
 from setuptools import find_packages, setup
 
 setup(
-    name='projectname',
+    name='era',
     version='1.0.0',
     license='MIT',
-    description='Project description.',
-    author='AGRC',
+    description='Updates for the Emergency Rental Assistance map',
+    author='UGRC',
     author_email='agrc@utah.gov',
     url='https://github.com/agrc/python',
     packages=find_packages('src'),
@@ -52,6 +52,6 @@ setup(
         'pytest-runner',
     ],
     entry_points={'console_scripts': [
-        'projectname = projectname.main:main',
+        'era = era.main:main',
     ]},
 )
