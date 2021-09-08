@@ -1,3 +1,9 @@
+# first-run playground
+scratch.py
+
+#: Secrets file
+secrets.py
+
 *.py[cod]
 
 # Packages
