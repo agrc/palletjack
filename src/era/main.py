@@ -5,22 +5,15 @@ a description of what this module does.
 this file is for testing linting...
 """
 
-TEST = 'test'
+from supervisor.message_handlers import SendGridHandler
+from supervisor.models import MessageDetails, Supervisor
 
+from . import secrets, updates
 
-def hello():
-    """doc string
-    """
-    print('this is good')
+era_supervisor = Supervisor()
 
-    print(
-        'this is a really, really, really, really, really, really, really, really, really, really, really, really,'
-        'really long line'
-    )
-
-    return 'hi'
-
+era_supervisor.add_message_handler(SendGridHandler(secrets.SENDGRID_SETTINGS, 'ERA'))
 
 if __name__ == '__main__':
     #: the code that executes if you run the file or module directly
-    GREETING = hello()
+    pass

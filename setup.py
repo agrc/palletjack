@@ -33,7 +33,7 @@ setup(
     },
     keywords=['gis'],
     install_requires=[
-        # 'package==1.0.*'
+        'agrc-supervisor==2.0.*',
     ],
     extras_require={
         'tests': [
