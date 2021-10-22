@@ -43,10 +43,11 @@ setup(
             'pytest-cov==2.9.*',
             'pytest-instafail==0.4.*',
             'pytest-isort==1.0.*',
-            'pytest-pylint==0.17.*',
+            'pytest-pylint==0.14.*',
             'pytest-watch==4.2.*',
-            'pytest==5.4.*',
+            'pytest==4.*',
             'yapf==0.30.*',
+            'pytest-mock==3.2.*',
         ]
     },
     setup_requires=[
