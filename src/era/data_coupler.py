@@ -65,13 +65,13 @@ class FeatureServiceInLineUpdater:
     def update_feature_service(self, feature_service_url, fields):
         with arcpy.da.UpdateCursor(feature_service_url, fields) as update_cursor:
             for row in update_cursor:
-                if row[0] in self.data_as_dict:
-                    #: TODO: update the row based on the values in self.data_as_dict[row[0]]
-                    pass
+                key = row[0]
+                if key in self.data_as_dict:
+                    row[1:] = list(self.data_as_dict[key].values())
+                    update_cursor.updateRow(row)
 
 
 class FeatureServiceOverwriter:
     """Overwrites an AGOL Feature Service with data from a pandas DataFrame and a geometry source (Spatially-enabled
     Data Frame, feature class, etc)
     """
-    raise NotImplementedError
