@@ -82,6 +82,8 @@ class FeatureServiceInLineUpdater:
 class FeatureServiceOverwriter:
     """Overwrites an AGOL Feature Service with data from a pandas DataFrame and a geometry source (Spatially-enabled
     Data Frame, feature class, etc)
+
+    To be implemented as needed.
     """
 
 
