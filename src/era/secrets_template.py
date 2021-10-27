@@ -17,6 +17,13 @@ SENDGRID_SETTINGS = {  #: Settings for SendGridHandler
     'to_addresses': '',
     'prefix': f'ERA on {socket.gethostname()}: ',
 }
+
+SFTP_HOST = ''
+SFTP_USERNAME = ''
+SFTP_PASSWORD = ''
+SFTP_FOLDER = ''
+KNOWNHOSTS = f'{Path(__file__).parent.parent.parent}\\known_hosts'
+
 ERAP_FEATURE_SERVICE_URL = ''
 ERAP_WEBMAP_ITEMID = ''
 ERAP_LAYER_NAME = ''

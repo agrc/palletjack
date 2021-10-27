@@ -10,7 +10,7 @@ import arcpy
 import numpy as np
 import pandas as pd
 import pysftp
-from arcgis import GeoAccessor, GeoSeriesAccessor
+from arcgis.features import GeoAccessor, GeoSeriesAccessor
 
 logger = logging.getLogger(__name__)
 
@@ -32,8 +32,9 @@ class SFTPLoader:
         """
 
         self._class_logger.info(
-            'Downloading files from `%s` on `%s` to `%s`', sftp_folder, self.secrets.SFTP_HOST, self.download_dir
+            'Downloading files from `%s:%s` to `%s`', self.secrets.SFTP_HOST, sftp_folder, self.download_dir
         )
+        self._class_logger.debug('SFTP Username: %s', self.secrets.SFTP_USERNAME)
         connection_opts = pysftp.CnOpts(knownhosts=self.secrets.KNOWNHOSTS)
         with pysftp.Connection(
             self.secrets.SFTP_HOST,
@@ -41,7 +42,10 @@ class SFTPLoader:
             password=self.secrets.SFTP_PASSWORD,
             cnopts=connection_opts
         ) as sftp:
-            sftp.get_d(sftp_folder, self.download_dir, preserve_mtime=True)
+            try:
+                sftp.get_d(sftp_folder, self.download_dir, preserve_mtime=True)
+            except FileNotFoundError as error:
+                raise FileNotFoundError(f'Folder `{sftp_folder}` not found on SFTP server') from error
 
     def read_csv_into_dataframe(self, filename, column_types=None):
         """Read filename into a dataframe with optional column names and types
@@ -54,12 +58,15 @@ class SFTPLoader:
             pd.DataFrame: CSV as a pandas dataframe
         """
 
-        self._class_logger.info(f'Reading `%s` into dataframe', filename)
+        self._class_logger.info('Reading `%s` into dataframe', filename)
         filepath = Path(self.download_dir, filename)
         column_names = None
         if column_types:
             column_names = list(column_types.keys())
         dataframe = pd.read_csv(filepath, names=column_names, dtype=column_types)
+        self._class_logger.debug('Dataframe shape: %s', dataframe.shape)
+        if len(dataframe.index) == 0:
+            self._class_logger.warning('Dataframe contains no rows. Shape: %s', dataframe.shape)
         return dataframe
 
 
@@ -82,13 +89,21 @@ class FeatureServiceInLineUpdater:
 
         self._class_logger.info('Updating `%s` in-place', feature_service_url)
         self._class_logger.debug('Updating fields %s', fields)
+        rows_updated = 0
         with arcpy.da.UpdateCursor(feature_service_url, fields) as update_cursor:
             for row in update_cursor:
+                self._class_logger.debug('Evaluating row: %s', row)
                 key = row[0]
                 if key in self.data_as_dict:
                     row[1:] = list(self.data_as_dict[key].values())
                     self._class_logger.debug('Updating row: %s', row)
-                    update_cursor.updateRow(row)
+                    try:
+                        update_cursor.updateRow(row)
+                        rows_updated += 1
+                    except RuntimeError as error:
+                        if 'The value type is incompatible with the field type' in str(error):
+                            raise ValueError('Field type mistmatch between dataframe and feature service') from error
+        self._class_logger.info('%s rows updated', rows_updated)
 
 
 class FeatureServiceOverwriter:
@@ -108,11 +123,12 @@ class ColorRampReclassifier:
         self.gis = gis
         self._class_logger = logging.getLogger(__name__).getChild(self.__class__.__name__)
 
-    def _get_layer_dataframe(self, layer_name):
+    def _get_layer_dataframe(self, layer_name, feature_layer_number=0):
         """Create a dataframe from layer_name in self.webmap_item
 
         Args:
             layer_name (str): The exact name of the layer
+            feature_layer_number (int): The number of the layer with the feature service to update. Defaults to 0.
 
         Returns:
             spatially-enabled data frame: The layer's data, including geometries.
@@ -122,7 +138,7 @@ class ColorRampReclassifier:
         webmap_object = arcgis.mapping.WebMap(self.webmap_item)
         layer = webmap_object.get_layer(title=layer_name)
         feature_layer = self.gis.content.get(layer['itemId'])
-        layer_dataframe = pd.DataFrame.spatial.from_layer(feature_layer)
+        layer_dataframe = pd.DataFrame.spatial.from_layer(feature_layer.layers[feature_layer_number])
 
         return layer_dataframe
 
@@ -161,6 +177,8 @@ class ColorRampReclassifier:
             List: New stops cast as ints
         """
 
+        if column not in dataframe.columns:
+            raise ValueError(f'Column `{column}` not in dataframe')
         minval = dataframe[column].min()
         mean = dataframe[column].mean()
         std_dev = dataframe[column].std()
