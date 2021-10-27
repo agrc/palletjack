@@ -54,18 +54,30 @@ def process():
     #: Load the latest data from FTP
     erap_logger.info('Getting data from FTP')
     erap_loader = SFTPLoader(secrets, erap_download_dir)
-    erap_loader.download_sftp_files(sftp_folder=secrets.SFTP_FOLDER)
+    files_downloaded = erap_loader.download_sftp_files(sftp_folder=secrets.SFTP_FOLDER)
     dataframe = erap_loader.read_csv_into_dataframe('ERAP_PAYMENTS.csv', secrets.ERAP_DATA_TYPES)
 
     #: Update the AGOL data
     erap_logger.info('Updating data in AGOL')
     erap_updater = FeatureServiceInLineUpdater(dataframe, 'zip5')
-    erap_updater.update_feature_service(secrets.ERAP_FEATURE_SERVICE_URL, list(secrets.ERAP_DATA_TYPES.keys()))
+    rows_updated = erap_updater.update_feature_service(
+        secrets.ERAP_FEATURE_SERVICE_URL, list(secrets.ERAP_DATA_TYPES.keys())
+    )
 
     #: Reclassify the break values on the webmap's color ramp
     erap_logger.info('Reclassifying the map')
     erap_reclassifier = ColorRampReclassifier(erap_webmap_item, gis)
     success = erap_reclassifier.update_color_ramp_values(secrets.ERAP_LAYER_NAME, 'Amount')
+
+    reclassifier_result = 'Success'
+    if not success:
+        reclassifier_result = 'Failure'
+
+    summary_message = MessageDetails()
+    summary_message.subject = 'ERAP Update Summary'
+    summary_message.message = f'{files_downloaded} files downloaded from SFTP\n{rows_updated} rows updated in Feature Service\n{reclassifier_result} of reclassifier.'
+
+    erap_supervisor.notify(summary_message)
 
 
 if __name__ == '__main__':
