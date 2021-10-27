@@ -60,6 +60,7 @@ class TestSFTPLoader:
 
     def test_read_csv_into_dataframe_with_column_names(self, mocker):
         pd_mock = mocker.Mock()
+        pd_mock.return_value = pd.DataFrame()
         mocker.patch.object(pd, 'read_csv', new=pd_mock)
 
         sftploader_mock = mocker.Mock()
@@ -73,6 +74,7 @@ class TestSFTPLoader:
 
     def test_read_csv_into_dataframe_no_column_names(self, mocker):
         pd_mock = mocker.Mock()
+        pd_mock.return_value = pd.DataFrame()
         mocker.patch.object(pd, 'read_csv', new=pd_mock)
 
         sftploader_mock = mocker.Mock()
