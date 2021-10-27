@@ -54,6 +54,6 @@ setup(
         'pytest-runner',
     ],
     entry_points={'console_scripts': [
-        'era = era.main:main',
+        'era = era.main:process',
     ]},
 )

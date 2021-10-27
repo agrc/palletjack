@@ -2,6 +2,7 @@
 """
 
 import json
+import logging
 from pathlib import Path
 
 import arcgis
@@ -11,6 +12,8 @@ import pandas as pd
 import pysftp
 from arcgis import GeoAccessor, GeoSeriesAccessor
 
+logger = logging.getLogger(__name__)
+
 
 class SFTPLoader:
     """Loads data from an SFTP share into a pandas DataFrame
@@ -19,6 +22,7 @@ class SFTPLoader:
     def __init__(self, secrets, download_dir):
         self.secrets = secrets
         self.download_dir = download_dir
+        self._class_logger = logging.getLogger(__name__).getChild(self.__class__.__name__)
 
     def download_sftp_files(self, sftp_folder='upload'):
         """Download all files in sftp_folder to the SFTPLoader's download_dir
@@ -27,6 +31,9 @@ class SFTPLoader:
             sftp_folder (str, optional): Path of remote folder, relative to sftp home directory. Defaults to 'upload'.
         """
 
+        self._class_logger.info(
+            'Downloading files from `%s` on `%s` to `%s`', sftp_folder, self.secrets.SFTP_HOST, self.download_dir
+        )
         connection_opts = pysftp.CnOpts(knownhosts=self.secrets.KNOWNHOSTS)
         with pysftp.Connection(
             self.secrets.SFTP_HOST,
@@ -47,6 +54,7 @@ class SFTPLoader:
             pd.DataFrame: CSV as a pandas dataframe
         """
 
+        self._class_logger.info(f'Reading `%s` into dataframe', filename)
         filepath = Path(self.download_dir, filename)
         column_names = None
         if column_types:
@@ -62,6 +70,7 @@ class FeatureServiceInLineUpdater:
     def __init__(self, dataframe, index_column):
         self.dataframe = dataframe
         self.data_as_dict = self.dataframe.set_index(index_column).to_dict('index')
+        self._class_logger = logging.getLogger(__name__).getChild(self.__class__.__name__)
 
     def update_feature_service(self, feature_service_url, fields):
         """Update a feature service in-place with data from pandas data frame using UpdateCursor
@@ -71,11 +80,14 @@ class FeatureServiceInLineUpdater:
             fields (list): Names of fields to update
         """
 
+        self._class_logger.info('Updating `%s` in-place', feature_service_url)
+        self._class_logger.debug('Updating fields %s', fields)
         with arcpy.da.UpdateCursor(feature_service_url, fields) as update_cursor:
             for row in update_cursor:
                 key = row[0]
                 if key in self.data_as_dict:
                     row[1:] = list(self.data_as_dict[key].values())
+                    self._class_logger.debug('Updating row: %s', row)
                     update_cursor.updateRow(row)
 
 
@@ -94,6 +106,7 @@ class ColorRampReclassifier:
     def __init__(self, webmap_item, gis):
         self.webmap_item = webmap_item
         self.gis = gis
+        self._class_logger = logging.getLogger(__name__).getChild(self.__class__.__name__)
 
     def _get_layer_dataframe(self, layer_name):
         """Create a dataframe from layer_name in self.webmap_item
@@ -105,6 +118,7 @@ class ColorRampReclassifier:
             spatially-enabled data frame: The layer's data, including geometries.
         """
 
+        self._class_logger.info('Getting dataframe from `%s` on `%s`', layer_name, self.webmap_item.title)
         webmap_object = arcgis.mapping.WebMap(self.webmap_item)
         layer = webmap_object.get_layer(title=layer_name)
         feature_layer = self.gis.content.get(layer['itemId'])
@@ -128,6 +142,7 @@ class ColorRampReclassifier:
         data = self.webmap_item.get_data()
         for layer_id, layer in enumerate(data['operationalLayers']):
             if layer['title'] == layer_name:
+                self._class_logger.debug('Layer `%s` has id `%s`', layer_name, layer_id)
                 return layer_id
 
         #: If we haven't matched the title and returned a valid id, raise an error.
@@ -175,7 +190,11 @@ class ColorRampReclassifier:
         #: Overwrite the value, update the webmap item
         for stop, new_value in zip(stops, new_stops):
             stop['value'] = new_value
+        self._class_logger.info(
+            'Updating stop values on layer number `%s` in `%s`', layer_number, self.webmap_item.title
+        )
         result = self.webmap_item.update(item_properties={'text': json.dumps(data)})
+        self._class_logger.debug('Update result: %s', result)
 
         return result
 
