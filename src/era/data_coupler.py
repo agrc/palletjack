@@ -34,6 +34,7 @@ class SFTPLoader:
         self._class_logger.info(
             'Downloading files from `%s:%s` to `%s`', self.secrets.SFTP_HOST, sftp_folder, self.download_dir
         )
+        starting_file_count = len(list(self.download_dir.iterdir()))
         self._class_logger.debug('SFTP Username: %s', self.secrets.SFTP_USERNAME)
         connection_opts = pysftp.CnOpts(knownhosts=self.secrets.KNOWNHOSTS)
         with pysftp.Connection(
@@ -46,6 +47,10 @@ class SFTPLoader:
                 sftp.get_d(sftp_folder, self.download_dir, preserve_mtime=True)
             except FileNotFoundError as error:
                 raise FileNotFoundError(f'Folder `{sftp_folder}` not found on SFTP server') from error
+        downloaded_file_count = len(list(self.download_dir.iterdir())) - starting_file_count
+        if not downloaded_file_count:
+            raise ValueError('No files downloaded')
+        return downloaded_file_count
 
     def read_csv_into_dataframe(self, filename, column_types=None):
         """Read filename into a dataframe with optional column names and types
@@ -104,6 +109,8 @@ class FeatureServiceInLineUpdater:
                         if 'The value type is incompatible with the field type' in str(error):
                             raise ValueError('Field type mistmatch between dataframe and feature service') from error
         self._class_logger.info('%s rows updated', rows_updated)
+
+        return rows_updated
 
 
 class FeatureServiceOverwriter:
