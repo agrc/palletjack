@@ -15,7 +15,9 @@ from supervisor.models import MessageDetails, Supervisor
 from . import secrets
 from .data_coupler import ColorRampReclassifier, FeatureServiceInLineUpdater, SFTPLoader
 
-erap_logger = logging.getLogger(__name__)
+#: Either set this logger's name to 'era' (if we use __name__ here it becomes era.main, and any other modules won't be
+#:  it's children) or define it in __init__.py
+erap_logger = logging.getLogger('era')
 erap_logger.setLevel(logging.DEBUG)
 cli_handler = logging.StreamHandler(sys.stdout)
 cli_handler.setLevel(logging.DEBUG)
@@ -28,7 +30,7 @@ erap_logger.addHandler(cli_handler)
 
 def _make_download_dir(exist_ok=False):
     today = datetime.today()
-    download_dir = secrets.ERAP_BASE_DIR / today.strftime('%Y%m%d_')
+    download_dir = secrets.ERAP_BASE_DIR / today.strftime('%Y%m%d_%H%M%S')
     try:
         download_dir.mkdir(exist_ok=exist_ok)
     except FileNotFoundError as error:
@@ -41,7 +43,7 @@ def process():
     erap_logger.debug('Creating Supervisor object')
     erap_supervisor = Supervisor(logger=erap_logger)
     erap_supervisor.add_message_handler(
-        SendGridHandler(sendgrid_settings=secrets.SENDGRID_SETTINGS, project_name='ERAP')
+        SendGridHandler(sendgrid_settings=secrets.SENDGRID_SETTINGS, project_name='era')
     )
 
     erap_logger.debug('Logging into `%s` as `%s`', secrets.AGOL_ORG, secrets.AGOL_USER)
@@ -52,13 +54,13 @@ def process():
     #: Load the latest data from FTP
     erap_logger.info('Getting data from FTP')
     erap_loader = SFTPLoader(secrets, erap_download_dir)
-    erap_loader.download_sftp_files()
+    erap_loader.download_sftp_files(sftp_folder=secrets.SFTP_FOLDER)
     dataframe = erap_loader.read_csv_into_dataframe('ERAP_PAYMENTS.csv', secrets.ERAP_DATA_TYPES)
 
     #: Update the AGOL data
     erap_logger.info('Updating data in AGOL')
-    erap_updater = FeatureServiceInLineUpdater(dataframe, 'ZipCode')
-    erap_updater.update_feature_service(secrets.ERAP_FEATURE_SERVICE_URL, ['Count', 'Amount', 'LastUpdated'])
+    erap_updater = FeatureServiceInLineUpdater(dataframe, 'zip5')
+    erap_updater.update_feature_service(secrets.ERAP_FEATURE_SERVICE_URL, list(secrets.ERAP_DATA_TYPES.keys()))
 
     #: Reclassify the break values on the webmap's color ramp
     erap_logger.info('Reclassifying the map')
