@@ -3,6 +3,7 @@ scratch.py
 
 #: Secrets file
 secrets.py
+known_hosts
 
 *.py[cod]
 
