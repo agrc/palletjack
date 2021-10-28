@@ -29,8 +29,8 @@ ERAP_WEBMAP_ITEMID = ''
 ERAP_LAYER_NAME = ''
 ERAP_BASE_DIR = Path()
 ERAP_DATA_TYPES = {
-    'ZipCode': str,
-    'Count': str,
+    'zip5': str,
+    'Count_': str,
     'Amount': np.float64,
-    'LastUpdated': str,
+    'Updated': str,
 }
