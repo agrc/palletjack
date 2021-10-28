@@ -17,6 +17,7 @@ SENDGRID_SETTINGS = {  #: Settings for SendGridHandler
     'to_addresses': '',
     'prefix': f'ERA on {socket.gethostname()}: ',
 }
+ROTATE_COUNT = 90
 
 SFTP_HOST = ''
 SFTP_USERNAME = ''
@@ -28,6 +29,7 @@ ERAP_FEATURE_SERVICE_URL = ''
 ERAP_WEBMAP_ITEMID = ''
 ERAP_LAYER_NAME = ''
 ERAP_BASE_DIR = Path()
+ERAP_LOG_PATH = ERAP_BASE_DIR / 'log.txt'
 ERAP_DATA_TYPES = {
     'zip5': str,
     'Count_': str,

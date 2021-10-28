@@ -77,6 +77,7 @@ def process():
         f'Reclassifier webmap update operation: {reclassifier_result}',
     ]
     summary_message.message = '\n'.join(summary_rows)
+    summary_message.attachments = secrets.ERAP_LOG_PATH
 
     erap_supervisor.notify(summary_message)
 
