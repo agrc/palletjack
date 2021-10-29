@@ -1,0 +1,29 @@
+name: Build and Test
+
+on: [push, pull_request]
+
+jobs:
+  test:
+    name: Setup and Test
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Set up Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: 3.8
+
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - name: Install module
+      run: pip install .[tests]
+
+    - name: Test with pytest
+      run: pytest
+
+    - name: Report coverage to Codecov
+      uses: codecov/codecov-action@v1
+      with:
+        token: ${{ secrets.CODECOV_TOKEN }}
+        file: ./cov.xml

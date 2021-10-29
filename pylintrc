@@ -1,0 +1,6 @@
+[MASTER]
+load-plugins=pylint_quotes
+max-line-length=120
+disable=bad-continuation,broad-except
+ignore-patterns=test_.*?py
+generated-members=arcpy.da.SearchCursor,arcpy.da.UpdateCursor,arcpy.da.Describe,arcpy.env.scratchFolder,arcpy.env.scratchGDB

@@ -1,0 +1,32 @@
+*.py[cod]
+
+# Packages
+.eggs/
+*.egg
+*.egg-info
+dist
+build
+eggs
+parts
+bin
+var
+sdist
+develop-eggs
+.installed.cfg
+lib
+lib64
+__pycache__
+
+# Installer logs
+pip-log.txt
+
+*.pyt.xml
+*.csv.xml
+arc.dir
+.pytest_cache
+__pycache__
+
+.env/
+.DS_Store
+cov.xml
+.coverage
