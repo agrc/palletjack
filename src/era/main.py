@@ -7,15 +7,14 @@ Updates the DWS ERAP layer based on their weekly
 import logging
 import sys
 from datetime import datetime
+from logging.handlers import RotatingFileHandler
 
 import arcgis
-import arcpy
-from supervisor.models import MessageDetails
+from supervisor.message_handlers import SendGridHandler
+from supervisor.models import MessageDetails, Supervisor
 
-from . import erap_supervisor, secrets
+from . import secrets
 from .data_coupler import ColorRampReclassifier, FeatureServiceInLineUpdater, SFTPLoader
-
-module_logger = logging.getLogger(__name__)
 
 
 def _make_download_dir(exist_ok=False):
@@ -29,9 +28,42 @@ def _make_download_dir(exist_ok=False):
         return download_dir
 
 
+def _initialize(log_level):
+
+    erap_logger = logging.getLogger('era')
+    erap_logger.setLevel(log_level)
+    cli_handler = logging.StreamHandler(sys.stdout)
+    cli_handler.setLevel(log_level)
+    formatter = logging.Formatter(
+        fmt='%(levelname)-7s %(asctime)s %(module)15s:%(lineno)5s %(message)s', datefmt='%Y-%m-%d %H:%M:%S'
+    )
+    cli_handler.setFormatter(formatter)
+    erap_logger.addHandler(cli_handler)
+
+    log_handler = RotatingFileHandler(secrets.ERAP_LOG_PATH, backupCount=secrets.ROTATE_COUNT)
+    log_handler.doRollover()  #: Rotate the log on each run
+    log_handler.setLevel(log_level)
+    log_handler.setFormatter(formatter)
+    erap_logger.addHandler(log_handler)
+
+    erap_logger.debug('Creating Supervisor object')
+    erap_supervisor = Supervisor(logger=erap_logger, log_path=secrets.ERAP_LOG_PATH)
+    erap_supervisor.add_message_handler(
+        SendGridHandler(sendgrid_settings=secrets.SENDGRID_SETTINGS, project_name='era')
+    )
+
+    return erap_supervisor
+
+
 def process():
 
     start = datetime.now()
+
+    erap_supervisor = _initialize(logging.INFO)
+    # : Putting this down here so logging/supervisor catches any license issues
+    import arcpy  # pylint: disable=import-outside-toplevel
+
+    module_logger = logging.getLogger(__name__)
 
     module_logger.debug('Logging into `%s` as `%s`', secrets.AGOL_ORG, secrets.AGOL_USER)
     gis = arcgis.gis.GIS(secrets.AGOL_ORG, secrets.AGOL_USER, secrets.AGOL_PASSWORD)
