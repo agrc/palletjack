@@ -5,7 +5,8 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from palletjack import models
+# from palletjack import palletjack
+import palletjack
 
 
 class TestFeatureServiceInLineUpdater:
@@ -25,7 +26,7 @@ class TestFeatureServiceInLineUpdater:
         fsupdater_mock = mocker.Mock()
         fsupdater_mock.data_as_dict = {'12345': {'Count': '57', 'Amount': 100.00, 'Date': '1/1/2022'}}
 
-        models.FeatureServiceInLineUpdater.update_feature_service(
+        palletjack.FeatureServiceInLineUpdater.update_feature_service(
             fsupdater_mock, 'foo', ['ZipCode', 'Count', 'Amount', 'Date']
         )
 
@@ -54,7 +55,7 @@ class TestSFTPLoader:
         cnopts_mock.side_effect = lambda knownhosts: knownhosts
         mocker.patch('pysftp.CnOpts', new=cnopts_mock)
 
-        models.SFTPLoader.download_sftp_files(sftploader_mock)
+        palletjack.SFTPLoader.download_sftp_files(sftploader_mock)
 
         context_manager_mock.assert_called_with(
             'sftp_host', username='username', password='password', cnopts='knownhosts_file'
@@ -70,7 +71,7 @@ class TestSFTPLoader:
 
         column_types = {'bar': np.float64}
 
-        models.SFTPLoader.read_csv_into_dataframe(sftploader_mock, 'baz', column_types)
+        palletjack.SFTPLoader.read_csv_into_dataframe(sftploader_mock, 'baz', column_types)
 
         pd_mock.assert_called_with(Path('foo', 'baz'), names=['bar'], dtype=column_types)
 
@@ -82,7 +83,7 @@ class TestSFTPLoader:
         sftploader_mock = mocker.Mock()
         sftploader_mock.download_dir = 'foo'
 
-        models.SFTPLoader.read_csv_into_dataframe(sftploader_mock, 'baz')
+        palletjack.SFTPLoader.read_csv_into_dataframe(sftploader_mock, 'baz')
 
         pd_mock.assert_called_with(Path('foo', 'baz'), names=None, dtype=None)
 
@@ -100,7 +101,7 @@ class TestColorRampReclassifier:
         get_data_mock = mocker.Mock(return_value=layers)
         webmap_item_mock = mocker.Mock()
         webmap_item_mock.get_data = get_data_mock
-        reclassifier = models.ColorRampReclassifier(webmap_item_mock, 'gis')
+        reclassifier = palletjack.ColorRampReclassifier(webmap_item_mock, 'gis')
 
         layer_id = reclassifier._get_layer_id('foo')
         assert layer_id == 0
@@ -122,7 +123,7 @@ class TestColorRampReclassifier:
         get_data_mock = mocker.Mock(return_value=layers)
         webmap_item_mock = mocker.Mock()
         webmap_item_mock.get_data = get_data_mock
-        reclassifier = models.ColorRampReclassifier(webmap_item_mock, 'gis')
+        reclassifier = palletjack.ColorRampReclassifier(webmap_item_mock, 'gis')
 
         layer_id = reclassifier._get_layer_id('bar')
         assert layer_id == 1
@@ -144,7 +145,7 @@ class TestColorRampReclassifier:
         get_data_mock = mocker.Mock(return_value=layers)
         webmap_item_mock = mocker.Mock()
         webmap_item_mock.get_data = get_data_mock
-        reclassifier = models.ColorRampReclassifier(webmap_item_mock, 'gis')
+        reclassifier = palletjack.ColorRampReclassifier(webmap_item_mock, 'gis')
 
         layer_id = reclassifier._get_layer_id('bar')
         assert layer_id == 1
@@ -161,7 +162,7 @@ class TestColorRampReclassifier:
         webmap_item_mock = mocker.Mock()
         webmap_item_mock.title = 'test map'
         webmap_item_mock.get_data = get_data_mock
-        reclassifier = models.ColorRampReclassifier(webmap_item_mock, 'gis')
+        reclassifier = palletjack.ColorRampReclassifier(webmap_item_mock, 'gis')
 
         with pytest.raises(ValueError) as error_info:
             layer_id = reclassifier._get_layer_id('foo')
@@ -171,7 +172,7 @@ class TestColorRampReclassifier:
     def test_calculate_new_stops_with_manual_numbers(self):
         dataframe = pd.DataFrame({'numbers': [100, 300, 500, 700, 900]})
 
-        stops = models.ColorRampReclassifier._calculate_new_stops(dataframe, 'numbers', 5)
+        stops = palletjack.ColorRampReclassifier._calculate_new_stops(dataframe, 'numbers', 5)
 
         assert stops == [100, 279, 458, 637, 816]
 
@@ -179,7 +180,7 @@ class TestColorRampReclassifier:
         dataframe = pd.DataFrame({'numbers': [100, 300, 500, 700, 900]})
 
         with pytest.raises(ValueError) as error_info:
-            stops = models.ColorRampReclassifier._calculate_new_stops(dataframe, 'foo', 5)
+            stops = palletjack.ColorRampReclassifier._calculate_new_stops(dataframe, 'foo', 5)
             assert 'Column `foo` not in dataframe`' in str(error_info)
 
     def test_update_stops_values(self, mocker):
@@ -212,7 +213,7 @@ class TestColorRampReclassifier:
         webmap_item_mock.get_data = get_data_mock
         update_mock = mocker.Mock()
         webmap_item_mock.update = update_mock
-        reclassifier = models.ColorRampReclassifier(webmap_item_mock, 'gis')
+        reclassifier = palletjack.ColorRampReclassifier(webmap_item_mock, 'gis')
 
         reclassifier._update_stop_values(0, [100, 200, 300, 400])
 
