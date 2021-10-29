@@ -2,7 +2,7 @@
 # -*- encoding: utf-8 -*-
 """
 setup.py
-A module that installs projectname as a module
+A module that installs palletjack as a module
 """
 from glob import glob
 from os.path import basename, splitext
@@ -10,13 +10,13 @@ from os.path import basename, splitext
 from setuptools import find_packages, setup
 
 setup(
-    name='era',
+    name='ugrc-palletjack',
     version='1.0.0',
     license='MIT',
-    description='Updates for the Emergency Rental Assistance map',
-    author='UGRC',
-    author_email='agrc@utah.gov',
-    url='https://github.com/agrc/python',
+    description='Updating AGOL feature services with data from SFTP shares.',
+    author='Jake Adams, UGRC',
+    author_email='jdadams@utah.gov',
+    url='https://github.com/agrc/palletjack',
     packages=find_packages('src'),
     package_dir={'': 'src'},
     py_modules=[splitext(basename(path))[0] for path in glob('src/*.py')],
@@ -29,11 +29,10 @@ setup(
         'Topic :: Utilities',
     ],
     project_urls={
-        'Issue Tracker': 'https://github.com/agrc/python/issues',
+        'Issue Tracker': 'https://github.com/agrc/palletjack/issues',
     },
     keywords=['gis'],
     install_requires=[
-        'agrc-supervisor==2.0.*',
         'pysftp==0.2.9',
     ],
     extras_require={
@@ -54,6 +53,6 @@ setup(
         'pytest-runner',
     ],
     entry_points={'console_scripts': [
-        'era = era.main:process',
+        'palletjack = palletjack.example:process',
     ]},
 )
