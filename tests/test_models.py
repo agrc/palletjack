@@ -1,12 +1,18 @@
 import json
+import unittest.mock
 from pathlib import Path
 
 import numpy as np
 import pandas as pd
 import pytest
 
-# from palletjack import palletjack
-import palletjack
+try:
+    import palletjack
+except ModuleNotFoundError as error:
+    if 'arcgis' in error:
+        unittest.mock.patch('arcgis')
+    if 'arcpy' in error:
+        unittest.mock.patch('arcpy')
 
 
 class TestFeatureServiceInLineUpdater:
