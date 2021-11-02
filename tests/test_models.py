@@ -38,10 +38,10 @@ class TestSFTPLoader:
 
     def test_download_sftp_folder_contents_uses_right_credentials(self, mocker):
         sftploader_mock = mocker.Mock()
-        sftploader_mock.secrets.KNOWNHOSTS = 'knownhosts_file'
-        sftploader_mock.secrets.SFTP_HOST = 'sftp_host'
-        sftploader_mock.secrets.SFTP_USERNAME = 'username'
-        sftploader_mock.secrets.SFTP_PASSWORD = 'password'
+        sftploader_mock.knownhosts_file = 'knownhosts_file'
+        sftploader_mock.host = 'sftp_host'
+        sftploader_mock.username = 'username'
+        sftploader_mock.password = 'password'
         download_dir_mock = mocker.Mock()
         download_dir_mock.iterdir.side_effect = [[], ['file_a', 'file_b']]
         sftploader_mock.download_dir = download_dir_mock
@@ -63,13 +63,11 @@ class TestSFTPLoader:
 
     def test_download_sftp_single_file_uses_right_credentials(self, mocker):
         sftploader_mock = mocker.Mock()
-        sftploader_mock.secrets.KNOWNHOSTS = 'knownhosts_file'
-        sftploader_mock.secrets.SFTP_HOST = 'sftp_host'
-        sftploader_mock.secrets.SFTP_USERNAME = 'username'
-        sftploader_mock.secrets.SFTP_PASSWORD = 'password'
-        # download_dir_mock = mocker.Mock()
-        # download_dir_mock.iterdir.side_effect = [[], ['file_a', 'file_b']]
-        # sftploader_mock.download_dir = download_dir_mock
+        sftploader_mock.knownhosts_file = 'knownhosts_file'
+        sftploader_mock.host = 'sftp_host'
+        sftploader_mock.username = 'username'
+        sftploader_mock.password = 'password'
+        sftploader_mock.download_dir = 'download_dir'
 
         connection_mock = mocker.MagicMock()
         context_manager_mock = mocker.MagicMock()
@@ -80,7 +78,7 @@ class TestSFTPLoader:
         cnopts_mock.side_effect = lambda knownhosts: knownhosts
         mocker.patch('pysftp.CnOpts', new=cnopts_mock)
 
-        palletjack.SFTPLoader.download_sftp_single_file(sftploader_mock, 'filename', 'outfile')
+        palletjack.SFTPLoader.download_sftp_single_file(sftploader_mock, 'filename', 'upload')
 
         context_manager_mock.assert_called_with(
             'sftp_host', username='username', password='password', cnopts='knownhosts_file', default_path='upload'

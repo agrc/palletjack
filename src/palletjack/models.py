@@ -19,8 +19,11 @@ class SFTPLoader:
     """Loads data from an SFTP share into a pandas DataFrame
     """
 
-    def __init__(self, secrets, download_dir):
-        self.secrets = secrets
+    def __init__(self, host, username, password, knownhosts_file, download_dir):
+        self.host = host
+        self.username = username
+        self.password = password
+        self.knownhosts_file = knownhosts_file
         self.download_dir = download_dir
         self._class_logger = logging.getLogger(__name__).getChild(self.__class__.__name__)
 
@@ -31,17 +34,12 @@ class SFTPLoader:
             sftp_folder (str, optional): Path of remote folder, relative to sftp home directory. Defaults to 'upload'.
         """
 
-        self._class_logger.info(
-            'Downloading files from `%s:%s` to `%s`', self.secrets.SFTP_HOST, sftp_folder, self.download_dir
-        )
+        self._class_logger.info('Downloading files from `%s:%s` to `%s`', self.host, sftp_folder, self.download_dir)
         starting_file_count = len(list(self.download_dir.iterdir()))
-        self._class_logger.debug('SFTP Username: %s', self.secrets.SFTP_USERNAME)
-        connection_opts = pysftp.CnOpts(knownhosts=self.secrets.KNOWNHOSTS)
+        self._class_logger.debug('SFTP Username: %s', self.username)
+        connection_opts = pysftp.CnOpts(knownhosts=self.knownhosts_file)
         with pysftp.Connection(
-            self.secrets.SFTP_HOST,
-            username=self.secrets.SFTP_USERNAME,
-            password=self.secrets.SFTP_PASSWORD,
-            cnopts=connection_opts
+            self.host, username=self.username, password=self.password, cnopts=connection_opts
         ) as sftp:
             try:
                 sftp.get_d(sftp_folder, self.download_dir, preserve_mtime=True)
@@ -52,24 +50,26 @@ class SFTPLoader:
             raise ValueError('No files downloaded')
         return downloaded_file_count
 
-    def download_sftp_single_file(self, filename, outfile, sftp_folder='upload'):
+    def download_sftp_single_file(self, filename, sftp_folder='upload'):
 
-        self._class_logger.info(
-            'Downloading %s from `%s:%s` to `%s`', filename, self.secrets.SFTP_HOST, sftp_folder, outfile
-        )
-        self._class_logger.debug('SFTP Username: %s', self.secrets.SFTP_USERNAME)
-        connection_opts = pysftp.CnOpts(knownhosts=self.secrets.KNOWNHOSTS)
+        outfile = Path(self.download_dir, filename)
+
+        self._class_logger.info('Downloading %s from `%s:%s` to `%s`', filename, self.host, sftp_folder, outfile)
+        self._class_logger.debug('SFTP Username: %s', self.username)
+        connection_opts = pysftp.CnOpts(knownhosts=self.knownhosts_file)
         try:
             with pysftp.Connection(
-                self.secrets.SFTP_HOST,
-                username=self.secrets.SFTP_USERNAME,
-                password=self.secrets.SFTP_PASSWORD,
+                self.host,
+                username=self.username,
+                password=self.password,
                 cnopts=connection_opts,
                 default_path=sftp_folder,
             ) as sftp:
                 sftp.get(filename, localpath=outfile, preserve_mtime=True)
         except FileNotFoundError as error:
             raise FileNotFoundError(f'File `{filename}` or folder `{sftp_folder}`` not found on SFTP server') from error
+
+        return outfile
 
     def read_csv_into_dataframe(self, filename, column_types=None):
         """Read filename into a dataframe with optional column names and types
