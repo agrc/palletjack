@@ -1,6 +1,6 @@
 import json
 from pathlib import Path
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 import numpy as np
 import pandas as pd
@@ -9,8 +9,8 @@ import pytest
 try:
     import palletjack
 except ModuleNotFoundError:
-    arcgis = MagicMock()
-    arcpy = MagicMock()
+    patch('palletjack.arcgis')
+    patch('palletjack.arcpy')
     import palletjack
 
 
