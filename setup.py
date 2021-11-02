@@ -36,6 +36,7 @@ setup(
         'pysftp==0.2.9',
         'pandas==1.3.3',
         'numpy==1.20.1',
+        'arcgis==1.9.*',
     ],
     extras_require={
         'tests': [

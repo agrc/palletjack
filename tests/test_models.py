@@ -5,13 +5,9 @@ from unittest.mock import MagicMock, patch
 import numpy as np
 import pandas as pd
 import pytest
+from mock_arcpy import arcpy
 
-try:
-    import palletjack
-except ModuleNotFoundError:
-    patch('palletjack.arcgis')
-    patch('palletjack.arcpy')
-    import palletjack
+import palletjack
 
 
 class TestFeatureServiceInLineUpdater:
