@@ -8,11 +8,10 @@ import pytest
 
 try:
     import palletjack
-except ModuleNotFoundError as error:
-    if 'arcgis' in str(error):
-        arcgis = MagicMock()
-    if 'arcpy' in str(error):
-        arcpy = MagicMock()
+except ModuleNotFoundError:
+    arcgis = MagicMock()
+    arcpy = MagicMock()
+    import palletjack
 
 
 class TestFeatureServiceInLineUpdater:
