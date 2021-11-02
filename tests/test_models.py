@@ -10,9 +10,9 @@ try:
     import palletjack
 except ModuleNotFoundError as error:
     if 'arcgis' in str(error):
-        unittest.mock.patch('arcgis')
+        arcgis = unittest.mock()
     if 'arcpy' in str(error):
-        unittest.mock.patch('arcpy')
+        arcpy = unittest.mock()
 
 
 class TestFeatureServiceInLineUpdater:
