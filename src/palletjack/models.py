@@ -51,6 +51,18 @@ class SFTPLoader:
         return downloaded_file_count
 
     def download_sftp_single_file(self, filename, sftp_folder='upload'):
+        """Download filename into SFTPLoader's download_dir
+
+        Args:
+            filename (str): Filename to download; used as output filename as well.
+            sftp_folder (str, optional): Path of remote folder, relative to sftp home directory. Defaults to 'upload'.
+
+        Raises:
+            FileNotFoundError: Will warn if pysftp can't find the file or folder on the sftp server
+
+        Returns:
+            Path: Downloaded file's path
+        """
 
         outfile = Path(self.download_dir, filename)
 
