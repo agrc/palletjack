@@ -7,16 +7,12 @@ import pandas as pd
 import pytest
 
 try:
-    import arcpy
-except ModuleNotFoundError:
-    arcpy = MagicMock()
-
-try:
-    import arcgis
-except ModuleNotFoundError:
-    arcgis = MagicMock()
-
-import palletjack
+    import palletjack
+except ModuleNotFoundError as error:
+    if 'arcgis' in str(error):
+        arcgis = MagicMock()
+    if 'arcpy' in str(error):
+        arcpy = MagicMock()
 
 
 class TestFeatureServiceInLineUpdater:
