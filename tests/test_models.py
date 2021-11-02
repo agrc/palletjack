@@ -1,18 +1,22 @@
 import json
-import unittest.mock
 from pathlib import Path
+from unittest.mock import MagicMock
 
 import numpy as np
 import pandas as pd
 import pytest
 
 try:
-    import palletjack
-except ModuleNotFoundError as error:
-    if 'arcgis' in str(error):
-        arcgis = unittest.mock()
-    if 'arcpy' in str(error):
-        arcpy = unittest.mock()
+    import arcpy
+except ModuleNotFoundError:
+    arcpy = MagicMock()
+
+try:
+    import arcgis
+except ModuleNotFoundError:
+    arcgis = MagicMock()
+
+import palletjack
 
 
 class TestFeatureServiceInLineUpdater:
