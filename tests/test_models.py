@@ -9,9 +9,9 @@ import pytest
 try:
     import palletjack
 except ModuleNotFoundError as error:
-    if 'arcgis' in error:
+    if 'arcgis' in str(error):
         unittest.mock.patch('arcgis')
-    if 'arcpy' in error:
+    if 'arcpy' in str(error):
         unittest.mock.patch('arcpy')
 
 
