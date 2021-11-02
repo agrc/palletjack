@@ -24,7 +24,7 @@ class SFTPLoader:
         self.download_dir = download_dir
         self._class_logger = logging.getLogger(__name__).getChild(self.__class__.__name__)
 
-    def download_sftp_files(self, sftp_folder='upload'):
+    def download_sftp_folder_contents(self, sftp_folder='upload'):
         """Download all files in sftp_folder to the SFTPLoader's download_dir
 
         Args:
@@ -51,6 +51,25 @@ class SFTPLoader:
         if not downloaded_file_count:
             raise ValueError('No files downloaded')
         return downloaded_file_count
+
+    def download_sftp_single_file(self, filename, outfile, sftp_folder='upload'):
+
+        self._class_logger.info(
+            'Downloading %s from `%s:%s` to `%s`', filename, self.secrets.SFTP_HOST, sftp_folder, outfile
+        )
+        self._class_logger.debug('SFTP Username: %s', self.secrets.SFTP_USERNAME)
+        connection_opts = pysftp.CnOpts(knownhosts=self.secrets.KNOWNHOSTS)
+        try:
+            with pysftp.Connection(
+                self.secrets.SFTP_HOST,
+                username=self.secrets.SFTP_USERNAME,
+                password=self.secrets.SFTP_PASSWORD,
+                cnopts=connection_opts,
+                default_path=sftp_folder,
+            ) as sftp:
+                sftp.get(filename, localpath=outfile, preserve_mtime=True)
+        except FileNotFoundError as error:
+            raise FileNotFoundError(f'File `{filename}` or folder `{sftp_folder}`` not found on SFTP server') from error
 
     def read_csv_into_dataframe(self, filename, column_types=None):
         """Read filename into a dataframe with optional column names and types

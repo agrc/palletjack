@@ -36,7 +36,7 @@ class TestFeatureServiceInLineUpdater:
 
 class TestSFTPLoader:
 
-    def test_download_sftp_files_uses_right_credentials(self, mocker):
+    def test_download_sftp_folder_contents_uses_right_credentials(self, mocker):
         sftploader_mock = mocker.Mock()
         sftploader_mock.secrets.KNOWNHOSTS = 'knownhosts_file'
         sftploader_mock.secrets.SFTP_HOST = 'sftp_host'
@@ -55,10 +55,35 @@ class TestSFTPLoader:
         cnopts_mock.side_effect = lambda knownhosts: knownhosts
         mocker.patch('pysftp.CnOpts', new=cnopts_mock)
 
-        palletjack.SFTPLoader.download_sftp_files(sftploader_mock)
+        palletjack.SFTPLoader.download_sftp_folder_contents(sftploader_mock)
 
         context_manager_mock.assert_called_with(
             'sftp_host', username='username', password='password', cnopts='knownhosts_file'
+        )
+
+    def test_download_sftp_single_file_uses_right_credentials(self, mocker):
+        sftploader_mock = mocker.Mock()
+        sftploader_mock.secrets.KNOWNHOSTS = 'knownhosts_file'
+        sftploader_mock.secrets.SFTP_HOST = 'sftp_host'
+        sftploader_mock.secrets.SFTP_USERNAME = 'username'
+        sftploader_mock.secrets.SFTP_PASSWORD = 'password'
+        # download_dir_mock = mocker.Mock()
+        # download_dir_mock.iterdir.side_effect = [[], ['file_a', 'file_b']]
+        # sftploader_mock.download_dir = download_dir_mock
+
+        connection_mock = mocker.MagicMock()
+        context_manager_mock = mocker.MagicMock()
+        context_manager_mock.return_value.__enter__.return_value = connection_mock
+        mocker.patch('pysftp.Connection', new=context_manager_mock)
+
+        cnopts_mock = mocker.Mock()
+        cnopts_mock.side_effect = lambda knownhosts: knownhosts
+        mocker.patch('pysftp.CnOpts', new=cnopts_mock)
+
+        palletjack.SFTPLoader.download_sftp_single_file(sftploader_mock, 'filename', 'outfile')
+
+        context_manager_mock.assert_called_with(
+            'sftp_host', username='username', password='password', cnopts='knownhosts_file', default_path='upload'
         )
 
     def test_read_csv_into_dataframe_with_column_names(self, mocker):
