@@ -110,12 +110,14 @@ class FeatureServiceInLineUpdater:
     """Updates an AGOL Feature Service with data from a pandas DataFrame
     """
 
-    def __init__(self, dataframe, index_column):
-        self.dataframe = dataframe
-        self.data_as_dict = self.dataframe.set_index(index_column).to_dict('index')
+    def __init__(self, gis, dataframe, index_columnn):
+        self.gis = gis
+        self.new_dataframe = dataframe
+        self.index_column = index_columnn
+        self.data_as_dict = self.new_dataframe.set_index(index_columnn).to_dict('index')
         self._class_logger = logging.getLogger(__name__).getChild(self.__class__.__name__)
 
-    def update_feature_service(self, feature_service_url, fields):
+    def update_existing_features_in_feature_service_with_arcpy(self, feature_service_url, fields):
         """Update a feature service in-place with data from pandas data frame using UpdateCursor
 
         Args:
@@ -142,6 +144,74 @@ class FeatureServiceInLineUpdater:
         self._class_logger.info('%s rows updated', rows_updated)
 
         return rows_updated
+
+    def _get_common_rows(self, live_dataframe) -> pd.DataFrame:
+        joined_dataframe = live_dataframe.merge(self.new_dataframe, on=[self.index_column], how='outer', indicator=True)
+        subset_dataframe = joined_dataframe[joined_dataframe['_merge'] == 'both'].copy()
+
+        not_found_dataframe = joined_dataframe[joined_dataframe['_merge'] == 'right_only'].copy()
+        if not not_found_dataframe.empty:
+            keys_not_found = list(not_found_dataframe[self.index_column])
+            self._class_logger.warning(
+                'The following keys from the new data were not found in the existing dataset: %s', keys_not_found
+            )
+
+        return subset_dataframe
+
+    def _clean_dataframe_columns(self, dataframe, fields) -> pd.DataFrame:
+        rename_dict = {f'{f}_y': f for f in fields}
+        renamed_dataframe = dataframe.rename(columns=rename_dict).copy()
+        fields_to_delete = [f for f in renamed_dataframe.columns if f.endswith(('_x', '_y'))]
+        fields_to_delete.append('_merge')
+        self._class_logger.debug('Deleting joined dataframe fields: %s', fields_to_delete)
+        return renamed_dataframe.drop(labels=fields_to_delete, axis='columns', errors='ignore').copy()
+
+    def _parse_results(self, results_dict, live_dataframe) -> int:
+        live_dataframe_as_dict = live_dataframe.to_dict('index')
+        update_results = results_dict['updateResults']
+        if not update_results:
+            self._class_logger.info('No update results returned; no updates attempted')
+            return 0
+        update_successes = [result['objectId'] for result in update_results if result['success']]
+        update_failures = [result['objectId'] for result in update_results if not result['success']]
+        rows_updated = len(update_successes)
+        if update_successes:
+            self._class_logger.info('%s rows successfully updated', len(update_successes))
+            self._class_logger.debug('Updated rows: ')
+            for row in [row for _, row in live_dataframe_as_dict.items() if row['objectId'] in update_successes]:
+                self._class_logger.debug(row)
+        if update_failures:
+            self._class_logger.warning(
+                'The following %s updates failed. As a result, all successfull updates should have been rolled back.',
+                len(update_failures)
+            )
+            for row in [row for _, row in live_dataframe_as_dict.items() if row['objectId'] in update_failures]:
+                self._class_logger.warning(row)
+            rows_updated = 0
+
+        return rows_updated
+
+    def update_existing_features_in_hosted_feature_layer(self, feature_layer_itemid, fields) -> int:
+        self._class_logger.info('Updating itemid `%s` in-place', feature_layer_itemid)
+        self._class_logger.debug('Updating fields %s', fields)
+        feature_layer = self.gis.content.get(feature_layer_itemid)
+        live_dataframe = pd.DataFrame.spatial.from_layer(feature_layer)
+        subset_dataframe = self._get_common_rows(live_dataframe)
+        if subset_dataframe.empty:
+            self._class_logger.warning(
+                'No matching rows between live dataset and new dataset based on field `%s`', self.index_column
+            )
+            return 0
+        cleaned_dataframe = self._clean_dataframe_columns(subset_dataframe, fields)
+        results = feature_layer.edit_features(
+            updates=cleaned_dataframe.spatial.to_featureset(), rollback_on_failure=True
+        )
+        rows_updated = self._parse_results(results, live_dataframe)
+        return rows_updated
+
+        #: This does not work. Warum?
+        # updates_featurecollection = subset_dataframe.spatial.to_feature_collection()
+        # messages = feature_layer.append(upload_format='featureCollection', field_mappings=[{'name':'Count_', 'sourceName':'Count__y'}, {'name':'Amount', 'sourceName':'Amount_y'}, {'name':'Updated', 'sourceName':'Updated_y'}], edits=updates_featurecollection, upsert=True, update_geometry=False, rollback=True, return_messages=True)
 
 
 class FeatureServiceOverwriter:
