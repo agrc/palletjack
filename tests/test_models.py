@@ -1,3 +1,4 @@
+import builtins
 import json
 import logging
 from pathlib import Path
@@ -40,6 +41,18 @@ def combined_values():
     return values
 
 
+@pytest.fixture
+def hide_available_pkg(monkeypatch):
+    import_orig = builtins.__import__
+
+    def mocked_import(name, *args, **kwargs):
+        if name == 'arcpy':
+            raise ImportError()
+        return import_orig(name, *args, **kwargs)
+
+    monkeypatch.setattr(builtins, '__import__', mocked_import)
+
+
 class TestFeatureServiceInlineUpdater:
 
     def test_update_existing_features_in_feature_service_with_arcpy(self, mocker):
@@ -63,6 +76,14 @@ class TestFeatureServiceInlineUpdater:
 
         cursor_mock.updateRow.assert_called_with(['12345', '57', 100.00, '1/1/2022'])
         cursor_mock.updateRow.assert_called_once()
+
+    @pytest.mark.usefixtures('hide_available_pkg')
+    def test_update_existing_features_in_feature_service_with_arcpy_reports_error_on_import_failure(self, mocker):
+
+        with pytest.raises(ImportError, match='Failure importing arcpy. ArcGIS Pro must be installed.'):
+            palletjack.FeatureServiceInlineUpdater.update_existing_features_in_feature_service_with_arcpy(
+                mocker.Mock(), 'foo', ['ZipCode', 'Count', 'Amount', 'Date']
+            )
 
     def test_clean_dataframe_columns_renames_and_drops_columns(self, mocker):
         class_mock = mocker.Mock()
