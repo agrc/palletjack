@@ -118,7 +118,7 @@ class FeatureServiceInlineUpdater:
         self._class_logger = logging.getLogger(__name__).getChild(self.__class__.__name__)
 
     def update_existing_features_in_feature_service_with_arcpy(self, feature_service_url, fields):
-        """Update a feature service in-place with data from pandas data frame using UpdateCursor
+        """Update a feature service in-place with data from pandas data frame using arcpy's UpdateCursor
 
         Args:
             feature_service_url (str): URL to feature service
@@ -146,6 +146,15 @@ class FeatureServiceInlineUpdater:
         return rows_updated
 
     def _get_common_rows(self, live_dataframe) -> pd.DataFrame:
+        """Create a dataframe containing only the rows common to both the existing live dataset and the new updates
+
+        Args:
+            live_dataframe (pd.Dataframe): The existing, live dataframe created from an AGOL hosted feature layer.
+
+        Returns:
+            pd.DataFrame: A new dataframe containing the common rows created by .merge()ing.
+        """
+
         joined_dataframe = live_dataframe.merge(self.new_dataframe, on=[self.index_column], how='outer', indicator=True)
         subset_dataframe = joined_dataframe[joined_dataframe['_merge'] == 'both'].copy()
 
@@ -159,6 +168,19 @@ class FeatureServiceInlineUpdater:
         return subset_dataframe
 
     def _clean_dataframe_columns(self, dataframe, fields) -> pd.DataFrame:
+        """Delete superfluous fields from dataframe that will be used for the .edit() operation
+
+        Removes or renames the '_x', '_y' fields that are created by dataframe.merge() as appropriate based on the
+        fields provided.
+
+        Args:
+            dataframe (pd.Dataframe): Dataframe to be cleaned
+            fields (list[str]): The fields to keep; all others will be deleted
+
+        Returns:
+            pd.DataFrame: A dataframe with only our desired columns.
+        """
+
         rename_dict = {f'{f}_y': f for f in fields}
         renamed_dataframe = dataframe.rename(columns=rename_dict).copy()
         fields_to_delete = [f for f in renamed_dataframe.columns if f.endswith(('_x', '_y'))]
@@ -167,6 +189,20 @@ class FeatureServiceInlineUpdater:
         return renamed_dataframe.drop(labels=fields_to_delete, axis='columns', errors='ignore').copy()
 
     def _get_old_and_new_values(self, live_dict, object_ids):
+        """Create a dictionary of the old (existing, live) and new values based on a list of object ids
+
+        Args:
+            live_dict (dict): The old (existing, live) data, key is an arbitrary index, content is another dict keyed by the field names.
+            object_ids (list[int]): The object ids to include in the new dictionary
+
+        Returns:
+            dict: {object_id:
+                    {'old_values': {data as dict from live_dict},
+                     'new_values': {data as dict from self.new_dataframe}
+                    },
+                  ...,
+                  }
+        """
         oid_and_key_lookup = {
             row['objectId']: row[self.index_column] for _, row in live_dict.items() if row['objectId'] in object_ids
         }
@@ -186,6 +222,16 @@ class FeatureServiceInlineUpdater:
         return combined_values_by_oid
 
     def _parse_results(self, results_dict, live_dataframe) -> int:
+        """Integrate .edit() results with data for reporting purposes. Relies on _get_old_and_new_values().
+
+        Args:
+            results_dict (dict): AGOL response as a python dict (raw output from .edit_features(). Defined in https://developers.arcgis.com/rest/services-reference/enterprise/apply-edits-feature-service-layer-.htm, where `true`/`false` are python True/False.
+            live_dataframe (pd.DataFrame): Existing/live dataframe created from hosted feature layer.
+
+        Returns:
+            int: Number of edits successfully applied. If any failed, rollback will cause this to be set to 0.
+        """
+
         live_dataframe_as_dict = live_dataframe.to_dict('index')
         update_results = results_dict['updateResults']
         if not update_results:
@@ -212,6 +258,18 @@ class FeatureServiceInlineUpdater:
         return rows_updated
 
     def update_existing_features_in_hosted_feature_layer(self, feature_layer_itemid, fields) -> int:
+        """Update existing features with new attribute data in the defined fields using arcgis instead of arcpy.
+
+        Relies on new data from self.new_dataframe. Uses the ArcGIS API for Python's .edit_features() method on a hosted feature layer item. May be fragile for large datasets, per .edit_features() documentation. Can't get .append() working properly.
+
+        Args:
+            feature_layer_itemid (str): The AGOL item id of the hosted feature layer to update.
+            fields (list[str]): The field names in the feature layer to update.
+
+        Returns:
+            int: Number of features successfully updated (any failures will cause rollback and should return 0)
+        """
+
         self._class_logger.info('Updating itemid `%s` in-place', feature_layer_itemid)
         self._class_logger.debug('Updating fields %s', fields)
         feature_layer = self.gis.content.get(feature_layer_itemid)
@@ -226,8 +284,8 @@ class FeatureServiceInlineUpdater:
         results = feature_layer.edit_features(
             updates=cleaned_dataframe.spatial.to_featureset(), rollback_on_failure=True
         )
-        rows_updated = self._parse_results(results, live_dataframe)
-        return rows_updated
+        number_of_rows_updated = self._parse_results(results, live_dataframe)
+        return number_of_rows_updated
 
         #: This does not work. Warum?
         # updates_featurecollection = subset_dataframe.spatial.to_feature_collection()
