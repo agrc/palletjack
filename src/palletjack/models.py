@@ -287,10 +287,6 @@ class FeatureServiceInlineUpdater:
         number_of_rows_updated = self._parse_results(results, live_dataframe)
         return number_of_rows_updated
 
-        #: This does not work. Warum?
-        # updates_featurecollection = subset_dataframe.spatial.to_feature_collection()
-        # messages = feature_layer.append(upload_format='featureCollection', field_mappings=[{'name':'Count_', 'sourceName':'Count__y'}, {'name':'Amount', 'sourceName':'Amount_y'}, {'name':'Updated', 'sourceName':'Updated_y'}], edits=updates_featurecollection, upsert=True, update_geometry=False, rollback=True, return_messages=True)
-
 
 class FeatureServiceOverwriter:
     """Overwrites an AGOL Feature Service with data from a pandas DataFrame and a geometry source (Spatially-enabled
