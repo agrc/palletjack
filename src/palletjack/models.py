@@ -106,7 +106,7 @@ class SFTPLoader:
         return dataframe
 
 
-class FeatureServiceInLineUpdater:
+class FeatureServiceInlineUpdater:
     """Updates an AGOL Feature Service with data from a pandas DataFrame
     """
 
@@ -114,7 +114,7 @@ class FeatureServiceInLineUpdater:
         self.gis = gis
         self.new_dataframe = dataframe
         self.index_column = index_columnn
-        self.data_as_dict = self.new_dataframe.set_index(index_columnn).to_dict('index')
+        self.new_data_as_dict = self.new_dataframe.set_index(index_columnn).to_dict('index')
         self._class_logger = logging.getLogger(__name__).getChild(self.__class__.__name__)
 
     def update_existing_features_in_feature_service_with_arcpy(self, feature_service_url, fields):
@@ -132,8 +132,8 @@ class FeatureServiceInLineUpdater:
             for row in update_cursor:
                 self._class_logger.debug('Evaluating row: %s', row)
                 key = row[0]
-                if key in self.data_as_dict:
-                    row[1:] = list(self.data_as_dict[key].values())
+                if key in self.new_data_as_dict:
+                    row[1:] = list(self.new_data_as_dict[key].values())
                     self._class_logger.debug('Updating row: %s', row)
                     try:
                         update_cursor.updateRow(row)
@@ -166,6 +166,25 @@ class FeatureServiceInLineUpdater:
         self._class_logger.debug('Deleting joined dataframe fields: %s', fields_to_delete)
         return renamed_dataframe.drop(labels=fields_to_delete, axis='columns', errors='ignore').copy()
 
+    def _get_old_and_new_values(self, live_dict, object_ids):
+        oid_and_key_lookup = {
+            row['objectId']: row[self.index_column] for _, row in live_dict.items() if row['objectId'] in object_ids
+        }
+        old_values_by_oid = {row['objectId']: row for _, row in live_dict.items() if row['objectId'] in object_ids}
+        new_data_as_dict_preserve_key = self.new_dataframe.set_index(self.index_column, drop=False).to_dict('index')
+        new_values_by_oid = {
+            object_id: new_data_as_dict_preserve_key[key] for object_id, key in oid_and_key_lookup.items()
+        }
+
+        combined_values_by_oid = {
+            object_id: {
+                'old_values': old_values_by_oid[object_id],
+                'new_values': new_values_by_oid[object_id]
+            } for object_id in oid_and_key_lookup
+        }
+
+        return combined_values_by_oid
+
     def _parse_results(self, results_dict, live_dataframe) -> int:
         live_dataframe_as_dict = live_dataframe.to_dict('index')
         update_results = results_dict['updateResults']
@@ -176,17 +195,18 @@ class FeatureServiceInLineUpdater:
         update_failures = [result['objectId'] for result in update_results if not result['success']]
         rows_updated = len(update_successes)
         if update_successes:
-            self._class_logger.info('%s rows successfully updated', len(update_successes))
-            self._class_logger.debug('Updated rows: ')
-            for row in [row for _, row in live_dataframe_as_dict.items() if row['objectId'] in update_successes]:
-                self._class_logger.debug(row)
+            self._class_logger.info('%s rows successfully updated:', len(update_successes))
+            for _, data in self._get_old_and_new_values(live_dataframe_as_dict, update_successes).items():
+                self._class_logger.debug('Existing data: %s', data['old_values'])
+                self._class_logger.debug('New data: %s', data['new_values'])
         if update_failures:
             self._class_logger.warning(
                 'The following %s updates failed. As a result, all successfull updates should have been rolled back.',
                 len(update_failures)
             )
-            for row in [row for _, row in live_dataframe_as_dict.items() if row['objectId'] in update_failures]:
-                self._class_logger.warning(row)
+            for _, data in self._get_old_and_new_values(live_dataframe_as_dict, update_failures).items():
+                self._class_logger.warning('Existing data: %s', data['old_values'])
+                self._class_logger.warning('New data: %s', data['new_values'])
             rows_updated = 0
 
         return rows_updated
