@@ -6,7 +6,6 @@ import logging
 from pathlib import Path
 
 import arcgis
-import arcpy
 import numpy as np
 import pandas as pd
 import pysftp
@@ -124,6 +123,12 @@ class FeatureServiceInlineUpdater:
             feature_service_url (str): URL to feature service
             fields (list): Names of fields to update
         """
+
+        #: Put this here to enable the package to install/run without arcpy installed if desired
+        try:
+            import arcpy  # pylint: disable=import-outside-toplevel
+        except ImportError as error:
+            raise ImportError('Failure importing arcpy. ArcGIS Pro must be installed.') from error
 
         self._class_logger.info('Updating `%s` in-place', feature_service_url)
         self._class_logger.debug('Updating fields %s', fields)
