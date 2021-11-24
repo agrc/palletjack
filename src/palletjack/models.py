@@ -197,7 +197,8 @@ class FeatureServiceInlineUpdater:
         """Create a dictionary of the old (existing, live) and new values based on a list of object ids
 
         Args:
-            live_dict (dict): The old (existing, live) data, key is an arbitrary index, content is another dict keyed by the field names.
+            live_dict (dict): The old (existing, live) data, key is an arbitrary index, content is another dict keyed
+            by the field names.
             object_ids (list[int]): The object ids to include in the new dictionary
 
         Returns:
@@ -230,7 +231,9 @@ class FeatureServiceInlineUpdater:
         """Integrate .edit() results with data for reporting purposes. Relies on _get_old_and_new_values().
 
         Args:
-            results_dict (dict): AGOL response as a python dict (raw output from .edit_features(). Defined in https://developers.arcgis.com/rest/services-reference/enterprise/apply-edits-feature-service-layer-.htm, where `true`/`false` are python True/False.
+            results_dict (dict): AGOL response as a python dict (raw output from .edit_features(). Defined in
+            https://developers.arcgis.com/rest/services-reference/enterprise/apply-edits-feature-service-layer-.htm,
+            where `true`/`false` are python True/False.
             live_dataframe (pd.DataFrame): Existing/live dataframe created from hosted feature layer.
 
         Returns:
@@ -265,7 +268,9 @@ class FeatureServiceInlineUpdater:
     def update_existing_features_in_hosted_feature_layer(self, feature_layer_itemid, fields) -> int:
         """Update existing features with new attribute data in the defined fields using arcgis instead of arcpy.
 
-        Relies on new data from self.new_dataframe. Uses the ArcGIS API for Python's .edit_features() method on a hosted feature layer item. May be fragile for large datasets, per .edit_features() documentation. Can't get .append() working properly.
+        Relies on new data from self.new_dataframe. Uses the ArcGIS API for Python's .edit_features() method on a
+        hosted feature layer item. May be fragile for large datasets, per .edit_features() documentation. Can't get
+        .append() working properly.
 
         Args:
             feature_layer_itemid (str): The AGOL item id of the hosted feature layer to update.
