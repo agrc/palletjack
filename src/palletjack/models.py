@@ -295,7 +295,9 @@ class FeatureServiceInlineUpdater:
         results = feature_layer.edit_features(
             updates=cleaned_dataframe.spatial.to_featureset(), rollback_on_failure=True
         )
-        number_of_rows_updated = self._parse_results(results, live_dataframe)
+        log_fields = ['OBJECTID']
+        log_fields.extend(fields)
+        number_of_rows_updated = self._parse_results(results, live_dataframe[log_fields])
         return number_of_rows_updated
 
 

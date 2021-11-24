@@ -903,6 +903,46 @@ class TestFeatuerServiceInlineUpdaterIntegrated:
             assert "Existing data: {'OBJECTID': 2, 'data': 'bar', 'key': 'b'}" in caplog.text
             assert "New data: {'data': 'BAR', 'key': 'b'}" in caplog.text
 
+    def test_update_existing_features_in_hosted_feature_layer_subsets_logging_fields_properly(self, mocker, caplog):
+        pd_mock = mocker.Mock()
+        pd_mock.return_value = pd.DataFrame({
+            'OBJECTID': [1, 2],
+            'data': ['foo', 'bar'],
+            'key': ['a', 'b'],
+            'extra_field': ['muck', 'slime']
+        })
+        mocker.patch.object(pd.DataFrame.spatial, 'from_layer', new=pd_mock)
+        new_dataframe = pd.DataFrame({
+            'data': ['FOO', 'BAR'],
+            'key': ['a', 'b'],
+        })
+        gis_mock = mocker.Mock()
+        fromitem_function_mock = mocker.Mock()
+        fromitem_function_mock.return_value.edit_features.return_value = {
+            'addResults': [],
+            'updateResults': [
+                {
+                    'objectId': 1,
+                    'success': True
+                },
+                {
+                    'objectId': 2,
+                    'success': True
+                },
+            ],
+            'deleteResults': [],
+        }
+        mocker.patch.object(arcgis.features.FeatureLayer, 'fromitem', new=fromitem_function_mock)
+        updater = palletjack.FeatureServiceInlineUpdater(gis_mock, new_dataframe, 'key')
+
+        with caplog.at_level(logging.DEBUG):
+            updated_rows = updater.update_existing_features_in_hosted_feature_layer('1234', ['data', 'key'])
+            assert '2 rows successfully updated:' in caplog.text
+            assert "Existing data: {'OBJECTID': 1, 'data': 'foo', 'key': 'a'}" in caplog.text
+            assert "New data: {'data': 'FOO', 'key': 'a'}" in caplog.text
+            assert "Existing data: {'OBJECTID': 2, 'data': 'bar', 'key': 'b'}" in caplog.text
+            assert "New data: {'data': 'BAR', 'key': 'b'}" in caplog.text
+
 
 class TestSFTPLoader:
 
