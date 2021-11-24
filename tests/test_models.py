@@ -4,6 +4,7 @@ import logging
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
+import arcgis
 import numpy as np
 import pandas as pd
 import pytest
@@ -593,13 +594,13 @@ class TestFeatureServiceInlineUpdaterResultParsing:
         class_mock.index_column = 'key'
         live_dict = {
             1: {
-                'objectId': 2,
+                'OBJECTID': 2,
                 'key': 'a',
                 'foo': '42000',
                 'bar': 32000
             },
             2: {
-                'objectId': 10,
+                'OBJECTID': 10,
                 'key': 'b',
                 'foo': '56000',
                 'bar': 8000
@@ -612,7 +613,7 @@ class TestFeatureServiceInlineUpdaterResultParsing:
         assert combined_data == {
             2: {
                 'old_values': {
-                    'objectId': 2,
+                    'OBJECTID': 2,
                     'key': 'a',
                     'foo': '42000',
                     'bar': 32000
@@ -625,7 +626,7 @@ class TestFeatureServiceInlineUpdaterResultParsing:
             },
             10: {
                 'old_values': {
-                    'objectId': 10,
+                    'OBJECTID': 10,
                     'key': 'b',
                     'foo': '56000',
                     'bar': 8000
@@ -659,19 +660,19 @@ class TestFeatureServiceInlineUpdaterResultParsing:
         class_mock.index_column = 'key'
         live_dict = {
             1: {
-                'objectId': 2,
+                'OBJECTID': 2,
                 'key': 'a',
                 'foo': '42000',
                 'bar': 32000
             },
             2: {
-                'objectId': 10,
+                'OBJECTID': 10,
                 'key': 'b',
                 'foo': '56000',
                 'bar': 8000
             },
             3: {
-                'objectId': 42,
+                'OBJECTID': 42,
                 'key': 'c',
                 'foo': '-10',
                 'bar': -88
@@ -684,7 +685,7 @@ class TestFeatureServiceInlineUpdaterResultParsing:
         assert combined_data == {
             2: {
                 'old_values': {
-                    'objectId': 2,
+                    'OBJECTID': 2,
                     'key': 'a',
                     'foo': '42000',
                     'bar': 32000
@@ -697,7 +698,7 @@ class TestFeatureServiceInlineUpdaterResultParsing:
             },
             10: {
                 'old_values': {
-                    'objectId': 10,
+                    'OBJECTID': 10,
                     'key': 'b',
                     'foo': '56000',
                     'bar': 8000
@@ -736,13 +737,13 @@ class TestFeatureServiceInlineUpdaterResultParsing:
         class_mock.index_column = 'key'
         live_dict = {
             1: {
-                'objectId': 2,
+                'OBJECTID': 2,
                 'key': 'a',
                 'foo': '42000',
                 'bar': 32000
             },
             2: {
-                'objectId': 10,
+                'OBJECTID': 10,
                 'key': 'b',
                 'foo': '56000',
                 'bar': 8000
@@ -755,7 +756,7 @@ class TestFeatureServiceInlineUpdaterResultParsing:
         assert combined_data == {
             2: {
                 'old_values': {
-                    'objectId': 2,
+                    'OBJECTID': 2,
                     'key': 'a',
                     'foo': '42000',
                     'bar': 32000
@@ -768,7 +769,7 @@ class TestFeatureServiceInlineUpdaterResultParsing:
             },
             10: {
                 'old_values': {
-                    'objectId': 10,
+                    'OBJECTID': 10,
                     'key': 'b',
                     'foo': '56000',
                     'bar': 8000
@@ -787,11 +788,12 @@ class TestFeatuerServiceInlineUpdaterIntegrated:
     def test_update_existing_features_in_hosted_feature_layer_no_matching_rows_returns_0(self, mocker, caplog):
         pd_mock = mocker.Mock()
         pd_mock.return_value = pd.DataFrame({
-            'objectId': [1, 2],
+            'OBJECTID': [1, 2],
             'data': ['foo', 'bar'],
             'key': ['a', 'b'],
         })
         mocker.patch.object(pd.DataFrame.spatial, 'from_layer', new=pd_mock)
+        mocker.patch.object(arcgis.features.FeatureLayer, 'fromitem')
 
         new_dataframe = pd.DataFrame({
             'data': ['FOO', 'BAR'],
@@ -807,11 +809,12 @@ class TestFeatuerServiceInlineUpdaterIntegrated:
     def test_update_existing_features_in_hosted_feature_layer_no_matching_rows_properly_logs(self, mocker, caplog):
         pd_mock = mocker.Mock()
         pd_mock.return_value = pd.DataFrame({
-            'objectId': [1, 2],
+            'OBJECTID': [1, 2],
             'data': ['foo', 'bar'],
             'key': ['a', 'b'],
         })
         mocker.patch.object(pd.DataFrame.spatial, 'from_layer', new=pd_mock)
+        mocker.patch.object(arcgis.features.FeatureLayer, 'fromitem')
 
         new_dataframe = pd.DataFrame({
             'data': ['FOO', 'BAR'],
@@ -828,7 +831,7 @@ class TestFeatuerServiceInlineUpdaterIntegrated:
     def test_update_existing_features_in_hosted_feature_layer_all_matching_returns_2(self, mocker, caplog):
         pd_mock = mocker.Mock()
         pd_mock.return_value = pd.DataFrame({
-            'objectId': [1, 2],
+            'OBJECTID': [1, 2],
             'data': ['foo', 'bar'],
             'key': ['a', 'b'],
         })
@@ -839,8 +842,8 @@ class TestFeatuerServiceInlineUpdaterIntegrated:
             'key': ['a', 'b'],
         })
         gis_mock = mocker.Mock()
-        feature_layer_mock = mocker.Mock()
-        feature_layer_mock.edit_features.return_value = {
+        fromitem_function_mock = mocker.Mock()
+        fromitem_function_mock.return_value.edit_features.return_value = {
             'addResults': [],
             'updateResults': [
                 {
@@ -854,7 +857,7 @@ class TestFeatuerServiceInlineUpdaterIntegrated:
             ],
             'deleteResults': [],
         }
-        gis_mock.content.get.return_value = feature_layer_mock
+        mocker.patch.object(arcgis.features.FeatureLayer, 'fromitem', new=fromitem_function_mock)
         updater = palletjack.FeatureServiceInlineUpdater(gis_mock, new_dataframe, 'key')
 
         updated_rows = updater.update_existing_features_in_hosted_feature_layer('1234', ['data', 'key'])
@@ -864,19 +867,18 @@ class TestFeatuerServiceInlineUpdaterIntegrated:
     def test_update_existing_features_in_hosted_feature_layer_all_matching_logs_properly(self, mocker, caplog):
         pd_mock = mocker.Mock()
         pd_mock.return_value = pd.DataFrame({
-            'objectId': [1, 2],
+            'OBJECTID': [1, 2],
             'data': ['foo', 'bar'],
             'key': ['a', 'b'],
         })
         mocker.patch.object(pd.DataFrame.spatial, 'from_layer', new=pd_mock)
-
         new_dataframe = pd.DataFrame({
             'data': ['FOO', 'BAR'],
             'key': ['a', 'b'],
         })
         gis_mock = mocker.Mock()
-        feature_layer_mock = mocker.Mock()
-        feature_layer_mock.edit_features.return_value = {
+        fromitem_function_mock = mocker.Mock()
+        fromitem_function_mock.return_value.edit_features.return_value = {
             'addResults': [],
             'updateResults': [
                 {
@@ -890,15 +892,15 @@ class TestFeatuerServiceInlineUpdaterIntegrated:
             ],
             'deleteResults': [],
         }
-        gis_mock.content.get.return_value = feature_layer_mock
+        mocker.patch.object(arcgis.features.FeatureLayer, 'fromitem', new=fromitem_function_mock)
         updater = palletjack.FeatureServiceInlineUpdater(gis_mock, new_dataframe, 'key')
 
         with caplog.at_level(logging.DEBUG):
             updated_rows = updater.update_existing_features_in_hosted_feature_layer('1234', ['data', 'key'])
             assert '2 rows successfully updated:' in caplog.text
-            assert "Existing data: {'objectId': 1, 'data': 'foo', 'key': 'a'}" in caplog.text
+            assert "Existing data: {'OBJECTID': 1, 'data': 'foo', 'key': 'a'}" in caplog.text
             assert "New data: {'data': 'FOO', 'key': 'a'}" in caplog.text
-            assert "Existing data: {'objectId': 2, 'data': 'bar', 'key': 'b'}" in caplog.text
+            assert "Existing data: {'OBJECTID': 2, 'data': 'bar', 'key': 'b'}" in caplog.text
             assert "New data: {'data': 'BAR', 'key': 'b'}" in caplog.text
 
 

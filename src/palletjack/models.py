@@ -210,9 +210,9 @@ class FeatureServiceInlineUpdater:
                   }
         """
         oid_and_key_lookup = {
-            row['objectId']: row[self.index_column] for _, row in live_dict.items() if row['objectId'] in object_ids
+            row['OBJECTID']: row[self.index_column] for _, row in live_dict.items() if row['OBJECTID'] in object_ids
         }
-        old_values_by_oid = {row['objectId']: row for _, row in live_dict.items() if row['objectId'] in object_ids}
+        old_values_by_oid = {row['OBJECTID']: row for _, row in live_dict.items() if row['OBJECTID'] in object_ids}
         new_data_as_dict_preserve_key = self.new_dataframe.set_index(self.index_column, drop=False).to_dict('index')
         new_values_by_oid = {
             object_id: new_data_as_dict_preserve_key[key] for object_id, key in oid_and_key_lookup.items()
@@ -282,7 +282,8 @@ class FeatureServiceInlineUpdater:
 
         self._class_logger.info('Updating itemid `%s` in-place', feature_layer_itemid)
         self._class_logger.debug('Updating fields %s', fields)
-        feature_layer = self.gis.content.get(feature_layer_itemid)
+        feature_layer_item = self.gis.content.get(feature_layer_itemid)
+        feature_layer = arcgis.features.FeatureLayer.fromitem(feature_layer_item)
         live_dataframe = pd.DataFrame.spatial.from_layer(feature_layer)
         subset_dataframe = self._get_common_rows(live_dataframe)
         if subset_dataframe.empty:
