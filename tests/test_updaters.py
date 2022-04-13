@@ -1,11 +1,8 @@
 import builtins
 import json
 import logging
-from pathlib import Path
-from unittest.mock import MagicMock, patch
 
 import arcgis
-import numpy as np
 import pandas as pd
 import pytest
 from arcgis.features import GeoAccessor, GeoSeriesAccessor
@@ -44,6 +41,7 @@ def combined_values():
 
 @pytest.fixture
 def hide_available_pkg(monkeypatch):
+    """Mocks import to throw an ImportError (for error handling testing purposes) for a package that does, in fact, exist"""
     import_orig = builtins.__import__
 
     def mocked_import(name, *args, **kwargs):
@@ -942,83 +940,6 @@ class TestFeatuerServiceInlineUpdaterIntegrated:
             assert "New data: {'data': 'FOO', 'key': 'a'}" in caplog.text
             assert "Existing data: {'OBJECTID': 2, 'data': 'bar', 'key': 'b'}" in caplog.text
             assert "New data: {'data': 'BAR', 'key': 'b'}" in caplog.text
-
-
-class TestSFTPLoader:
-
-    def test_download_sftp_folder_contents_uses_right_credentials(self, mocker):
-        sftploader_mock = mocker.Mock()
-        sftploader_mock.knownhosts_file = 'knownhosts_file'
-        sftploader_mock.host = 'sftp_host'
-        sftploader_mock.username = 'username'
-        sftploader_mock.password = 'password'
-        download_dir_mock = mocker.Mock()
-        download_dir_mock.iterdir.side_effect = [[], ['file_a', 'file_b']]
-        sftploader_mock.download_dir = download_dir_mock
-
-        connection_mock = mocker.MagicMock()
-        context_manager_mock = mocker.MagicMock()
-        context_manager_mock.return_value.__enter__.return_value = connection_mock
-        mocker.patch('pysftp.Connection', new=context_manager_mock)
-
-        cnopts_mock = mocker.Mock()
-        cnopts_mock.side_effect = lambda knownhosts: knownhosts
-        mocker.patch('pysftp.CnOpts', new=cnopts_mock)
-
-        palletjack.SFTPLoader.download_sftp_folder_contents(sftploader_mock)
-
-        context_manager_mock.assert_called_with(
-            'sftp_host', username='username', password='password', cnopts='knownhosts_file'
-        )
-
-    def test_download_sftp_single_file_uses_right_credentials(self, mocker):
-        sftploader_mock = mocker.Mock()
-        sftploader_mock.knownhosts_file = 'knownhosts_file'
-        sftploader_mock.host = 'sftp_host'
-        sftploader_mock.username = 'username'
-        sftploader_mock.password = 'password'
-        sftploader_mock.download_dir = 'download_dir'
-
-        connection_mock = mocker.MagicMock()
-        context_manager_mock = mocker.MagicMock()
-        context_manager_mock.return_value.__enter__.return_value = connection_mock
-        mocker.patch('pysftp.Connection', new=context_manager_mock)
-
-        cnopts_mock = mocker.Mock()
-        cnopts_mock.side_effect = lambda knownhosts: knownhosts
-        mocker.patch('pysftp.CnOpts', new=cnopts_mock)
-
-        palletjack.SFTPLoader.download_sftp_single_file(sftploader_mock, 'filename', 'upload')
-
-        context_manager_mock.assert_called_with(
-            'sftp_host', username='username', password='password', cnopts='knownhosts_file', default_path='upload'
-        )
-
-    def test_read_csv_into_dataframe_with_column_names(self, mocker):
-        pd_mock = mocker.Mock()
-        pd_mock.return_value = pd.DataFrame()
-        mocker.patch.object(pd, 'read_csv', new=pd_mock)
-
-        sftploader_mock = mocker.Mock()
-        sftploader_mock.download_dir = 'foo'
-
-        column_types = {'bar': np.float64}
-
-        palletjack.SFTPLoader.read_csv_into_dataframe(sftploader_mock, 'baz', column_types)
-
-        pd_mock.assert_called_with(Path('foo', 'baz'), names=['bar'], dtype=column_types)
-
-    def test_read_csv_into_dataframe_no_column_names(self, mocker):
-        pd_mock = mocker.Mock()
-        pd_mock.return_value = pd.DataFrame()
-        mocker.patch.object(pd, 'read_csv', new=pd_mock)
-
-        sftploader_mock = mocker.Mock()
-        sftploader_mock.download_dir = 'foo'
-
-        palletjack.SFTPLoader.read_csv_into_dataframe(sftploader_mock, 'baz')
-
-        pd_mock.assert_called_with(Path('foo', 'baz'), names=None, dtype=None)
 
 
 class TestColorRampReclassifier:
