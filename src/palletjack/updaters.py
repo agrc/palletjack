@@ -3,106 +3,13 @@
 
 import json
 import logging
-from pathlib import Path
 
 import arcgis
 import numpy as np
 import pandas as pd
-import pysftp
 from arcgis.features import GeoAccessor, GeoSeriesAccessor
 
 logger = logging.getLogger(__name__)
-
-
-class SFTPLoader:
-    """Loads data from an SFTP share into a pandas DataFrame
-    """
-
-    def __init__(self, host, username, password, knownhosts_file, download_dir):
-        self.host = host
-        self.username = username
-        self.password = password
-        self.knownhosts_file = knownhosts_file
-        self.download_dir = download_dir
-        self._class_logger = logging.getLogger(__name__).getChild(self.__class__.__name__)
-
-    def download_sftp_folder_contents(self, sftp_folder='upload'):
-        """Download all files in sftp_folder to the SFTPLoader's download_dir
-
-        Args:
-            sftp_folder (str, optional): Path of remote folder, relative to sftp home directory. Defaults to 'upload'.
-        """
-
-        self._class_logger.info('Downloading files from `%s:%s` to `%s`', self.host, sftp_folder, self.download_dir)
-        starting_file_count = len(list(self.download_dir.iterdir()))
-        self._class_logger.debug('SFTP Username: %s', self.username)
-        connection_opts = pysftp.CnOpts(knownhosts=self.knownhosts_file)
-        with pysftp.Connection(
-            self.host, username=self.username, password=self.password, cnopts=connection_opts
-        ) as sftp:
-            try:
-                sftp.get_d(sftp_folder, self.download_dir, preserve_mtime=True)
-            except FileNotFoundError as error:
-                raise FileNotFoundError(f'Folder `{sftp_folder}` not found on SFTP server') from error
-        downloaded_file_count = len(list(self.download_dir.iterdir())) - starting_file_count
-        if not downloaded_file_count:
-            raise ValueError('No files downloaded')
-        return downloaded_file_count
-
-    def download_sftp_single_file(self, filename, sftp_folder='upload'):
-        """Download filename into SFTPLoader's download_dir
-
-        Args:
-            filename (str): Filename to download; used as output filename as well.
-            sftp_folder (str, optional): Path of remote folder, relative to sftp home directory. Defaults to 'upload'.
-
-        Raises:
-            FileNotFoundError: Will warn if pysftp can't find the file or folder on the sftp server
-
-        Returns:
-            Path: Downloaded file's path
-        """
-
-        outfile = Path(self.download_dir, filename)
-
-        self._class_logger.info('Downloading %s from `%s:%s` to `%s`', filename, self.host, sftp_folder, outfile)
-        self._class_logger.debug('SFTP Username: %s', self.username)
-        connection_opts = pysftp.CnOpts(knownhosts=self.knownhosts_file)
-        try:
-            with pysftp.Connection(
-                self.host,
-                username=self.username,
-                password=self.password,
-                cnopts=connection_opts,
-                default_path=sftp_folder,
-            ) as sftp:
-                sftp.get(filename, localpath=outfile, preserve_mtime=True)
-        except FileNotFoundError as error:
-            raise FileNotFoundError(f'File `{filename}` or folder `{sftp_folder}`` not found on SFTP server') from error
-
-        return outfile
-
-    def read_csv_into_dataframe(self, filename, column_types=None):
-        """Read filename into a dataframe with optional column names and types
-
-        Args:
-            filename (str): Name of file in the SFTPLoader's download_dir
-            column_types (dict, optional): Column names and their dtypes(np.float64, str, etc). Defaults to None.
-
-        Returns:
-            pd.DataFrame: CSV as a pandas dataframe
-        """
-
-        self._class_logger.info('Reading `%s` into dataframe', filename)
-        filepath = Path(self.download_dir, filename)
-        column_names = None
-        if column_types:
-            column_names = list(column_types.keys())
-        dataframe = pd.read_csv(filepath, names=column_names, dtype=column_types)
-        self._class_logger.debug('Dataframe shape: %s', dataframe.shape)
-        if len(dataframe.index) == 0:
-            self._class_logger.warning('Dataframe contains no rows. Shape: %s', dataframe.shape)
-        return dataframe
 
 
 class FeatureServiceInlineUpdater:
