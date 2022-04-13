@@ -55,8 +55,7 @@ class GSheetLoader:
 
         return worksheet_dfs
 
-    @staticmethod
-    def combine_worksheets_into_single_dataframe(worksheet_dfs):
+    def combine_worksheets_into_single_dataframe(self, worksheet_dfs):
         """Merge worksheet dataframes (having same columns) into a single dataframe with a new 'worksheet' column
         identifying the source worksheet.
 
@@ -78,6 +77,7 @@ class GSheetLoader:
         if not all([set(dataframes[0].columns) == set(df.columns) for df in dataframes]):
             raise ValueError('Columns do not match; cannot create mutli-index dataframe')
 
+        self._class_logger.debug('Concatting worksheet dataframes %s into a single dataframe', worksheet_dfs.keys())
         concatted_df = pd.concat(dataframes, keys=worksheet_dfs.keys(), names=['worksheet', 'row'])
         return concatted_df.reset_index(level='worksheet')
 
