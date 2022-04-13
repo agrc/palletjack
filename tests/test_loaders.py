@@ -5,7 +5,7 @@ import pandas as pd
 import pytest
 from pandas import testing as tm
 
-from palletjack import loaders
+import palletjack
 
 
 class TestGSheetsLoader:
@@ -19,7 +19,7 @@ class TestGSheetsLoader:
         gsheet_loader_mock = mocker.Mock()
         gsheet_loader_mock.gsheets_client = client_mock
 
-        loaders.GSheetLoader.load_specific_worksheet_into_dataframe(gsheet_loader_mock, 'foobar', 5)
+        palletjack.GSheetLoader.load_specific_worksheet_into_dataframe(gsheet_loader_mock, 'foobar', 5)
 
         sheet_mock.worksheet.assert_called_once_with(5)
         sheet_mock.worksheet_by_title.assert_not_called()
@@ -33,7 +33,9 @@ class TestGSheetsLoader:
         gsheet_loader_mock = mocker.Mock()
         gsheet_loader_mock.gsheets_client = client_mock
 
-        loaders.GSheetLoader.load_specific_worksheet_into_dataframe(gsheet_loader_mock, 'foobar', '2015', by_title=True)
+        palletjack.GSheetLoader.load_specific_worksheet_into_dataframe(
+            gsheet_loader_mock, 'foobar', '2015', by_title=True
+        )
 
         sheet_mock.worksheet.assert_not_called
         sheet_mock.worksheet_by_title.assert_called_once_with('2015')
@@ -52,7 +54,7 @@ class TestGSheetsLoader:
         gsheet_loader_mock = mocker.Mock()
         gsheet_loader_mock.gsheets_client = client_mock
 
-        df_dict = loaders.GSheetLoader.load_all_worksheets_into_dataframes(gsheet_loader_mock, 'foobar')
+        df_dict = palletjack.GSheetLoader.load_all_worksheets_into_dataframes(gsheet_loader_mock, 'foobar')
 
         test_dict = {'ws1': 'df1'}
 
@@ -76,7 +78,7 @@ class TestGSheetsLoader:
         gsheet_loader_mock = mocker.Mock()
         gsheet_loader_mock.gsheets_client = client_mock
 
-        df_dict = loaders.GSheetLoader.load_all_worksheets_into_dataframes(gsheet_loader_mock, 'foobar')
+        df_dict = palletjack.GSheetLoader.load_all_worksheets_into_dataframes(gsheet_loader_mock, 'foobar')
 
         test_dict = {'ws1': 'df1', 'ws2': 'df2'}
 
@@ -95,7 +97,7 @@ class TestGSheetsLoader:
 
         df_dict = {'df1': df1, 'df2': df2}
 
-        combined_df = loaders.GSheetLoader.combine_worksheets_into_single_dataframe(df_dict)
+        combined_df = palletjack.GSheetLoader.combine_worksheets_into_single_dataframe(mocker.Mock(), df_dict)
 
         test_df = pd.DataFrame({
             'worksheet': ['df1', 'df1', 'df2', 'df2'],
@@ -120,10 +122,8 @@ class TestGSheetsLoader:
 
         df_dict = {'df1': df1, 'df2': df2}
 
-        with pytest.raises(ValueError) as error:
-            combined_df = loaders.GSheetLoader.combine_worksheets_into_single_dataframe(df_dict)
-
-        assert 'Columns do not match; cannot create mutli-index dataframe' in str(error.value)
+        with pytest.raises(ValueError, match='Columns do not match; cannot create mutli-index dataframe'):
+            combined_df = palletjack.GSheetLoader.combine_worksheets_into_single_dataframe(mocker.Mock(), df_dict)
 
 
 class TestSFTPLoader:
@@ -147,7 +147,7 @@ class TestSFTPLoader:
         cnopts_mock.side_effect = lambda knownhosts: knownhosts
         mocker.patch('pysftp.CnOpts', new=cnopts_mock)
 
-        loaders.SFTPLoader.download_sftp_folder_contents(sftploader_mock)
+        palletjack.SFTPLoader.download_sftp_folder_contents(sftploader_mock)
 
         context_manager_mock.assert_called_with(
             'sftp_host', username='username', password='password', cnopts='knownhosts_file'
@@ -170,7 +170,7 @@ class TestSFTPLoader:
         cnopts_mock.side_effect = lambda knownhosts: knownhosts
         mocker.patch('pysftp.CnOpts', new=cnopts_mock)
 
-        loaders.SFTPLoader.download_sftp_single_file(sftploader_mock, 'filename', 'upload')
+        palletjack.SFTPLoader.download_sftp_single_file(sftploader_mock, 'filename', 'upload')
 
         context_manager_mock.assert_called_with(
             'sftp_host', username='username', password='password', cnopts='knownhosts_file', default_path='upload'
@@ -186,7 +186,7 @@ class TestSFTPLoader:
 
         column_types = {'bar': np.float64}
 
-        loaders.SFTPLoader.read_csv_into_dataframe(sftploader_mock, 'baz', column_types)
+        palletjack.SFTPLoader.read_csv_into_dataframe(sftploader_mock, 'baz', column_types)
 
         pd_mock.assert_called_with(Path('foo', 'baz'), names=['bar'], dtype=column_types)
 
@@ -198,6 +198,6 @@ class TestSFTPLoader:
         sftploader_mock = mocker.Mock()
         sftploader_mock.download_dir = 'foo'
 
-        loaders.SFTPLoader.read_csv_into_dataframe(sftploader_mock, 'baz')
+        palletjack.SFTPLoader.read_csv_into_dataframe(sftploader_mock, 'baz')
 
         pd_mock.assert_called_with(Path('foo', 'baz'), names=None, dtype=None)
