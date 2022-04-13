@@ -34,9 +34,10 @@ setup(
     keywords=['gis'],
     install_requires=[
         'pysftp==0.2.9',
-        'pandas==1.3.3',
+        'pandas==1.3.*',
         'numpy==1.21.*',
         'arcgis==1.9.*',
+        'pygsheets==2.0.*',
     ],
     extras_require={
         'tests': [
