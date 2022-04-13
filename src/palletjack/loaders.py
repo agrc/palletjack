@@ -8,6 +8,8 @@ import pandas as pd
 import pygsheets
 import pysftp
 
+logger = logging.getLogger(__name__)
+
 
 class GSheetLoader:
     """Loads data from a Google Sheets spreadsheet into a pandas data frame"""
