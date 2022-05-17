@@ -6,6 +6,8 @@
     "gsheet",
     "instafail",
     "isort",
+    "knownhosts",
+    "palletjack",
     "PARENTOBJECTID",
     "pylint",
     "pytest",

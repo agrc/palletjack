@@ -213,6 +213,9 @@ class FeatureServiceInlineUpdater:
 
 
 class FeatureServiceAttachmentsUpdater:
+    """Add or overwrite attachments in a feature service using a dataframe of the desired "new" attachments. Uses a
+    join field present in both live data and the attachments dataframe to match attachments with live data.
+    """
 
     def __init__(self, gis):
         self.gis = gis
@@ -236,7 +239,18 @@ class FeatureServiceAttachmentsUpdater:
             return f'({", ".join(quoted_values)})'
 
     def _get_live_data_from_join_field_values(self, live_features_as_df, attachment_join_field, attachments_df):
-        #: Get the oid and guid of live features we want to check for attachments using the match values in the join field
+        """Get the live Object ID, and guid from the live features for only the features in attachments_df
+
+        Args:
+            live_features_as_df (pd.DataFrame): Spatial dataframe of all the feature layer's live data from AGOL
+            attachment_join_field (str): Column in attachments_df to use as a join key with live data
+            attachments_df (pd.DataFrame): New attachment data, including the join key and a path to the "new"
+                                           attachment
+
+        Returns:
+            pd.DataFrame: Attachments dataframe with corresponding live OIDs and GUIDs.
+        """
+
         self._class_logger.debug('Using %s as the join field between live and new data', attachment_join_field)
         subset_df = live_features_as_df.reindex(columns=['OBJECTID', 'GlobalID', attachment_join_field])
         merged_df = subset_df.merge(attachments_df, on=attachment_join_field, how='inner')
@@ -245,6 +259,14 @@ class FeatureServiceAttachmentsUpdater:
         return merged_df
 
     def _get_current_attachment_info_by_oid(self, live_data_subset_df):
+        """Merge the live attachment data using the ObjectID as the join
+
+        Args:
+            live_data_subset_df (pd.DataFrame): Live data with 'OBJECTID', 'GlobalID', and new attachment data
+
+        Returns:
+            pd.DataFrame: Live and new attachment data in one dataframe
+        """
 
         live_attachments_df = pd.DataFrame(self.feature_layer.attachments.search())
         live_attachments_subset_df = live_attachments_df.reindex(columns=['PARENTOBJECTID', 'NAME', 'ID'])
@@ -255,6 +277,19 @@ class FeatureServiceAttachmentsUpdater:
         return merged_df
 
     def _create_attachment_action_df(self, attachment_eval_df, attachment_path_field):
+        """Create a dataframe containing the action needed for each feature resulting from the attachment join.
+
+        If the live feature doesn't have an attachment, add the attachment. If it does, compare the file names and only
+        attach if they are different. Otherwise, leave null.
+
+        Args:
+            attachment_eval_df (pd.DataFrame): DataFrame of live attachment data, subsetted to features that matched
+                                               the join key in the new attachments
+            attachment_path_field (str): The column that holds the attachment path
+
+        Returns:
+            pd.DataFrame: attachment_eval_df with 'operation' and 'new_filename' columns added
+        """
 
         #: Get the file name from the full path
         attachment_eval_df['new_filename'] = attachment_eval_df[attachment_path_field].apply(
@@ -279,6 +314,16 @@ class FeatureServiceAttachmentsUpdater:
         return attachment_eval_df
 
     def _add_attachments_by_oid(self, attachment_action_df, attachment_path_field):
+        """Add attachments using the feature's OID based on the 'operation' field of the dataframe
+
+        Args:
+            attachment_action_df (pd.DataFrame): A dataframe containing 'operation', 'OBJECTID', and
+                                                 attachment_path_field columns
+            attachment_path_field (str): The column that holds the attachment path
+
+        Returns:
+            int: The number of features that successfully have attachments added.
+        """
 
         adds_dict = attachment_action_df[attachment_action_df['operation'] == 'add'].to_dict(orient='index')
         adds_count = 0
@@ -300,6 +345,17 @@ class FeatureServiceAttachmentsUpdater:
         return adds_count
 
     def _overwrite_attachments_by_oid(self, attachment_action_df, attachment_path_field):
+        """Overwrite attachments using the feature's OID based on the 'operation' field of the dataframe
+
+        Args:
+            attachment_action_df (pd.DataFrame): A dataframe containing 'operation', 'OBJECTID', 'ID', 'NAME', and
+                                                 attachment_path_field columns
+            attachment_path_field (str): The column that holds the attachment path
+
+        Returns:
+            int: The number of features that successfully have their attachments overwritten.
+        """
+
         overwrites_dict = attachment_action_df[attachment_action_df['operation'] == 'overwrite'].to_dict(orient='index')
         overwrites_count = 0
 
@@ -310,7 +366,7 @@ class FeatureServiceAttachmentsUpdater:
             old_name = row['NAME']
 
             self._class_logger.debug(
-                'Overwritting %s (attachment ID %s) on OID %s with %s', old_name, attachment_id, target_oid, filepath
+                'Overwriting %s (attachment ID %s) on OID %s with %s', old_name, attachment_id, target_oid, filepath
             )
             result = self.feature_layer.attachments.update(target_oid, attachment_id, filepath)
             self._class_logger.debug('%s', result)
@@ -328,6 +384,22 @@ class FeatureServiceAttachmentsUpdater:
     def update_attachments(
         self, feature_layer_itemid, attachment_join_field, attachment_path_field, attachments_df, layer_number=0
     ):
+        """Update a feature layer's attachments based on info from a dataframe of desired attachment file names
+
+        Depends on a dataframe populated with a join key for the live data and the downloaded or locally-available
+        attachments. If the name of the "new" attachment is the same as an existing attachment for that feature, it is
+        not updated. If it is different or there isn't an existing attachment, the "new" attachment is attached to that
+        feature.
+
+        Args:
+            feature_layer_itemid (str): The AGOL Item ID of the feature layer to update
+            attachment_join_field (str): The field containing the join key between the attachments dataframe and the
+                                         live data
+            attachment_path_field (str): The field containing the desired attachment file path
+            attachments_df (pd.DataFrame): A dataframe of desired attachments, including a join key and the local path
+                                           to the attachment
+            layer_number (int, optional): The layer within the Item ID to update. Defaults to 0.
+        """
 
         self._class_logger.info('Updating attachments...')
         self._class_logger.debug('Using layer %s from item ID %s', layer_number, feature_layer_itemid)
@@ -350,6 +422,7 @@ class FeatureServiceOverwriter:
 
     To be implemented as needed.
     """
+
 
 #: TODO: implement for Rick's fleet stuff
 
