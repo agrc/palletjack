@@ -3,6 +3,7 @@
 
 import json
 import logging
+from collections import defaultdict
 
 import arcgis
 import numpy as np
@@ -206,6 +207,56 @@ class FeatureServiceInlineUpdater:
         log_fields.extend(fields)
         number_of_rows_updated = self._parse_results(results, live_dataframe[log_fields])
         return number_of_rows_updated
+
+
+class FeatureServiceAttachmentsUpdater:
+
+    def __init__(self, gis):
+        self.gis = gis
+        self._class_logger = logging.getLogger(__name__).getChild(self.__class__.__name__)
+
+    @staticmethod
+    def _build_sql_in_list(series):
+        """Generate a properly formatted list to be a target for a SQL 'IN' clause
+
+        Args:
+            series (pd.Series): Series of values to be included in the 'IN' list
+
+        Returns:
+            str: Values formatted as (1, 2, 3) for numbers or ('a', 'b', 'c') for anything else
+        """
+        if pd.api.types.is_numeric_dtype(series):
+            return f'({", ".join(series.astype(str))})'
+        else:
+            quoted_values = [f"'{value}'" for value in series]
+            return f'({", ".join(quoted_values)})'
+
+    def _get_oid_from_join_values(self, attachment_join_field, join_field_values):
+        #: Get the oids of live features we want to check for attachments using the match values in the attachments dict
+
+        filtered_df = self.features_as_df[self.features_as_df[attachment_join_field].isin(join_field_values)]
+        return filtered_df['OBJECTID']
+
+    def _get_current_attachment_info(self):
+        attachments_list = self.feature_layer.attachements.search()
+        attachments_by_oid = defaultdict(list)
+        for attachment in attachments_list:
+            attachments_by_oid[attachment['PARENTOBJECTID']].append(attachment['NAME'])
+
+        return attachments_by_oid
+
+    def _add_attachments_by_oid(self):
+        pass
+
+    def update_attachments(self, feature_layer_itemid, attachment_join_field, attachments_dict, layer_number=0):
+        #: attachments_dict: {join_field_value: path, ...}
+
+        self.feature_layer = self.gis.content.get(feature_layer_itemid).layers[layer_number]
+        self.features_as_df = pd.DataFrame.spatial.from_layer(self.feature_layer)
+        current_attachments_by_oid = self._get_current_attachment_info()
+        oids_of_attachments_to_check = self._get_oid_from_join_values(
+            attachment_join_field, list(attachments_dict.keys())
+        )
 
 
 class FeatureServiceOverwriter:
