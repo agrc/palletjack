@@ -38,7 +38,7 @@ class GSheetLoader:
             return sheet.worksheet_by_title(worksheet).get_as_df()
         else:
             self._class_logger.debug('Loading worksheet by index %s', worksheet)
-            return sheet.worksheet(worksheet).get_as_df()
+            return sheet.worksheet('index', worksheet).get_as_df()
 
     def load_all_worksheets_into_dataframes(self, sheet_id):
         """Load all worksheets into a dictionary of dataframes. Keys are the worksheet.
