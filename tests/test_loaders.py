@@ -21,7 +21,7 @@ class TestGSheetsLoader:
 
         palletjack.GSheetLoader.load_specific_worksheet_into_dataframe(gsheet_loader_mock, 'foobar', 5)
 
-        sheet_mock.worksheet.assert_called_once_with(5)
+        sheet_mock.worksheet.assert_called_once_with('index', 5)
         sheet_mock.worksheet_by_title.assert_not_called()
 
     def test_load_specific_worksheet_into_dataframe_by_title(self, mocker):
