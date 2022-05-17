@@ -218,6 +218,7 @@ class FeatureServiceAttachmentsUpdater:
         self.gis = gis
         self._class_logger = logging.getLogger(__name__).getChild(self.__class__.__name__)
 
+    #: This isn't used anymore... but it feels like a shame to lose it.
     @staticmethod
     def _build_sql_in_list(series):
         """Generate a properly formatted list to be a target for a SQL 'IN' clause
@@ -266,7 +267,10 @@ class FeatureServiceAttachmentsUpdater:
                                'operation'] = 'overwrite'
         attachment_eval_df.loc[attachment_eval_df['NAME'].isna(), 'operation'] = 'add'
 
-        value_counts = attachment_eval_df['opeartion'].value_counts(dropna=False)
+        value_counts = attachment_eval_df['operation'].value_counts(dropna=False)
+        for operation in ['add', 'overwrite', np.nan]:
+            if operation not in value_counts:
+                value_counts[operation] = 0
         self._class_logger.debug(
             'Calculated attachment operations: adds: %s, overwrites: %s, none: %s', value_counts['add'],
             value_counts['overwrite'], value_counts[np.nan]
@@ -311,9 +315,9 @@ class FeatureServiceAttachmentsUpdater:
             result = self.feature_layer.attachments.update(target_oid, attachment_id, filepath)
             self._class_logger.debug('%s', result)
 
-            if not result['addAttachmentResult']['success']:
+            if not result['updateAttachmentResult']['success']:
                 warnings.warn(
-                    f'Failed to update {old_name} (attachment ID {attachment_id}) on OID {target_oid} with {filepath}'
+                    f'Failed to update {old_name}, attachment ID {attachment_id}, on OID {target_oid} with {filepath}'
                 )
                 continue
 

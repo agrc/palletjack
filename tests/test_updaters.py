@@ -1095,7 +1095,7 @@ class TestAttachments:
         })
 
         ops_df = palletjack.FeatureServiceAttachmentsUpdater._create_attachment_action_df(
-            mocker.Mock, input_df, 'new_path'
+            mocker.Mock(), input_df, 'new_path'
         )
 
         test_df = pd.DataFrame({
@@ -1114,7 +1114,7 @@ class TestAttachments:
         })
 
         ops_df = palletjack.FeatureServiceAttachmentsUpdater._create_attachment_action_df(
-            mocker.Mock, input_df, 'new_path'
+            mocker.Mock(), input_df, 'new_path'
         )
 
         test_df = pd.DataFrame({
@@ -1133,7 +1133,7 @@ class TestAttachments:
         })
 
         ops_df = palletjack.FeatureServiceAttachmentsUpdater._create_attachment_action_df(
-            mocker.Mock, input_df, 'new_path'
+            mocker.Mock(), input_df, 'new_path'
         )
 
         test_df = pd.DataFrame({
@@ -1153,7 +1153,7 @@ class TestAttachments:
         })
 
         ops_df = palletjack.FeatureServiceAttachmentsUpdater._create_attachment_action_df(
-            mocker.Mock, input_df, 'new_path'
+            mocker.Mock(), input_df, 'new_path'
         )
 
         test_df = pd.DataFrame({
@@ -1172,7 +1172,7 @@ class TestAttachments:
         })
 
         ops_df = palletjack.FeatureServiceAttachmentsUpdater._create_attachment_action_df(
-            mocker.Mock, input_df, 'new_path'
+            mocker.Mock(), input_df, 'new_path'
         )
 
         test_df = pd.DataFrame({
@@ -1183,3 +1183,266 @@ class TestAttachments:
         })
 
         tm.assert_frame_equal(ops_df, test_df)
+
+    def test_get_live_data_from_join_field_values_only_gets_matching_data(self, mocker):
+        live_features_df = pd.DataFrame({
+            'OBJECTID': [1, 2, 3],
+            'GlobalID': ['guid1', 'guid2', 'guid3'],
+            'attachment_key': [11, 12, 13],
+            'deleted': ['a', 'b', 'c'],
+        })
+
+        attachments_df = pd.DataFrame({
+            'attachment_key': [12, 13],
+            'attachments': ['foo', 'bar'],
+        })
+
+        live_data_subset = palletjack.FeatureServiceAttachmentsUpdater._get_live_data_from_join_field_values(
+            mocker.Mock(), live_features_df, 'attachment_key', attachments_df
+        )
+
+        test_df = pd.DataFrame({
+            'OBJECTID': [2, 3],
+            'GlobalID': ['guid2', 'guid3'],
+            'attachment_key': [12, 13],
+            'attachments': ['foo', 'bar'],
+        })
+
+        tm.assert_frame_equal(live_data_subset, test_df)
+
+    def test_get_current_attachment_info_by_oid_includes_nans_for_features_wo_attachments(self, mocker):
+
+        live_attachments = [
+            {
+                'PARENTOBJECTID': 1,
+                'PARENTGLOBALID': 'parentguid1',
+                'ID': 111,
+                'NAME': 'foo.png',
+                'CONTENTTYPE': 'image/png',
+                'SIZE': 42,
+                'KEYWORDS': '',
+                'IMAGE_PREVIEW': 'preview1',
+                'GLOBALID': 'guid1',
+                'DOWNLOAD_URL': 'url1'
+            },
+            {
+                'PARENTOBJECTID': 2,
+                'PARENTGLOBALID': 'parentguid2',
+                'ID': 222,
+                'NAME': 'bar.png',
+                'CONTENTTYPE': 'image/png',
+                'SIZE': 42,
+                'KEYWORDS': '',
+                'IMAGE_PREVIEW': 'preview2',
+                'GLOBALID': 'guid2',
+                'DOWNLOAD_URL': 'url2'
+            },
+        ]
+
+        updater_mock = mocker.Mock()
+        updater_mock.feature_layer.attachments.search.return_value = live_attachments
+
+        live_data_subset_df = pd.DataFrame({
+            'OBJECTID': [1, 2, 3],
+            'GlobalID': ['guid1', 'guid2', 'guid3'],
+            'attachment_key': [11, 12, 13],
+            'attachments': ['fee', 'ber', 'boo'],
+        })
+
+        current_attachments_df = palletjack.FeatureServiceAttachmentsUpdater._get_current_attachment_info_by_oid(
+            updater_mock, live_data_subset_df
+        )
+
+        test_df = pd.DataFrame({
+            'OBJECTID': [1, 2, 3],
+            'GlobalID': ['guid1', 'guid2', 'guid3'],
+            'attachment_key': [11, 12, 13],
+            'attachments': ['fee', 'ber', 'boo'],
+            'PARENTOBJECTID': [1., 2., np.nan],
+            'NAME': ['foo.png', 'bar.png', np.nan],
+            'ID': [111, 222, np.nan],
+        })
+
+        tm.assert_frame_equal(current_attachments_df, test_df)
+
+    def test_add_attachments_by_oid_adds_and_doesnt_warn(self, mocker):
+        action_df = pd.DataFrame({
+            'OBJECTID': [1, 2],
+            'operation': ['add', 'add'],
+            'path': ['path1', 'path2'],
+        })
+
+        result_dict = [
+            {
+                'addAttachmentResult': {
+                    'success': True
+                }
+            },
+            {
+                'addAttachmentResult': {
+                    'success': True
+                }
+            },
+        ]
+
+        updater_mock = mocker.Mock()
+        updater_mock.feature_layer.attachments.add.side_effect = result_dict
+
+        with pytest.warns(None) as warning:
+            count = palletjack.FeatureServiceAttachmentsUpdater._add_attachments_by_oid(updater_mock, action_df, 'path')
+
+        assert count == 2
+        assert not warning
+
+    def test_add_attachments_by_oid_warns_on_failure_and_doesnt_count_that_one_and_continues(self, mocker):
+        action_df = pd.DataFrame({
+            'OBJECTID': [1, 2, 3],
+            'operation': ['add', 'add', 'add'],
+            'path': ['path1', 'path2', 'path3'],
+        })
+
+        result_dict = [
+            {
+                'addAttachmentResult': {
+                    'success': True
+                }
+            },
+            {
+                'addAttachmentResult': {
+                    'success': False
+                }
+            },
+            {
+                'addAttachmentResult': {
+                    'success': True
+                }
+            },
+        ]
+
+        updater_mock = mocker.Mock()
+        updater_mock.feature_layer.attachments.add.side_effect = result_dict
+
+        with pytest.warns(UserWarning, match='Failed to attach path2 to OID 2'):
+            count = palletjack.FeatureServiceAttachmentsUpdater._add_attachments_by_oid(updater_mock, action_df, 'path')
+
+        assert count == 2
+
+    def test_add_attachments_by_oid_skips_overwrite_and_nan(self, mocker):
+        action_df = pd.DataFrame({
+            'OBJECTID': [1, 2, 3],
+            'operation': ['add', 'overwrite', np.nan],
+            'path': ['path1', 'path2', 'path3'],
+        })
+
+        result_dict = [
+            {
+                'addAttachmentResult': {
+                    'success': True
+                }
+            },
+        ]
+
+        updater_mock = mocker.Mock()
+        updater_mock.feature_layer.attachments.add.side_effect = result_dict
+
+        count = palletjack.FeatureServiceAttachmentsUpdater._add_attachments_by_oid(updater_mock, action_df, 'path')
+
+        assert updater_mock.feature_layer.attachments.add.call_count == 1
+        assert count == 1
+
+    def test_overwrite_attachments_by_oid_overwrites_and_doesnt_warn(self, mocker):
+        action_df = pd.DataFrame({
+            'OBJECTID': [1, 2],
+            'operation': ['overwrite', 'overwrite'],
+            'path': ['path1', 'path2'],
+            'ID': ['existing1', 'existing2'],
+            'NAME': ['oldname1', 'oldname2'],
+        })
+
+        result_dict = [
+            {
+                'updateAttachmentResult': {
+                    'success': True
+                }
+            },
+            {
+                'updateAttachmentResult': {
+                    'success': True
+                }
+            },
+        ]
+
+        updater_mock = mocker.Mock()
+        updater_mock.feature_layer.attachments.update.side_effect = result_dict
+
+        with pytest.warns(None) as warning:
+            count = palletjack.FeatureServiceAttachmentsUpdater._overwrite_attachments_by_oid(
+                updater_mock, action_df, 'path'
+            )
+
+        assert count == 2
+        assert not warning
+
+    def test_overwrite_attachments_by_oid_warns_on_failure_and_doesnt_count_that_one_and_continues(self, mocker):
+        action_df = pd.DataFrame({
+            'OBJECTID': [1, 2, 3],
+            'operation': ['overwrite', 'overwrite', 'overwrite'],
+            'path': ['path1', 'path2', 'path3'],
+            'ID': [11, 22, 33],
+            'NAME': ['oldname1', 'oldname2', 'oldname3'],
+        })
+
+        result_dict = [
+            {
+                'updateAttachmentResult': {
+                    'success': True
+                }
+            },
+            {
+                'updateAttachmentResult': {
+                    'success': False
+                }
+            },
+            {
+                'updateAttachmentResult': {
+                    'success': True
+                }
+            },
+        ]
+
+        updater_mock = mocker.Mock()
+        updater_mock.feature_layer.attachments.update.side_effect = result_dict
+
+        with pytest.warns(UserWarning, match='Failed to update oldname2, attachment ID 22, on OID 2 with path2'):
+            count = palletjack.FeatureServiceAttachmentsUpdater._overwrite_attachments_by_oid(
+                updater_mock, action_df, 'path'
+            )
+
+        assert count == 2
+
+    def test_overwrite_attachments_by_oid_skips_add_and_nan(self, mocker):
+        action_df = pd.DataFrame({
+            'OBJECTID': [1, 2, 3],
+            'operation': ['add', 'overwrite', np.nan],
+            'path': ['path1', 'path2', 'path3'],
+            'ID': [np.nan, 'existing2', 'existing3'],
+            'NAME': ['oldname1', 'oldname2', 'oldname3'],
+        })
+
+        result_dict = [
+            {
+                'updateAttachmentResult': {
+                    'success': True
+                }
+            },
+        ]
+
+        updater_mock = mocker.Mock()
+        updater_mock.feature_layer.attachments.update.side_effect = result_dict
+
+        count = palletjack.FeatureServiceAttachmentsUpdater._overwrite_attachments_by_oid(
+            updater_mock, action_df, 'path'
+        )
+
+        assert updater_mock.feature_layer.attachments.update.call_count == 1
+        assert count == 1
