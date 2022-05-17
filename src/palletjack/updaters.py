@@ -238,8 +238,8 @@ class FeatureServiceAttachmentsUpdater:
             quoted_values = [f"'{value}'" for value in series]
             return f'({", ".join(quoted_values)})'
 
-    def _get_live_data_from_join_field_values(self, live_features_as_df, attachment_join_field, attachments_df):
-        """Get the live Object ID, and guid from the live features for only the features in attachments_df
+    def _get_live_oid_and_guid_from_join_field_values(self, live_features_as_df, attachment_join_field, attachments_df):
+        """Get the live Object ID and guid from the live features for only the features in attachments_df
 
         Args:
             live_features_as_df (pd.DataFrame): Spatial dataframe of all the feature layer's live data from AGOL
@@ -405,7 +405,7 @@ class FeatureServiceAttachmentsUpdater:
         self._class_logger.debug('Using layer %s from item ID %s', layer_number, feature_layer_itemid)
         self.feature_layer = self.gis.content.get(feature_layer_itemid).layers[layer_number]
         live_features_as_df = pd.DataFrame.spatial.from_layer(self.feature_layer)
-        live_data_subset_df = self._get_live_data_from_join_field_values(
+        live_data_subset_df = self._get_live_oid_and_guid_from_join_field_values(
             live_features_as_df, attachment_join_field, attachments_df
         )
         attachment_eval_df = self._get_current_attachment_info_by_oid(live_data_subset_df)

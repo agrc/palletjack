@@ -1197,7 +1197,7 @@ class TestAttachments:
             'attachments': ['foo', 'bar'],
         })
 
-        live_data_subset = palletjack.FeatureServiceAttachmentsUpdater._get_live_data_from_join_field_values(
+        live_data_subset = palletjack.FeatureServiceAttachmentsUpdater._get_live_oid_and_guid_from_join_field_values(
             mocker.Mock(), live_features_df, 'attachment_key', attachments_df
         )
 
