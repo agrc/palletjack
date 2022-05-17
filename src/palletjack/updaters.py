@@ -4,6 +4,7 @@
 import json
 import logging
 from collections import defaultdict
+from pathlib import Path
 
 import arcgis
 import numpy as np
@@ -94,6 +95,8 @@ class FeatureServiceInlineUpdater:
             pd.DataFrame: A dataframe with only our desired columns.
         """
 
+        #: rename specified fields, delete any other _x/_y fields (in effect, just keep the specified fields...)
+        #: TODO: There may be a simpler way to do this- maybe .reindex(fields)?
         rename_dict = {f'{f}_y': f for f in fields}
         renamed_dataframe = dataframe.rename(columns=rename_dict).copy()
         fields_to_delete = [f for f in renamed_dataframe.columns if f.endswith(('_x', '_y'))]
@@ -231,32 +234,58 @@ class FeatureServiceAttachmentsUpdater:
             quoted_values = [f"'{value}'" for value in series]
             return f'({", ".join(quoted_values)})'
 
-    def _get_oid_from_join_values(self, attachment_join_field, join_field_values):
-        #: Get the oids of live features we want to check for attachments using the match values in the attachments dict
+    def _get_live_data_from_join_field_values(self, attachment_join_field, attachments_df):
+        #: Get the oid and guid of live features we want to check for attachments using the match values in the join field
 
-        filtered_df = self.features_as_df[self.features_as_df[attachment_join_field].isin(join_field_values)]
-        return filtered_df['OBJECTID']
+        subset_df = self.features_as_df.reindex(columns=['OBJECTID', 'GlobalID', attachment_join_field])
+        merged_df = subset_df.merge(attachments_df, on=attachment_join_field, how='inner')
 
-    def _get_current_attachment_info(self):
-        attachments_list = self.feature_layer.attachements.search()
-        attachments_by_oid = defaultdict(list)
-        for attachment in attachments_list:
-            attachments_by_oid[attachment['PARENTOBJECTID']].append(attachment['NAME'])
+        return merged_df
 
-        return attachments_by_oid
+    def _get_current_attachment_info_by_oid(self, live_data_subset_df):
 
-    def _add_attachments_by_oid(self):
+        live_attachments_df = pd.DataFrame(self.feature_layer.attachments.search())
+        live_attachments_subset_df = live_attachments_df.reindex(columns=['PARENTOBJECTID', 'NAME', 'ID'])
+        merged_df = live_data_subset_df.merge(
+            live_attachments_subset_df, left_on='OBJECTID', right_on='PARENTOBJECTID', how='left'
+        )
+
+        return merged_df
+
+    def _create_attachment_action_df(self, attachment_eval_df, attachment_path_field):
+
+        #: Get the file name from the full path
+        attachment_eval_df['new_filename'] = attachment_eval_df[attachment_path_field].apply(
+            lambda path: Path(path).name
+        )
+
+        #: Overwrite if different names, add if no existing name, do nothing if names are the same
+        attachment_eval_df['operation'] = np.nan
+        attachment_eval_df.loc[attachment_eval_df['NAME'] != attachment_eval_df['new_filename'],
+                               'operation'] = 'overwrite'
+        attachment_eval_df.loc[attachment_eval_df['NAME'].isna(), 'operation'] = 'add'
+
+        return attachment_eval_df
+
+    def _add_attachments_by_oid(self, attachment_action_df):
         pass
 
-    def update_attachments(self, feature_layer_itemid, attachment_join_field, attachments_dict, layer_number=0):
-        #: attachments_dict: {join_field_value: path, ...}
+    def _update_attachments_by_oid(self, attachment_action_df):
+        pass
+
+    def update_attachments(
+        self, feature_layer_itemid, attachment_join_field, attachment_path_field, attachments_df, layer_number=0
+    ):
 
         self.feature_layer = self.gis.content.get(feature_layer_itemid).layers[layer_number]
         self.features_as_df = pd.DataFrame.spatial.from_layer(self.feature_layer)
-        current_attachments_by_oid = self._get_current_attachment_info()
-        oids_of_attachments_to_check = self._get_oid_from_join_values(
-            attachment_join_field, list(attachments_dict.keys())
-        )
+        live_data_subset_df = self._get_live_data_from_join_field_values(attachment_join_field, attachments_df)
+        attachment_eval_df = self._get_current_attachment_info_by_oid(live_data_subset_df)
+        attachment_action_df = self._create_attachment_action_df(attachment_eval_df, attachment_path_field)
+
+        #: First, delete any that need to be overwritten. Then, add all 'add' and 'overwrite' attachments
+        self._update_attachments_by_oid(attachment_action_df)
+        self._add_attachments_by_oid(attachment_action_df)
 
 
 class FeatureServiceOverwriter:

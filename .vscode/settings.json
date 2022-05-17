@@ -6,6 +6,7 @@
     "gsheet",
     "instafail",
     "isort",
+    "PARENTOBJECTID",
     "pylint",
     "pytest",
     "reclassifier",

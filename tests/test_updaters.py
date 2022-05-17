@@ -3,7 +3,9 @@ import json
 import logging
 
 import arcgis
+import numpy as np
 import pandas as pd
+import pandas.testing as tm
 import pytest
 from arcgis.features import GeoAccessor, GeoSeriesAccessor
 from mock_arcpy import arcpy
@@ -213,7 +215,7 @@ class TestFeatureServiceInlineUpdaterResultParsing:
 
         assert rows_updated == 2
 
-    def test_parse_results_retuns_0_if_both_successful_and_failed_result(self, mocker, combined_values):
+    def test_parse_results_returns_0_if_both_successful_and_failed_result(self, mocker, combined_values):
         class_mock = mocker.Mock()
         class_mock._get_old_and_new_values.return_value = (combined_values)
         results_dict = {
@@ -781,7 +783,7 @@ class TestFeatureServiceInlineUpdaterResultParsing:
         }
 
 
-class TestFeatuerServiceInlineUpdaterIntegrated:
+class TestFeatureServiceInlineUpdaterIntegrated:
 
     def test_update_existing_features_in_hosted_feature_layer_no_matching_rows_returns_0(self, mocker, caplog):
         pd_mock = mocker.Mock()
@@ -1082,3 +1084,102 @@ class TestColorRampReclassifier:
         }]
 
         assert update_mock.called_with(item_properties={'text': json.dumps(data)})
+
+
+class TestAttachments:
+
+    def test_create_attachment_action_df_adds_for_blank_existing_name(self, mocker):
+        input_df = pd.DataFrame({
+            'NAME': [np.nan],
+            'new_path': ['bee/foo.png'],
+        })
+
+        ops_df = palletjack.FeatureServiceAttachmentsUpdater._create_attachment_action_df(
+            mocker.Mock, input_df, 'new_path'
+        )
+
+        test_df = pd.DataFrame({
+            'NAME': [np.nan],
+            'new_path': ['bee/foo.png'],
+            'new_filename': ['foo.png'],
+            'operation': ['add'],
+        })
+
+        tm.assert_frame_equal(ops_df, test_df)
+
+    def test_create_attachment_action_df_overwrites_for_different_existing_name(self, mocker):
+        input_df = pd.DataFrame({
+            'NAME': ['bar.png'],
+            'new_path': ['bee/foo.png'],
+        })
+
+        ops_df = palletjack.FeatureServiceAttachmentsUpdater._create_attachment_action_df(
+            mocker.Mock, input_df, 'new_path'
+        )
+
+        test_df = pd.DataFrame({
+            'NAME': ['bar.png'],
+            'new_path': ['bee/foo.png'],
+            'new_filename': ['foo.png'],
+            'operation': ['overwrite'],
+        })
+
+        tm.assert_frame_equal(ops_df, test_df)
+
+    def test_create_attachment_action_df_does_nothing_for_same_name(self, mocker):
+        input_df = pd.DataFrame({
+            'NAME': ['foo.png'],
+            'new_path': ['bee/foo.png'],
+        })
+
+        ops_df = palletjack.FeatureServiceAttachmentsUpdater._create_attachment_action_df(
+            mocker.Mock, input_df, 'new_path'
+        )
+
+        test_df = pd.DataFrame({
+            'NAME': ['foo.png'],
+            'new_path': ['bee/foo.png'],
+            'new_filename': ['foo.png'],
+            'operation': [np.nan],
+        })
+        test_df['operation'] = test_df['operation'].astype(object)
+
+        tm.assert_frame_equal(ops_df, test_df)
+
+    def test_create_attachment_action_df_does_all_three_ops(self, mocker):
+        input_df = pd.DataFrame({
+            'NAME': ['foo.png', 'bar.png', np.nan],
+            'new_path': ['bee/foo.png', 'bee/baz.png', 'bee/bin.png'],
+        })
+
+        ops_df = palletjack.FeatureServiceAttachmentsUpdater._create_attachment_action_df(
+            mocker.Mock, input_df, 'new_path'
+        )
+
+        test_df = pd.DataFrame({
+            'NAME': ['foo.png', 'bar.png', np.nan],
+            'new_path': ['bee/foo.png', 'bee/baz.png', 'bee/bin.png'],
+            'new_filename': ['foo.png', 'baz.png', 'bin.png'],
+            'operation': [np.nan, 'overwrite', 'add'],
+        })
+
+        tm.assert_frame_equal(ops_df, test_df)
+
+    def test_create_attachment_action_df_do_nothing_after_others(self, mocker):
+        input_df = pd.DataFrame({
+            'NAME': ['bar.png', np.nan, 'foo.png'],
+            'new_path': ['bee/baz.png', 'bee/bin.png', 'bee/foo.png'],
+        })
+
+        ops_df = palletjack.FeatureServiceAttachmentsUpdater._create_attachment_action_df(
+            mocker.Mock, input_df, 'new_path'
+        )
+
+        test_df = pd.DataFrame({
+            'NAME': ['bar.png', np.nan, 'foo.png'],
+            'new_path': ['bee/baz.png', 'bee/bin.png', 'bee/foo.png'],
+            'new_filename': ['baz.png', 'bin.png', 'foo.png'],
+            'operation': ['overwrite', 'add', np.nan],
+        })
+
+        tm.assert_frame_equal(ops_df, test_df)

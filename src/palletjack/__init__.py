@@ -2,4 +2,4 @@
 """
 
 from .loaders import GSheetLoader, SFTPLoader
-from .updaters import ColorRampReclassifier, FeatureServiceInlineUpdater, FeatureServiceOverwriter
+from .updaters import ColorRampReclassifier, FeatureServiceInlineUpdater, FeatureServiceOverwriter, FeatureServiceAttachmentsUpdater
