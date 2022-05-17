@@ -3,7 +3,7 @@
 
 import json
 import logging
-from collections import defaultdict
+import warnings
 from pathlib import Path
 
 import arcgis
@@ -234,11 +234,12 @@ class FeatureServiceAttachmentsUpdater:
             quoted_values = [f"'{value}'" for value in series]
             return f'({", ".join(quoted_values)})'
 
-    def _get_live_data_from_join_field_values(self, attachment_join_field, attachments_df):
+    def _get_live_data_from_join_field_values(self, live_features_as_df, attachment_join_field, attachments_df):
         #: Get the oid and guid of live features we want to check for attachments using the match values in the join field
-
-        subset_df = self.features_as_df.reindex(columns=['OBJECTID', 'GlobalID', attachment_join_field])
+        self._class_logger.debug('Using %s as the join field between live and new data', attachment_join_field)
+        subset_df = live_features_as_df.reindex(columns=['OBJECTID', 'GlobalID', attachment_join_field])
         merged_df = subset_df.merge(attachments_df, on=attachment_join_field, how='inner')
+        self._class_logger.debug('%s features common to both live and new data', len(merged_df.index))
 
         return merged_df
 
@@ -265,27 +266,78 @@ class FeatureServiceAttachmentsUpdater:
                                'operation'] = 'overwrite'
         attachment_eval_df.loc[attachment_eval_df['NAME'].isna(), 'operation'] = 'add'
 
+        value_counts = attachment_eval_df['opeartion'].value_counts(dropna=False)
+        self._class_logger.debug(
+            'Calculated attachment operations: adds: %s, overwrites: %s, none: %s', value_counts['add'],
+            value_counts['overwrite'], value_counts[np.nan]
+        )
+
         return attachment_eval_df
 
-    def _add_attachments_by_oid(self, attachment_action_df):
-        pass
+    def _add_attachments_by_oid(self, attachment_action_df, attachment_path_field):
 
-    def _update_attachments_by_oid(self, attachment_action_df):
-        pass
+        adds_dict = attachment_action_df[attachment_action_df['operation'] == 'add'].to_dict(orient='index')
+        adds_count = 0
+
+        for row in adds_dict.values():
+            target_oid = row['OBJECTID']
+            filepath = row[attachment_path_field]
+
+            self._class_logger.debug('Add %s to OID %s', filepath, target_oid)
+            result = self.feature_layer.attachments.add(target_oid, filepath)
+            self._class_logger.debug('%s', result)
+
+            if not result['addAttachmentResult']['success']:
+                warnings.warn(f'Failed to attach {filepath} to OID {target_oid}')
+                continue
+
+            adds_count += 1
+
+        return adds_count
+
+    def _overwrite_attachments_by_oid(self, attachment_action_df, attachment_path_field):
+        overwrites_dict = attachment_action_df[attachment_action_df['operation'] == 'overwrite'].to_dict(orient='index')
+        overwrites_count = 0
+
+        for row in overwrites_dict.values():
+            target_oid = row['OBJECTID']
+            filepath = row[attachment_path_field]
+            attachment_id = row['ID']
+            old_name = row['NAME']
+
+            self._class_logger.debug(
+                'Overwritting %s (attachment ID %s) on OID %s with %s', old_name, attachment_id, target_oid, filepath
+            )
+            result = self.feature_layer.attachments.update(target_oid, attachment_id, filepath)
+            self._class_logger.debug('%s', result)
+
+            if not result['addAttachmentResult']['success']:
+                warnings.warn(
+                    f'Failed to update {old_name} (attachment ID {attachment_id}) on OID {target_oid} with {filepath}'
+                )
+                continue
+
+            overwrites_count += 1
+
+        return overwrites_count
 
     def update_attachments(
         self, feature_layer_itemid, attachment_join_field, attachment_path_field, attachments_df, layer_number=0
     ):
 
+        self._class_logger.info('Updating attachments...')
+        self._class_logger.debug('Using layer %s from item ID %s', layer_number, feature_layer_itemid)
         self.feature_layer = self.gis.content.get(feature_layer_itemid).layers[layer_number]
-        self.features_as_df = pd.DataFrame.spatial.from_layer(self.feature_layer)
-        live_data_subset_df = self._get_live_data_from_join_field_values(attachment_join_field, attachments_df)
+        live_features_as_df = pd.DataFrame.spatial.from_layer(self.feature_layer)
+        live_data_subset_df = self._get_live_data_from_join_field_values(
+            live_features_as_df, attachment_join_field, attachments_df
+        )
         attachment_eval_df = self._get_current_attachment_info_by_oid(live_data_subset_df)
         attachment_action_df = self._create_attachment_action_df(attachment_eval_df, attachment_path_field)
 
-        #: First, delete any that need to be overwritten. Then, add all 'add' and 'overwrite' attachments
-        self._update_attachments_by_oid(attachment_action_df)
-        self._add_attachments_by_oid(attachment_action_df)
+        overwrites_count = self._overwrite_attachments_by_oid(attachment_action_df, attachment_path_field)
+        adds_count = self._add_attachments_by_oid(attachment_action_df, attachment_path_field)
+        self._class_logger.info('%s attachments added, %s attachments overwritten', adds_count, overwrites_count)
 
 
 class FeatureServiceOverwriter:
