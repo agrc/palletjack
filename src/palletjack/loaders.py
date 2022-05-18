@@ -7,6 +7,7 @@ from pathlib import Path
 import pandas as pd
 import pygsheets
 import pysftp
+import requests
 
 logger = logging.getLogger(__name__)
 
@@ -82,6 +83,57 @@ class GSheetLoader:
         self._class_logger.debug('Concatting worksheet dataframes %s into a single dataframe', worksheet_dfs.keys())
         concatted_df = pd.concat(dataframes, keys=worksheet_dfs.keys(), names=['worksheet', 'row'])
         return concatted_df.reset_index(level='worksheet')
+
+
+class GoogleDriveDownloader:
+
+    def __init__(self, out_dir):
+        self.out_dir = Path(out_dir)
+        self._class_logger = logging.getLogger(__name__).getChild(self.__class__.__name__)
+
+    @staticmethod
+    def _save_response_content(response, destination, chunk_size=32768):
+
+        with open(destination, 'wb') as out_file:
+            for chunk in response.iter_content(chunk_size):
+                if chunk:  # filter out keep-alive new chunks
+                    out_file.write(chunk)
+
+    # @staticmethod
+    # def _get_confirm_token(response):
+    #     for key, value in response.cookies.items():
+    #         if key.startswith('download_warning'):
+    #             return value
+
+    @staticmethod
+    def _get_file_info(file_id, base_url='https://docs.google.com/uc?export=download'):
+
+        session = requests.Session()
+
+        response = session.get(base_url, params={'id': file_id}, stream=True)
+        # token = self._get_confirm_token(response)
+
+        # if token:
+        #     params = {'id': file_id, 'confirm': token}
+        #     response = session.get(base_url, params=params, stream=True)
+
+        return response
+
+    @staticmethod
+    def _get_filename_from_response(response):
+        content = response.headers['Content-Disposition']
+        for piece in content.split(';'):
+            if 'filename=' in piece:
+                return piece.split('"')[1]
+
+        #: If we don't return a filename, raise an error instead
+        raise ValueError('`filename=` not found in response header')
+
+    def download_file_from_google_drive(self, file_id):
+        self._class_logger.debug('Downloading file id %s', file_id)
+        response = self._get_file_info(file_id)
+        filename = self._get_filename_from_response(response)
+        self._save_response_content(response, self.out_dir / filename)
 
 
 class SFTPLoader:

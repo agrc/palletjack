@@ -126,6 +126,61 @@ class TestGSheetsLoader:
             combined_df = palletjack.GSheetLoader.combine_worksheets_into_single_dataframe(mocker.Mock(), df_dict)
 
 
+class TestGoogleDriveDownloader:
+
+    def test_get_filename_from_response_works_normally(self, mocker):
+        response = mocker.Mock()
+        response.headers = {
+            'foo': 'bar',
+            'Content-Disposition': 'attachment;filename="file.name";filename*=UTF-8\'\'file.name'
+        }
+
+        filename = palletjack.GoogleDriveDownloader._get_filename_from_response(response)
+
+        assert filename == 'file.name'
+
+    def test_get_filename_from_response_raises_error_if_not_found(self, mocker):
+        response = mocker.Mock()
+        response.headers = {'foo': 'bar', 'Content-Disposition': 'attachment;filename*=UTF-8\'\'file.name'}
+
+        with pytest.raises(ValueError, match='`filename=` not found in response header'):
+            palletjack.GoogleDriveDownloader._get_filename_from_response(response)
+
+    def test_get_file_info_works_normally(self, mocker):
+        session_mock = mocker.Mock()
+        mocker.patch('requests.Session', new=session_mock)
+
+        palletjack.GoogleDriveDownloader._get_file_info('foo_file_id')
+
+        assert session_mock.get.called_with('https://docs.google.com/uc?export=download', {'id': 'foo_file_id'}, True)
+
+    def test_save_response_content_skips_empty_chunks(self, mocker):
+
+        response_mock = mocker.MagicMock()
+        response_mock.iter_content.return_value = [b'\x01', b'', b'\x02']
+
+        open_mock = mocker.mock_open()
+        mocker.patch('builtins.open', open_mock)
+
+        palletjack.GoogleDriveDownloader._save_response_content(response_mock, '/foo/bar', chunk_size=1)
+
+        assert open_mock().write.call_args_list[0][0] == (b'\x01',)
+        assert open_mock().write.call_args_list[1][0] == (b'\x02',)
+
+    def test_download_file_from_google_drive_creates_filename(self, mocker):
+
+        mocker.patch.object(palletjack.GoogleDriveDownloader, '_get_file_info', return_value='response')
+        mocker.patch.object(palletjack.GoogleDriveDownloader, '_get_filename_from_response', return_value='baz.png')
+        save_mock = mocker.Mock()
+        mocker.patch.object(palletjack.GoogleDriveDownloader, '_save_response_content', save_mock)
+
+        downloader = palletjack.GoogleDriveDownloader('/foo/bar')
+
+        downloader.download_file_from_google_drive('1234')
+
+        save_mock.assert_called_with('response', Path('/foo/bar/baz.png'))
+
+
 class TestSFTPLoader:
 
     def test_download_sftp_folder_contents_uses_right_credentials(self, mocker):
