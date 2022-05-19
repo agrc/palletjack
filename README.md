@@ -4,7 +4,11 @@
 [![codecov](https://codecov.io/gh/agrc/python/branch/main/graph/badge.svg)](https://codecov.io/gh/agrc/python)
 1. Navigate to [codecov.io](https://codecov.io/gh/agrc/python) and create a `CODECOV_TOKEN` [project secret](https://github.com/agrc/python/settings/secrets) -->
 
-A library for updating AGOL feature services with data from SFTP shares. Client apps can reuse these methods for common use cases.
+A library of classes for automatically updating AGOL feature services with data from external sources. Client apps (often called 'skids') can reuse these classes for common use cases. These classes handle different parts of the Extract and Load steps in the ETL process. Tabular data is loaded into dataframes, which are then processed by the skid and passed to the updater classes that update the feature service.
+
+See `docs/api.md` for documentation on the available classes and methods, logging, and errors.
+
+See `docs/examples.py` for (bare-bones) example code implementing the various classes/methods. You can also search our GitHub organization for "skid" repositories that use palletjack.
 
 Pallet jack: [forklift's](https://www.github.com/agrc/forklift) little brother.
 
@@ -32,8 +36,6 @@ Pallet jack: [forklift's](https://www.github.com/agrc/forklift) little brother.
       secrets.FEATURE_LAYER_ITEMID, list(secrets.DATA_TYPES.keys())
     )
    ```
-
-See `docs/api.md` for documentation on logging, errors, and all the available classes and methods.
 
 ## Development
 
