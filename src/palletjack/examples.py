@@ -14,6 +14,6 @@ for pic in pics_list:
         print('No link in cell')
         continue
     try:
-        downloader.download_file_from_google_drive(pic)
+        downloader.download_image_from_google_drive(pic)
     except RuntimeError as err:
         print(err)

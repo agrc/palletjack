@@ -87,6 +87,8 @@ class GSheetLoader:
 
 
 class GoogleDriveDownloader:
+    """Downloads images from publicly-shared Google Drive links (https://drive.google.com/file/d/big_long_id/etc)
+    """
 
     def __init__(self, out_dir):
         self._class_logger = logging.getLogger(__name__).getChild(self.__class__.__name__)
@@ -99,13 +101,34 @@ class GoogleDriveDownloader:
 
     @staticmethod
     def _save_response_content(response, destination, chunk_size=32768):
+        """Download streaming response content in chunks
+
+        Args:
+            response (requests.response): The response object from the requests .get call
+            destination (Path): File path to write to
+            chunk_size (int, optional): Download the file in chunks of this size. Defaults to 32768.
+        """
 
         with open(destination, 'wb') as out_file:
             for chunk in response.iter_content(chunk_size):
                 if chunk:  # filter out keep-alive new chunks
                     out_file.write(chunk)
 
-    def _get_file_info(self, file_id, base_url='https://docs.google.com/uc?export=download'):
+    def _get_http_response(self, file_id, base_url='https://docs.google.com/uc?export=download'):
+        """Performs the HTTP GET request and checks the response
+
+        Args:
+            file_id (str): The Google-created unique id for the file
+            base_url (str, optional): The base URL for the GET call. Defaults to 'https://docs.google.com/uc?
+                                      export=download'.
+
+        Raises:
+            RuntimeError: If Content-Type is text/html, we can't get the file, either because it doesn't exist or isn't
+                          publicly shared.
+
+        Returns:
+            request.response: The requests response object.
+        """
 
         session = requests.Session()
         response = session.get(base_url, params={'id': file_id}, stream=True)
@@ -118,6 +141,18 @@ class GoogleDriveDownloader:
 
     @staticmethod
     def _get_filename_from_response(response):
+        """Get the filename from the response header
+
+        Args:
+            response (requests.response): response object from the HTTP GET call
+
+        Raises:
+            ValueError: If it can't find the filename in the header
+
+        Returns:
+            str: Filename as defined in the header
+        """
+
         content = response.headers['Content-Disposition']
         for piece in content.split(';'):
             if 'filename=' in piece:
@@ -127,6 +162,19 @@ class GoogleDriveDownloader:
         raise ValueError('`filename=` not found in response header')
 
     def _get_file_id_from_sharing_link(self, sharing_link):
+        """Use regex to parse out the unique Google id from the sharing link
+
+        Args:
+            sharing_link (str): The public sharing link to the file
+
+        Raises:
+            IndexError: If the regex matches the url but can't get a sharing roup (may not ever occur)
+            RuntimeError: If the regex doesn't match the sharing link
+
+        Returns:
+            str: The unique Google id for the file.
+        """
+
         match = self.regex.search(sharing_link)
         if match:
             try:
@@ -136,10 +184,16 @@ class GoogleDriveDownloader:
                 raise IndexError(f'Regex could not extract the file id from sharing link {sharing_link}') from err
         raise RuntimeError(f'Regex could not match sharing link {sharing_link}')
 
-    def download_file_from_google_drive(self, sharing_link):
+    def download_image_from_google_drive(self, sharing_link):
+        """Download a publicly-shared image from Google Drive using it's sharing link
+
+        Args:
+            sharing_link (str): The publicly-shared link to the image.
+        """
+
         file_id = self._get_file_id_from_sharing_link(sharing_link)
         self._class_logger.debug('Downloading file id %s', file_id)
-        response = self._get_file_info(file_id)
+        response = self._get_http_response(file_id)
         filename = self._get_filename_from_response(response)
         self._save_response_content(response, self.out_dir / filename)
 

@@ -153,7 +153,7 @@ class TestGoogleDriveDownloader:
         session_mock.return_value.get.return_value = response_mock
         mocker.patch('requests.Session', new=session_mock)
 
-        palletjack.GoogleDriveDownloader._get_file_info(mocker.Mock(), 'foo_file_id')
+        palletjack.GoogleDriveDownloader._get_http_response(mocker.Mock(), 'foo_file_id')
 
         session_mock.return_value.get.assert_called_with(
             'https://docs.google.com/uc?export=download', params={'id': 'foo_file_id'}, stream=True
@@ -167,7 +167,7 @@ class TestGoogleDriveDownloader:
         mocker.patch('requests.Session', new=session_mock)
 
         with pytest.raises(RuntimeError) as error:
-            palletjack.GoogleDriveDownloader._get_file_info(mocker.Mock(), 'foo_file_id')
+            palletjack.GoogleDriveDownloader._get_http_response(mocker.Mock(), 'foo_file_id')
         assert 'Cannot access foo_file_id (is it publicly shared?). Response header in log.' in str(error.value)
 
     def test_save_response_content_skips_empty_chunks(self, mocker):
@@ -186,14 +186,14 @@ class TestGoogleDriveDownloader:
     def test_download_file_from_google_drive_creates_filename(self, mocker):
 
         mocker.patch.object(palletjack.GoogleDriveDownloader, '_get_file_id_from_sharing_link')
-        mocker.patch.object(palletjack.GoogleDriveDownloader, '_get_file_info', return_value='response')
+        mocker.patch.object(palletjack.GoogleDriveDownloader, '_get_http_response', return_value='response')
         mocker.patch.object(palletjack.GoogleDriveDownloader, '_get_filename_from_response', return_value='baz.png')
         save_mock = mocker.Mock()
         mocker.patch.object(palletjack.GoogleDriveDownloader, '_save_response_content', save_mock)
 
         downloader = palletjack.GoogleDriveDownloader('/foo/bar')
 
-        downloader.download_file_from_google_drive('1234')
+        downloader.download_image_from_google_drive('1234')
 
         save_mock.assert_called_with('response', Path('/foo/bar/baz.png'))
 
