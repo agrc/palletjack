@@ -109,7 +109,7 @@ class GoogleDriveDownloader:
             chunk_size (int, optional): Download the file in chunks of this size. Defaults to 32768.
         """
 
-        with open(destination, 'wb') as out_file:
+        with destination.open(mode='wb') as out_file:
             for chunk in response.iter_content(chunk_size):
                 if chunk:  # filter out keep-alive new chunks
                     out_file.write(chunk)

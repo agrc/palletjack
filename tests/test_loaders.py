@@ -176,9 +176,9 @@ class TestGoogleDriveDownloader:
         response_mock.iter_content.return_value = [b'\x01', b'', b'\x02']
 
         open_mock = mocker.mock_open()
-        mocker.patch('builtins.open', open_mock)
+        mocker.patch('pathlib.Path.open', open_mock)
 
-        palletjack.GoogleDriveDownloader._save_response_content(response_mock, '/foo/bar', chunk_size=1)
+        palletjack.GoogleDriveDownloader._save_response_content(response_mock, Path('/foo/bar'), chunk_size=1)
 
         assert open_mock().write.call_args_list[0][0] == (b'\x01',)
         assert open_mock().write.call_args_list[1][0] == (b'\x02',)
