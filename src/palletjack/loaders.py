@@ -2,6 +2,7 @@
 """
 
 import logging
+import re
 from pathlib import Path
 
 import pandas as pd
@@ -88,8 +89,13 @@ class GSheetLoader:
 class GoogleDriveDownloader:
 
     def __init__(self, out_dir):
-        self.out_dir = Path(out_dir)
         self._class_logger = logging.getLogger(__name__).getChild(self.__class__.__name__)
+        self._class_logger.debug('Initializing GoogleDriveDownloader')
+        self._class_logger.debug('Output directory: %s', out_dir)
+        self.out_dir = Path(out_dir)
+        regex_pattern = 'https:\/\/drive.google.com\/file\/d\/(\S*)\/.*'  # pylint:disable=anomalous-backslash-in-string
+        self._class_logger.debug('Regex pattern: %s', regex_pattern)
+        self.regex = re.compile(regex_pattern)
 
     @staticmethod
     def _save_response_content(response, destination, chunk_size=32768):
@@ -99,23 +105,14 @@ class GoogleDriveDownloader:
                 if chunk:  # filter out keep-alive new chunks
                     out_file.write(chunk)
 
-    # @staticmethod
-    # def _get_confirm_token(response):
-    #     for key, value in response.cookies.items():
-    #         if key.startswith('download_warning'):
-    #             return value
-
-    @staticmethod
-    def _get_file_info(file_id, base_url='https://docs.google.com/uc?export=download'):
+    def _get_file_info(self, file_id, base_url='https://docs.google.com/uc?export=download'):
 
         session = requests.Session()
-
         response = session.get(base_url, params={'id': file_id}, stream=True)
-        # token = self._get_confirm_token(response)
 
-        # if token:
-        #     params = {'id': file_id, 'confirm': token}
-        #     response = session.get(base_url, params=params, stream=True)
+        if 'text/html' in response.headers['Content-Type']:
+            self._class_logger.error(response.headers)
+            raise RuntimeError(f'Cannot access {file_id} (is it publicly shared?). Response header in log.')
 
         return response
 
@@ -129,7 +126,18 @@ class GoogleDriveDownloader:
         #: If we don't return a filename, raise an error instead
         raise ValueError('`filename=` not found in response header')
 
-    def download_file_from_google_drive(self, file_id):
+    def _get_file_id_from_sharing_link(self, sharing_link):
+        match = self.regex.search(sharing_link)
+        if match:
+            try:
+                return match.group(1)
+            #: Not sure how this would happen (can't even figure out a test), but leaving in for safety.
+            except IndexError as err:
+                raise IndexError(f'Regex could not extract the file id from sharing link {sharing_link}') from err
+        raise RuntimeError(f'Regex could not match sharing link {sharing_link}')
+
+    def download_file_from_google_drive(self, sharing_link):
+        file_id = self._get_file_id_from_sharing_link(sharing_link)
         self._class_logger.debug('Downloading file id %s', file_id)
         response = self._get_file_info(file_id)
         filename = self._get_filename_from_response(response)

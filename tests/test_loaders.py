@@ -147,12 +147,28 @@ class TestGoogleDriveDownloader:
             palletjack.GoogleDriveDownloader._get_filename_from_response(response)
 
     def test_get_file_info_works_normally(self, mocker):
+        response_mock = mocker.Mock()
+        response_mock.headers = {'Content-Type': 'image/jpeg'}
         session_mock = mocker.Mock()
+        session_mock.return_value.get.return_value = response_mock
         mocker.patch('requests.Session', new=session_mock)
 
-        palletjack.GoogleDriveDownloader._get_file_info('foo_file_id')
+        palletjack.GoogleDriveDownloader._get_file_info(mocker.Mock(), 'foo_file_id')
 
-        assert session_mock.get.called_with('https://docs.google.com/uc?export=download', {'id': 'foo_file_id'}, True)
+        session_mock.return_value.get.assert_called_with(
+            'https://docs.google.com/uc?export=download', params={'id': 'foo_file_id'}, stream=True
+        )
+
+    def test_get_file_info_raises_error_on_text_response(self, mocker):
+        response_mock = mocker.Mock()
+        response_mock.headers = {'Content-Type': 'text/html'}
+        session_mock = mocker.Mock()
+        session_mock.return_value.get.return_value = response_mock
+        mocker.patch('requests.Session', new=session_mock)
+
+        with pytest.raises(RuntimeError) as error:
+            palletjack.GoogleDriveDownloader._get_file_info(mocker.Mock(), 'foo_file_id')
+        assert 'Cannot access foo_file_id (is it publicly shared?). Response header in log.' in str(error.value)
 
     def test_save_response_content_skips_empty_chunks(self, mocker):
 
@@ -169,6 +185,7 @@ class TestGoogleDriveDownloader:
 
     def test_download_file_from_google_drive_creates_filename(self, mocker):
 
+        mocker.patch.object(palletjack.GoogleDriveDownloader, '_get_file_id_from_sharing_link')
         mocker.patch.object(palletjack.GoogleDriveDownloader, '_get_file_info', return_value='response')
         mocker.patch.object(palletjack.GoogleDriveDownloader, '_get_filename_from_response', return_value='baz.png')
         save_mock = mocker.Mock()
@@ -179,6 +196,32 @@ class TestGoogleDriveDownloader:
         downloader.download_file_from_google_drive('1234')
 
         save_mock.assert_called_with('response', Path('/foo/bar/baz.png'))
+
+    def test_get_file_id_from_sharing_link_extracts_group(self, mocker):
+
+        downloader = palletjack.GoogleDriveDownloader('foo')
+        test_link = 'https://drive.google.com/file/d/foo_bar_baz/view?usp=sharing'
+
+        file_id = downloader._get_file_id_from_sharing_link(test_link)
+
+        assert file_id == 'foo_bar_baz'
+
+    def test_get_file_id_from_sharing_link_extracts_group_with_dashes_in_id(self, mocker):
+
+        downloader = palletjack.GoogleDriveDownloader('foo')
+        test_link = 'https://drive.google.com/file/d/foo-bar-baz/view?usp=sharing'
+
+        file_id = downloader._get_file_id_from_sharing_link(test_link)
+
+        assert file_id == 'foo-bar-baz'
+
+    def test_get_file_id_from_sharing_link_raises_error_on_failed_match(self, mocker):
+
+        downloader = palletjack.GoogleDriveDownloader('foo')
+        test_link = 'bad_link'
+
+        with pytest.raises(RuntimeError, match='Regex could not match sharing link bad_link'):
+            file_id = downloader._get_file_id_from_sharing_link(test_link)
 
 
 class TestSFTPLoader:
