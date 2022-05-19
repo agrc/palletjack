@@ -273,6 +273,8 @@ class FeatureServiceAttachmentsUpdater:
         merged_df = live_data_subset_df.merge(
             live_attachments_subset_df, left_on='OBJECTID', right_on='PARENTOBJECTID', how='left'
         )
+        #: Cast ID field to nullable int to avoid conversion to float for np.nans
+        merged_df['ID'] = merged_df['ID'].astype('Int64')
 
         return merged_df
 

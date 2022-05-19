@@ -1260,8 +1260,9 @@ class TestAttachments:
             'attachments': ['fee', 'ber', 'boo'],
             'PARENTOBJECTID': [1., 2., np.nan],
             'NAME': ['foo.png', 'bar.png', np.nan],
-            'ID': [111, 222, np.nan],
+            'ID': [111, 222, pd.NA],
         })
+        test_df['ID'] = test_df['ID'].astype('Int64')
 
         tm.assert_frame_equal(current_attachments_df, test_df)
 
