@@ -141,9 +141,9 @@ class TestGoogleDriveDownloader:
 
     def test_get_filename_from_response_raises_error_if_not_found(self, mocker):
         response = mocker.Mock()
-        response.headers = {'foo': 'bar', 'Content-Disposition': 'attachment;filename*=UTF-8\'\'file.name'}
+        response.headers = {'foo': 'bar', 'Content-Disposition': 'attachment'}
 
-        with pytest.raises(ValueError, match='`filename=` not found in response header'):
+        with pytest.raises(ValueError, match='filename not found in response header'):
             palletjack.GoogleDriveDownloader._get_filename_from_response(response)
 
     def test_get_file_info_works_normally(self, mocker):

@@ -154,12 +154,13 @@ class GoogleDriveDownloader:
         """
 
         content = response.headers['Content-Disposition']
-        for piece in content.split(';'):
-            if 'filename=' in piece:
-                return piece.split('"')[1]
+        all_filenames = re.findall('filename\*?=([^;]+)', content, flags=re.IGNORECASE)  # pylint:disable=anomalous-backslash-in-string
+        if all_filenames:
+            #: Remove spurious whitespace and "s
+            return all_filenames[0].strip().strip('"')
 
         #: If we don't return a filename, raise an error instead
-        raise ValueError('`filename=` not found in response header')
+        raise ValueError('filename not found in response header')
 
     def _get_file_id_from_sharing_link(self, sharing_link):
         """Use regex to parse out the unique Google id from the sharing link
