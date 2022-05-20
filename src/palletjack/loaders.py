@@ -130,8 +130,7 @@ class GoogleDriveDownloader:
             request.response: The requests response object.
         """
 
-        session = requests.Session()
-        response = session.get(base_url, params={'id': file_id}, stream=True)
+        response = requests.get(base_url, params={'id': file_id}, stream=True)
 
         if 'text/html' in response.headers['Content-Type']:
             self._class_logger.error(response.headers)

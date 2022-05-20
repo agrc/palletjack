@@ -146,25 +146,25 @@ class TestGoogleDriveDownloader:
         with pytest.raises(ValueError, match='filename not found in response header'):
             palletjack.GoogleDriveDownloader._get_filename_from_response(response)
 
-    def test_get_file_info_works_normally(self, mocker):
+    def test_get_http_response_works_normally(self, mocker):
         response_mock = mocker.Mock()
         response_mock.headers = {'Content-Type': 'image/jpeg'}
-        session_mock = mocker.Mock()
-        session_mock.return_value.get.return_value = response_mock
-        mocker.patch('requests.Session', new=session_mock)
+        get_mock = mocker.Mock()
+        get_mock.return_value = response_mock
+        mocker.patch('requests.get', new=get_mock)
 
         palletjack.GoogleDriveDownloader._get_http_response(mocker.Mock(), 'foo_file_id')
 
-        session_mock.return_value.get.assert_called_with(
+        get_mock.assert_called_with(
             'https://docs.google.com/uc?export=download', params={'id': 'foo_file_id'}, stream=True
         )
 
-    def test_get_file_info_raises_error_on_text_response(self, mocker):
+    def test_get_http_response_raises_error_on_text_response(self, mocker):
         response_mock = mocker.Mock()
         response_mock.headers = {'Content-Type': 'text/html'}
-        session_mock = mocker.Mock()
-        session_mock.return_value.get.return_value = response_mock
-        mocker.patch('requests.Session', new=session_mock)
+        get_mock = mocker.Mock()
+        get_mock.return_value = response_mock
+        mocker.patch('requests.get', new=get_mock)
 
         with pytest.raises(RuntimeError) as error:
             palletjack.GoogleDriveDownloader._get_http_response(mocker.Mock(), 'foo_file_id')
