@@ -401,6 +401,9 @@ class FeatureServiceAttachmentsUpdater:
             attachments_df (pd.DataFrame): A dataframe of desired attachments, including a join key and the local path
                                            to the attachment
             layer_number (int, optional): The layer within the Item ID to update. Defaults to 0.
+
+        Returns:
+            (int, int): Tuple of counts of successful overwrites and adds.
         """
 
         self._class_logger.info('Updating attachments...')
@@ -416,6 +419,8 @@ class FeatureServiceAttachmentsUpdater:
         overwrites_count = self._overwrite_attachments_by_oid(attachment_action_df, attachment_path_field)
         adds_count = self._add_attachments_by_oid(attachment_action_df, attachment_path_field)
         self._class_logger.info('%s attachments added, %s attachments overwritten', adds_count, overwrites_count)
+
+        return overwrites_count, adds_count
 
 
 class FeatureServiceOverwriter:
