@@ -2,10 +2,18 @@
   "cSpell.words": [
     "AGRC",
     "Codecov",
+    "fsupdater",
+    "gsheet",
     "instafail",
     "isort",
+    "knownhosts",
+    "palletjack",
+    "PARENTOBJECTID",
     "pylint",
     "pytest",
+    "reclassifier",
+    "sftploader",
+    "unclassed",
     "yapf"
   ],
   "coverage-gutters.highlightdark": "rgb(61, 153, 112, .05)",

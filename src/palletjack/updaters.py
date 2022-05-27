@@ -3,6 +3,8 @@
 
 import json
 import logging
+import warnings
+from pathlib import Path
 
 import arcgis
 import numpy as np
@@ -93,6 +95,8 @@ class FeatureServiceInlineUpdater:
             pd.DataFrame: A dataframe with only our desired columns.
         """
 
+        #: rename specified fields, delete any other _x/_y fields (in effect, just keep the specified fields...)
+        #: TODO: There may be a simpler way to do this- maybe .reindex(fields)?
         rename_dict = {f'{f}_y': f for f in fields}
         renamed_dataframe = dataframe.rename(columns=rename_dict).copy()
         fields_to_delete = [f for f in renamed_dataframe.columns if f.endswith(('_x', '_y'))]
@@ -208,12 +212,226 @@ class FeatureServiceInlineUpdater:
         return number_of_rows_updated
 
 
+class FeatureServiceAttachmentsUpdater:
+    """Add or overwrite attachments in a feature service using a dataframe of the desired "new" attachments. Uses a
+    join field present in both live data and the attachments dataframe to match attachments with live data.
+    """
+
+    def __init__(self, gis):
+        self.gis = gis
+        self._class_logger = logging.getLogger(__name__).getChild(self.__class__.__name__)
+
+    #: This isn't used anymore... but it feels like a shame to lose it.
+    @staticmethod
+    def _build_sql_in_list(series):
+        """Generate a properly formatted list to be a target for a SQL 'IN' clause
+
+        Args:
+            series (pd.Series): Series of values to be included in the 'IN' list
+
+        Returns:
+            str: Values formatted as (1, 2, 3) for numbers or ('a', 'b', 'c') for anything else
+        """
+        if pd.api.types.is_numeric_dtype(series):
+            return f'({", ".join(series.astype(str))})'
+        else:
+            quoted_values = [f"'{value}'" for value in series]
+            return f'({", ".join(quoted_values)})'
+
+    def _get_live_oid_and_guid_from_join_field_values(self, live_features_as_df, attachment_join_field, attachments_df):
+        """Get the live Object ID and guid from the live features for only the features in attachments_df
+
+        Args:
+            live_features_as_df (pd.DataFrame): Spatial dataframe of all the feature layer's live data from AGOL
+            attachment_join_field (str): Column in attachments_df to use as a join key with live data
+            attachments_df (pd.DataFrame): New attachment data, including the join key and a path to the "new"
+                                           attachment
+
+        Returns:
+            pd.DataFrame: Attachments dataframe with corresponding live OIDs and GUIDs.
+        """
+
+        self._class_logger.debug('Using %s as the join field between live and new data', attachment_join_field)
+        subset_df = live_features_as_df.reindex(columns=['OBJECTID', 'GlobalID', attachment_join_field])
+        merged_df = subset_df.merge(attachments_df, on=attachment_join_field, how='inner')
+        self._class_logger.debug('%s features common to both live and new data', len(merged_df.index))
+
+        return merged_df
+
+    def _get_current_attachment_info_by_oid(self, live_data_subset_df):
+        """Merge the live attachment data using the ObjectID as the join
+
+        Args:
+            live_data_subset_df (pd.DataFrame): Live data with 'OBJECTID', 'GlobalID', and new attachment data
+
+        Returns:
+            pd.DataFrame: Live and new attachment data in one dataframe
+        """
+
+        live_attachments_df = pd.DataFrame(self.feature_layer.attachments.search())
+        live_attachments_subset_df = live_attachments_df.reindex(columns=['PARENTOBJECTID', 'NAME', 'ID'])
+        merged_df = live_data_subset_df.merge(
+            live_attachments_subset_df, left_on='OBJECTID', right_on='PARENTOBJECTID', how='left'
+        )
+        #: Cast ID field to nullable int to avoid conversion to float for np.nans
+        merged_df['ID'] = merged_df['ID'].astype('Int64')
+
+        return merged_df
+
+    def _create_attachment_action_df(self, attachment_eval_df, attachment_path_field):
+        """Create a dataframe containing the action needed for each feature resulting from the attachment join.
+
+        If the live feature doesn't have an attachment, add the attachment. If it does, compare the file names and only
+        attach if they are different. Otherwise, leave null.
+
+        Args:
+            attachment_eval_df (pd.DataFrame): DataFrame of live attachment data, subsetted to features that matched
+                                               the join key in the new attachments
+            attachment_path_field (str): The column that holds the attachment path
+
+        Returns:
+            pd.DataFrame: attachment_eval_df with 'operation' and 'new_filename' columns added
+        """
+
+        #: Get the file name from the full path
+        attachment_eval_df['new_filename'] = attachment_eval_df[attachment_path_field].apply(
+            lambda path: Path(path).name
+        )
+
+        #: Overwrite if different names, add if no existing name, do nothing if names are the same
+        attachment_eval_df['operation'] = np.nan
+        attachment_eval_df.loc[attachment_eval_df['NAME'] != attachment_eval_df['new_filename'],
+                               'operation'] = 'overwrite'
+        attachment_eval_df.loc[attachment_eval_df['NAME'].isna(), 'operation'] = 'add'
+
+        value_counts = attachment_eval_df['operation'].value_counts(dropna=False)
+        for operation in ['add', 'overwrite', np.nan]:
+            if operation not in value_counts:
+                value_counts[operation] = 0
+        self._class_logger.debug(
+            'Calculated attachment operations: adds: %s, overwrites: %s, none: %s', value_counts['add'],
+            value_counts['overwrite'], value_counts[np.nan]
+        )
+
+        return attachment_eval_df
+
+    def _add_attachments_by_oid(self, attachment_action_df, attachment_path_field):
+        """Add attachments using the feature's OID based on the 'operation' field of the dataframe
+
+        Args:
+            attachment_action_df (pd.DataFrame): A dataframe containing 'operation', 'OBJECTID', and
+                                                 attachment_path_field columns
+            attachment_path_field (str): The column that holds the attachment path
+
+        Returns:
+            int: The number of features that successfully have attachments added.
+        """
+
+        adds_dict = attachment_action_df[attachment_action_df['operation'] == 'add'].to_dict(orient='index')
+        adds_count = 0
+
+        for row in adds_dict.values():
+            target_oid = row['OBJECTID']
+            filepath = row[attachment_path_field]
+
+            self._class_logger.debug('Add %s to OID %s', filepath, target_oid)
+            result = self.feature_layer.attachments.add(target_oid, filepath)
+            self._class_logger.debug('%s', result)
+
+            if not result['addAttachmentResult']['success']:
+                warnings.warn(f'Failed to attach {filepath} to OID {target_oid}')
+                continue
+
+            adds_count += 1
+
+        return adds_count
+
+    def _overwrite_attachments_by_oid(self, attachment_action_df, attachment_path_field):
+        """Overwrite attachments using the feature's OID based on the 'operation' field of the dataframe
+
+        Args:
+            attachment_action_df (pd.DataFrame): A dataframe containing 'operation', 'OBJECTID', 'ID', 'NAME', and
+                                                 attachment_path_field columns
+            attachment_path_field (str): The column that holds the attachment path
+
+        Returns:
+            int: The number of features that successfully have their attachments overwritten.
+        """
+
+        overwrites_dict = attachment_action_df[attachment_action_df['operation'] == 'overwrite'].to_dict(orient='index')
+        overwrites_count = 0
+
+        for row in overwrites_dict.values():
+            target_oid = row['OBJECTID']
+            filepath = row[attachment_path_field]
+            attachment_id = row['ID']
+            old_name = row['NAME']
+
+            self._class_logger.debug(
+                'Overwriting %s (attachment ID %s) on OID %s with %s', old_name, attachment_id, target_oid, filepath
+            )
+            result = self.feature_layer.attachments.update(target_oid, attachment_id, filepath)
+            self._class_logger.debug('%s', result)
+
+            if not result['updateAttachmentResult']['success']:
+                warnings.warn(
+                    f'Failed to update {old_name}, attachment ID {attachment_id}, on OID {target_oid} with {filepath}'
+                )
+                continue
+
+            overwrites_count += 1
+
+        return overwrites_count
+
+    def update_attachments(
+        self, feature_layer_itemid, attachment_join_field, attachment_path_field, attachments_df, layer_number=0
+    ):
+        """Update a feature layer's attachments based on info from a dataframe of desired attachment file names
+
+        Depends on a dataframe populated with a join key for the live data and the downloaded or locally-available
+        attachments. If the name of the "new" attachment is the same as an existing attachment for that feature, it is
+        not updated. If it is different or there isn't an existing attachment, the "new" attachment is attached to that
+        feature.
+
+        Args:
+            feature_layer_itemid (str): The AGOL Item ID of the feature layer to update
+            attachment_join_field (str): The field containing the join key between the attachments dataframe and the
+                                         live data
+            attachment_path_field (str): The field containing the desired attachment file path
+            attachments_df (pd.DataFrame): A dataframe of desired attachments, including a join key and the local path
+                                           to the attachment
+            layer_number (int, optional): The layer within the Item ID to update. Defaults to 0.
+
+        Returns:
+            (int, int): Tuple of counts of successful overwrites and adds.
+        """
+
+        self._class_logger.info('Updating attachments...')
+        self._class_logger.debug('Using layer %s from item ID %s', layer_number, feature_layer_itemid)
+        self.feature_layer = self.gis.content.get(feature_layer_itemid).layers[layer_number]
+        live_features_as_df = pd.DataFrame.spatial.from_layer(self.feature_layer)
+        live_data_subset_df = self._get_live_oid_and_guid_from_join_field_values(
+            live_features_as_df, attachment_join_field, attachments_df
+        )
+        attachment_eval_df = self._get_current_attachment_info_by_oid(live_data_subset_df)
+        attachment_action_df = self._create_attachment_action_df(attachment_eval_df, attachment_path_field)
+
+        overwrites_count = self._overwrite_attachments_by_oid(attachment_action_df, attachment_path_field)
+        adds_count = self._add_attachments_by_oid(attachment_action_df, attachment_path_field)
+        self._class_logger.info('%s attachments added, %s attachments overwritten', adds_count, overwrites_count)
+
+        return overwrites_count, adds_count
+
+
 class FeatureServiceOverwriter:
     """Overwrites an AGOL Feature Service with data from a pandas DataFrame and a geometry source (Spatially-enabled
     Data Frame, feature class, etc)
 
     To be implemented as needed.
     """
+
+
+#: TODO: implement for Rick's fleet stuff
 
 
 class ColorRampReclassifier:
