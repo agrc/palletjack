@@ -1,6 +1,7 @@
 import builtins
 import json
 import logging
+from pathlib import Path
 
 import arcgis
 import numpy as np
@@ -1447,3 +1448,52 @@ class TestAttachments:
 
         assert updater_mock.feature_layer.attachments.update.call_count == 1
         assert count == 1
+
+    def test_create_attachments_dataframe_subsets_and_crafts_paths_properly(self, mocker):
+        input_df = pd.DataFrame({
+            'join': [1, 2, 3],
+            'pic': ['foo.png', 'bar.png', 'baz.png'],
+            'data': [11., 12., 13.],
+        })
+
+        attachment_df = palletjack.FeatureServiceAttachmentsUpdater.build_attachments_dataframe(
+            input_df, 'join', 'pic', '/foo/bar'
+        )
+
+        test_df = pd.DataFrame({
+            'join': [1, 2, 3],
+            'pic': ['foo.png', 'bar.png', 'baz.png'],
+            'full_file_path': [Path('/foo/bar/foo.png'),
+                               Path('/foo/bar/bar.png'),
+                               Path('/foo/bar/baz.png')]
+        })
+
+        #: Column of path objects won't test equal in assert_frame_equal, so we make lists of their str representations
+        #: and compare those separately from the rest of the dataframe
+        other_fields = ['join', 'pic']
+        tm.assert_frame_equal(attachment_df[other_fields], test_df[other_fields])
+        assert [str(path) for path in attachment_df['full_file_path']
+               ] == [str(path) for path in test_df['full_file_path']]
+
+    def test_create_attachments_dataframe_drops_missing_attachments(self, mocker):
+        input_df = pd.DataFrame({
+            'join': [1, 2, 3],
+            'pic': ['foo.png', None, ''],
+        })
+
+        attachment_df = palletjack.FeatureServiceAttachmentsUpdater.build_attachments_dataframe(
+            input_df, 'join', 'pic', '/foo/bar'
+        )
+
+        test_df = pd.DataFrame({
+            'join': [1],
+            'pic': ['foo.png'],
+            'full_file_path': [Path('/foo/bar/foo.png')],
+        })
+
+        #: Column of path objects won't test equal in assert_frame_equal, so we make lists of their str representations
+        #: and compare those separately from the rest of the dataframe
+        other_fields = ['join', 'pic']
+        tm.assert_frame_equal(attachment_df[other_fields], test_df[other_fields])
+        assert [str(path) for path in attachment_df['full_file_path']
+               ] == [str(path) for path in test_df['full_file_path']]
