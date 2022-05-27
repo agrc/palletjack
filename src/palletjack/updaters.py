@@ -422,6 +422,33 @@ class FeatureServiceAttachmentsUpdater:
 
         return overwrites_count, adds_count
 
+    @staticmethod
+    def build_attachments_dataframe(input_dataframe, join_column, attachment_column, out_dir):
+        """Create an attachments dataframe by subsetting down to just the two fields and dropping any rows
+           with null/empty attachments
+
+        Args:
+            input_dataframe (pd.DataFrame): Input data containing at least the join and attachment filename columns
+            join_column (str): Unique key joining attachments to live data
+            attachment_column (str): Filename for each attachment
+            out_dir (str or Path): Output directory, will be used to build full path to attachment
+
+        Returns:
+            pd.DataFrame: Dataframe with join key, attachment name, and full attachment paths
+        """
+
+        #: Create an attachments dataframe by subsetting down to just the two fields and dropping any rows
+        #: with null/empty attachments
+
+        input_dataframe[attachment_column].replace('', np.nan, inplace=True)  #: pandas doesn't see empty strings as NAs
+        attachments_dataframe = input_dataframe[[join_column, attachment_column]] \
+                                            .copy().dropna(subset=[attachment_column])
+        #: Create the full path by prepending the output directory using .apply and a lambda function
+        attachments_dataframe['full_file_path'] = attachments_dataframe[attachment_column] \
+                                                    .apply(lambda filename: str(Path(out_dir, filename)))
+
+        return attachments_dataframe
+
 
 class FeatureServiceOverwriter:
     """Overwrites an AGOL Feature Service with data from a pandas DataFrame and a geometry source (Spatially-enabled

@@ -184,18 +184,38 @@ class GoogleDriveDownloader:
                 raise IndexError(f'Regex could not extract the file id from sharing link {sharing_link}') from err
         raise RuntimeError(f'Regex could not match sharing link {sharing_link}')
 
-    def download_image_from_google_drive(self, sharing_link):
+    def download_image_from_google_drive(self, sharing_link, join_id):
         """Download a publicly-shared image from Google Drive using it's sharing link
 
         Args:
             sharing_link (str): The publicly-shared link to the image.
+
+        Returns:
+            Path: Path of downloaded file
         """
 
+        if not sharing_link:
+            self._class_logger.debug('Row %s has no attachment info', join_id)
+            return None
         file_id = self._get_file_id_from_sharing_link(sharing_link)
-        self._class_logger.debug('Downloading file id %s', file_id)
-        response = self._get_http_response(file_id)
-        filename = self._get_filename_from_response(response)
-        self._save_response_content(response, self.out_dir / filename)
+        self._class_logger.debug('Row %s: downloading file id %s', join_id, file_id)
+        try:
+            response = self._get_http_response(file_id)
+            filename = self._get_filename_from_response(response)
+            out_file_path = self.out_dir / filename
+            self._save_response_content(response, out_file_path)
+            return out_file_path
+        except RuntimeError as err:
+            self._class_logger.warning('Row %s: Couldn\'t download %s', join_id, sharing_link)
+            self._class_logger.warning(err)
+            return None
+
+    def download_attachments_from_dataframe(self, dataframe, sharing_link_column, join_id_column, output_path_column):
+        #: TODO: Write tests for this .apply call
+        dataframe[output_path_column] = dataframe.apply(
+            lambda x: self.download_image_from_google_drive(x[sharing_link_column], x[join_id_column]), index=1
+        )
+        return dataframe
 
 
 class SFTPLoader:
