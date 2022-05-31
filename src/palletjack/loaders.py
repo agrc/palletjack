@@ -205,7 +205,7 @@ class GoogleDriveDownloader:
             out_file_path = self.out_dir / filename
             self._save_response_content(response, out_file_path)
             return out_file_path
-        except RuntimeError as err:
+        except Exception as err:
             self._class_logger.warning('Row %s: Couldn\'t download %s', join_id, sharing_link)
             self._class_logger.warning(err)
             return None
@@ -213,7 +213,7 @@ class GoogleDriveDownloader:
     def download_attachments_from_dataframe(self, dataframe, sharing_link_column, join_id_column, output_path_column):
         #: TODO: Write tests for this .apply call
         dataframe[output_path_column] = dataframe.apply(
-            lambda x: self.download_image_from_google_drive(x[sharing_link_column], x[join_id_column]), index=1
+            lambda x: self.download_image_from_google_drive(x[sharing_link_column], x[join_id_column]), axis=1
         )
         return dataframe
 
