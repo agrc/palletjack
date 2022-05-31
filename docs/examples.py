@@ -31,27 +31,14 @@ def load_google_sheet_then_download_and_update_attachments():
 
     #: Use a GoogleDriveDownloader to download all the pictures from a single worksheet dataframe
     uorg_2021_dataframe = worksheets['2021']
-    pics_list = list(uorg_2021_dataframe[attachment_column])
-
     downloader = GoogleDriveDownloader(out_dir)
-    for pic_link in pics_list:
-        #: if the link is an empty string or null, notify the user and don't try to download
-        if not pic_link:
-            print('No URL in attachment column')
-            continue
-        #: Skids are responsible for handling errors. In this case, if it can't access the link, print out the error
-        try:
-            downloader.download_image_from_google_drive(pic_link)
-        except RuntimeError as err:
-            print(err)
+    downloader.download_attachments_from_dataframe(
+        uorg_2021_dataframe, attachment_column, attachments_join_field, 'full_file_path'
+    )
 
     #: Create an attachments dataframe by subsetting down to just the two fields and dropping any rows with null/empty attachments
     attachments_dataframe = uorg_2021_dataframe[[attachments_join_field, attachment_column]] \
                                                .copy().dropna(subset=attachment_column)
-    #: Create the full path by prepending the output directory using .apply and a lambda function
-    attachments_dataframe['full_file_path'] = attachments_dataframe[attachment_column].apply(
-        lambda filename: str(Path(out_dir, filename))
-    )
 
     #: General attachments dataframe layout:
     #:      | join_field | attachment_path_field |

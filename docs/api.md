@@ -59,8 +59,10 @@ The initializer sets the output directory for saving the files. The `out_dir` at
 
 Methods
 
-- `download_image_from_google_drive(self, sharing_link)`
-  - Download a file to the out_dir set on the instantiated object. `sharing_link` should be in the form `https://drive.google.com/file/d/big_long_id/etc`. Will raise an error if the URL doesn't match this pattern or it can't extract the unique id from the sharing URL. Will also raise an error if the header's Content-Type is text/html, which usually indicates the HTTP response was an error message instead of the file.
+- `download_file_from_google_drive(self, sharing_link, join_id)`
+  - Download a file to the out_dir set on the instantiated object. `sharing_link` should be in the form `https://drive.google.com/file/d/big_long_id/etc`. `join_id` is used for logging purposes to identify which attachment is being worked on. Will log an error if the URL doesn't match this pattern or it can't extract the unique id from the sharing URL. Will also log an error if the header's Content-Type is text/html, which usually indicates the HTTP response was an error message instead of the file.
+- `download_attachments_from_dataframe(self, dataframe, sharing_link_column, join_id_column, output_path_column)`
+  - Calls `download_file_from_google_drive` for every row in `dataframe`, saving the full path of the resulting file in `output_path_column`
 
 ## Updaters
 

@@ -184,14 +184,15 @@ class GoogleDriveDownloader:
                 raise IndexError(f'Regex could not extract the file id from sharing link {sharing_link}') from err
         raise RuntimeError(f'Regex could not match sharing link {sharing_link}')
 
-    def download_image_from_google_drive(self, sharing_link, join_id):
+    def download_file_from_google_drive(self, sharing_link, join_id):
         """Download a publicly-shared image from Google Drive using it's sharing link
 
         Args:
             sharing_link (str): The publicly-shared link to the image.
+            join_id (str or int): The unique key for the row (used for reporting)
 
         Returns:
-            Path: Path of downloaded file
+            Path: Path of downloaded file or None if download fails/is not possible
         """
 
         if not sharing_link:
@@ -211,9 +212,20 @@ class GoogleDriveDownloader:
             return None
 
     def download_attachments_from_dataframe(self, dataframe, sharing_link_column, join_id_column, output_path_column):
-        #: TODO: Write tests for this .apply call
+        """Download the attachments linked in a dataframe column, creating a new column with the resulting path
+
+        Args:
+            dataframe (pd.DataFrame): Input dataframe with required columns
+            sharing_link_column (str): Column holding the Google sharing link
+            join_id_column (str): Column holding a unique key (for reporting purposes)
+            output_path_column (str): Column for the resulting path; will be added if it doesn't existing in the dataframe
+
+        Returns:
+            pd.DataFrame: Input dataframe with output path info
+        """
+
         dataframe[output_path_column] = dataframe.apply(
-            lambda x: self.download_image_from_google_drive(x[sharing_link_column], x[join_id_column]), axis=1
+            lambda x: self.download_file_from_google_drive(x[sharing_link_column], x[join_id_column]), axis=1
         )
         return dataframe
 

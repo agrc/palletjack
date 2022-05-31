@@ -194,7 +194,7 @@ class TestGoogleDriveDownloader:
 
         downloader = palletjack.GoogleDriveDownloader('/foo/bar')
 
-        downloader.download_image_from_google_drive('1234', 42)
+        downloader.download_file_from_google_drive('1234', 42)
 
         save_mock.assert_called_with('response', Path('/foo/bar/baz.png'))
 
@@ -207,7 +207,7 @@ class TestGoogleDriveDownloader:
 
         caplog.set_level(logging.DEBUG, logger='palletjack.loaders.GoogleDriveDownloader')
         caplog.clear()
-        result = downloader.download_image_from_google_drive('', 42)
+        result = downloader.download_file_from_google_drive('', 42)
 
         file_id_mock.assert_not_called()
         assert ['Row 42 has no attachment info'] == [rec.message for rec in caplog.records]
@@ -222,7 +222,7 @@ class TestGoogleDriveDownloader:
 
         caplog.set_level(logging.DEBUG, logger='palletjack.loaders.GoogleDriveDownloader')
         caplog.clear()
-        result = downloader.download_image_from_google_drive(None, 42)
+        result = downloader.download_file_from_google_drive(None, 42)
 
         file_id_mock.assert_not_called()
         assert ['Row 42 has no attachment info'] == [rec.message for rec in caplog.records]
@@ -243,7 +243,7 @@ class TestGoogleDriveDownloader:
 
         caplog.set_level(logging.DEBUG, logger='palletjack.loaders.GoogleDriveDownloader')
         caplog.clear()
-        result = downloader.download_image_from_google_drive('1234', 42)
+        result = downloader.download_file_from_google_drive('1234', 42)
 
         filename_mock.assert_not_called()
         assert [
@@ -256,7 +256,7 @@ class TestGoogleDriveDownloader:
     def test_download_attachments_from_dataframe_handles_multiple_rows(self, mocker):
 
         downloader_mock = mocker.Mock()
-        downloader_mock.download_image_from_google_drive.side_effect = ['foo/bar.png', 'baz/boo.png']
+        downloader_mock.download_file_from_google_drive.side_effect = ['foo/bar.png', 'baz/boo.png']
 
         sheet_dataframe = pd.DataFrame({
             'join_id': [1, 2],
