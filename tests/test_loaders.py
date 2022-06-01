@@ -275,23 +275,32 @@ class TestGoogleDriveDownloader:
 
         tm.assert_frame_equal(downloaded_df, test_df)
 
-    def test_get_file_id_from_sharing_link_extracts_group(self, mocker):
+    def test_get_file_id_from_sharing_link_extracts_group_file_link(self, mocker):
 
         downloader = palletjack.GoogleDriveDownloader('foo')
-        test_link = 'https://drive.google.com/file/d/foo_bar_baz/view?usp=sharing'
+        test_link = 'https://drive.google.com/file/d/abcdefghijklm_opqrstuvwxy/view?usp=sharing'
 
         file_id = downloader._get_file_id_from_sharing_link(test_link)
 
-        assert file_id == 'foo_bar_baz'
+        assert file_id == 'abcdefghijklm_opqrstuvwxy'
 
-    def test_get_file_id_from_sharing_link_extracts_group_with_dashes_in_id(self, mocker):
+    def test_get_file_id_from_sharing_link_extracts_group_file_link_with_dashes(self, mocker):
 
         downloader = palletjack.GoogleDriveDownloader('foo')
-        test_link = 'https://drive.google.com/file/d/foo-bar-baz/view?usp=sharing'
+        test_link = 'https://drive.google.com/file/d/abcdefghijklm-opqrstuvwxy/view?usp=sharing'
 
         file_id = downloader._get_file_id_from_sharing_link(test_link)
 
-        assert file_id == 'foo-bar-baz'
+        assert file_id == 'abcdefghijklm-opqrstuvwxy'
+
+    def test_get_file_id_from_sharing_link_extracts_group_open_link(self, mocker):
+
+        downloader = palletjack.GoogleDriveDownloader('foo')
+        test_link = 'https://drive.google.com/open?id=abcdefghijklm_opqrstuvwxy'
+
+        file_id = downloader._get_file_id_from_sharing_link(test_link)
+
+        assert file_id == 'abcdefghijklm_opqrstuvwxy'
 
     def test_get_file_id_from_sharing_link_raises_error_on_failed_match(self, mocker):
 

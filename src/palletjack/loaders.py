@@ -95,7 +95,7 @@ class GoogleDriveDownloader:
         self._class_logger.debug('Initializing GoogleDriveDownloader')
         self._class_logger.debug('Output directory: %s', out_dir)
         self.out_dir = Path(out_dir)
-        regex_pattern = 'https:\/\/drive.google.com\/file\/d\/(\S*)\/.*'  # pylint:disable=anomalous-backslash-in-string
+        regex_pattern = '(\/|=)([-\w]{25,})'  # pylint:disable=anomalous-backslash-in-string
         self._class_logger.debug('Regex pattern: %s', regex_pattern)
         self.regex = re.compile(regex_pattern)
 
@@ -178,7 +178,7 @@ class GoogleDriveDownloader:
         match = self.regex.search(sharing_link)
         if match:
             try:
-                return match.group(1)
+                return match.group(2)
             #: Not sure how this would happen (can't even figure out a test), but leaving in for safety.
             except IndexError as err:
                 raise IndexError(f'Regex could not extract the file id from sharing link {sharing_link}') from err
