@@ -198,9 +198,9 @@ class GoogleDriveDownloader:
         if not sharing_link:
             self._class_logger.debug('Row %s has no attachment info', join_id)
             return None
-        file_id = self._get_file_id_from_sharing_link(sharing_link)
-        self._class_logger.debug('Row %s: downloading file id %s', join_id, file_id)
+        self._class_logger.debug('Row %s: downloading file id %s', join_id, sharing_link)
         try:
+            file_id = self._get_file_id_from_sharing_link(sharing_link)
             response = self._get_http_response(file_id)
             filename = self._get_filename_from_response(response)
             out_file_path = self.out_dir / filename
