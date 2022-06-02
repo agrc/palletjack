@@ -59,6 +59,19 @@ class FeatureServiceInlineUpdater:
 
         return rows_updated
 
+    def _validate_working_fields_in_live_and_new_dataframes(self, live_dataframe, fields):
+        live_fields = set(live_dataframe.columns)
+        new_fields = set(self.new_dataframe.columns)
+        working_fields = set(fields)
+
+        live_dif = working_fields - live_fields
+        new_dif = working_fields - new_fields
+
+        if live_dif or new_dif:
+            raise RuntimeError(
+                f'Field mismatch between defined fields and either new or live data.\nFields not in live data: {live_dif}\nFields not in new data: {new_dif}'
+            )
+
     def _get_common_rows(self, live_dataframe) -> pd.DataFrame:
         """Create a dataframe containing only the rows common to both the existing live dataset and the new updates
 
@@ -196,6 +209,7 @@ class FeatureServiceInlineUpdater:
         feature_layer_item = self.gis.content.get(feature_layer_itemid)
         feature_layer = arcgis.features.FeatureLayer.fromitem(feature_layer_item)
         live_dataframe = pd.DataFrame.spatial.from_layer(feature_layer)
+        self._validate_working_fields_in_live_and_new_dataframes(live_dataframe, fields)
         subset_dataframe = self._get_common_rows(live_dataframe)
         if subset_dataframe.empty:
             self._class_logger.warning(

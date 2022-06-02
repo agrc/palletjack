@@ -784,6 +784,70 @@ class TestFeatureServiceInlineUpdaterResultParsing:
         }
 
 
+class TestFeatureServiceInlineUpdaterFieldValidation:
+
+    def test_validate_working_fields_in_live_and_new_dataframes_doesnt_raise_when_matching(self, mocker):
+        live_df = pd.DataFrame(columns=['field1', 'field2', 'field3'])
+        new_df = pd.DataFrame(columns=['field1', 'field2', 'field3'])
+        fields = ['field1', 'field2', 'field3']
+
+        updater_mock = mocker.Mock()
+        updater_mock.new_dataframe = new_df
+
+        #: This shouldn't raise an exception and so the test should pass
+        palletjack.FeatureServiceInlineUpdater._validate_working_fields_in_live_and_new_dataframes(
+            updater_mock, live_df, fields
+        )
+
+    def test_validate_working_fields_in_live_and_new_dataframes_raises_not_in_live(self, mocker):
+        live_df = pd.DataFrame(columns=['field1', 'field2'])
+        new_df = pd.DataFrame(columns=['field1', 'field2', 'field3'])
+        fields = ['field1', 'field2', 'field3']
+
+        updater_mock = mocker.Mock()
+        updater_mock.new_dataframe = new_df
+
+        with pytest.raises(RuntimeError) as exc_info:
+            palletjack.FeatureServiceInlineUpdater._validate_working_fields_in_live_and_new_dataframes(
+                updater_mock, live_df, fields
+            )
+        assert exc_info.value.args[
+            0
+        ] == 'Field mismatch between defined fields and either new or live data.\nFields not in live data: {\'field3\'}\nFields not in new data: set()'
+
+    def test_validate_working_fields_in_live_and_new_dataframes_raises_not_in_new(self, mocker):
+        live_df = pd.DataFrame(columns=['field1', 'field2', 'field3'])
+        new_df = pd.DataFrame(columns=['field1', 'field2'])
+        fields = ['field1', 'field2', 'field3']
+
+        updater_mock = mocker.Mock()
+        updater_mock.new_dataframe = new_df
+
+        with pytest.raises(RuntimeError) as exc_info:
+            palletjack.FeatureServiceInlineUpdater._validate_working_fields_in_live_and_new_dataframes(
+                updater_mock, live_df, fields
+            )
+        assert exc_info.value.args[
+            0
+        ] == 'Field mismatch between defined fields and either new or live data.\nFields not in live data: set()\nFields not in new data: {\'field3\'}'
+
+    def test_validate_working_fields_in_live_and_new_dataframes_raises_not_in_both(self, mocker):
+        live_df = pd.DataFrame(columns=['field1', 'field2'])
+        new_df = pd.DataFrame(columns=['field1', 'field2'])
+        fields = ['field1', 'field2', 'field3']
+
+        updater_mock = mocker.Mock()
+        updater_mock.new_dataframe = new_df
+
+        with pytest.raises(RuntimeError) as exc_info:
+            palletjack.FeatureServiceInlineUpdater._validate_working_fields_in_live_and_new_dataframes(
+                updater_mock, live_df, fields
+            )
+        assert exc_info.value.args[
+            0
+        ] == 'Field mismatch between defined fields and either new or live data.\nFields not in live data: {\'field3\'}\nFields not in new data: {\'field3\'}'
+
+
 class TestFeatureServiceInlineUpdaterIntegrated:
 
     def test_update_existing_features_in_hosted_feature_layer_no_matching_rows_returns_0(self, mocker, caplog):
