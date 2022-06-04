@@ -397,6 +397,13 @@ class FeatureServiceAttachmentsUpdater:
 
         return overwrites_count
 
+    @staticmethod
+    def _check_attachment_dataframe_for_invalid_column_names(attachment_dataframe, invalid_names):
+        invalid_names_index = pd.Index(invalid_names)
+        intersection = attachment_dataframe.columns.intersection(invalid_names_index)
+        if not intersection.empty:
+            raise RuntimeError(f'Attachment dataframe contains the following invalid names: {list(intersection)}')
+
     def update_attachments(
         self, feature_layer_itemid, attachment_join_field, attachment_path_field, attachments_df, layer_number=0
     ):
@@ -421,6 +428,12 @@ class FeatureServiceAttachmentsUpdater:
         """
 
         self._class_logger.info('Updating attachments...')
+        #: These names are present in the live attachment data downloaded from AGOL. Because we merge the dataframes
+        #: later, we need to make sure they're not the same. There may be better ways of handling this that allows the
+        #: client names to be preserved, but for now force them to fix this.
+        self._check_attachment_dataframe_for_invalid_column_names(
+            attachments_df, invalid_names=['OBJECTID', 'PARENTOBJECTID', 'NAME', 'ID']
+        )
         self._class_logger.debug('Using layer %s from item ID %s', layer_number, feature_layer_itemid)
         self.feature_layer = self.gis.content.get(feature_layer_itemid).layers[layer_number]
         live_features_as_df = pd.DataFrame.spatial.from_layer(self.feature_layer)

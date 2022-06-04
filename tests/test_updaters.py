@@ -1331,6 +1331,31 @@ class TestAttachments:
 
         tm.assert_frame_equal(current_attachments_df, test_df)
 
+    def test_check_attachment_dataframe_for_invalid_column_names_doesnt_raise_with_valid_names(self, mocker):
+        dataframe = pd.DataFrame(columns=['foo', 'bar'])
+        invalid_names = ['baz', 'boo']
+        palletjack.FeatureServiceAttachmentsUpdater._check_attachment_dataframe_for_invalid_column_names(
+            dataframe, invalid_names
+        )
+
+    def test_check_attachment_dataframe_for_invalid_column_names_raises_with_one_invalid(self, mocker):
+        dataframe = pd.DataFrame(columns=['foo', 'bar'])
+        invalid_names = ['foo', 'boo']
+        with pytest.raises(RuntimeError) as exc_info:
+            palletjack.FeatureServiceAttachmentsUpdater._check_attachment_dataframe_for_invalid_column_names(
+                dataframe, invalid_names
+            )
+        assert exc_info.value.args[0] == 'Attachment dataframe contains the following invalid names: [\'foo\']'
+
+    def test_check_attachment_dataframe_for_invalid_column_names_raises_with_all_invalid(self, mocker):
+        dataframe = pd.DataFrame(columns=['foo', 'bar'])
+        invalid_names = ['foo', 'bar']
+        with pytest.raises(RuntimeError) as exc_info:
+            palletjack.FeatureServiceAttachmentsUpdater._check_attachment_dataframe_for_invalid_column_names(
+                dataframe, invalid_names
+            )
+        assert exc_info.value.args[0] == 'Attachment dataframe contains the following invalid names: [\'foo\', \'bar\']'
+
     def test_add_attachments_by_oid_adds_and_doesnt_warn(self, mocker):
         action_df = pd.DataFrame({
             'OBJECTID': [1, 2],
