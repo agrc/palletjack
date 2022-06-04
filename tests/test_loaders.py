@@ -247,7 +247,8 @@ class TestGoogleDriveDownloader:
 
         filename_mock.assert_not_called()
         assert [
-            'Row 42: downloading file id google_id',
+            'Row 42: downloading shared file 1234',
+            'Row 42: extracted file id google_id',
             'Row 42: Couldn\'t download 1234',
             'Boom',
         ] == [rec.message for rec in caplog.records]
