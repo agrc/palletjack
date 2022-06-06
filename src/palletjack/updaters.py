@@ -234,6 +234,7 @@ class FeatureServiceAttachmentsUpdater:
     def __init__(self, gis):
         self.gis = gis
         self._class_logger = logging.getLogger(__name__).getChild(self.__class__.__name__)
+        self.failed_dict = {}
 
     #: This isn't used anymore... but it feels like a shame to lose it.
     @staticmethod
@@ -349,11 +350,17 @@ class FeatureServiceAttachmentsUpdater:
             filepath = row[attachment_path_field]
 
             self._class_logger.debug('Add %s to OID %s', filepath, target_oid)
-            result = self.feature_layer.attachments.add(target_oid, filepath)
-            self._class_logger.debug('%s', result)
+            try:
+                result = self.feature_layer.attachments.add(target_oid, filepath)
+            except Exception:
+                self._class_logger.error('AGOL error while adding %s to OID %s', filepath, target_oid, exc_info=True)
+                self.failed_dict[target_oid] = ('add', filepath)
+                continue
 
+            self._class_logger.debug('%s', result)
             if not result['addAttachmentResult']['success']:
                 warnings.warn(f'Failed to attach {filepath} to OID {target_oid}')
+                self.failed_dict[target_oid] = ('add', filepath)
                 continue
 
             adds_count += 1
@@ -384,13 +391,26 @@ class FeatureServiceAttachmentsUpdater:
             self._class_logger.debug(
                 'Overwriting %s (attachment ID %s) on OID %s with %s', old_name, attachment_id, target_oid, filepath
             )
-            result = self.feature_layer.attachments.update(target_oid, attachment_id, filepath)
-            self._class_logger.debug('%s', result)
+            try:
+                result = self.feature_layer.attachments.update(target_oid, attachment_id, filepath)
+            except Exception:
+                self._class_logger.error(
+                    'AGOL error while overwritting %s (attachment ID %s) on OID %s with %s',
+                    old_name,
+                    attachment_id,
+                    target_oid,
+                    filepath,
+                    exc_info=True
+                )
+                self.failed_dict[target_oid] = ('update', filepath)
+                continue
 
+            self._class_logger.debug('%s', result)
             if not result['updateAttachmentResult']['success']:
                 warnings.warn(
                     f'Failed to update {old_name}, attachment ID {attachment_id}, on OID {target_oid} with {filepath}'
                 )
+                self.failed_dict[target_oid] = ('update', filepath)
                 continue
 
             overwrites_count += 1
@@ -440,6 +460,8 @@ class FeatureServiceAttachmentsUpdater:
         live_data_subset_df = self._get_live_oid_and_guid_from_join_field_values(
             live_features_as_df, attachment_join_field, attachments_df
         )
+        #: TODO: Make sure layer supports attachments so we don't get an arcgis error.
+        #: Check out the feature layer .properties and FeatureLayerManager.add_to_definition to check/enable?
         attachment_eval_df = self._get_current_attachment_info_by_oid(live_data_subset_df)
         attachment_action_df = self._create_attachment_action_df(attachment_eval_df, attachment_path_field)
 

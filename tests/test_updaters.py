@@ -1410,13 +1410,43 @@ class TestAttachments:
             },
         ]
 
-        updater_mock = mocker.Mock()
-        updater_mock.feature_layer.attachments.add.side_effect = result_dict
+        feature_layer_mock = mocker.Mock()
+        feature_layer_mock.attachments.add.side_effect = result_dict
+
+        updater = palletjack.FeatureServiceAttachmentsUpdater(mocker.Mock())
+        updater.feature_layer = feature_layer_mock
 
         with pytest.warns(UserWarning, match='Failed to attach path2 to OID 2'):
-            count = palletjack.FeatureServiceAttachmentsUpdater._add_attachments_by_oid(updater_mock, action_df, 'path')
+            count = updater._add_attachments_by_oid(action_df, 'path')
 
         assert count == 2
+        assert updater.failed_dict == {2: ('add', 'path2')}
+
+    def test_add_attachments_by_oid_handles_internal_agol_errors(self, mocker, caplog):
+        action_df = pd.DataFrame({
+            'OBJECTID': [1, 2],
+            'operation': ['add', 'add'],
+            'path': ['path1', 'path2'],
+        })
+
+        feature_layer_mock = mocker.Mock()
+        feature_layer_mock.attachments.add.side_effect = [
+            RuntimeError('foo'),
+            {
+                'addAttachmentResult': {
+                    'success': True
+                }
+            },
+        ]
+
+        updater = palletjack.FeatureServiceAttachmentsUpdater(mocker.Mock())
+        updater.feature_layer = feature_layer_mock
+
+        count = updater._add_attachments_by_oid(action_df, 'path')
+        assert count == 1
+        assert 'AGOL error while adding path1 to OID 1' in caplog.text
+        assert 'foo' in caplog.text
+        assert updater.failed_dict == {1: ('add', 'path1')}
 
     def test_add_attachments_by_oid_skips_overwrite_and_nan(self, mocker):
         action_df = pd.DataFrame({
@@ -1501,15 +1531,45 @@ class TestAttachments:
             },
         ]
 
-        updater_mock = mocker.Mock()
-        updater_mock.feature_layer.attachments.update.side_effect = result_dict
+        feature_layer_mock = mocker.Mock()
+        feature_layer_mock.attachments.update.side_effect = result_dict
+
+        updater = palletjack.FeatureServiceAttachmentsUpdater(mocker.Mock())
+        updater.feature_layer = feature_layer_mock
 
         with pytest.warns(UserWarning, match='Failed to update oldname2, attachment ID 22, on OID 2 with path2'):
-            count = palletjack.FeatureServiceAttachmentsUpdater._overwrite_attachments_by_oid(
-                updater_mock, action_df, 'path'
-            )
+            count = updater._overwrite_attachments_by_oid(action_df, 'path')
 
         assert count == 2
+        assert updater.failed_dict == {2: ('update', 'path2')}
+
+    def test_overwrite_attachments_by_oid_handles_internal_agol_errors(self, mocker, caplog):
+        action_df = pd.DataFrame({
+            'OBJECTID': [1, 2],
+            'operation': ['overwrite', 'overwrite'],
+            'path': ['path1', 'path2'],
+            'ID': [11, 22],
+            'NAME': ['oldname1', 'oldname2'],
+        })
+
+        feature_layer_mock = mocker.Mock()
+        feature_layer_mock.attachments.update.side_effect = [
+            RuntimeError('foo'),
+            {
+                'updateAttachmentResult': {
+                    'success': True
+                }
+            },
+        ]
+
+        updater = palletjack.FeatureServiceAttachmentsUpdater(mocker.Mock())
+        updater.feature_layer = feature_layer_mock
+
+        count = updater._overwrite_attachments_by_oid(action_df, 'path')
+        assert count == 1
+        assert 'AGOL error while overwritting oldname1 (attachment ID 11) on OID 1 with path1' in caplog.text
+        assert 'foo' in caplog.text
+        assert updater.failed_dict == {1: ('update', 'path1')}
 
     def test_overwrite_attachments_by_oid_skips_add_and_nan(self, mocker):
         action_df = pd.DataFrame({
