@@ -405,7 +405,6 @@ class FeatureServiceAttachmentsUpdater:
                 self.failed_dict[target_oid] = ('update', filepath)
                 continue
 
-            self._class_logger.debug('%s', result)
             if not result['updateAttachmentResult']['success']:
                 warnings.warn(
                     f'Failed to update {old_name}, attachment ID {attachment_id}, on OID {target_oid} with {filepath}'
@@ -485,9 +484,6 @@ class FeatureServiceAttachmentsUpdater:
         Returns:
             pd.DataFrame: Dataframe with join key, attachment name, and full attachment paths
         """
-
-        #: Create an attachments dataframe by subsetting down to just the two fields and dropping any rows
-        #: with null/empty attachments
 
         input_dataframe[attachment_column].replace('', np.nan, inplace=True)  #: pandas doesn't see empty strings as NAs
         attachments_dataframe = input_dataframe[[join_column, attachment_column]] \
