@@ -212,6 +212,25 @@ class GoogleDriveDownloader:
             self._class_logger.warning(err)
             return None
 
+    #: TODO: WIP
+    def download_file_from_google_drive_using_api(self, sharing_link, join_id):
+        if not sharing_link:
+            self._class_logger.debug('Row %s has no attachment info', join_id)
+            return None
+        self._class_logger.debug('Row %s: downloading shared file %s', join_id, sharing_link)
+        try:
+            file_id = self._get_file_id_from_sharing_link(sharing_link)
+            self._class_logger.debug('Row %s: extracted file id %s', join_id, file_id)
+            response = self._get_http_response(file_id)
+            filename = self._get_filename_from_response(response)
+            out_file_path = self.out_dir / filename
+            self._save_response_content(response, out_file_path)
+            return out_file_path
+        except Exception as err:
+            self._class_logger.warning('Row %s: Couldn\'t download %s', join_id, sharing_link)
+            self._class_logger.warning(err)
+            return None
+
     def download_attachments_from_dataframe(self, dataframe, sharing_link_column, join_id_column, output_path_column):
         """Download the attachments linked in a dataframe column, creating a new column with the resulting path
 
