@@ -2,6 +2,7 @@ import builtins
 import json
 import logging
 from pathlib import Path
+from turtle import up
 
 import arcgis
 import numpy as np
@@ -1646,3 +1647,163 @@ class TestAttachments:
         tm.assert_frame_equal(attachment_df[other_fields], test_df[other_fields])
         assert [str(path) for path in attachment_df['full_file_path']
                ] == [str(path) for path in test_df['full_file_path']]
+
+
+class TestFeatureServiceOverwriter:
+
+    def test_rename_columns_from_agol_handles_special_and_space(self):
+        cols = ['Test Name:']
+
+        renamed = palletjack.FeatureServiceOverwriter._rename_columns_for_agol(cols)
+
+        assert renamed == {'Test Name:': 'Test_Name_'}
+
+    def test_rename_columns_from_agol_handles_special_and_space_leaves_others_alone(self):
+        cols = ['Test Name:', 'FooName']
+
+        renamed = palletjack.FeatureServiceOverwriter._rename_columns_for_agol(cols)
+
+        assert renamed == {'Test Name:': 'Test_Name_', 'FooName': 'FooName'}
+
+    def test_rename_columns_from_agol_retains_underscores(self):
+        cols = ['Test Name:', 'Foo_Name']
+
+        renamed = palletjack.FeatureServiceOverwriter._rename_columns_for_agol(cols)
+
+        assert renamed == {'Test Name:': 'Test_Name_', 'Foo_Name': 'Foo_Name'}
+
+    def test_check_fields_match_normal(self, mocker):
+        mock_fl = mocker.Mock()
+        mock_fl.properties = {
+            'fields': [
+                {
+                    'name': 'Foo'
+                },
+                {
+                    'name': 'Bar'
+                },
+            ]
+        }
+        df = pd.DataFrame(columns=['Foo', 'Bar'])
+        overwriter = palletjack.FeatureServiceOverwriter(mocker.Mock())
+
+        palletjack.FeatureServiceOverwriter._check_fields_match(overwriter, mock_fl, df)
+
+    def test_check_fields_match_raises_error_on_extra_new_field(self, mocker):
+        mock_fl = mocker.Mock()
+        mock_fl.properties = {
+            'fields': [
+                {
+                    'name': 'Foo'
+                },
+                {
+                    'name': 'Bar'
+                },
+            ]
+        }
+        df = pd.DataFrame(columns=['Foo', 'Bar', 'Baz'])
+        overwriter = palletjack.FeatureServiceOverwriter(mocker.Mock())
+
+        with pytest.raises(RuntimeError) as exc_info:
+            palletjack.FeatureServiceOverwriter._check_fields_match(overwriter, mock_fl, df)
+
+        assert exc_info.value.args[
+            0] == 'New dataset contains the following fields that are not present in the live dataset: {\'Baz\'}'
+
+    def test_check_fields_match_warns_on_missing_new_field(self, mocker, caplog):
+        mock_fl = mocker.Mock()
+        mock_fl.properties = {
+            'fields': [
+                {
+                    'name': 'Foo'
+                },
+                {
+                    'name': 'Bar'
+                },
+                {
+                    'name': 'Baz'
+                },
+            ]
+        }
+        df = pd.DataFrame(columns=['Foo', 'Bar'])
+        overwriter = palletjack.FeatureServiceOverwriter(mocker.Mock())
+
+        palletjack.FeatureServiceOverwriter._check_fields_match(overwriter, mock_fl, df)
+
+        assert 'New dataset does not contain the following fields that are present in the live dataset: {\'Baz\'}' in caplog.text
+
+    def test_truncate_existing_data_normal(self, mocker):
+        fl_mock = mocker.Mock()
+        fl_mock.manager.truncate.return_value = {
+            'submissionTime': 123,
+            'lastUpdatedTime': 124,
+            'status': 'Completed',
+        }
+        overwriter = palletjack.FeatureServiceOverwriter(mocker.Mock())
+
+        palletjack.FeatureServiceOverwriter._truncate_existing_data(overwriter, fl_mock, 0, 'abc')
+
+    def test_truncate_existing_raises_error_on_failure(self, mocker):
+        fl_mock = mocker.Mock()
+        fl_mock.manager.truncate.return_value = {
+            'submissionTime': 123,
+            'lastUpdatedTime': 124,
+            'status': 'Foo',
+        }
+        overwriter = palletjack.FeatureServiceOverwriter(mocker.Mock())
+
+        with pytest.raises(RuntimeError) as exc_info:
+            palletjack.FeatureServiceOverwriter._truncate_existing_data(overwriter, fl_mock, 0, 'abc')
+
+        assert exc_info.value.args[0] == 'Failed to truncate existing data from layer id 0 in itemid abc'
+
+    def test_append_new_data_doesnt_raise_on_normal(self, mocker):
+        mock_df = mocker.Mock()
+        mock_fl = mocker.Mock()
+        mock_fl.append.return_value = (True, {'message': 'foo'})
+
+        palletjack.FeatureServiceOverwriter._append_new_data(mocker.Mock(), mock_fl, mock_df, 0, 'abc')
+
+    def test_append_new_data_raises_on_False_result(self, mocker):
+        mock_df = mocker.Mock()
+        mock_fl = mocker.Mock()
+        mock_fl.append.return_value = (False, {'message': 'foo'})
+
+        with pytest.raises(RuntimeError) as exc_info:
+            palletjack.FeatureServiceOverwriter._append_new_data(mocker.Mock(), mock_fl, mock_df, 'abc', 0)
+
+        assert exc_info.value.args[
+            0
+        ] == 'Failed to append data to layer id 0 in itemid abc. Append should have been rolled back; truncate has already removed existing data.'
+
+    def test_truncate_and_load_feature_service_normal(self, mocker):
+        mock_fl = mocker.Mock()
+        mock_fl.manager.truncate.return_value = {
+            'submissionTime': 123,
+            'lastUpdatedTime': 124,
+            'status': 'Completed',
+        }
+        mock_fl.properties = {
+            'fields': [
+                {
+                    'name': 'Foo'
+                },
+                {
+                    'name': 'Bar'
+                },
+            ]
+        }
+        mock_fl.append.return_value = (True, {'recordCount': 42})
+
+        fl_class_mock = mocker.Mock()
+        fl_class_mock.fromitem.return_value = mock_fl
+        mocker.patch('arcgis.features.FeatureLayer', fl_class_mock)
+
+        new_dataframe = pd.DataFrame(columns=['Foo', 'Bar'])
+        mocker.patch.object(pd.DataFrame, 'spatial')
+
+        overwriter = palletjack.FeatureServiceOverwriter(mocker.Mock())
+
+        uploaded_features = overwriter.truncate_and_load_feature_service('abc', new_dataframe)
+
+        assert uploaded_features == 42
