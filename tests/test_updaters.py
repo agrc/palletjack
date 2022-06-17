@@ -407,7 +407,7 @@ class TestFeatureServiceInlineUpdaterResultParsing:
 
             assert caplog.records[
                 0
-            ].message == 'The following 1 updates failed. As a result, all successfull updates should have been rolled back.'
+            ].message == 'The following 1 updates failed. As a result, all successful updates should have been rolled back.'
             assert caplog.records[0].levelname == 'WARNING'
 
             assert caplog.records[1].message == "Existing data: {'objectId': 2, 'data': 'bar'}"
@@ -526,7 +526,7 @@ class TestFeatureServiceInlineUpdaterResultParsing:
             assert caplog.records[2].levelname == 'DEBUG'
             assert caplog.records[
                 3
-            ].message == 'The following 1 updates failed. As a result, all successfull updates should have been rolled back.'
+            ].message == 'The following 1 updates failed. As a result, all successful updates should have been rolled back.'
             assert caplog.records[3].levelname == 'WARNING'
             assert caplog.records[4].message == "Existing data: {'objectId': 2, 'data': 'bar'}"
             assert caplog.records[4].levelname == 'WARNING'
@@ -1567,7 +1567,7 @@ class TestAttachments:
 
         count = updater._overwrite_attachments_by_oid(action_df, 'path')
         assert count == 1
-        assert 'AGOL error while overwritting oldname1 (attachment ID 11) on OID 1 with path1' in caplog.text
+        assert 'AGOL error while overwriting oldname1 (attachment ID 11) on OID 1 with path1' in caplog.text
         assert 'foo' in caplog.text
         assert updater.failed_dict == {1: ('update', 'path1')}
 
