@@ -19,11 +19,11 @@ class FeatureServiceInlineUpdater:
     """Updates an AGOL Feature Service with data from a pandas DataFrame
     """
 
-    def __init__(self, gis, dataframe, index_columnn):
+    def __init__(self, gis, dataframe, index_column):
         self.gis = gis
         self.new_dataframe = dataframe
-        self.index_column = index_columnn
-        self.new_data_as_dict = self.new_dataframe.set_index(index_columnn).to_dict('index')
+        self.index_column = index_column
+        self.new_data_as_dict = self.new_dataframe.set_index(index_column).to_dict('index')
         self._class_logger = logging.getLogger(__name__).getChild(self.__class__.__name__)
 
     def update_existing_features_in_feature_service_with_arcpy(self, feature_service_url, fields):
@@ -180,7 +180,7 @@ class FeatureServiceInlineUpdater:
                 self._class_logger.debug('New data: %s', data['new_values'])
         if update_failures:
             self._class_logger.warning(
-                'The following %s updates failed. As a result, all successfull updates should have been rolled back.',
+                'The following %s updates failed. As a result, all successful updates should have been rolled back.',
                 len(update_failures)
             )
             for _, data in self._get_old_and_new_values(live_dataframe_as_dict, update_failures).items():
@@ -396,7 +396,7 @@ class FeatureServiceAttachmentsUpdater:
                 result = self.feature_layer.attachments.update(target_oid, attachment_id, filepath)
             except Exception:
                 self._class_logger.error(
-                    'AGOL error while overwritting %s (attachment ID %s) on OID %s with %s',
+                    'AGOL error while overwriting %s (attachment ID %s) on OID %s with %s',
                     old_name,
                     attachment_id,
                     target_oid,
@@ -509,24 +509,79 @@ class FeatureServiceOverwriter:
 
     @staticmethod
     def _rename_columns_for_agol(columns):
+        """Replace special characters and spaces with '_' to match AGOL field names
+
+        Args:
+            columns (iter): The new columns to be renamed
+
+        Returns:
+            List<str>: The cleaned column names
+        """
+
         rename_dict = {}
         for column in columns:
             no_specials = re.sub(r'[^a-zA-Z0-9 ]', '_', column)
             rename_dict[column] = no_specials.replace(' ', '_')
         return rename_dict
 
-    def truncate_and_load_feature_service(self, feature_service_item_id, new_dataframe, layer_index=0):
-        target_featurelayer = arcgis.features.FeatureLayer.fromitem(
-            self.gis.content.get(feature_service_item_id), layer_id=layer_index
-        )
-        truncate_result = target_featurelayer.manager.truncate(asynchronous=True, wait=True)
+    def _check_fields_match(self, featurelayer, new_dataframe):
+        """Make sure new data doesn't have any extra fields, warn if it doesn't contain all live fields
+
+        Args:
+            featurelayer (arcgis.features.FeatureLayer): Live data
+            new_dataframe (pd.DataFrame): New data
+
+        Raises:
+            RuntimeError: If new data contains a field not present in the live data
+        """
+
+        live_fields = {field['name'] for field in featurelayer.properties['fields']}
+        new_fields = set(new_dataframe.columns)
+        new_dif = new_fields - live_fields
+        live_dif = live_fields - new_fields
+        if new_dif:
+            raise RuntimeError(
+                f'New dataset contains the following fields that are not present in the live dataset: {new_dif}'
+            )
+        if live_dif:
+            self._class_logger.warning(
+                'New dataset does not contain the following fields that are present in the live dataset: %s', live_dif
+            )
+
+    def _truncate_existing_data(self, featurelayer, layer_index, itemid):
+        """Remove all existing features from live dataset
+
+        Args:
+            featurelayer (arcgis.features.FeatureLayer): Live data
+            layer_index (int): Layer id within the main feature service
+            itemid (str): AGOL item ID for the main feature service
+
+        Raises:
+            RuntimeError: If the truncate fails
+        """
+
+        truncate_result = featurelayer.manager.truncate(asynchronous=True, wait=True)
         self._class_logger.debug(truncate_result)
         if truncate_result['status'] != 'Completed':
-            raise RuntimeError(
-                f'Failed to truncate existing data from layer id {layer_index} in itemid {feature_service_item_id}'
-            )
-        cleaned_dataframe = new_dataframe.rename(columns=self._rename_columns_for_agol(new_dataframe.columns))
-        geojson = cleaned_dataframe.spatial.to_featureset().to_geojson
+            raise RuntimeError(f'Failed to truncate existing data from layer id {layer_index} in itemid {itemid}')
+
+    def _append_new_data(self, target_featurelayer, dataframe, feature_service_item_id, layer_index):
+        """Add new data to live dataset
+
+        Args:
+            target_featurelayer (arcgis.features.FeatureLayer): Live dataset; should be empty
+            dataframe (pd.DataFrame): Spatially-enabled dataframe containing new data. Column names should match live data
+            feature_service_item_id (int): Layer ID within the main feature service
+            layer_index (str): AGOL item ID for the main feature service
+
+        Raises:
+            RuntimeError: If append fails; will attempt to rollback appends that worked.
+
+        Returns:
+            dict: Messages returned from append operation
+        """
+
+        geojson = dataframe.spatial.to_featureset().to_geojson
         result, messages = target_featurelayer.append(
             upload_format='geojson', edits=geojson, upsert=False, return_messages=True, rollback=True
         )
@@ -535,6 +590,35 @@ class FeatureServiceOverwriter:
             raise RuntimeError(
                 f'Failed to append data to layer id {layer_index} in itemid {feature_service_item_id}. Append should have been rolled back; truncate has already removed existing data.'
             )
+
+        return messages
+
+    def truncate_and_load_feature_service(self, feature_service_item_id, new_dataframe, layer_index=0):
+        """Attempt to delete existing data from a feature layer and add new data from a spatially-enabled dataframe.
+
+        First attempts to truncate existing data. Then renames new data column names to conform to AGOL scheme (spaces, special chars changed to '_'). Finally attempts to append new data to now-empty feature layer.
+
+        Args:
+            feature_service_item_id (str): AGOL item ID for feature service to truncate and load
+            new_dataframe (pd.DataFrame): Spatially-enabled dataframe containing new data. Must not contain columns that do not exist in the live data. Geometry type must match existing data.
+            layer_index (int, optional): ID for the feature service layer to be truncated and loaded. Defaults to 0.
+
+        Raises:
+            RuntimeError: If new data contains a field not present in the live data
+            RuntimeError: If the truncate fails
+            RuntimeError: If append fails; will attempt to rollback appends that worked.
+
+        Returns:
+            int: The number of new records added after deleting all existing records.
+        """
+
+        target_featurelayer = arcgis.features.FeatureLayer.fromitem(
+            self.gis.content.get(feature_service_item_id), layer_id=layer_index
+        )
+        self._truncate_existing_data(target_featurelayer, layer_index, feature_service_item_id)
+        cleaned_dataframe = new_dataframe.rename(columns=self._rename_columns_for_agol(new_dataframe.columns))
+        self._check_fields_match(target_featurelayer, cleaned_dataframe)
+        messages = self._append_new_data(target_featurelayer, cleaned_dataframe, feature_service_item_id, layer_index)
 
         return messages['recordCount']
 
