@@ -534,6 +534,11 @@ class FeatureServiceOverwriter:
 
         live_fields = {field['name'] for field in featurelayer.properties['fields']}
         new_fields = set(new_dataframe.columns)
+        #: Remove SHAPE field from set (live data expose the 'SHAPE' field)
+        try:
+            new_fields.remove('SHAPE')
+        except KeyError:
+            pass
         new_dif = new_fields - live_fields
         live_dif = live_fields - new_fields
         if new_dif:
@@ -612,9 +617,11 @@ class FeatureServiceOverwriter:
         target_featurelayer = arcgis.features.FeatureLayer.fromitem(
             self.gis.content.get(feature_service_item_id), layer_id=layer_index
         )
+        self._class_logger.info('Truncating existing data...')
         self._truncate_existing_data(target_featurelayer, layer_index, feature_service_item_id)
         cleaned_dataframe = new_dataframe.rename(columns=self._rename_columns_for_agol(new_dataframe.columns))
         self._check_fields_match(target_featurelayer, cleaned_dataframe)
+        self._class_logger.info('Loading new data...')
         messages = self._append_new_data(target_featurelayer, cleaned_dataframe, feature_service_item_id, layer_index)
 
         return messages['recordCount']
