@@ -1710,6 +1710,23 @@ class TestFeatureServiceOverwriter:
         assert exc_info.value.args[
             0] == 'New dataset contains the following fields that are not present in the live dataset: {\'Baz\'}'
 
+    def test_check_fields_match_ignores_new_shape_field(self, mocker):
+        mock_fl = mocker.Mock()
+        mock_fl.properties = {
+            'fields': [
+                {
+                    'name': 'Foo'
+                },
+                {
+                    'name': 'Bar'
+                },
+            ]
+        }
+        df = pd.DataFrame(columns=['Foo', 'Bar', 'SHAPE'])
+        overwriter = palletjack.FeatureServiceOverwriter(mocker.Mock())
+
+        palletjack.FeatureServiceOverwriter._check_fields_match(overwriter, mock_fl, df)
+
     def test_check_fields_match_warns_on_missing_new_field(self, mocker, caplog):
         mock_fl = mocker.Mock()
         mock_fl.properties = {
