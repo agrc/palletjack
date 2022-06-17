@@ -3,6 +3,7 @@
 
 import json
 import logging
+import re
 import warnings
 from pathlib import Path
 
@@ -496,14 +497,46 @@ class FeatureServiceAttachmentsUpdater:
 
 
 class FeatureServiceOverwriter:
-    """Overwrites an AGOL Feature Service with data from a pandas DataFrame and a geometry source (Spatially-enabled
-    Data Frame, feature class, etc)
-
-    To be implemented as needed.
+    """Overwrites an AGOL Feature Service with data from a spatially-enabled DataFrame.
     """
 
+    #: TODO: write tests, run integrated test
+    #: TODO: Make sure fields match, raise warning/error if not
 
-#: TODO: implement for Rick's fleet stuff
+    def __init__(self, gis):
+        self.gis = gis
+        self._class_logger = logging.getLogger(__name__).getChild(self.__class__.__name__)
+
+    @staticmethod
+    def _rename_columns_for_agol(columns):
+        rename_dict = {}
+        for column in columns:
+            no_specials = re.sub(r'[^a-zA-Z0-9 ]', '_', column)
+            rename_dict[column] = no_specials.replace(' ', '_')
+        return rename_dict
+
+    def truncate_and_load_feature_service(self, feature_service_item_id, new_dataframe, layer_index=0):
+        target_featurelayer = arcgis.features.FeatureLayer.fromitem(
+            self.gis.content.get(feature_service_item_id), layer_id=layer_index
+        )
+        truncate_result = target_featurelayer.manager.truncate(asynchronous=True, wait=True)
+        self._class_logger.debug(truncate_result)
+        if truncate_result['status'] != 'Completed':
+            raise RuntimeError(
+                f'Failed to truncate existing data from layer id {layer_index} in itemid {feature_service_item_id}'
+            )
+        cleaned_dataframe = new_dataframe.rename(columns=self._rename_columns_for_agol(new_dataframe.columns))
+        geojson = cleaned_dataframe.spatial.to_featureset().to_geojson
+        result, messages = target_featurelayer.append(
+            upload_format='geojson', edits=geojson, upsert=False, return_messages=True, rollback=True
+        )
+        self._class_logger.debug(messages)
+        if not result:
+            raise RuntimeError(
+                f'Failed to append data to layer id {layer_index} in itemid {feature_service_item_id}. Append should have been rolled back; truncate has already removed existing data.'
+            )
+
+        return messages['recordCount']
 
 
 class ColorRampReclassifier:
