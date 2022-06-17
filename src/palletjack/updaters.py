@@ -55,7 +55,7 @@ class FeatureServiceInlineUpdater:
                         rows_updated += 1
                     except RuntimeError as error:
                         if 'The value type is incompatible with the field type' in str(error):
-                            raise ValueError('Field type mistmatch between dataframe and feature service') from error
+                            raise ValueError('Field type mismatch between dataframe and feature service') from error
         self._class_logger.info('%s rows updated', rows_updated)
 
         return rows_updated
@@ -500,9 +500,6 @@ class FeatureServiceOverwriter:
     """Overwrites an AGOL Feature Service with data from a spatially-enabled DataFrame.
     """
 
-    #: TODO: write tests, run integrated test
-    #: TODO: Make sure fields match, raise warning/error if not
-
     def __init__(self, gis):
         self.gis = gis
         self._class_logger = logging.getLogger(__name__).getChild(self.__class__.__name__)
@@ -515,7 +512,7 @@ class FeatureServiceOverwriter:
             columns (iter): The new columns to be renamed
 
         Returns:
-            List<str>: The cleaned column names
+            Dict: Mapping {'original name': 'cleaned_name'}
         """
 
         rename_dict = {}
