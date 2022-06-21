@@ -1824,3 +1824,48 @@ class TestFeatureServiceOverwriter:
         uploaded_features = overwriter.truncate_and_load_feature_service('abc', new_dataframe)
 
         assert uploaded_features == 42
+
+    def test_replace_nan_series_with_empty_strings_one_empty_one_non_empty_float(self, mocker):
+        df = pd.DataFrame({
+            'normal': [1., 2., 3.],
+            'empty': [np.nan, np.nan, np.nan],
+        })
+
+        fixed_df = palletjack.FeatureServiceOverwriter._replace_nan_series_with_empty_strings(mocker.Mock(), df)
+
+        test_df = pd.DataFrame({
+            'normal': [1., 2., 3.],
+            'empty': ['', '', ''],
+        })
+
+        tm.assert_frame_equal(fixed_df, test_df)
+
+    def test_replace_nan_series_with_empty_strings_other_series_has_nan(self, mocker):
+        df = pd.DataFrame({
+            'normal': [1., 2., np.nan],
+            'empty': [np.nan, np.nan, np.nan],
+        })
+
+        fixed_df = palletjack.FeatureServiceOverwriter._replace_nan_series_with_empty_strings(mocker.Mock(), df)
+
+        test_df = pd.DataFrame({
+            'normal': [1., 2., np.nan],
+            'empty': ['', '', ''],
+        })
+
+        tm.assert_frame_equal(fixed_df, test_df)
+
+    def test_replace_nan_series_with_empty_strings_other_series_is_empty_str(self, mocker):
+        df = pd.DataFrame({
+            'normal': ['', '', ''],
+            'empty': [np.nan, np.nan, np.nan],
+        })
+
+        fixed_df = palletjack.FeatureServiceOverwriter._replace_nan_series_with_empty_strings(mocker.Mock(), df)
+
+        test_df = pd.DataFrame({
+            'normal': ['', '', ''],
+            'empty': ['', '', ''],
+        })
+
+        tm.assert_frame_equal(fixed_df, test_df)

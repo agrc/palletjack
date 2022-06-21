@@ -567,6 +567,25 @@ class FeatureServiceOverwriter:
         if truncate_result['status'] != 'Completed':
             raise RuntimeError(f'Failed to truncate existing data from layer id {layer_index} in itemid {itemid}')
 
+    def _replace_nan_series_with_empty_strings(self, dataframe):
+        """Fill all completely empty series with empty strings ('')
+
+        As of arcgis 2.0.1. to_featureset() doesn't handle completely empty series properly (it relies on str;
+        https://github.com/Esri/arcgis-python-api/issues/1281), so we convert to empty strings for the time being.
+
+        Args:
+            dataframe (pd.DataFrame): Data to clean/fix
+
+        Returns:
+            pd.DataFrame: The cleaned data
+        """
+
+        for column in dataframe:
+            if dataframe[column].isnull().all():
+                self._class_logger.debug('Column %s is empty; replacing np.nans with empty strings', column)
+                dataframe[column].fillna(value='', inplace=True)
+        return dataframe
+
     def _append_new_data(self, target_featurelayer, dataframe, feature_service_item_id, layer_index):
         """Add new data to live dataset
 
@@ -620,9 +639,11 @@ class FeatureServiceOverwriter:
         self._class_logger.info('Truncating existing data...')
         self._truncate_existing_data(target_featurelayer, layer_index, feature_service_item_id)
         cleaned_dataframe = new_dataframe.rename(columns=self._rename_columns_for_agol(new_dataframe.columns))
-        self._check_fields_match(target_featurelayer, cleaned_dataframe)
+        #: temp fix until Esri fixes empty series as NaN bug
+        fixed_dataframe = self._replace_nan_series_with_empty_strings(cleaned_dataframe)
+        self._check_fields_match(target_featurelayer, fixed_dataframe)
         self._class_logger.info('Loading new data...')
-        messages = self._append_new_data(target_featurelayer, cleaned_dataframe, feature_service_item_id, layer_index)
+        messages = self._append_new_data(target_featurelayer, fixed_dataframe, feature_service_item_id, layer_index)
 
         return messages['recordCount']
 
