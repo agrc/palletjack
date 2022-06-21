@@ -517,8 +517,7 @@ class FeatureServiceOverwriter:
 
         rename_dict = {}
         for column in columns:
-            no_specials = re.sub(r'[^a-zA-Z0-9 ]', '_', column)
-            rename_dict[column] = no_specials.replace(' ', '_')
+            rename_dict[column] = re.sub(r'[^a-zA-Z0-9_]', '_', column)
         return rename_dict
 
     def _check_fields_match(self, featurelayer, new_dataframe):
@@ -534,7 +533,7 @@ class FeatureServiceOverwriter:
 
         live_fields = {field['name'] for field in featurelayer.properties['fields']}
         new_fields = set(new_dataframe.columns)
-        #: Remove SHAPE field from set (live data expose the 'SHAPE' field)
+        #: Remove SHAPE field from set (live "featurelayer.properties['fields']" does not expose the 'SHAPE' field)
         try:
             new_fields.remove('SHAPE')
         except KeyError:
