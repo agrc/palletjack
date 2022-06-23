@@ -1,6 +1,7 @@
 import builtins
 import json
 import logging
+import sys
 from pathlib import Path
 from turtle import up
 
@@ -1790,8 +1791,7 @@ class TestFeatureServiceOverwriter:
             palletjack.FeatureServiceOverwriter._append_new_data(mocker.Mock(), mock_fl, mock_df, 'abc', 0)
 
         assert exc_info.value.args[
-            0
-        ] == 'Failed to append data to layer id 0 in itemid abc. Append should have been rolled back; truncate has already removed existing data.'
+            0] == 'Failed to append data to layer id 0 in itemid abc. Append should have been rolled back.'
 
     def test_truncate_and_load_feature_service_normal(self, mocker):
         mock_fl = mocker.Mock()
@@ -1821,9 +1821,86 @@ class TestFeatureServiceOverwriter:
 
         overwriter = palletjack.FeatureServiceOverwriter(mocker.Mock())
 
-        uploaded_features = overwriter.truncate_and_load_feature_service('abc', new_dataframe)
+        uploaded_features = overwriter.truncate_and_load_feature_service('abc', new_dataframe, 'foo/dir')
 
         assert uploaded_features == 42
+
+    def test_truncate_and_load_append_fails_reload_works(self, mocker, caplog):
+        caplog.set_level(logging.DEBUG)
+        mock_fl = mocker.Mock()
+        mock_fl.manager.truncate.return_value = {
+            'submissionTime': 123,
+            'lastUpdatedTime': 124,
+            'status': 'Completed',
+        }
+        mock_fl.properties = {
+            'fields': [
+                {
+                    'name': 'Foo'
+                },
+                {
+                    'name': 'Bar'
+                },
+            ]
+        }
+        mock_fl.append.side_effect = [(False, 'foo'), (True, {'recordCount': 42})]
+
+        fl_class_mock = mocker.Mock()
+        fl_class_mock.fromitem.return_value = mock_fl
+        mocker.patch('arcgis.features.FeatureLayer', fl_class_mock)
+
+        new_dataframe = pd.DataFrame(columns=['Foo', 'Bar'])
+        mocker.patch.object(pd.DataFrame, 'spatial')
+
+        overwriter = palletjack.FeatureServiceOverwriter(mocker.Mock())
+
+        with pytest.raises(
+            RuntimeError,
+            match='Failed to append data to layer id 0 in itemid abc. Append should have been rolled back.'
+        ):
+            uploaded_features = overwriter.truncate_and_load_feature_service('abc', new_dataframe, 'foo/dir')
+
+        assert 'Append failed; attempting to re-load truncated data...' in caplog.text
+        assert '42 features reloaded' in caplog.text
+
+    def test_truncate_and_load_append_fails_reload_fails(self, mocker, caplog):
+        caplog.set_level(logging.DEBUG)
+        mock_fl = mocker.Mock()
+        mock_fl.manager.truncate.return_value = {
+            'submissionTime': 123,
+            'lastUpdatedTime': 124,
+            'status': 'Completed',
+        }
+        mock_fl.properties = {
+            'fields': [
+                {
+                    'name': 'Foo'
+                },
+                {
+                    'name': 'Bar'
+                },
+            ]
+        }
+        mock_fl.append.side_effect = [(False, 'foo'), (False, 'bar')]
+
+        fl_class_mock = mocker.Mock()
+        fl_class_mock.fromitem.return_value = mock_fl
+        mocker.patch('arcgis.features.FeatureLayer', fl_class_mock)
+
+        new_dataframe = pd.DataFrame(columns=['Foo', 'Bar'])
+        mocker.patch.object(pd.DataFrame, 'spatial')
+
+        mocker.patch.object(palletjack.FeatureServiceOverwriter, '_save_truncated_data', return_value='/foo/bar.json')
+
+        overwriter = palletjack.FeatureServiceOverwriter(mocker.Mock())
+
+        with pytest.raises(RuntimeError) as exc_info:
+            uploaded_features = overwriter.truncate_and_load_feature_service('abc', new_dataframe, 'foo/dir')
+
+        assert exc_info.value.args[
+            0] == 'Failed to re-add truncated data after failed append; data saved to /foo/bar.json'
+        assert 'Append failed; attempting to re-load truncated data...' in caplog.text
+        assert 'features reloaded' not in caplog.text
 
     def test_replace_nan_series_with_empty_strings_one_empty_one_non_empty_float(self, mocker):
         df = pd.DataFrame({
@@ -1869,3 +1946,57 @@ class TestFeatureServiceOverwriter:
         })
 
         tm.assert_frame_equal(fixed_df, test_df)
+
+    def test_save_truncated_data_calls_write_with_json(self, mocker):
+        mock_df = pd.DataFrame({
+            'foo': [1],
+            'x': [11],
+            'y': [14],
+        })
+        #: Need to 'unload' the mocked arcpy used in tests above so that .from_xy() works. This could be pulled
+        #: out if these tests or the other tests are in their own files.
+        if 'arcpy' in sys.modules:
+            del sys.modules['arcpy']
+
+        mock_sdf = pd.DataFrame.spatial.from_xy(mock_df, 'x', 'y')
+
+        open_mock = mocker.MagicMock()
+        context_manager_mock = mocker.MagicMock()
+        context_manager_mock.return_value.__enter__.return_value = open_mock
+        mocker.patch('pathlib.Path.open', new=context_manager_mock)
+
+        palletjack.FeatureServiceOverwriter._save_truncated_data(mocker.Mock(), mock_sdf, 'foo')
+
+        test_json_string = '{"features": [{"geometry": {"spatialReference": {"wkid": 4326}, "x": 11, "y": 14}, "attributes": {"foo": 1, "x": 11, "y": 14, "OBJECTID": 1}}], "objectIdFieldName": "OBJECTID", "displayFieldName": "OBJECTID", "spatialReference": {"wkid": 4326}, "geometryType": "esriGeometryPoint", "fields": [{"name": "OBJECTID", "type": "esriFieldTypeOID", "alias": "OBJECTID"}, {"name": "foo", "type": "esriFieldTypeInteger", "alias": "foo"}, {"name": "x", "type": "esriFieldTypeInteger", "alias": "x"}, {"name": "y", "type": "esriFieldTypeInteger", "alias": "y"}]}'
+
+        assert open_mock.write.called_with(test_json_string)
+
+    def test_save_truncated_data_opens_file_with_right_name(self, mocker):
+        mock_df = pd.DataFrame({
+            'foo': [1],
+            'x': [11],
+            'y': [14],
+        })
+        #: Need to 'unload' the mocked arcpy used in tests above so that .from_xy() works. This could be pulled
+        #: out if these tests or the other tests are in their own files.
+        if 'arcpy' in sys.modules:
+            del sys.modules['arcpy']
+
+        mock_sdf = pd.DataFrame.spatial.from_xy(mock_df, 'x', 'y')
+
+        open_mock = mocker.MagicMock()
+        context_manager_mock = mocker.MagicMock()
+        context_manager_mock.return_value.__enter__.return_value = open_mock
+
+        datetime_mock = mocker.Mock()
+        datetime_mock.date.today.return_value = 'foo-date'
+        mocker.patch('palletjack.updaters.datetime', new=datetime_mock)
+
+        open_mock = mocker.MagicMock()
+        context_manager_mock = mocker.MagicMock()
+        context_manager_mock.return_value.__enter__.return_value = open_mock
+        mocker.patch('pathlib.Path.open', new=context_manager_mock)
+
+        out_path = palletjack.FeatureServiceOverwriter._save_truncated_data(mocker.Mock(), mock_sdf, 'foo')
+
+        assert out_path == Path('foo/old_data_foo-date.json')
