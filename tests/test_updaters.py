@@ -2,14 +2,15 @@ import builtins
 import json
 import logging
 import sys
+import urllib
 from pathlib import Path
-from turtle import up
 
 import arcgis
 import numpy as np
 import pandas as pd
 import pandas.testing as tm
 import pytest
+import requests
 from arcgis.features import GeoAccessor, GeoSeriesAccessor
 from mock_arcpy import arcpy
 from pandas.api.types import CategoricalDtype
@@ -1775,20 +1776,124 @@ class TestFeatureServiceOverwriter:
 
         assert exc_info.value.args[0] == 'Failed to truncate existing data from layer id 0 in itemid abc'
 
+    def test_truncate_existing_retries_on_HTTPError(self, mocker):
+        fl_mock = mocker.Mock()
+        fl_mock.manager.truncate.side_effect = [
+            urllib.error.HTTPError('url', 'code', 'msg', 'hdrs', 'fp'), {
+                'submissionTime': 123,
+                'lastUpdatedTime': 124,
+                'status': 'Completed',
+            }
+        ]
+        overwriter = palletjack.FeatureServiceOverwriter(mocker.Mock())
+
+        palletjack.FeatureServiceOverwriter._truncate_existing_data(overwriter, fl_mock, 0, 'abc')
+
+    def test_retry_returns_on_first_success(self, mocker):
+        mock = mocker.Mock()
+        mock.function.return_value = 42
+
+        overwriter = palletjack.FeatureServiceOverwriter(mocker.Mock())
+
+        answer = overwriter._retry(lambda: mock.function('a', 'b'))
+
+        assert answer == 42
+        assert mock.function.call_count == 1
+
+    def test_retry_returns_after_one_failure(self, mocker):
+        mock = mocker.Mock()
+        mock.function.side_effect = [urllib.error.HTTPError('a', 'b', 'c', 'd', 'e'), 42]
+        mocker.patch('palletjack.updaters.sleep')
+
+        overwriter = palletjack.FeatureServiceOverwriter(mocker.Mock())
+
+        answer = overwriter._retry(lambda: mock.function('a', 'b'))
+
+        assert answer == 42
+        assert mock.function.call_count == 2
+
+    def test_retry_returns_after_two_failures(self, mocker):
+        mock = mocker.Mock()
+        mock.function.side_effect = [
+            urllib.error.HTTPError('a', 'b', 'c', 'd', 'e'),
+            urllib.error.HTTPError('a', 'b', 'c', 'd', 'e'),
+            42,
+        ]
+        mocker.patch('palletjack.updaters.sleep')
+
+        overwriter = palletjack.FeatureServiceOverwriter(mocker.Mock())
+
+        answer = overwriter._retry(lambda: mock.function('a', 'b'))
+
+        assert answer == 42
+        assert mock.function.call_count == 3
+
+    def test_retry_fails_after_four_failures(self, mocker):
+        mock = mocker.Mock()
+        mock.function.side_effect = [
+            urllib.error.HTTPError('a', 'b', 'c', 'd', 'e'),
+            urllib.error.HTTPError('a', 'b', 'c', 'd', 'e'),
+            urllib.error.HTTPError('a', 'b', 'c', 'd', 'e'),
+            urllib.error.HTTPError('a', 'b', 'c', 'd', 'e'),
+            42,
+        ]
+        mocker.patch('palletjack.updaters.sleep')
+
+        overwriter = palletjack.FeatureServiceOverwriter(mocker.Mock())
+
+        with pytest.raises(urllib.error.HTTPError):
+            answer = overwriter._retry(lambda: mock.function('a', 'b'))
+
+        # assert answer == 42
+        assert mock.function.call_count == 4
+
+    def test_retry_retries_on_request_http_error(self, mocker):
+        mock = mocker.Mock()
+        mock.function.side_effect = [requests.exceptions.HTTPError, 42]
+        mocker.patch('palletjack.updaters.sleep')
+
+        overwriter = palletjack.FeatureServiceOverwriter(mocker.Mock())
+
+        answer = overwriter._retry(lambda: mock.function('a', 'b'))
+
+        assert answer == 42
+
+    def test_retry_retries_on_request_ssl_error(self, mocker):
+        mock = mocker.Mock()
+        mock.function.side_effect = [requests.exceptions.SSLError, 42]
+        mocker.patch('palletjack.updaters.sleep')
+
+        overwriter = palletjack.FeatureServiceOverwriter(mocker.Mock())
+
+        answer = overwriter._retry(lambda: mock.function('a', 'b'))
+
+        assert answer == 42
+
     def test_append_new_data_doesnt_raise_on_normal(self, mocker):
         mock_df = mocker.Mock()
         mock_fl = mocker.Mock()
         mock_fl.append.return_value = (True, {'message': 'foo'})
 
-        palletjack.FeatureServiceOverwriter._append_new_data(mocker.Mock(), mock_fl, mock_df, 0, 'abc')
+        overwriter = palletjack.FeatureServiceOverwriter(mocker.Mock())
+        overwriter._append_new_data(mock_fl, mock_df, 0, 'abc')
+
+    def test_append_new_data_retries_on_httperror(self, mocker):
+        mock_df = mocker.Mock()
+        mock_fl = mocker.Mock()
+        mock_fl.append.side_effect = [urllib.error.HTTPError('a', 'b', 'c', 'd', 'e'), (True, {'message': 'foo'})]
+
+        overwriter = palletjack.FeatureServiceOverwriter(mocker.Mock())
+        overwriter._append_new_data(mock_fl, mock_df, 0, 'abc')
 
     def test_append_new_data_raises_on_False_result(self, mocker):
         mock_df = mocker.Mock()
         mock_fl = mocker.Mock()
         mock_fl.append.return_value = (False, {'message': 'foo'})
 
+        overwriter = palletjack.FeatureServiceOverwriter(mocker.Mock())
+
         with pytest.raises(RuntimeError) as exc_info:
-            palletjack.FeatureServiceOverwriter._append_new_data(mocker.Mock(), mock_fl, mock_df, 'abc', 0)
+            overwriter._append_new_data(mock_fl, mock_df, 'abc', 0)
 
         assert exc_info.value.args[
             0] == 'Failed to append data to layer id 0 in itemid abc. Append should have been rolled back.'
