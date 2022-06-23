@@ -1,6 +1,7 @@
 """Objects for bringing data from SFTP-hosted CSVs into AGOL Feature Services
 """
 
+import datetime
 import json
 import logging
 import re
@@ -559,12 +560,17 @@ class FeatureServiceOverwriter:
 
         Raises:
             RuntimeError: If the truncate fails
+
+        Returns:
+            pd.DataFrame: The feature layer's data prior to truncating
         """
 
+        old_data = featurelayer.query(as_df=True)
         truncate_result = featurelayer.manager.truncate(asynchronous=True, wait=True)
         self._class_logger.debug(truncate_result)
         if truncate_result['status'] != 'Completed':
             raise RuntimeError(f'Failed to truncate existing data from layer id {layer_index} in itemid {itemid}')
+        return old_data
 
     def _replace_nan_series_with_empty_strings(self, dataframe):
         """Fill all completely empty series with empty strings ('')
@@ -608,12 +614,29 @@ class FeatureServiceOverwriter:
         self._class_logger.debug(messages)
         if not result:
             raise RuntimeError(
-                f'Failed to append data to layer id {layer_index} in itemid {feature_service_item_id}. Append should have been rolled back; truncate has already removed existing data.'
+                f'Failed to append data to layer id {layer_index} in itemid {feature_service_item_id}. Append should have been rolled back.'
             )
 
         return messages
 
-    def truncate_and_load_feature_service(self, feature_service_item_id, new_dataframe, layer_index=0):
+    def _save_truncated_data(self, dataframe, directory):
+        """Save the pre-truncate dataframe to directory for safety
+
+        Args:
+            dataframe (pd.DataFrame): The data extracted from the feature layer prior to truncating
+            directory (str or Path): The directory to save the data to.
+
+        Returns:
+            Path: The full path to the output file, named with today's date.
+        """
+
+        out_path = Path(directory, f'old_data_{datetime.date.today()}.json')
+        json_string = dataframe.spatial.to_featureset().to_json
+        with out_path.open('w', encoding='utf-8') as outfile:
+            outfile.write(json_string)
+        return out_path
+
+    def truncate_and_load_feature_service(self, feature_service_item_id, new_dataframe, failsafe_dir, layer_index=0):
         """Attempt to delete existing data from a feature layer and add new data from a spatially-enabled dataframe.
 
         First attempts to truncate existing data. Then renames new data column names to conform to AGOL scheme (spaces, special chars changed to '_'). Finally attempts to append new data to now-empty feature layer.
@@ -636,13 +659,28 @@ class FeatureServiceOverwriter:
             self.gis.content.get(feature_service_item_id), layer_id=layer_index
         )
         self._class_logger.info('Truncating existing data...')
-        self._truncate_existing_data(target_featurelayer, layer_index, feature_service_item_id)
+        old_dataframe = self._truncate_existing_data(target_featurelayer, layer_index, feature_service_item_id)
         cleaned_dataframe = new_dataframe.rename(columns=self._rename_columns_for_agol(new_dataframe.columns))
         #: temp fix until Esri fixes empty series as NaN bug
         fixed_dataframe = self._replace_nan_series_with_empty_strings(cleaned_dataframe)
         self._check_fields_match(target_featurelayer, fixed_dataframe)
         self._class_logger.info('Loading new data...')
-        messages = self._append_new_data(target_featurelayer, fixed_dataframe, feature_service_item_id, layer_index)
+        try:
+            messages = self._append_new_data(target_featurelayer, fixed_dataframe, feature_service_item_id, layer_index)
+        except Exception:
+            try:
+                self._class_logger.info('Append failed; attempting to re-load truncated data...')
+                messages = self._append_new_data(
+                    target_featurelayer, old_dataframe, feature_service_item_id, layer_index
+                )
+                self._class_logger.info('%s features reloaded', messages['recordCount'])
+            except Exception as inner_error:
+                failsafe_path = self._save_truncated_data(old_dataframe, failsafe_dir)
+                raise RuntimeError(
+                    f'Failed to re-add truncated data after failed append; data saved to {failsafe_path}'
+                ) from inner_error
+            finally:
+                raise
 
         return messages['recordCount']
 
