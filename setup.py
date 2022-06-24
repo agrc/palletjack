@@ -38,6 +38,7 @@ setup(
         'numpy==1.23.*',
         'arcgis==2.0.*',
         'pygsheets==2.0.*',
+        'gssapi',
     ],
     extras_require={
         'tests': [
