@@ -508,41 +508,45 @@ class FeatureServiceOverwriter:
         self.gis = gis
         self._class_logger = logging.getLogger(__name__).getChild(self.__class__.__name__)
 
-    def _retry(self, worker_method, tries=1):
-        """Retries worker_method three times with increasing pauses on network errors to handle network glitches
+    def _retry(self, worker_method, *args, **kwargs):
+        """Allows you to retry a function/method three times to overcome network jitters
 
-        Retries three times if it encounters urllib.error.HTTPError, requests.exceptions.HTTPError, or requests.
-        exceptions.SSLError
+        Retries worker_method three times (for a total of four tries, including the initial attempt), pausing 2^trycount seconds between each retry. Any arguments for worker_method can be passed in as additional parameters to _retry() following worker_method: _retry(foo_method, arg1, arg2, keyword_arg=3)
 
         Args:
-            worker_method (callable): The function/method you want to retry
-            tries (int, optional): Used to pass number of tries through the recursive call stack. Do not modify.
+            worker_method (callable): The name of the method to be retried (minus the calling parens)
 
         Raises:
-            error: The original error (of the three listed types) if it still fails after three retries
+            error: The final error the causes worker_method to fail after 3 retries
 
         Returns:
-            varies: The results of worker_method()
+            various: The value(s) returned by worked_method
         """
-
+        tries = 1
         max_tries = 3
         delay = 2  #: in seconds
 
-        try:
-            return worker_method()
+        #: this inner function (closure? almost-closure?) allows us to keep track of tries without passing it as an arg
+        def _inner_retry(worker_method, *args, **kwargs):
+            nonlocal tries
 
-        #: I think these are the types of errors the arcgis API for Python can return for connection issues. There may
-        #: be more?
-        except (HTTPError, requests.exceptions.HTTPError, requests.exceptions.SSLError) as error:
-            if tries <= max_tries:
-                wait_time = delay**tries
-                self._class_logger.debug(
-                    'Exception "%s" thrown on "%s". Retrying after %s seconds...', error, worker_method, wait_time
-                )
-                sleep(wait_time)
-                return self._retry(worker_method, tries + 1)
-            else:
-                raise error
+            try:
+                return worker_method(*args, **kwargs)
+
+            #: ArcGIS API for Python loves throwing bog-standard Exceptions, so we can't narrow this down further
+            except Exception as error:
+                if tries <= max_tries:  #pylint: disable=no-else-return
+                    wait_time = delay**tries
+                    self._class_logger.debug(
+                        'Exception "%s" thrown on "%s". Retrying after %s seconds...', error, worker_method, wait_time
+                    )
+                    sleep(wait_time)
+                    tries += 1
+                    return _inner_retry(worker_method, *args, **kwargs)
+                else:
+                    raise error
+
+        return _inner_retry(worker_method, *args, **kwargs)
 
     @staticmethod
     def _rename_columns_for_agol(columns):
@@ -605,7 +609,7 @@ class FeatureServiceOverwriter:
         """
 
         old_data = featurelayer.query(as_df=True)
-        truncate_result = self._retry(lambda: featurelayer.manager.truncate(asynchronous=True, wait=True))
+        truncate_result = self._retry(featurelayer.manager.truncate, asynchronous=True, wait=True)
         self._class_logger.debug(truncate_result)
         if truncate_result['status'] != 'Completed':
             raise RuntimeError(f'Failed to truncate existing data from layer id {layer_index} in itemid {itemid}')
@@ -648,13 +652,12 @@ class FeatureServiceOverwriter:
 
         geojson = dataframe.spatial.to_featureset().to_geojson
         result, messages = self._retry(
-            lambda: target_featurelayer.append(
-                upload_format='geojson',
-                edits=geojson,
-                upsert=False,
-                return_messages=True,
-                rollback=True,
-            )
+            target_featurelayer.append,
+            upload_format='geojson',
+            edits=geojson,
+            upsert=False,
+            return_messages=True,
+            rollback=True,
         )
 
         self._class_logger.debug(messages)
