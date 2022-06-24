@@ -1795,7 +1795,7 @@ class TestFeatureServiceOverwriter:
 
         overwriter = palletjack.FeatureServiceOverwriter(mocker.Mock())
 
-        answer = overwriter._retry(lambda: mock.function('a', 'b'))
+        answer = overwriter._retry(mock.function, 'a', 'b')
 
         assert answer == 42
         assert mock.function.call_count == 1
@@ -1807,7 +1807,7 @@ class TestFeatureServiceOverwriter:
 
         overwriter = palletjack.FeatureServiceOverwriter(mocker.Mock())
 
-        answer = overwriter._retry(lambda: mock.function('a', 'b'))
+        answer = overwriter._retry(mock.function, 'a', 'b')
 
         assert answer == 42
         assert mock.function.call_count == 2
@@ -1823,7 +1823,7 @@ class TestFeatureServiceOverwriter:
 
         overwriter = palletjack.FeatureServiceOverwriter(mocker.Mock())
 
-        answer = overwriter._retry(lambda: mock.function('a', 'b'))
+        answer = overwriter._retry(mock.function, 'a', 'b')
 
         assert answer == 42
         assert mock.function.call_count == 3
@@ -1842,7 +1842,7 @@ class TestFeatureServiceOverwriter:
         overwriter = palletjack.FeatureServiceOverwriter(mocker.Mock())
 
         with pytest.raises(urllib.error.HTTPError):
-            answer = overwriter._retry(lambda: mock.function('a', 'b'))
+            answer = overwriter._retry(mock.function, 'a', 'b')
 
         # assert answer == 42
         assert mock.function.call_count == 4
@@ -1854,7 +1854,7 @@ class TestFeatureServiceOverwriter:
 
         overwriter = palletjack.FeatureServiceOverwriter(mocker.Mock())
 
-        answer = overwriter._retry(lambda: mock.function('a', 'b'))
+        answer = overwriter._retry(mock.function, 'a', 'b')
 
         assert answer == 42
 
@@ -1865,7 +1865,7 @@ class TestFeatureServiceOverwriter:
 
         overwriter = palletjack.FeatureServiceOverwriter(mocker.Mock())
 
-        answer = overwriter._retry(lambda: mock.function('a', 'b'))
+        answer = overwriter._retry(mock.function, 'a', 'b')
 
         assert answer == 42
 
