@@ -680,9 +680,7 @@ class FeatureServiceOverwriter:
         """
 
         out_path = Path(directory, f'old_data_{datetime.date.today()}.json')
-        json_string = dataframe.spatial.to_featureset().to_json
-        with out_path.open('w', encoding='utf-8') as outfile:
-            outfile.write(json_string)
+        out_path.write_text(dataframe.spatial.to_featureset().to_json)
         return out_path
 
     def truncate_and_load_feature_service(self, feature_service_item_id, new_dataframe, failsafe_dir, layer_index=0):
