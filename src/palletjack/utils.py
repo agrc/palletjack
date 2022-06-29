@@ -114,6 +114,22 @@ def check_fields_match(featurelayer, new_dataframe):
         )
 
 
+def check_index_column_in_feature_layer(featurelayer, index_column):
+    """Ensure index_column is present for any future operations
+
+    Args:
+        featurelayer (arcgis.features.FeatureLayer): The live feature layer
+        index_column (str): The index column meant to link new and live data
+
+    Raises:
+        RuntimeError: If index_column is not in featurelayer's fields
+    """
+
+    featurelayer_fields = [field['name'] for field in featurelayer.properties['fields']]
+    if index_column not in featurelayer_fields:
+        raise RuntimeError(f'Index column {index_column} not found in feature layer fields {featurelayer_fields}')
+
+
 #: This isn't used anymore... but it feels like a shame to lose it.
 def build_sql_in_list(series):
     """Generate a properly formatted list to be a target for a SQL 'IN' clause

@@ -23,9 +23,12 @@ class FeatureServiceInlineUpdater:
 
     def __init__(self, gis, dataframe, index_column):
         self.gis = gis
-        self.new_dataframe = dataframe
-        self.index_column = index_column
-        self.new_data_as_dict = self.new_dataframe.set_index(index_column).to_dict('index')
+        self.new_dataframe = dataframe.rename(columns=utils.rename_columns_for_agol(dataframe.columns))
+        self.index_column = utils.rename_columns_for_agol([index_column])[index_column]
+        try:
+            self.new_data_as_dict = self.new_dataframe.set_index(self.index_column).to_dict('index')
+        except KeyError as error:
+            raise KeyError(f'Index column {index_column} not found in dataframe columns') from error
         self._class_logger = logging.getLogger(__name__).getChild(self.__class__.__name__)
 
     def update_existing_features_in_feature_service_with_arcpy(self, feature_service_url, fields):
@@ -72,7 +75,8 @@ class FeatureServiceInlineUpdater:
 
         if live_dif or new_dif:
             raise RuntimeError(
-                f'Field mismatch between defined fields and either new or live data.\nFields not in live data: {live_dif}\nFields not in new data: {new_dif}'
+                f'Field mismatch between defined fields and either new or live data.\nFields not in live data: '
+                f'{live_dif}\nFields not in new data: {new_dif}'
             )
 
     def _get_common_rows(self, live_dataframe) -> pd.DataFrame:
@@ -227,6 +231,64 @@ class FeatureServiceInlineUpdater:
         log_fields.extend(fields)
         number_of_rows_updated = self._parse_results(results, live_dataframe[log_fields])
         return number_of_rows_updated
+
+    def _upsert_new_data(self, target_featurelayer, dataframe, feature_service_item_id, layer_index):
+        """UPdate and inSERT new data to live dataset with featurelayer.append()
+
+        Args:
+            target_featurelayer (arcgis.features.FeatureLayer): Live dataset
+            dataframe (pd.DataFrame): Spatially-enabled dataframe containing new data. Column names should match live
+            data. New data must have a valid shape column
+            feature_service_item_id (int): Layer ID within the main feature service
+            layer_index (str): AGOL item ID for the main feature service
+
+        Raises:
+            RuntimeError: If append fails; will attempt to rollback appends that worked.
+
+        Returns:
+            dict: Messages returned from append operation
+        """
+
+        geojson = dataframe.spatial.to_featureset().to_geojson
+        result, messages = utils.retry(
+            target_featurelayer.append,
+            upload_format='geojson',
+            edits=geojson,
+            upsert=True,
+            return_messages=True,
+            rollback=True,
+            upsert_matching_field=self.index_column
+        )
+
+        self._class_logger.debug(messages)
+        if not result:
+            raise RuntimeError(
+                f'Failed to append data to layer id {layer_index} in itemid {feature_service_item_id}. Append should'
+                ' have been rolled back.'
+            )
+
+        return messages
+
+    def upsert_new_data_in_hosted_feature_layer(self, feature_service_item_id, layer_index=0):
+        target_featurelayer = arcgis.features.FeatureLayer.fromitem(
+            self.gis.content.get(feature_service_item_id), layer_id=layer_index
+        )
+        #: temp fix until Esri fixes empty series as NaN bug
+        fixed_dataframe = utils.replace_nan_series_with_empty_strings(self.new_dataframe)
+        utils.check_fields_match(target_featurelayer, fixed_dataframe)
+        utils.check_index_column_in_feature_layer(target_featurelayer, self.index_column)
+        self._class_logger.info('Loading new data...')
+        messages = self._upsert_new_data(target_featurelayer, fixed_dataframe, feature_service_item_id, layer_index)
+
+        return messages['recordCount']
+
+
+# class FeatureServiceUpserter:
+
+#     def __init__(self, gis, index_column) -> None:
+#         self.gis = gis
+#         self.index_column = index_column
+#         self._class_logger = logging.getLogger(__name__).getChild(self.__class__.__name__)
 
 
 class FeatureServiceAttachmentsUpdater:
@@ -516,7 +578,8 @@ class FeatureServiceOverwriter:
 
         Args:
             target_featurelayer (arcgis.features.FeatureLayer): Live dataset; should be empty
-            dataframe (pd.DataFrame): Spatially-enabled dataframe containing new data. Column names should match live data
+            dataframe (pd.DataFrame): Spatially-enabled dataframe containing new data. Column names should match live
+            data
             feature_service_item_id (int): Layer ID within the main feature service
             layer_index (str): AGOL item ID for the main feature service
 
@@ -540,7 +603,8 @@ class FeatureServiceOverwriter:
         self._class_logger.debug(messages)
         if not result:
             raise RuntimeError(
-                f'Failed to append data to layer id {layer_index} in itemid {feature_service_item_id}. Append should have been rolled back.'
+                f'Failed to append data to layer id {layer_index} in itemid {feature_service_item_id}. Append should'
+                ' have been rolled back.'
             )
 
         return messages
@@ -563,11 +627,13 @@ class FeatureServiceOverwriter:
     def truncate_and_load_feature_service(self, feature_service_item_id, new_dataframe, failsafe_dir, layer_index=0):
         """Attempt to delete existing data from a feature layer and add new data from a spatially-enabled dataframe.
 
-        First attempts to truncate existing data. Then renames new data column names to conform to AGOL scheme (spaces, special chars changed to '_'). Finally attempts to append new data to now-empty feature layer.
+        First attempts to truncate existing data. Then renames new data column names to conform to AGOL scheme (spaces,
+        special chars changed to '_'). Finally attempts to append new data to now-empty feature layer.
 
         Args:
             feature_service_item_id (str): AGOL item ID for feature service to truncate and load
-            new_dataframe (pd.DataFrame): Spatially-enabled dataframe containing new data. Must not contain columns that do not exist in the live data. Geometry type must match existing data.
+            new_dataframe (pd.DataFrame): Spatially-enabled dataframe containing new data. Must not contain columns
+            that do not exist in the live data. Geometry type must match existing data.
             layer_index (int, optional): ID for the feature service layer to be truncated and loaded. Defaults to 0.
 
         Raises:

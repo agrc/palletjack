@@ -205,3 +205,39 @@ class TestReplaceNanSeries:
         })
 
         tm.assert_frame_equal(fixed_df, test_df)
+
+
+class TestCheckIndexColumnInFL:
+
+    def test_check_index_column_in_feature_layer_doesnt_raise_on_normal(self, mocker):
+        fl_mock = mocker.Mock()
+        fl_mock.properties = {
+            'fields': [
+                {
+                    'name': 'Foo'
+                },
+                {
+                    'name': 'Bar'
+                },
+            ]
+        }
+
+        palletjack.utils.check_index_column_in_feature_layer(fl_mock, 'Foo')
+
+    def test_check_index_column_in_feature_layer_raises_on_missing(self, mocker):
+        fl_mock = mocker.Mock()
+        fl_mock.properties = {
+            'fields': [
+                {
+                    'name': 'Foo'
+                },
+                {
+                    'name': 'Bar'
+                },
+            ]
+        }
+
+        with pytest.raises(RuntimeError) as exc_info:
+            palletjack.utils.check_index_column_in_feature_layer(fl_mock, 'Baz')
+
+        assert exc_info.value.args[0] == 'Index column Baz not found in feature layer fields [\'Foo\', \'Bar\']'
