@@ -1,0 +1,207 @@
+import numpy as np
+import pandas as pd
+import pytest
+from pandas import testing as tm
+
+import palletjack
+
+
+class TestRenameColumns:
+
+    def test_rename_columns_from_agol_handles_special_and_space(self):
+        cols = ['Test Name:']
+
+        renamed = palletjack.utils.rename_columns_for_agol(cols)
+
+        assert renamed == {'Test Name:': 'Test_Name_'}
+
+    def test_rename_columns_from_agol_handles_special_and_space_leaves_others_alone(self):
+        cols = ['Test Name:', 'FooName']
+
+        renamed = palletjack.utils.rename_columns_for_agol(cols)
+
+        assert renamed == {'Test Name:': 'Test_Name_', 'FooName': 'FooName'}
+
+    def test_rename_columns_from_agol_retains_underscores(self):
+        cols = ['Test Name:', 'Foo_Name']
+
+        renamed = palletjack.utils.rename_columns_for_agol(cols)
+
+        assert renamed == {'Test Name:': 'Test_Name_', 'Foo_Name': 'Foo_Name'}
+
+
+class TestCheckFieldsMatch:
+
+    def test_check_fields_match_normal(self, mocker):
+        mock_fl = mocker.Mock()
+        mock_fl.properties = {
+            'fields': [
+                {
+                    'name': 'Foo'
+                },
+                {
+                    'name': 'Bar'
+                },
+            ]
+        }
+        df = pd.DataFrame(columns=['Foo', 'Bar'])
+
+        palletjack.utils.check_fields_match(mock_fl, df)
+
+    def test_check_fields_match_raises_error_on_extra_new_field(self, mocker):
+        mock_fl = mocker.Mock()
+        mock_fl.properties = {
+            'fields': [
+                {
+                    'name': 'Foo'
+                },
+                {
+                    'name': 'Bar'
+                },
+            ]
+        }
+        df = pd.DataFrame(columns=['Foo', 'Bar', 'Baz'])
+
+        with pytest.raises(RuntimeError) as exc_info:
+            palletjack.utils.check_fields_match(mock_fl, df)
+
+        assert exc_info.value.args[
+            0] == 'New dataset contains the following fields that are not present in the live dataset: {\'Baz\'}'
+
+    def test_check_fields_match_ignores_new_shape_field(self, mocker):
+        mock_fl = mocker.Mock()
+        mock_fl.properties = {
+            'fields': [
+                {
+                    'name': 'Foo'
+                },
+                {
+                    'name': 'Bar'
+                },
+            ]
+        }
+        df = pd.DataFrame(columns=['Foo', 'Bar', 'SHAPE'])
+
+        palletjack.utils.check_fields_match(mock_fl, df)
+
+    def test_check_fields_match_warns_on_missing_new_field(self, mocker, caplog):
+        mock_fl = mocker.Mock()
+        mock_fl.properties = {
+            'fields': [
+                {
+                    'name': 'Foo'
+                },
+                {
+                    'name': 'Bar'
+                },
+                {
+                    'name': 'Baz'
+                },
+            ]
+        }
+        df = pd.DataFrame(columns=['Foo', 'Bar'])
+
+        palletjack.utils.check_fields_match(mock_fl, df)
+
+        assert 'New dataset does not contain the following fields that are present in the live dataset: {\'Baz\'}' in caplog.text
+
+
+class TestRetry:
+
+    def test_retry_returns_on_first_success(self, mocker):
+        mock = mocker.Mock()
+        mock.function.return_value = 42
+
+        answer = palletjack.utils.retry(mock.function, 'a', 'b')
+
+        assert answer == 42
+        assert mock.function.call_count == 1
+
+    def test_retry_returns_after_one_failure(self, mocker):
+        mock = mocker.Mock()
+        mock.function.side_effect = [Exception, 42]
+        mocker.patch('palletjack.utils.sleep')
+
+        answer = palletjack.utils.retry(mock.function, 'a', 'b')
+
+        assert answer == 42
+        assert mock.function.call_count == 2
+
+    def test_retry_returns_after_two_failures(self, mocker):
+        mock = mocker.Mock()
+        mock.function.side_effect = [
+            Exception,
+            Exception,
+            42,
+        ]
+        mocker.patch('palletjack.utils.sleep')
+
+        answer = palletjack.utils.retry(mock.function, 'a', 'b')
+
+        assert answer == 42
+        assert mock.function.call_count == 3
+
+    def test_retry_fails_after_four_failures(self, mocker):
+        mock = mocker.Mock()
+        mock.function.side_effect = [
+            Exception,
+            Exception,
+            Exception,
+            Exception,
+            42,
+        ]
+        mocker.patch('palletjack.utils.sleep')
+
+        with pytest.raises(Exception):
+            answer = palletjack.utils.retry(mock.function, 'a', 'b')
+
+        # assert answer == 42
+        assert mock.function.call_count == 4
+
+
+class TestReplaceNanSeries:
+
+    def test_replace_nan_series_with_empty_strings_one_empty_one_non_empty_float(self, mocker):
+        df = pd.DataFrame({
+            'normal': [1., 2., 3.],
+            'empty': [np.nan, np.nan, np.nan],
+        })
+
+        fixed_df = palletjack.utils.replace_nan_series_with_empty_strings(df)
+
+        test_df = pd.DataFrame({
+            'normal': [1., 2., 3.],
+            'empty': ['', '', ''],
+        })
+
+        tm.assert_frame_equal(fixed_df, test_df)
+
+    def test_replace_nan_series_with_empty_strings_other_series_has_nan(self, mocker):
+        df = pd.DataFrame({
+            'normal': [1., 2., np.nan],
+            'empty': [np.nan, np.nan, np.nan],
+        })
+
+        fixed_df = palletjack.utils.replace_nan_series_with_empty_strings(df)
+
+        test_df = pd.DataFrame({
+            'normal': [1., 2., np.nan],
+            'empty': ['', '', ''],
+        })
+
+        tm.assert_frame_equal(fixed_df, test_df)
+
+    def test_replace_nan_series_with_empty_strings_other_series_is_empty_str(self, mocker):
+        df = pd.DataFrame({
+            'normal': ['', '', ''],
+            'empty': [np.nan, np.nan, np.nan],
+        })
+
+        fixed_df = palletjack.utils.replace_nan_series_with_empty_strings(df)
+
+        test_df = pd.DataFrame({
+            'normal': ['', '', ''],
+            'empty': ['', '', ''],
+        })
+
+        tm.assert_frame_equal(fixed_df, test_df)

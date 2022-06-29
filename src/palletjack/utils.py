@@ -1,0 +1,131 @@
+import logging
+import re
+from time import sleep
+
+import pandas as pd
+
+module_logger = logging.getLogger(__name__)
+
+
+def retry(worker_method, *args, **kwargs):
+    """Allows you to retry a function/method three times to overcome network jitters
+
+    Retries worker_method three times (for a total of four tries, including the initial attempt), pausing 2^trycount seconds between each retry. Any arguments for worker_method can be passed in as additional parameters to _retry() following worker_method: _retry(foo_method, arg1, arg2, keyword_arg=3)
+
+    Args:
+        worker_method (callable): The name of the method to be retried (minus the calling parens)
+
+    Raises:
+        error: The final error the causes worker_method to fail after 3 retries
+
+    Returns:
+        various: The value(s) returned by worked_method
+    """
+    tries = 1
+    max_tries = 3
+    delay = 2  #: in seconds
+
+    #: this inner function (closure? almost-closure?) allows us to keep track of tries without passing it as an arg
+    def _inner_retry(worker_method, *args, **kwargs):
+        nonlocal tries
+
+        try:
+            return worker_method(*args, **kwargs)
+
+        #: ArcGIS API for Python loves throwing bog-standard Exceptions, so we can't narrow this down further
+        except Exception as error:
+            if tries <= max_tries:  #pylint: disable=no-else-return
+                wait_time = delay**tries
+                module_logger.debug(
+                    'Exception "%s" thrown on "%s". Retrying after %s seconds...', error, worker_method, wait_time
+                )
+                sleep(wait_time)
+                tries += 1
+                return _inner_retry(worker_method, *args, **kwargs)
+            else:
+                raise error
+
+    return _inner_retry(worker_method, *args, **kwargs)
+
+
+def rename_columns_for_agol(columns):
+    """Replace special characters and spaces with '_' to match AGOL field names
+
+    Args:
+        columns (iter): The new columns to be renamed
+
+    Returns:
+        Dict: Mapping {'original name': 'cleaned_name'}
+    """
+
+    rename_dict = {}
+    for column in columns:
+        rename_dict[column] = re.sub(r'[^a-zA-Z0-9_]', '_', column)
+    return rename_dict
+
+
+def replace_nan_series_with_empty_strings(dataframe):
+    """Fill all completely empty series with empty strings ('')
+
+    As of arcgis 2.0.1. to_featureset() doesn't handle completely empty series properly (it relies on str;
+    https://github.com/Esri/arcgis-python-api/issues/1281), so we convert to empty strings for the time being.
+
+    Args:
+        dataframe (pd.DataFrame): Data to clean/fix
+
+    Returns:
+        pd.DataFrame: The cleaned data
+    """
+
+    for column in dataframe:
+        if dataframe[column].isnull().all():
+            module_logger.debug('Column %s is empty; replacing np.nans with empty strings', column)
+            dataframe[column].fillna(value='', inplace=True)
+    return dataframe
+
+
+def check_fields_match(featurelayer, new_dataframe):
+    """Make sure new data doesn't have any extra fields, warn if it doesn't contain all live fields
+
+    Args:
+        featurelayer (arcgis.features.FeatureLayer): Live data
+        new_dataframe (pd.DataFrame): New data
+
+    Raises:
+        RuntimeError: If new data contains a field not present in the live data
+    """
+
+    live_fields = {field['name'] for field in featurelayer.properties['fields']}
+    new_fields = set(new_dataframe.columns)
+    #: Remove SHAPE field from set (live "featurelayer.properties['fields']" does not expose the 'SHAPE' field)
+    try:
+        new_fields.remove('SHAPE')
+    except KeyError:
+        pass
+    new_dif = new_fields - live_fields
+    live_dif = live_fields - new_fields
+    if new_dif:
+        raise RuntimeError(
+            f'New dataset contains the following fields that are not present in the live dataset: {new_dif}'
+        )
+    if live_dif:
+        module_logger.warning(
+            'New dataset does not contain the following fields that are present in the live dataset: %s', live_dif
+        )
+
+
+#: This isn't used anymore... but it feels like a shame to lose it.
+def build_sql_in_list(series):
+    """Generate a properly formatted list to be a target for a SQL 'IN' clause
+
+    Args:
+        series (pd.Series): Series of values to be included in the 'IN' list
+
+    Returns:
+        str: Values formatted as (1, 2, 3) for numbers or ('a', 'b', 'c') for anything else
+    """
+    if pd.api.types.is_numeric_dtype(series):
+        return f'({", ".join(series.astype(str))})'
+    else:
+        quoted_values = [f"'{value}'" for value in series]
+        return f'({", ".join(quoted_values)})'
