@@ -270,6 +270,27 @@ class FeatureServiceInlineUpdater:
         return messages
 
     def upsert_new_data_in_hosted_feature_layer(self, feature_service_item_id, layer_index=0):
+        """UPdate existing data and inSERT new data to a hosted feature layer from a spatially-enabled data frame
+
+        Relies on the FeatureServiceInlineUpdater's self.new_dataframe for the new data and self.index_column to define
+        the common column used to match new and existing data. The field specified by self.index_column must have a
+        "unique constraint" in the target feature layer (ie, it must be indexed and be unique).
+
+        Args:
+            feature_service_item_id (arcgis.features.FeatureLayer): The target feature layer
+            layer_index (int, optional): The layer id within the target feature layer. Defaults to 0.
+
+        Raises:
+            RuntimeError: If append fails; will attempt to rollback appends that worked.
+            RuntimeError: If new data contains a field not present in the live data
+            Warning: If live data contains a field not present in the new data
+            RuntimeError: If index_column is not in featurelayer's fields
+            RuntimeError: If the field is not unique (or if it's indexed but not unique)
+
+        Returns:
+            int: The number of records updated
+        """
+
         target_featurelayer = arcgis.features.FeatureLayer.fromitem(
             self.gis.content.get(feature_service_item_id), layer_id=layer_index
         )
@@ -277,6 +298,7 @@ class FeatureServiceInlineUpdater:
         fixed_dataframe = utils.replace_nan_series_with_empty_strings(self.new_dataframe)
         utils.check_fields_match(target_featurelayer, fixed_dataframe)
         utils.check_index_column_in_feature_layer(target_featurelayer, self.index_column)
+        utils.check_field_set_to_unique(target_featurelayer, self.index_column)
         self._class_logger.info('Loading new data...')
         messages = self._upsert_new_data(target_featurelayer, fixed_dataframe, feature_service_item_id, layer_index)
 
