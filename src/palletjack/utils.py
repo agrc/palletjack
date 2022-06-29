@@ -145,3 +145,23 @@ def build_sql_in_list(series):
     else:
         quoted_values = [f"'{value}'" for value in series]
         return f'({", ".join(quoted_values)})'
+
+
+def check_field_set_to_unique(featurelayer, field_name):
+    """Makes sure field_name has a "unique constraint" in AGOL, which allows it to be used for .append upserts
+
+    Args:
+        featurelayer (arcgis.features.FeatureLayer): The target feature layer
+        field_name (str): The AGOL-valid field name to check
+
+    Raises:
+        RuntimeError: If the field is not unique (or if it's indexed but not unique)
+    """
+
+    fields = [field['fields'] for field in featurelayer.properties['indexes']]
+    if field_name not in fields:
+        raise RuntimeError(f'{field_name} does not have a "unique constraint" set within the feature layer')
+    for field in featurelayer.properties['indexes']:
+        if field['fields'] == field_name:
+            if not field['isUnique']:
+                raise RuntimeError(f'{field_name} does not have a "unique constraint" set within the feature layer')

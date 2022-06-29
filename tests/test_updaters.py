@@ -1933,8 +1933,15 @@ class TestFeatureServiceInlineUpdaterUpsert:
                 {
                     'name': 'Bar'
                 },
+            ],
+            'indexes': [
+                {
+                    'fields': 'Foo',
+                    'isUnique': True
+                },
             ]
         }
+
         mock_fl.append.return_value = (True, {'recordCount': 42})
 
         fl_class_mock = mocker.Mock()
@@ -1964,6 +1971,12 @@ class TestFeatureServiceInlineUpdaterUpsert:
                 },
                 {
                     'name': 'Bar'
+                },
+            ],
+            'indexes': [
+                {
+                    'fields': 'Bar',
+                    'isUnique': True
                 },
             ]
         }

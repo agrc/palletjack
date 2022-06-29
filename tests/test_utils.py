@@ -241,3 +241,51 @@ class TestCheckIndexColumnInFL:
             palletjack.utils.check_index_column_in_feature_layer(fl_mock, 'Baz')
 
         assert exc_info.value.args[0] == 'Index column Baz not found in feature layer fields [\'Foo\', \'Bar\']'
+
+
+class TestCheckFieldUnique:
+
+    def test_check_field_set_to_unique_doesnt_raise_on_normal(self, mocker):
+        mock_fl = mocker.Mock()
+        mock_fl.properties = {
+            'indexes': [
+                {
+                    'fields': 'foo_field',
+                    'isUnique': True
+                },
+            ]
+        }
+
+        palletjack.utils.check_field_set_to_unique(mock_fl, 'foo_field')
+
+    def test_check_field_set_to_unique_raises_on_non_indexed_field(self, mocker):
+        mock_fl = mocker.Mock()
+        mock_fl.properties = {
+            'indexes': [
+                {
+                    'fields': 'bar_field',
+                    'isUnique': True
+                },
+            ]
+        }
+
+        with pytest.raises(RuntimeError) as exc_info:
+            palletjack.utils.check_field_set_to_unique(mock_fl, 'foo_field')
+
+        assert exc_info.value.args[0] == 'foo_field does not have a "unique constraint" set within the feature layer'
+
+    def test_check_field_set_to_unique_raises_on_non_unique_field(self, mocker):
+        mock_fl = mocker.Mock()
+        mock_fl.properties = {
+            'indexes': [
+                {
+                    'fields': 'foo_field',
+                    'isUnique': False
+                },
+            ]
+        }
+
+        with pytest.raises(RuntimeError) as exc_info:
+            palletjack.utils.check_field_set_to_unique(mock_fl, 'foo_field')
+
+        assert exc_info.value.args[0] == 'foo_field does not have a "unique constraint" set within the feature layer'
