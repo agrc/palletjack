@@ -1882,3 +1882,133 @@ class TestFeatureServiceOverwriter:
         out_path = palletjack.FeatureServiceOverwriter._save_truncated_data(mocker.Mock(), mock_sdf, 'foo')
 
         assert out_path == Path('foo/old_data_foo-date.json')
+
+
+class TestFeatureServiceInlineUpdaterUpsert:
+
+    def test_upsert_new_data_doesnt_raise_on_normal(self, mocker):
+        mock_df = mocker.Mock()
+        mock_fl = mocker.Mock()
+        mock_fl.append.return_value = (True, {'message': 'foo'})
+        mocker.patch('palletjack.utils.rename_columns_for_agol')
+        updater = palletjack.FeatureServiceInlineUpdater(mocker.Mock(), mocker.Mock(), 'foo')
+
+        updater._upsert_new_data(mock_fl, mock_df, 'abc', 0)
+
+    def test_upsert_new_data_retries_on_httperror(self, mocker):
+        mock_df = mocker.Mock()
+        mock_fl = mocker.Mock()
+        mock_fl.append.side_effect = [Exception, (True, {'message': 'foo'})]
+        mocker.patch('palletjack.utils.rename_columns_for_agol')
+
+        updater = palletjack.FeatureServiceInlineUpdater(mocker.Mock(), mocker.Mock(), 'foo')
+        updater._upsert_new_data(mock_fl, mock_df, 'abc', 0)
+
+    def test_upsert_new_data_raises_on_False_result(self, mocker):
+        mock_df = mocker.Mock()
+        mock_fl = mocker.Mock()
+        mock_fl.append.return_value = (False, {'message': 'foo'})
+        mocker.patch('palletjack.utils.rename_columns_for_agol')
+
+        updater = palletjack.FeatureServiceInlineUpdater(mocker.Mock(), mocker.Mock(), 'foo')
+
+        with pytest.raises(RuntimeError) as exc_info:
+            updater._upsert_new_data(mock_fl, mock_df, 'abc', 0)
+
+        assert exc_info.value.args[
+            0] == 'Failed to append data to layer id 0 in itemid abc. Append should have been rolled back.'
+
+    def test_upsert_new_data_in_hosted_feature_layer_normal(self, mocker):
+        mock_fl = mocker.Mock()
+        # mock_fl.manager.truncate.return_value = {
+        #     'submissionTime': 123,
+        #     'lastUpdatedTime': 124,
+        #     'status': 'Completed',
+        # }
+        mock_fl.properties = {
+            'fields': [
+                {
+                    'name': 'Foo'
+                },
+                {
+                    'name': 'Bar'
+                },
+            ]
+        }
+        mock_fl.append.return_value = (True, {'recordCount': 42})
+
+        fl_class_mock = mocker.Mock()
+        fl_class_mock.fromitem.return_value = mock_fl
+        mocker.patch('arcgis.features.FeatureLayer', fl_class_mock)
+
+        new_dataframe = pd.DataFrame(columns=['Foo', 'Bar'])
+        mocker.patch.object(pd.DataFrame, 'spatial')
+
+        updater = palletjack.FeatureServiceInlineUpdater(mocker.Mock(), new_dataframe, 'Foo')
+
+        uploaded_features = updater.upsert_new_data_in_hosted_feature_layer('abc')
+
+        assert uploaded_features == 42
+
+    def test_upsert_new_data_in_hosted_feature_layer_handles_field_renaming(self, mocker):
+        mock_fl = mocker.Mock()
+        # mock_fl.manager.truncate.return_value = {
+        #     'submissionTime': 123,
+        #     'lastUpdatedTime': 124,
+        #     'status': 'Completed',
+        # }
+        mock_fl.properties = {
+            'fields': [
+                {
+                    'name': 'Foo_field'
+                },
+                {
+                    'name': 'Bar'
+                },
+            ]
+        }
+        mock_fl.append.return_value = (True, {'recordCount': 42})
+
+        fl_class_mock = mocker.Mock()
+        fl_class_mock.fromitem.return_value = mock_fl
+        mocker.patch('arcgis.features.FeatureLayer', fl_class_mock)
+
+        new_dataframe = pd.DataFrame(columns=['Foo field', 'Bar'])
+        mocker.patch.object(pd.DataFrame, 'spatial')
+
+        updater = palletjack.FeatureServiceInlineUpdater(mocker.Mock(), new_dataframe, 'Bar')
+
+        uploaded_features = updater.upsert_new_data_in_hosted_feature_layer('abc')
+
+        assert uploaded_features == 42
+
+
+class TestFeatureServiceInlineUpdaterInit:
+
+    def test_init_raises_on_missing_index_field(self, mocker):
+
+        new_dataframe = pd.DataFrame(columns=['Foo_field', 'Bar'])
+        # mocker.patch.object(pd.DataFrame, 'spatial')
+
+        with pytest.raises(KeyError) as exc_info:
+            updater = palletjack.FeatureServiceInlineUpdater(mocker.Mock(), new_dataframe, 'Baz')
+
+        assert exc_info.value.args[0] == 'Index column Baz not found in dataframe columns'
+
+    def test_init_renames_dataframe_columns(self, mocker):
+
+        new_dataframe = pd.DataFrame(columns=['Foo field', 'Bar'])
+        # mocker.patch.object(pd.DataFrame, 'spatial')
+
+        updater = palletjack.FeatureServiceInlineUpdater(mocker.Mock(), new_dataframe, 'Bar')
+
+        assert list(updater.new_dataframe.columns) == ['Foo_field', 'Bar']
+
+    def test_init_renames_index_column(self, mocker):
+
+        new_dataframe = pd.DataFrame(columns=['Foo field', 'Bar'])
+        # mocker.patch.object(pd.DataFrame, 'spatial')
+
+        updater = palletjack.FeatureServiceInlineUpdater(mocker.Mock(), new_dataframe, 'Foo field')
+
+        assert updater.index_column == 'Foo_field'
