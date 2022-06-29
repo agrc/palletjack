@@ -4,17 +4,15 @@
 import datetime
 import json
 import logging
-import re
 import warnings
 from pathlib import Path
-from time import sleep
-from urllib.error import HTTPError
 
 import arcgis
 import numpy as np
 import pandas as pd
-import requests
 from arcgis.features import GeoAccessor, GeoSeriesAccessor
+
+from . import utils
 
 logger = logging.getLogger(__name__)
 
@@ -240,23 +238,6 @@ class FeatureServiceAttachmentsUpdater:
         self.gis = gis
         self._class_logger = logging.getLogger(__name__).getChild(self.__class__.__name__)
         self.failed_dict = {}
-
-    #: This isn't used anymore... but it feels like a shame to lose it.
-    @staticmethod
-    def _build_sql_in_list(series):
-        """Generate a properly formatted list to be a target for a SQL 'IN' clause
-
-        Args:
-            series (pd.Series): Series of values to be included in the 'IN' list
-
-        Returns:
-            str: Values formatted as (1, 2, 3) for numbers or ('a', 'b', 'c') for anything else
-        """
-        if pd.api.types.is_numeric_dtype(series):
-            return f'({", ".join(series.astype(str))})'
-        else:
-            quoted_values = [f"'{value}'" for value in series]
-            return f'({", ".join(quoted_values)})'
 
     def _get_live_oid_and_guid_from_join_field_values(self, live_features_as_df, attachment_join_field, attachments_df):
         """Get the live Object ID and guid from the live features for only the features in attachments_df
@@ -508,91 +489,6 @@ class FeatureServiceOverwriter:
         self.gis = gis
         self._class_logger = logging.getLogger(__name__).getChild(self.__class__.__name__)
 
-    def _retry(self, worker_method, *args, **kwargs):
-        """Allows you to retry a function/method three times to overcome network jitters
-
-        Retries worker_method three times (for a total of four tries, including the initial attempt), pausing 2^trycount seconds between each retry. Any arguments for worker_method can be passed in as additional parameters to _retry() following worker_method: _retry(foo_method, arg1, arg2, keyword_arg=3)
-
-        Args:
-            worker_method (callable): The name of the method to be retried (minus the calling parens)
-
-        Raises:
-            error: The final error the causes worker_method to fail after 3 retries
-
-        Returns:
-            various: The value(s) returned by worked_method
-        """
-        tries = 1
-        max_tries = 3
-        delay = 2  #: in seconds
-
-        #: this inner function (closure? almost-closure?) allows us to keep track of tries without passing it as an arg
-        def _inner_retry(worker_method, *args, **kwargs):
-            nonlocal tries
-
-            try:
-                return worker_method(*args, **kwargs)
-
-            #: ArcGIS API for Python loves throwing bog-standard Exceptions, so we can't narrow this down further
-            except Exception as error:
-                if tries <= max_tries:  #pylint: disable=no-else-return
-                    wait_time = delay**tries
-                    self._class_logger.debug(
-                        'Exception "%s" thrown on "%s". Retrying after %s seconds...', error, worker_method, wait_time
-                    )
-                    sleep(wait_time)
-                    tries += 1
-                    return _inner_retry(worker_method, *args, **kwargs)
-                else:
-                    raise error
-
-        return _inner_retry(worker_method, *args, **kwargs)
-
-    @staticmethod
-    def _rename_columns_for_agol(columns):
-        """Replace special characters and spaces with '_' to match AGOL field names
-
-        Args:
-            columns (iter): The new columns to be renamed
-
-        Returns:
-            Dict: Mapping {'original name': 'cleaned_name'}
-        """
-
-        rename_dict = {}
-        for column in columns:
-            rename_dict[column] = re.sub(r'[^a-zA-Z0-9_]', '_', column)
-        return rename_dict
-
-    def _check_fields_match(self, featurelayer, new_dataframe):
-        """Make sure new data doesn't have any extra fields, warn if it doesn't contain all live fields
-
-        Args:
-            featurelayer (arcgis.features.FeatureLayer): Live data
-            new_dataframe (pd.DataFrame): New data
-
-        Raises:
-            RuntimeError: If new data contains a field not present in the live data
-        """
-
-        live_fields = {field['name'] for field in featurelayer.properties['fields']}
-        new_fields = set(new_dataframe.columns)
-        #: Remove SHAPE field from set (live "featurelayer.properties['fields']" does not expose the 'SHAPE' field)
-        try:
-            new_fields.remove('SHAPE')
-        except KeyError:
-            pass
-        new_dif = new_fields - live_fields
-        live_dif = live_fields - new_fields
-        if new_dif:
-            raise RuntimeError(
-                f'New dataset contains the following fields that are not present in the live dataset: {new_dif}'
-            )
-        if live_dif:
-            self._class_logger.warning(
-                'New dataset does not contain the following fields that are present in the live dataset: %s', live_dif
-            )
-
     def _truncate_existing_data(self, featurelayer, layer_index, itemid):
         """Remove all existing features from live dataset
 
@@ -609,30 +505,11 @@ class FeatureServiceOverwriter:
         """
 
         old_data = featurelayer.query(as_df=True)
-        truncate_result = self._retry(featurelayer.manager.truncate, asynchronous=True, wait=True)
+        truncate_result = utils.retry(featurelayer.manager.truncate, asynchronous=True, wait=True)
         self._class_logger.debug(truncate_result)
         if truncate_result['status'] != 'Completed':
             raise RuntimeError(f'Failed to truncate existing data from layer id {layer_index} in itemid {itemid}')
         return old_data
-
-    def _replace_nan_series_with_empty_strings(self, dataframe):
-        """Fill all completely empty series with empty strings ('')
-
-        As of arcgis 2.0.1. to_featureset() doesn't handle completely empty series properly (it relies on str;
-        https://github.com/Esri/arcgis-python-api/issues/1281), so we convert to empty strings for the time being.
-
-        Args:
-            dataframe (pd.DataFrame): Data to clean/fix
-
-        Returns:
-            pd.DataFrame: The cleaned data
-        """
-
-        for column in dataframe:
-            if dataframe[column].isnull().all():
-                self._class_logger.debug('Column %s is empty; replacing np.nans with empty strings', column)
-                dataframe[column].fillna(value='', inplace=True)
-        return dataframe
 
     def _append_new_data(self, target_featurelayer, dataframe, feature_service_item_id, layer_index):
         """Add new data to live dataset
@@ -651,7 +528,7 @@ class FeatureServiceOverwriter:
         """
 
         geojson = dataframe.spatial.to_featureset().to_geojson
-        result, messages = self._retry(
+        result, messages = utils.retry(
             target_featurelayer.append,
             upload_format='geojson',
             edits=geojson,
@@ -707,10 +584,10 @@ class FeatureServiceOverwriter:
         )
         self._class_logger.info('Truncating existing data...')
         old_dataframe = self._truncate_existing_data(target_featurelayer, layer_index, feature_service_item_id)
-        cleaned_dataframe = new_dataframe.rename(columns=self._rename_columns_for_agol(new_dataframe.columns))
+        cleaned_dataframe = new_dataframe.rename(columns=utils.rename_columns_for_agol(new_dataframe.columns))
         #: temp fix until Esri fixes empty series as NaN bug
-        fixed_dataframe = self._replace_nan_series_with_empty_strings(cleaned_dataframe)
-        self._check_fields_match(target_featurelayer, fixed_dataframe)
+        fixed_dataframe = utils.replace_nan_series_with_empty_strings(cleaned_dataframe)
+        utils.check_fields_match(target_featurelayer, fixed_dataframe)
         self._class_logger.info('Loading new data...')
         try:
             messages = self._append_new_data(target_featurelayer, fixed_dataframe, feature_service_item_id, layer_index)
