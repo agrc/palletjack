@@ -305,14 +305,6 @@ class FeatureServiceInlineUpdater:
         return messages['recordCount']
 
 
-# class FeatureServiceUpserter:
-
-#     def __init__(self, gis, index_column) -> None:
-#         self.gis = gis
-#         self.index_column = index_column
-#         self._class_logger = logging.getLogger(__name__).getChild(self.__class__.__name__)
-
-
 class FeatureServiceAttachmentsUpdater:
     """Add or overwrite attachments in a feature service using a dataframe of the desired "new" attachments. Uses a
     join field present in both live data and the attachments dataframe to match attachments with live data.
