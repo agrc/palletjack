@@ -16,7 +16,7 @@ class APIGeocoder:
     def __init__(self, api_key):
         self.api_key = api_key
 
-    def geocode_dataframe(self, dataframe, street_col, zone_col, wkid):
+    def geocode_dataframe(self, dataframe, street_col, zone_col, wkid, **api_args):
         """Geocode a pandas dataframe into a spatially-enabled dataframe
 
         Addresses that don't meet the threshold for geocoding (score > 70) are returned as points at 0,0
@@ -35,7 +35,8 @@ class APIGeocoder:
             axis=1,
             args=(street_col, zone_col, self.api_key),
             spatialReference=str(wkid),
-            result_type='expand'
+            result_type='expand',
+            **api_args,
         )
         spatial_dataframe = pd.DataFrame.spatial.from_xy(dataframe, 'x', 'y', sr=int(wkid))
         return spatial_dataframe
