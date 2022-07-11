@@ -3,6 +3,7 @@ import re
 from time import sleep
 
 import pandas as pd
+import requests
 
 module_logger = logging.getLogger(__name__)
 
@@ -165,3 +166,33 @@ def check_field_set_to_unique(featurelayer, field_name):
         if field['fields'] == field_name:
             if not field['isUnique']:
                 raise RuntimeError(f'{field_name} does not have a "unique constraint" set within the feature layer')
+
+
+def geocode_addr(row, street_col, zone_col, api_key, **api_args):
+    """Geocode an address through the UGRC Web API geocoder
+
+    Invalid results are returned as 0,0
+
+    Args:
+        row (pd.Series or dict): The row of a dataframe (or a dictionary) containing the address
+        street_col (str): The column/key containing the street address
+        zone_col (str): The column/key containing the zip code or city
+        api_key (str): API key obtained from developer.mapserv.utah.gov
+        **api_args (dict): Keyword arguments to be passed as parameters in the API GET call. The API key will be added to this dict.
+
+    Returns:
+        List<int>: The address' x and y coordinates
+    """
+
+    url = f'https://api.mapserv.utah.gov/api/v1/geocode/{row[street_col]}/{row[zone_col]}'
+    api_args['apiKey'] = api_key
+    r = requests.get(url, params=api_args)
+
+    #: If we don't get a good geocode, return Null Island points so that the conversion to spatial dataframe works
+    if r.status_code != 200:
+        return [0, 0]
+    response = r.json()
+    if response['status'] != 200:
+        return [0, 0]
+
+    return list(response['result']['location'].values())
