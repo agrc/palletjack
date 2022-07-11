@@ -376,3 +376,19 @@ class TestGeocodeAddr:
         coords = palletjack.utils.geocode_addr(row, 'street', 'zone', 'foo_key')
 
         assert coords == [0, 0]
+
+    def test_geocode_addr_retries_on_exception(self, mocker):
+        mocker.patch('palletjack.utils.requests', autospec=True)
+
+        response_mock = mocker.Mock()
+        response_mock.json.return_value = {'status': 200, 'result': {'location': {'x': 123, 'y': 456}}}
+        response_mock.status_code = 200
+
+        palletjack.utils.requests.get.side_effect = [Exception, response_mock]
+
+        row = {'street': 'foo', 'zone': 'bar'}
+
+        coords = palletjack.utils.geocode_addr(row, 'street', 'zone', 'foo_key')
+
+        assert palletjack.utils.requests.get.call_count == 2
+        assert coords == [123, 456]

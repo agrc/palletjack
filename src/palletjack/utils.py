@@ -11,7 +11,9 @@ module_logger = logging.getLogger(__name__)
 def retry(worker_method, *args, **kwargs):
     """Allows you to retry a function/method three times to overcome network jitters
 
-    Retries worker_method three times (for a total of four tries, including the initial attempt), pausing 2^trycount seconds between each retry. Any arguments for worker_method can be passed in as additional parameters to _retry() following worker_method: _retry(foo_method, arg1, arg2, keyword_arg=3)
+    Retries worker_method three times (for a total of four tries, including the initial attempt), pausing 2^trycount
+    seconds between each retry. Any arguments for worker_method can be passed in as additional parameters to _retry()
+    following worker_method: _retry(foo_method, arg1, arg2, keyword_arg=3)
 
     Args:
         worker_method (callable): The name of the method to be retried (minus the calling parens)
@@ -178,7 +180,8 @@ def geocode_addr(row, street_col, zone_col, api_key, **api_args):
         street_col (str): The column/key containing the street address
         zone_col (str): The column/key containing the zip code or city
         api_key (str): API key obtained from developer.mapserv.utah.gov
-        **api_args (dict): Keyword arguments to be passed as parameters in the API GET call. The API key will be added to this dict.
+        **api_args (dict): Keyword arguments to be passed as parameters in the API GET call. The API key will be added
+        to this dict.
 
     Returns:
         List<int>: The address' x and y coordinates
@@ -186,12 +189,12 @@ def geocode_addr(row, street_col, zone_col, api_key, **api_args):
 
     url = f'https://api.mapserv.utah.gov/api/v1/geocode/{row[street_col]}/{row[zone_col]}'
     api_args['apiKey'] = api_key
-    r = requests.get(url, params=api_args)
+    get_response = retry(requests.get, url, params=api_args)
 
     #: If we don't get a good geocode, return Null Island points so that the conversion to spatial dataframe works
-    if r.status_code != 200:
+    if get_response.status_code != 200:
         return [0, 0]
-    response = r.json()
+    response = get_response.json()
     if response['status'] != 200:
         return [0, 0]
 
