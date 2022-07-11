@@ -14,6 +14,7 @@
       "type": "python",
       "request": "test",
       "console": "integratedTerminal",
+      "justMyCode": true,
       "env": {
         "PYTEST_ADDOPTS": "--no-cov"
       }

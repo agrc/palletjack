@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 import pytest
+import requests
 from pandas import testing as tm
 
 import palletjack
@@ -289,3 +290,89 @@ class TestCheckFieldUnique:
             palletjack.utils.check_field_set_to_unique(mock_fl, 'foo_field')
 
         assert exc_info.value.args[0] == 'foo_field does not have a "unique constraint" set within the feature layer'
+
+
+class TestGeocodeAddr:
+
+    def test_geocode_addr_builds_url_correctly(self, mocker):
+        mocker.patch('palletjack.utils.requests', autospec=True)
+
+        response_mock = mocker.Mock()
+        response_mock.json.return_value = {'status': 200, 'result': {'location': {'x': 123, 'y': 456}}}
+        response_mock.status_code = 200
+
+        palletjack.utils.requests.get.return_value = response_mock
+
+        row = {'street': 'foo', 'zone': 'bar'}
+
+        palletjack.utils.geocode_addr(row, 'street', 'zone', 'foo_key')
+
+        palletjack.utils.requests.get.assert_called_with(
+            'https://api.mapserv.utah.gov/api/v1/geocode/foo/bar', params={'apiKey': 'foo_key'}
+        )
+
+    def test_geocode_addr_handles_kwargs_for_geocoding_api(self, mocker):
+        mocker.patch('palletjack.utils.requests', autospec=True)
+
+        response_mock = mocker.Mock()
+        response_mock.json.return_value = {'status': 200, 'result': {'location': {'x': 123, 'y': 456}}}
+        response_mock.status_code = 200
+
+        palletjack.utils.requests.get.return_value = response_mock
+
+        row = {'street': 'foo', 'zone': 'bar'}
+
+        palletjack.utils.geocode_addr(row, 'street', 'zone', 'foo_key', spatialReference=3857)
+
+        palletjack.utils.requests.get.assert_called_with(
+            'https://api.mapserv.utah.gov/api/v1/geocode/foo/bar',
+            params={
+                'apiKey': 'foo_key',
+                'spatialReference': 3857
+            }
+        )
+
+    def test_geocode_addr_returns_coords(self, mocker):
+        mocker.patch('palletjack.utils.requests', autospec=True)
+
+        response_mock = mocker.Mock()
+        response_mock.json.return_value = {'status': 200, 'result': {'location': {'x': 123, 'y': 456}}}
+        response_mock.status_code = 200
+
+        palletjack.utils.requests.get.return_value = response_mock
+
+        row = {'street': 'foo', 'zone': 'bar'}
+
+        coords = palletjack.utils.geocode_addr(row, 'street', 'zone', 'foo_key')
+
+        assert coords == [123, 456]
+
+    def test_geocode_addr_returns_null_island_bad_status_code(self, mocker):
+        mocker.patch('palletjack.utils.requests', autospec=True)
+
+        response_mock = mocker.Mock()
+        # response_mock.json.return_value = {'status': 200, 'result': {'location': {'x': 123, 'y': 456}}}
+        response_mock.status_code = 404
+
+        palletjack.utils.requests.get.return_value = response_mock
+
+        row = {'street': 'foo', 'zone': 'bar'}
+
+        coords = palletjack.utils.geocode_addr(row, 'street', 'zone', 'foo_key')
+
+        assert coords == [0, 0]
+
+    def test_geocode_addr_returns_null_island_bad_status_return_value(self, mocker):
+        mocker.patch('palletjack.utils.requests', autospec=True)
+
+        response_mock = mocker.Mock()
+        response_mock.json.return_value = {'status': 404}
+        response_mock.status_code = 200
+
+        palletjack.utils.requests.get.return_value = response_mock
+
+        row = {'street': 'foo', 'zone': 'bar'}
+
+        coords = palletjack.utils.geocode_addr(row, 'street', 'zone', 'foo_key')
+
+        assert coords == [0, 0]
