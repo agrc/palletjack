@@ -36,7 +36,7 @@ setup(
         'pysftp',  #==0.2.9',
         # 'pandas',#==1.4.*',
         # 'numpy',#==1.23.*',
-        'arcgis',  #==2.0.*',
+        'arcgis==1.9.*',  #==2.0.*',
         'pygsheets',  #==2.0.*',
     ],
     extras_require={
