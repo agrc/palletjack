@@ -296,6 +296,7 @@ class TestGeocodeAddr:
 
     def test_geocode_addr_builds_url_correctly(self, mocker):
         mocker.patch('palletjack.utils.requests', autospec=True)
+        mocker.patch('palletjack.utils.sleep')
 
         response_mock = mocker.Mock()
         response_mock.json.return_value = {'status': 200, 'result': {'location': {'x': 123, 'y': 456}}}
@@ -305,7 +306,7 @@ class TestGeocodeAddr:
 
         row = {'street': 'foo', 'zone': 'bar'}
 
-        palletjack.utils.geocode_addr(row, 'street', 'zone', 'foo_key')
+        palletjack.utils.geocode_addr(row, 'street', 'zone', 'foo_key', (0.015, 0.03))
 
         palletjack.utils.requests.get.assert_called_with(
             'https://api.mapserv.utah.gov/api/v1/geocode/foo/bar', params={'apiKey': 'foo_key'}
@@ -313,6 +314,7 @@ class TestGeocodeAddr:
 
     def test_geocode_addr_handles_kwargs_for_geocoding_api(self, mocker):
         mocker.patch('palletjack.utils.requests', autospec=True)
+        mocker.patch('palletjack.utils.sleep')
 
         response_mock = mocker.Mock()
         response_mock.json.return_value = {'status': 200, 'result': {'location': {'x': 123, 'y': 456}}}
@@ -322,7 +324,7 @@ class TestGeocodeAddr:
 
         row = {'street': 'foo', 'zone': 'bar'}
 
-        palletjack.utils.geocode_addr(row, 'street', 'zone', 'foo_key', spatialReference=3857)
+        palletjack.utils.geocode_addr(row, 'street', 'zone', 'foo_key', (0.015, 0.03), spatialReference=3857)
 
         palletjack.utils.requests.get.assert_called_with(
             'https://api.mapserv.utah.gov/api/v1/geocode/foo/bar',
@@ -334,6 +336,7 @@ class TestGeocodeAddr:
 
     def test_geocode_addr_returns_coords(self, mocker):
         mocker.patch('palletjack.utils.requests', autospec=True)
+        mocker.patch('palletjack.utils.sleep')
 
         response_mock = mocker.Mock()
         response_mock.json.return_value = {'status': 200, 'result': {'location': {'x': 123, 'y': 456}}}
@@ -343,12 +346,13 @@ class TestGeocodeAddr:
 
         row = {'street': 'foo', 'zone': 'bar'}
 
-        coords = palletjack.utils.geocode_addr(row, 'street', 'zone', 'foo_key')
+        coords = palletjack.utils.geocode_addr(row, 'street', 'zone', 'foo_key', (0.015, 0.03))
 
         assert coords == [123, 456]
 
     def test_geocode_addr_returns_null_island_bad_status_code(self, mocker):
         mocker.patch('palletjack.utils.requests', autospec=True)
+        mocker.patch('palletjack.utils.sleep')
 
         response_mock = mocker.Mock()
         # response_mock.json.return_value = {'status': 200, 'result': {'location': {'x': 123, 'y': 456}}}
@@ -358,12 +362,13 @@ class TestGeocodeAddr:
 
         row = {'street': 'foo', 'zone': 'bar'}
 
-        coords = palletjack.utils.geocode_addr(row, 'street', 'zone', 'foo_key')
+        coords = palletjack.utils.geocode_addr(row, 'street', 'zone', 'foo_key', (0.015, 0.03))
 
         assert coords == [0, 0]
 
     def test_geocode_addr_returns_null_island_bad_status_return_value(self, mocker):
         mocker.patch('palletjack.utils.requests', autospec=True)
+        mocker.patch('palletjack.utils.sleep')
 
         response_mock = mocker.Mock()
         response_mock.json.return_value = {'status': 404}
@@ -373,12 +378,13 @@ class TestGeocodeAddr:
 
         row = {'street': 'foo', 'zone': 'bar'}
 
-        coords = palletjack.utils.geocode_addr(row, 'street', 'zone', 'foo_key')
+        coords = palletjack.utils.geocode_addr(row, 'street', 'zone', 'foo_key', (0.015, 0.03))
 
         assert coords == [0, 0]
 
     def test_geocode_addr_retries_on_exception(self, mocker):
         mocker.patch('palletjack.utils.requests', autospec=True)
+        mocker.patch('palletjack.utils.sleep')
 
         response_mock = mocker.Mock()
         response_mock.json.return_value = {'status': 200, 'result': {'location': {'x': 123, 'y': 456}}}
@@ -388,7 +394,23 @@ class TestGeocodeAddr:
 
         row = {'street': 'foo', 'zone': 'bar'}
 
-        coords = palletjack.utils.geocode_addr(row, 'street', 'zone', 'foo_key')
+        coords = palletjack.utils.geocode_addr(row, 'street', 'zone', 'foo_key', (0.015, 0.03))
 
         assert palletjack.utils.requests.get.call_count == 2
         assert coords == [123, 456]
+
+    def test_geocode_addr_sleeps_appropriately(self, mocker):
+        mocker.patch('palletjack.utils.requests', autospec=True)
+        mocker.patch('palletjack.utils.sleep')
+
+        response_mock = mocker.Mock()
+        response_mock.json.return_value = {'status': 200, 'result': {'location': {'x': 123, 'y': 456}}}
+        response_mock.status_code = 200
+
+        palletjack.utils.requests.get.return_value = response_mock
+
+        row = {'street': 'foo', 'zone': 'bar'}
+
+        palletjack.utils.geocode_addr(row, 'street', 'zone', 'foo_key', (0.015, 0.03))
+
+        palletjack.utils.sleep.assert_called_once()

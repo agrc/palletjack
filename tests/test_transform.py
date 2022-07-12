@@ -31,7 +31,10 @@ class TestAPIGeocoder:
 
         assert list(palletjack.transform.utils.geocode_addr.call_args.args[0]) == ['4501 S Constitution Blvd', '84129']
         assert palletjack.transform.utils.geocode_addr.call_args.args[1:] == ('street', 'zip', 'foo')
-        assert palletjack.transform.utils.geocode_addr.call_args.kwargs == {'spatialReference': '3857'}
+        assert palletjack.transform.utils.geocode_addr.call_args.kwargs == {
+            'rate_limits': (0.015, 0.03),
+            'spatialReference': '3857'
+        }
 
     def test_geocode_dataframe_passes_kwargs_through_to_util_method(self, mocker):
         mocker.patch.object(palletjack.transform, 'utils', autospec=True)
@@ -59,6 +62,7 @@ class TestAPIGeocoder:
         assert list(palletjack.transform.utils.geocode_addr.call_args.args[0]) == ['4501 S Constitution Blvd', '84129']
         assert palletjack.transform.utils.geocode_addr.call_args.args[1:] == ('street', 'zip', 'foo')
         assert palletjack.transform.utils.geocode_addr.call_args.kwargs == {
+            'rate_limits': (0.015, 0.03),
             'spatialReference': '3857',
             'acceptScore': 80
         }
