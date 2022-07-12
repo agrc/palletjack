@@ -1,4 +1,5 @@
 import logging
+import random
 import re
 from time import sleep
 
@@ -170,7 +171,7 @@ def check_field_set_to_unique(featurelayer, field_name):
                 raise RuntimeError(f'{field_name} does not have a "unique constraint" set within the feature layer')
 
 
-def geocode_addr(row, street_col, zone_col, api_key, **api_args):
+def geocode_addr(row, street_col, zone_col, api_key, rate_limits, **api_args):
     """Geocode an address through the UGRC Web API geocoder
 
     Invalid results are returned as 0,0
@@ -180,6 +181,8 @@ def geocode_addr(row, street_col, zone_col, api_key, **api_args):
         street_col (str): The column/key containing the street address
         zone_col (str): The column/key containing the zip code or city
         api_key (str): API key obtained from developer.mapserv.utah.gov
+        rate_limits(Tuple <float>): A lower and upper bound in seconds for pausing between API calls. Defaults to
+        (0.015, 0.03)
         **api_args (dict): Keyword arguments to be passed as parameters in the API GET call. The API key will be added
         to this dict.
 
@@ -187,6 +190,7 @@ def geocode_addr(row, street_col, zone_col, api_key, **api_args):
         List<int>: The address' x and y coordinates
     """
 
+    sleep(random.uniform(rate_limits[0], rate_limits[1]))
     url = f'https://api.mapserv.utah.gov/api/v1/geocode/{row[street_col]}/{row[zone_col]}'
     api_args['apiKey'] = api_key
     get_response = retry(requests.get, url, params=api_args)
