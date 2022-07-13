@@ -9,14 +9,8 @@ class TestAPIGeocoder:
     def test_geocode_dataframe_calls_with_right_args(self, mocker):
         mocker.patch.object(palletjack.transform, 'utils', autospec=True)
         palletjack.transform.utils.geocode_addr.side_effect = [
-            {
-                'x': 123,
-                'y': 456
-            },
-            {
-                'x': 789,
-                'y': 101
-            },
+            (123, 456, 100., 'foo_addr'),
+            (789, 101, 100., 'bar_addr'),
         ]
         mocker.patch.object(pd.DataFrame.spatial, 'from_xy')
 
@@ -39,14 +33,8 @@ class TestAPIGeocoder:
     def test_geocode_dataframe_passes_kwargs_through_to_util_method(self, mocker):
         mocker.patch.object(palletjack.transform, 'utils', autospec=True)
         palletjack.transform.utils.geocode_addr.side_effect = [
-            {
-                'x': 123,
-                'y': 456
-            },
-            {
-                'x': 789,
-                'y': 101
-            },
+            (123, 456, 100., 'foo_addr'),
+            (789, 101, 100., 'bar_addr'),
         ]
         mocker.patch.object(pd.DataFrame.spatial, 'from_xy')
 
