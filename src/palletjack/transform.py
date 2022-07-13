@@ -33,7 +33,7 @@ class APIGeocoder:
         Returns:
             pd.DataFrame.spatial: Geocoded data as a spatially-enabled DataFrame
         """
-        dataframe[['x', 'y']] = dataframe.apply(
+        dataframe[['x', 'y', 'score', 'match_addr']] = dataframe.apply(
             utils.geocode_addr,
             axis=1,
             args=(street_col, zone_col, self.api_key),

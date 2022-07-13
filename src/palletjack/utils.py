@@ -174,7 +174,7 @@ def check_field_set_to_unique(featurelayer, field_name):
 def geocode_addr(row, street_col, zone_col, api_key, rate_limits, **api_args):
     """Geocode an address through the UGRC Web API geocoder
 
-    Invalid results are returned as 0,0
+    Invalid results are returned with an x,y of 0,0, a score of 0.0, and a match address of 'No Match'
 
     Args:
         row (pd.Series or dict): The row of a dataframe (or a dictionary) containing the address
@@ -187,7 +187,7 @@ def geocode_addr(row, street_col, zone_col, api_key, rate_limits, **api_args):
         to this dict.
 
     Returns:
-        List<int>: The address' x and y coordinates
+        tuple[int]: The match's x coordinate, y coordinate, score, and match address
     """
 
     sleep(random.uniform(rate_limits[0], rate_limits[1]))
@@ -197,9 +197,14 @@ def geocode_addr(row, street_col, zone_col, api_key, rate_limits, **api_args):
 
     #: If we don't get a good geocode, return Null Island points so that the conversion to spatial dataframe works
     if get_response.status_code != 200:
-        return [0, 0]
-    response = get_response.json()
-    if response['status'] != 200:
-        return [0, 0]
+        return (0, 0, 0.0, 'No Match')
+    response_json = get_response.json()
+    if response_json['status'] != 200:
+        return (0, 0, 0.0, 'No Match')
 
-    return list(response['result']['location'].values())
+    return (
+        response_json['result']['location']['x'],
+        response_json['result']['location']['y'],
+        response_json['result']['score'],
+        response_json['result']['matchAddress'],
+    )
