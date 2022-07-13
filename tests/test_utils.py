@@ -1,7 +1,8 @@
+import logging
+
 import numpy as np
 import pandas as pd
 import pytest
-import requests
 from pandas import testing as tm
 
 import palletjack
@@ -401,8 +402,8 @@ class TestGeocodeAddr:
         mocker.patch('palletjack.utils.sleep')
 
         response_mock = mocker.Mock()
-        response_mock.json.return_value = {'status': 404}
-        response_mock.status_code = 200
+        # response_mock.json.return_value = {'status': 404}
+        response_mock.status_code = 404
 
         palletjack.utils.requests.get.return_value = response_mock
 
@@ -438,6 +439,84 @@ class TestGeocodeAddr:
 
         assert palletjack.utils.requests.get.call_count == 2
         assert result == (123, 456, 100., 'bar')
+
+    def test_geocode_addr_retries_on_missing_response(self, mocker, caplog):
+        caplog.set_level(logging.DEBUG)
+        mocker.patch('palletjack.utils.requests', autospec=True)
+        mocker.patch('palletjack.utils.sleep')
+
+        response_mock = mocker.Mock()
+        response_mock.json.return_value = {
+            'status': 200,
+            'result': {
+                'location': {
+                    'x': 123,
+                    'y': 456
+                },
+                'score': 100.,
+                'matchAddress': 'bar'
+            }
+        }
+        response_mock.status_code = 200
+
+        palletjack.utils.requests.get.side_effect = [None, response_mock]
+
+        row = {'street': 'foo', 'zone': 'bar'}
+
+        result = palletjack.utils.geocode_addr(row, 'street', 'zone', 'foo_key', (0.015, 0.03))
+
+        assert 'No response from GET; server nodejs timeout?' in caplog.text
+        assert palletjack.utils.requests.get.call_count == 2
+        assert result == (123, 456, 100., 'bar')
+
+    def test_geocode_addr_retries_on_bad_status_code(self, mocker, caplog):
+        caplog.set_level(logging.DEBUG)
+        mocker.patch('palletjack.utils.requests', autospec=True)
+        mocker.patch('palletjack.utils.sleep')
+
+        first_response_mock = mocker.Mock()
+        first_response_mock.status_code = 500
+
+        second_response_mock = mocker.Mock()
+        second_response_mock.json.return_value = {
+            'status': 200,
+            'result': {
+                'location': {
+                    'x': 123,
+                    'y': 456
+                },
+                'score': 100.,
+                'matchAddress': 'bar'
+            }
+        }
+        second_response_mock.status_code = 200
+
+        palletjack.utils.requests.get.side_effect = [first_response_mock, second_response_mock]
+
+        row = {'street': 'foo', 'zone': 'bar'}
+
+        result = palletjack.utils.geocode_addr(row, 'street', 'zone', 'foo_key', (0.015, 0.03))
+
+        assert 'Did not receive a valid geocoding response; status code: 500' in caplog.text
+        assert palletjack.utils.requests.get.call_count == 2
+        assert result == (123, 456, 100., 'bar')
+
+    def test_geocode_addr_handles_complete_geocode_failure(self, mocker, caplog):
+        caplog.set_level(logging.DEBUG)
+        mocker.patch('palletjack.utils.requests', autospec=True)
+        mocker.patch('palletjack.utils.sleep')
+
+        bad_response = mocker.Mock()
+        bad_response.status_code = 500
+        palletjack.utils.requests.get.side_effect = [bad_response] * 4
+
+        row = {'street': 'foo', 'zone': 'bar'}
+
+        result = palletjack.utils.geocode_addr(row, 'street', 'zone', 'foo_key', (0.015, 0.03))
+
+        assert 'ERROR    palletjack.utils:utils.py:200 Did not receive a valid geocoding response; status code: 500' in caplog.text
+        assert palletjack.utils.requests.get.call_count == 4
+        assert result == (0, 0, 0., 'No API response')
 
     def test_geocode_addr_sleeps_appropriately(self, mocker):
         mocker.patch('palletjack.utils.requests', autospec=True)
