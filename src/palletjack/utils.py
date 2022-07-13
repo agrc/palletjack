@@ -193,18 +193,59 @@ def geocode_addr(row, street_col, zone_col, api_key, rate_limits, **api_args):
     sleep(random.uniform(rate_limits[0], rate_limits[1]))
     url = f'https://api.mapserv.utah.gov/api/v1/geocode/{row[street_col]}/{row[zone_col]}'
     api_args['apiKey'] = api_key
-    get_response = retry(requests.get, url, params=api_args)
 
-    #: If we don't get a good geocode, return Null Island points so that the conversion to spatial dataframe works
-    if get_response.status_code != 200:
-        return (0, 0, 0.0, 'No Match')
-    response_json = get_response.json()
-    if response_json['status'] != 200:
-        return (0, 0, 0.0, 'No Match')
+    try:
+        geocode_result_dict = retry(_geocode_api_call, url, api_args)
+    except Exception as error:
+        module_logger.error(error)
+        return (0, 0, 0., 'No API response')
 
     return (
-        response_json['result']['location']['x'],
-        response_json['result']['location']['y'],
-        response_json['result']['score'],
-        response_json['result']['matchAddress'],
+        geocode_result_dict['location']['x'],
+        geocode_result_dict['location']['y'],
+        geocode_result_dict['score'],
+        geocode_result_dict['matchAddress'],
     )
+
+
+def _geocode_api_call(url, api_args):
+    """Makes a requests.get call to the geocoding API.
+
+    Meant to be called through a retry wrapper so that the RuntimeErrors get tried again a couple times before finally
+    raising the error.
+
+    Args:
+        url (str): Base url for GET request
+        api_args (dict): Dictionary of URL parameters
+
+    Raises:
+        RuntimeError: If the server does not return response and request.get returns a falsy object.
+        RuntimeError: If the server returns a status code other than 200 or 404
+
+    Returns:
+        dict: The 'results' dictionary of the response json (location, score, and matchAddress)
+    """
+
+    response = requests.get(url, params=api_args)
+
+    #: The server times out and doesn't respond
+    if not response:
+        raise RuntimeError('No response from GET; server nodejs timeout?')
+
+    #: The point doesn't geocode
+    if response.status_code == 404:
+        return {
+            'location': {
+                'x': 0,
+                'y': 0
+            },
+            'score': 0.,
+            'matchAddress': 'No Match',
+        }
+
+    #: The point does geocode
+    if response.status_code == 200:
+        return response.json()['result']
+
+    #: If we haven't returned, raise an error to trigger _retry
+    raise RuntimeError(f'Did not receive a valid geocoding response; status code: {response.status_code}')
