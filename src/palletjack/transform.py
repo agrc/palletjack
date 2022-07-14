@@ -1,10 +1,13 @@
 """transform.py: Processes in the Transfomation step of ETL
 """
+import logging
 
 import pandas as pd
 from arcgis import GeoAccessor, GeoSeriesAccessor
 
 from . import utils
+
+module_logger = logging.getLogger(__name__)
 
 
 class APIGeocoder:
@@ -15,6 +18,7 @@ class APIGeocoder:
 
     def __init__(self, api_key):
         self.api_key = api_key
+        self._class_logger = logging.getLogger(__name__).getChild(self.__class__.__name__)
 
     def geocode_dataframe(self, dataframe, street_col, zone_col, wkid, rate_limits=(0.015, 0.03), **api_args):
         """Geocode a pandas dataframe into a spatially-enabled dataframe
@@ -33,14 +37,19 @@ class APIGeocoder:
         Returns:
             pd.DataFrame.spatial: Geocoded data as a spatially-enabled DataFrame
         """
-        dataframe[['x', 'y', 'score', 'match_addr']] = dataframe.apply(
-            utils.geocode_addr,
-            axis=1,
-            args=(street_col, zone_col, self.api_key),
-            spatialReference=str(wkid),
-            result_type='expand',
-            rate_limits=rate_limits,
-            **api_args,
-        )
-        spatial_dataframe = pd.DataFrame.spatial.from_xy(dataframe, 'x', 'y', sr=int(wkid))
+        new_rows = []
+        for row in dataframe.itertuples(index=False):
+            row_dict = row._asdict()
+            results = utils.geocode_addr(
+                row_dict[street_col],
+                row_dict[zone_col],
+                self.api_key,
+                rate_limits,
+                spatialReference=str(wkid),
+                **api_args
+            )
+            row_dict['x'], row_dict['y'], row_dict['score'], row_dict['matchAddress'] = results
+            new_rows.append(row_dict)
+
+        spatial_dataframe = pd.DataFrame.spatial.from_xy(pd.DataFrame(new_rows), 'x', 'y', sr=int(wkid))
         return spatial_dataframe
