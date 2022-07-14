@@ -171,15 +171,14 @@ def check_field_set_to_unique(featurelayer, field_name):
                 raise RuntimeError(f'{field_name} does not have a "unique constraint" set within the feature layer')
 
 
-def geocode_addr(row, street_col, zone_col, api_key, rate_limits, **api_args):
+def geocode_addr(street, zone, api_key, rate_limits, **api_args):
     """Geocode an address through the UGRC Web API geocoder
 
     Invalid results are returned with an x,y of 0,0, a score of 0.0, and a match address of 'No Match'
 
     Args:
-        row (pd.Series or dict): The row of a dataframe (or a dictionary) containing the address
-        street_col (str): The column/key containing the street address
-        zone_col (str): The column/key containing the zip code or city
+        street (str): The street address
+        zone (str): The zip code or city
         api_key (str): API key obtained from developer.mapserv.utah.gov
         rate_limits(Tuple <float>): A lower and upper bound in seconds for pausing between API calls. Defaults to
         (0.015, 0.03)
@@ -191,7 +190,7 @@ def geocode_addr(row, street_col, zone_col, api_key, rate_limits, **api_args):
     """
 
     sleep(random.uniform(rate_limits[0], rate_limits[1]))
-    url = f'https://api.mapserv.utah.gov/api/v1/geocode/{row[street_col]}/{row[zone_col]}'
+    url = f'https://api.mapserv.utah.gov/api/v1/geocode/{street}/{zone}'
     api_args['apiKey'] = api_key
 
     try:
