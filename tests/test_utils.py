@@ -388,18 +388,45 @@ class TestGeocodeAddr:
 
         assert result == (0, 0, 0., 'No Match')
 
-    def test_geocode_addr_returns_null_island_bad_status_return_value(self, mocker):
+    def test_geocode_addr_returns_null_island_on_404(self, mocker, caplog):
         mocker.patch('palletjack.utils.requests', autospec=True)
         mocker.patch('palletjack.utils.sleep')
 
         response_mock = mocker.Mock()
         response_mock.status_code = 404
 
+        def bool_mock(self):
+            if self.status_code < 400:
+                return True
+            return False
+
+        response_mock.__bool__ = bool_mock
+
         palletjack.utils.requests.get.return_value = response_mock
 
         result = palletjack.utils.geocode_addr('foo', 'bar', 'foo_key', (0.015, 0.03))
 
         assert result == (0, 0, 0., 'No Match')
+
+    def test_geocode_addr_404_doesnt_raise_no_response_error(self, mocker, caplog):
+        mocker.patch('palletjack.utils.requests', autospec=True)
+        mocker.patch('palletjack.utils.sleep')
+
+        response_mock = mocker.Mock()
+        response_mock.status_code = 404
+
+        def bool_mock(self):
+            if self.status_code < 400:
+                return True
+            return False
+
+        response_mock.__bool__ = bool_mock
+
+        palletjack.utils.requests.get.return_value = response_mock
+
+        result = palletjack.utils.geocode_addr('foo', 'bar', 'foo_key', (0.015, 0.03))
+
+        assert 'No response from GET; request timeout?' not in caplog.text
 
     def test_geocode_addr_retries_on_exception(self, mocker):
         mocker.patch('palletjack.utils.requests', autospec=True)
@@ -449,7 +476,7 @@ class TestGeocodeAddr:
 
         result = palletjack.utils.geocode_addr('foo', 'bar', 'foo_key', (0.015, 0.03))
 
-        assert 'No response from GET; server nodejs timeout?' in caplog.text
+        assert 'No response from GET; request timeout?' in caplog.text
         assert palletjack.utils.requests.get.call_count == 2
         assert result == (123, 456, 100., 'bar')
 
