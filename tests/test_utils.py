@@ -521,3 +521,42 @@ class TestGeocodeAddr:
         palletjack.utils.geocode_addr('foo', 'bar', 'foo_key', (0.015, 0.03))
 
         palletjack.utils.sleep.assert_called_once()
+
+
+class TestReportingIntervalModulus:
+
+    def test_calc_modulus_for_reporting_interval_handles_upper_end_of_ones(self):
+        n = 9
+        mod = palletjack.utils.calc_modulus_for_reporting_interval(n)
+
+        assert mod == 1
+
+    def test_calc_modulus_for_reporting_interval_handles_upper_end_of_tens(self):
+        n = 99
+        mod = palletjack.utils.calc_modulus_for_reporting_interval(n)
+
+        assert mod == 10
+
+    def test_calc_modulus_for_reporting_interval_handles_upper_end_of_thousands(self):
+        n = 9999
+        mod = palletjack.utils.calc_modulus_for_reporting_interval(n)
+
+        assert mod == 1000
+
+    def test_calc_modulus_for_reporting_interval_handles_lower_end_of_ones(self):
+        n = 1
+        mod = palletjack.utils.calc_modulus_for_reporting_interval(n)
+
+        assert mod == 1
+
+    def test_calc_modulus_for_reporting_interval_handles_lower_end_of_tens(self):
+        n = 11
+        mod = palletjack.utils.calc_modulus_for_reporting_interval(n)
+
+        assert mod == 1
+
+    def test_calc_modulus_for_reporting_interval_handles_lower_end_of_thousands(self):
+        n = 1001
+        mod = palletjack.utils.calc_modulus_for_reporting_interval(n)
+
+        assert mod == 100
