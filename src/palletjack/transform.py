@@ -67,6 +67,7 @@ class APIGeocoder:
         spatial_dataframe = pd.DataFrame.spatial.from_xy(pd.DataFrame(new_rows), 'x', 'y', sr=int(wkid))
 
         end = datetime.now()
-        self._class_logger.info('Geocode time: %s', (end - start))
+        self._class_logger.info('%s Records geocoded in %s', len(spatial_dataframe.index), (end - start))
+        self._class_logger.debug('Average time per record: %s', (end - start) / len(spatial_dataframe.index))
 
         return spatial_dataframe
