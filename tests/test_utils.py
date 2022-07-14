@@ -525,38 +525,18 @@ class TestGeocodeAddr:
 
 class TestReportingIntervalModulus:
 
-    def test_calc_modulus_for_reporting_interval_handles_upper_end_of_ones(self):
-        n = 9
-        mod = palletjack.utils.calc_modulus_for_reporting_interval(n)
+    def test_calc_modulus_for_reporting_interval_handles_less_than_ten(self):
 
-        assert mod == 1
+        assert palletjack.utils.calc_modulus_for_reporting_interval(9) == 1
 
-    def test_calc_modulus_for_reporting_interval_handles_upper_end_of_tens(self):
-        n = 99
-        mod = palletjack.utils.calc_modulus_for_reporting_interval(n)
+    def test_calc_modulus_for_reporting_interval_handles_ten(self):
 
-        assert mod == 10
+        assert palletjack.utils.calc_modulus_for_reporting_interval(10) == 1
 
-    def test_calc_modulus_for_reporting_interval_handles_upper_end_of_thousands(self):
-        n = 9999
-        mod = palletjack.utils.calc_modulus_for_reporting_interval(n)
+    def test_calc_modulus_for_reporting_interval_handles_less_than_split_value(self):
 
-        assert mod == 1000
+        assert palletjack.utils.calc_modulus_for_reporting_interval(100, split_value=500) == 10
 
-    def test_calc_modulus_for_reporting_interval_handles_lower_end_of_ones(self):
-        n = 1
-        mod = palletjack.utils.calc_modulus_for_reporting_interval(n)
+    def test_calc_modulus_for_reporting_interval_handles_more_than_split_value(self):
 
-        assert mod == 1
-
-    def test_calc_modulus_for_reporting_interval_handles_lower_end_of_tens(self):
-        n = 11
-        mod = palletjack.utils.calc_modulus_for_reporting_interval(n)
-
-        assert mod == 1
-
-    def test_calc_modulus_for_reporting_interval_handles_lower_end_of_thousands(self):
-        n = 1001
-        mod = palletjack.utils.calc_modulus_for_reporting_interval(n)
-
-        assert mod == 100
+        assert palletjack.utils.calc_modulus_for_reporting_interval(1000, split_value=500) == 50

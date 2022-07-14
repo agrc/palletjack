@@ -1,7 +1,7 @@
 import logging
 import random
 import re
-from math import log10
+from math import floor
 from time import sleep
 
 import pandas as pd
@@ -251,27 +251,12 @@ def _geocode_api_call(url, api_args):
     raise RuntimeError(f'Did not receive a valid geocoding response; status code: {response.status_code}')
 
 
-def calc_modulus_for_reporting_interval(n, near_factor=5):
-    """Create a reporting interval that gives between near_factor and near_factor+10 reports when iterating through n.
+def calc_modulus_for_reporting_interval(n, split_value=500):
 
-    Returns a power of ten that matches the number of digits in n unless the second digit in n is less than near_factor. For example, if n=400, it returns 100 so that when iterating through n, i%100==0 four times resulting in four report intervals. If n=140 and near_factor=5, it would return 100 but because 100 is greater than 40
+    if n <= 10:
+        return 1
 
-    Args:
-        n (int): The initial size/length/value to determine a reporting interval for
-        near_factor (int, optional): How low down the current order of magnitude n can go before the interval decreases by one order of magnitude. Defaults to 5.
+    if n < split_value:
+        return floor(n / 10)
 
-    Returns:
-        int: The modulus for reporting at intervals.
-    """
-
-    #: 10^(number of digits in n, minus 1)
-    initial_modulus = 10**int(log10(n))
-
-    #: if our number is close to our modulus, drop the modulus down a power for more useful intervals
-    if initial_modulus > n - initial_modulus:
-        new_modulus = int(initial_modulus / 10)
-        if new_modulus < 1:
-            return 1
-        return int(initial_modulus / 10)
-
-    return initial_modulus
+    return floor(n / 20)
