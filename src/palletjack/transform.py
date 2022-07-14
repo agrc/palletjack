@@ -37,8 +37,18 @@ class APIGeocoder:
         Returns:
             pd.DataFrame.spatial: Geocoded data as a spatially-enabled DataFrame
         """
+
+        #: TODO: track time and report at end
+
+        reporting_interval = utils.calc_modulus_for_reporting_interval(len(dataframe.index))
+        self._class_logger.info('Geocoding %s rows...', len(dataframe.index))
+
         new_rows = []
-        for row in dataframe.itertuples(index=False):
+        for i, row in enumerate(dataframe.itertuples(index=False)):
+            if i % reporting_interval == 0:
+                self._class_logger.debug(
+                    'Geocoding row %s of %s, %s%%', i, len(dataframe.index), i / len(dataframe.index) * 100
+                )
             row_dict = row._asdict()
             results = utils.geocode_addr(
                 row_dict[street_col],

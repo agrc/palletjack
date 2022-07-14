@@ -174,6 +174,6 @@ class TestAPIGeocoder:
         })
 
         tm.assert_frame_equal(test_df, geocoded_df)
-        assert 'ERROR    palletjack.utils:utils.py:199 Did not receive a valid geocoding response; status code: 500' in caplog.text
+        assert 'ERROR    palletjack.utils:utils.py:200 Did not receive a valid geocoding response; status code: 500' in caplog.text
         assert palletjack.utils.requests.get.call_count == 5
         assert palletjack.utils.sleep.call_count == 5
