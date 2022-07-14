@@ -229,8 +229,13 @@ def _geocode_api_call(url, api_args):
     response = requests.get(url, params=api_args)
 
     #: The server times out and doesn't respond
-    if not response:
-        raise RuntimeError('No response from GET; server nodejs timeout?')
+    if response is None:
+        module_logger.debug('GET call did not return a response')
+        raise RuntimeError('No response from GET; request timeout?')
+
+    #: The point does geocode
+    if response.status_code == 200:
+        return response.json()['result']
 
     #: The point doesn't geocode
     if response.status_code == 404:
@@ -243,15 +248,20 @@ def _geocode_api_call(url, api_args):
             'matchAddress': 'No Match',
         }
 
-    #: The point does geocode
-    if response.status_code == 200:
-        return response.json()['result']
-
     #: If we haven't returned, raise an error to trigger _retry
     raise RuntimeError(f'Did not receive a valid geocoding response; status code: {response.status_code}')
 
 
 def calc_modulus_for_reporting_interval(n, split_value=500):
+    """Calculate a number that can be used as a modulus for splitting n up into 10 or 20 intervals, depending on split_value.
+
+    Args:
+        n (int): The number to divide into intervals
+        split_value (int, optional): The point at which it should create 20 intervals instead of 10. Defaults to 500.
+
+    Returns:
+        int: Number to be used as modulus to compare to 0 in reporting code
+    """
 
     if n <= 10:
         return 1
