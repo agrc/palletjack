@@ -65,7 +65,13 @@ def rename_columns_for_agol(columns):
 
     rename_dict = {}
     for column in columns:
-        rename_dict[column] = re.sub(r'[^a-zA-Z0-9_]', '_', column)
+        no_specials = re.sub(r'[^a-zA-Z0-9_]', '_', column)
+        match = re.match(r'(^[0-9_]+)', no_specials)
+        if match:
+            number = match.groups()[0]
+            rename_dict[column] = no_specials.removeprefix(number) + number
+            continue
+        rename_dict[column] = no_specials
     return rename_dict
 
 
