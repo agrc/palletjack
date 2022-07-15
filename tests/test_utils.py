@@ -595,3 +595,42 @@ class TestReportingIntervalModulus:
     def test_calc_modulus_for_reporting_interval_handles_more_than_split_value(self):
 
         assert palletjack.utils.calc_modulus_for_reporting_interval(1000, split_value=500) == 50
+
+
+class TestValidateAPIKey:
+
+    def test_validate_api_key_good_key(self, mocker):
+        mocker.patch('palletjack.utils.requests', autospec=True)
+        response_mock = mocker.Mock()
+        response_mock.json.return_value = {'status': 200, 'message': 'foo'}
+        palletjack.utils.requests.get.return_value = response_mock
+
+        check = palletjack.utils.validate_api_key('foo')
+
+        assert check == 'valid'
+
+    def test_validate_api_key_bad_key(self, mocker):
+        mocker.patch('palletjack.utils.requests', autospec=True)
+        response_mock = mocker.Mock()
+        response_mock.json.return_value = {'status': 400, 'message': 'Invalid API key'}
+        palletjack.utils.requests.get.return_value = response_mock
+
+        check = palletjack.utils.validate_api_key('foo')
+
+        assert check == 'Invalid API key'
+
+    def test_validate_api_key_handles_exception(self, mocker, caplog):
+        mocker.patch('palletjack.utils.requests', autospec=True)
+        mocker.patch('palletjack.utils.sleep')
+        caplog.set_level(logging.DEBUG)
+        # response_mock = mocker.Mock()
+        # response_mock.json.return_value = {
+        #     'status': 400,
+        #     'message': 'foo'
+        # }
+        palletjack.utils.requests.get.side_effect = [Exception('Random Error')] * 4
+
+        check = palletjack.utils.validate_api_key('foo')
+        assert check == 'Could not determine key validity; check your API key and/or network connection'
+        assert palletjack.utils.requests.get.call_count == 4
+        assert 'Random Error' in caplog.messages
