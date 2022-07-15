@@ -549,7 +549,7 @@ class TestGeocodeAddr:
 
         result = palletjack.utils.geocode_addr('foo', 'bar', 'foo_key', (0.015, 0.03))
 
-        assert 'ERROR    palletjack.utils:utils.py:200 Did not receive a valid geocoding response; status code: 500' in caplog.text
+        assert 'Did not receive a valid geocoding response; status code: 500' in caplog.messages
         assert palletjack.utils.requests.get.call_count == 4
         assert result == (0, 0, 0., 'No API response')
 

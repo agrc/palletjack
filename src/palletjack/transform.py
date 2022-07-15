@@ -1,6 +1,7 @@
 """transform.py: Processes in the Transfomation step of ETL
 """
 import logging
+import warnings
 from datetime import datetime
 
 import pandas as pd
@@ -41,6 +42,13 @@ class APIGeocoder:
 
         start = datetime.now()
 
+        #: Should this return? Should it raise an error instead?
+        if dataframe.empty:
+            warnings.warn('No records to geocode (empty dataframe)', RuntimeWarning)
+
+        self._class_logger.debug('Renaming columns to conform to ArcGIS limitations, if necessary...')
+        dataframe.rename(columns=utils.rename_columns_for_agol(dataframe.columns), inplace=True)
+
         dataframe_length = len(dataframe.index)
         reporting_interval = utils.calc_modulus_for_reporting_interval(dataframe_length)
         self._class_logger.info('Geocoding %s rows...', dataframe_length)
@@ -68,6 +76,8 @@ class APIGeocoder:
 
         end = datetime.now()
         self._class_logger.info('%s Records geocoded in %s', len(spatial_dataframe.index), (end - start))
-        self._class_logger.debug('Average time per record: %s', (end - start) / len(spatial_dataframe.index))
-
+        try:
+            self._class_logger.debug('Average time per record: %s', (end - start) / len(spatial_dataframe.index))
+        except ZeroDivisionError:
+            warnings.warn('Empty spatial dataframe after geocoding', RuntimeWarning)
         return spatial_dataframe
