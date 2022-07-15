@@ -276,3 +276,32 @@ def calc_modulus_for_reporting_interval(n, split_value=500):
         return floor(n / 10)
 
     return floor(n / 20)
+
+
+def validate_api_key(api_key):
+    """Check to see if a Web API key is valid by geocoding a single, known address point
+
+    Args:
+        api_key (str): API Key
+
+    Returns:
+        str: One of three messages:
+                'valid': The key is valid
+                A string containing 'Invalid API key': Response from the server if the API key is invalid
+                'Could not determine key validity; check your API key and/or network connection': If there was some
+                network or response error.
+    """
+
+    url = 'https://api.mapserv.utah.gov/api/v1/geocode/326 east south temple street/slc'
+
+    try:
+        response = retry(requests.get, url=url, params={'apiKey': api_key})
+        response_json = response.json()
+        if response_json['status'] == 200:
+            return 'valid'
+        if response_json['status'] == 400 and 'Invalid API key' in response_json['message']:
+            return response_json['message']
+    except Exception as error:
+        module_logger.debug(error)
+        # return 'Could not determine key validity; check your API key and/or network connection'
+    return 'Could not determine key validity; check your API key and/or network connection'
