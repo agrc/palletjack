@@ -10,26 +10,54 @@ import palletjack
 
 class TestRenameColumns:
 
-    def test_rename_columns_from_agol_handles_special_and_space(self):
+    def test_rename_columns_for_agol_handles_special_and_space(self):
         cols = ['Test Name:']
 
         renamed = palletjack.utils.rename_columns_for_agol(cols)
 
         assert renamed == {'Test Name:': 'Test_Name_'}
 
-    def test_rename_columns_from_agol_handles_special_and_space_leaves_others_alone(self):
+    def test_rename_columns_for_agol_handles_special_and_space_leaves_others_alone(self):
         cols = ['Test Name:', 'FooName']
 
         renamed = palletjack.utils.rename_columns_for_agol(cols)
 
         assert renamed == {'Test Name:': 'Test_Name_', 'FooName': 'FooName'}
 
-    def test_rename_columns_from_agol_retains_underscores(self):
+    def test_rename_columns_for_agol_retains_underscores(self):
         cols = ['Test Name:', 'Foo_Name']
 
         renamed = palletjack.utils.rename_columns_for_agol(cols)
 
         assert renamed == {'Test Name:': 'Test_Name_', 'Foo_Name': 'Foo_Name'}
+
+    def test_rename_columns_for_agol_moves_leading_digits_to_end(self):
+        cols = ['1TestName:', '12TestName:']
+
+        renamed = palletjack.utils.rename_columns_for_agol(cols)
+
+        assert renamed == {'1TestName:': 'TestName_1', '12TestName:': 'TestName_12'}
+
+    def test_rename_columns_for_agol_moves_leading_underscore_to_end(self):
+        cols = ['_TestName:']
+
+        renamed = palletjack.utils.rename_columns_for_agol(cols)
+
+        assert renamed == {'_TestName:': 'TestName__'}
+
+    def test_rename_columns_for_agol_moves_underscore_after_leading_digits_to_end(self):
+        cols = ['1_TestName:']
+
+        renamed = palletjack.utils.rename_columns_for_agol(cols)
+
+        assert renamed == {'1_TestName:': 'TestName_1_'}
+
+    def test_rename_columns_for_agol_moves_underscore_before_leading_digits_to_end(self):
+        cols = ['_1TestName:']
+
+        renamed = palletjack.utils.rename_columns_for_agol(cols)
+
+        assert renamed == {'_1TestName:': 'TestName__1'}
 
 
 class TestCheckFieldsMatch:
