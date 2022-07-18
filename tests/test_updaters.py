@@ -1790,6 +1790,44 @@ class TestFeatureServiceOverwriter:
         assert 'Append failed; attempting to re-load truncated data...' in caplog.text
         assert '42 features reloaded' in caplog.text
 
+    def test_truncate_and_load_field_check_fails_reload_works(self, mocker, caplog):
+        caplog.set_level(logging.DEBUG)
+        mock_fl = mocker.Mock()
+        mock_fl.manager.truncate.return_value = {
+            'submissionTime': 123,
+            'lastUpdatedTime': 124,
+            'status': 'Completed',
+        }
+        mock_fl.properties = {
+            'fields': [
+                {
+                    'name': 'Foo'
+                },
+                {
+                    'name': 'Bar'
+                },
+            ]
+        }
+        mock_fl.append.return_value = (True, {'recordCount': 42})
+
+        fl_class_mock = mocker.Mock()
+        fl_class_mock.fromitem.return_value = mock_fl
+        mocker.patch('arcgis.features.FeatureLayer', fl_class_mock)
+
+        new_dataframe = pd.DataFrame(columns=['Foo', 'Bar', 'Baz'])
+        mocker.patch.object(pd.DataFrame, 'spatial')
+
+        overwriter = palletjack.FeatureServiceOverwriter(mocker.Mock())
+
+        with pytest.raises(
+            RuntimeError,
+            match='New dataset contains the following fields that are not present in the live dataset: {\'Baz\'}'
+        ):
+            uploaded_features = overwriter.truncate_and_load_feature_service('abc', new_dataframe, 'foo/dir')
+
+        assert 'Append failed; attempting to re-load truncated data...' in caplog.text
+        assert '42 features reloaded' in caplog.text
+
     def test_truncate_and_load_append_fails_reload_fails(self, mocker, caplog):
         caplog.set_level(logging.DEBUG)
         mock_fl = mocker.Mock()
