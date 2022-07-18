@@ -664,12 +664,13 @@ class FeatureServiceOverwriter:
         )
         self._class_logger.info('Truncating existing data...')
         old_dataframe = self._truncate_existing_data(target_featurelayer, layer_index, feature_service_item_id)
-        cleaned_dataframe = new_dataframe.rename(columns=utils.rename_columns_for_agol(new_dataframe.columns))
-        #: temp fix until Esri fixes empty series as NaN bug
-        fixed_dataframe = utils.replace_nan_series_with_empty_strings(cleaned_dataframe)
-        utils.check_fields_match(target_featurelayer, fixed_dataframe)
-        self._class_logger.info('Loading new data...')
         try:
+            cleaned_dataframe = new_dataframe.rename(columns=utils.rename_columns_for_agol(new_dataframe.columns))
+            #: temp fix until Esri fixes empty series as NaN bug
+            fixed_dataframe = utils.replace_nan_series_with_empty_strings(cleaned_dataframe)
+            utils.check_fields_match(target_featurelayer, fixed_dataframe)
+            self._class_logger.info('Loading new data...')
+
             messages = self._append_new_data(target_featurelayer, fixed_dataframe, feature_service_item_id, layer_index)
         except Exception:
             try:
