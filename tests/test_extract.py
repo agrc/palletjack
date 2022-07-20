@@ -8,7 +8,7 @@ import pandas as pd
 import pytest
 from pandas import testing as tm
 
-import palletjack
+from palletjack import extract
 
 
 class TestGSheetsLoader:
@@ -22,7 +22,7 @@ class TestGSheetsLoader:
         gsheet_loader_mock = mocker.Mock()
         gsheet_loader_mock.gsheets_client = client_mock
 
-        palletjack.GSheetLoader.load_specific_worksheet_into_dataframe(gsheet_loader_mock, 'foobar', 5)
+        extract.GSheetLoader.load_specific_worksheet_into_dataframe(gsheet_loader_mock, 'foobar', 5)
 
         sheet_mock.worksheet.assert_called_once_with('index', 5)
         sheet_mock.worksheet_by_title.assert_not_called()
@@ -36,9 +36,7 @@ class TestGSheetsLoader:
         gsheet_loader_mock = mocker.Mock()
         gsheet_loader_mock.gsheets_client = client_mock
 
-        palletjack.GSheetLoader.load_specific_worksheet_into_dataframe(
-            gsheet_loader_mock, 'foobar', '2015', by_title=True
-        )
+        extract.GSheetLoader.load_specific_worksheet_into_dataframe(gsheet_loader_mock, 'foobar', '2015', by_title=True)
 
         sheet_mock.worksheet.assert_not_called
         sheet_mock.worksheet_by_title.assert_called_once_with('2015')
@@ -57,7 +55,7 @@ class TestGSheetsLoader:
         gsheet_loader_mock = mocker.Mock()
         gsheet_loader_mock.gsheets_client = client_mock
 
-        df_dict = palletjack.GSheetLoader.load_all_worksheets_into_dataframes(gsheet_loader_mock, 'foobar')
+        df_dict = extract.GSheetLoader.load_all_worksheets_into_dataframes(gsheet_loader_mock, 'foobar')
 
         test_dict = {'ws1': 'df1'}
 
@@ -81,7 +79,7 @@ class TestGSheetsLoader:
         gsheet_loader_mock = mocker.Mock()
         gsheet_loader_mock.gsheets_client = client_mock
 
-        df_dict = palletjack.GSheetLoader.load_all_worksheets_into_dataframes(gsheet_loader_mock, 'foobar')
+        df_dict = extract.GSheetLoader.load_all_worksheets_into_dataframes(gsheet_loader_mock, 'foobar')
 
         test_dict = {'ws1': 'df1', 'ws2': 'df2'}
 
@@ -100,7 +98,7 @@ class TestGSheetsLoader:
 
         df_dict = {'df1': df1, 'df2': df2}
 
-        combined_df = palletjack.GSheetLoader.combine_worksheets_into_single_dataframe(mocker.Mock(), df_dict)
+        combined_df = extract.GSheetLoader.combine_worksheets_into_single_dataframe(mocker.Mock(), df_dict)
 
         test_df = pd.DataFrame({
             'worksheet': ['df1', 'df1', 'df2', 'df2'],
@@ -126,7 +124,7 @@ class TestGSheetsLoader:
         df_dict = {'df1': df1, 'df2': df2}
 
         with pytest.raises(ValueError, match='Columns do not match; cannot create mutli-index dataframe'):
-            combined_df = palletjack.GSheetLoader.combine_worksheets_into_single_dataframe(mocker.Mock(), df_dict)
+            combined_df = extract.GSheetLoader.combine_worksheets_into_single_dataframe(mocker.Mock(), df_dict)
 
 
 class TestGoogleDriveDownloader:
@@ -138,7 +136,7 @@ class TestGoogleDriveDownloader:
             'Content-Disposition': 'attachment;filename="file.name";filename*=UTF-8\'\'file.name'
         }
 
-        filename = palletjack.GoogleDriveDownloader._get_filename_from_response(response)
+        filename = extract.GoogleDriveDownloader._get_filename_from_response(response)
 
         assert filename == 'file.name'
 
@@ -147,7 +145,7 @@ class TestGoogleDriveDownloader:
         response.headers = {'foo': 'bar', 'Content-Disposition': 'attachment'}
 
         with pytest.raises(ValueError, match='filename not found in response header'):
-            palletjack.GoogleDriveDownloader._get_filename_from_response(response)
+            extract.GoogleDriveDownloader._get_filename_from_response(response)
 
     def test_get_http_response_works_normally(self, mocker):
         response_mock = mocker.Mock()
@@ -156,7 +154,7 @@ class TestGoogleDriveDownloader:
         get_mock.return_value = response_mock
         mocker.patch('requests.get', new=get_mock)
 
-        palletjack.GoogleDriveDownloader._get_http_response(mocker.Mock(), 'foo_file_id')
+        extract.GoogleDriveDownloader._get_http_response(mocker.Mock(), 'foo_file_id')
 
         get_mock.assert_called_with(
             'https://docs.google.com/uc?export=download', params={'id': 'foo_file_id'}, stream=True
@@ -170,7 +168,7 @@ class TestGoogleDriveDownloader:
         mocker.patch('requests.get', new=get_mock)
 
         with pytest.raises(RuntimeError) as error:
-            palletjack.GoogleDriveDownloader._get_http_response(mocker.Mock(), 'foo_file_id')
+            extract.GoogleDriveDownloader._get_http_response(mocker.Mock(), 'foo_file_id')
         assert 'Cannot access foo_file_id (is it publicly shared?). Response header in log.' in str(error.value)
 
     def test_save_response_content_skips_empty_chunks(self, mocker):
@@ -181,20 +179,20 @@ class TestGoogleDriveDownloader:
         open_mock = mocker.mock_open()
         mocker.patch('pathlib.Path.open', open_mock)
 
-        palletjack.GoogleDriveDownloader._save_response_content(response_mock, Path('/foo/bar'), chunk_size=1)
+        extract.GoogleDriveDownloader._save_response_content(response_mock, Path('/foo/bar'), chunk_size=1)
 
         assert open_mock().write.call_args_list[0][0] == (b'\x01',)
         assert open_mock().write.call_args_list[1][0] == (b'\x02',)
 
     def test_download_file_from_google_drive_creates_filename(self, mocker):
 
-        mocker.patch.object(palletjack.GoogleDriveDownloader, '_get_file_id_from_sharing_link')
-        mocker.patch.object(palletjack.GoogleDriveDownloader, '_get_http_response', return_value='response')
-        mocker.patch.object(palletjack.GoogleDriveDownloader, '_get_filename_from_response', return_value='baz.png')
+        mocker.patch.object(extract.GoogleDriveDownloader, '_get_file_id_from_sharing_link')
+        mocker.patch.object(extract.GoogleDriveDownloader, '_get_http_response', return_value='response')
+        mocker.patch.object(extract.GoogleDriveDownloader, '_get_filename_from_response', return_value='baz.png')
         save_mock = mocker.Mock()
-        mocker.patch.object(palletjack.GoogleDriveDownloader, '_save_response_content', save_mock)
+        mocker.patch.object(extract.GoogleDriveDownloader, '_save_response_content', save_mock)
 
-        downloader = palletjack.GoogleDriveDownloader('/foo/bar')
+        downloader = extract.GoogleDriveDownloader('/foo/bar')
 
         downloader.download_file_from_google_drive('1234', 42)
 
@@ -203,11 +201,11 @@ class TestGoogleDriveDownloader:
     def test_download_file_from_google_drive_handles_empty_string_link(self, mocker, caplog):
 
         file_id_mock = mocker.Mock()
-        mocker.patch.object(palletjack.GoogleDriveDownloader, '_get_file_id_from_sharing_link', file_id_mock)
+        mocker.patch.object(extract.GoogleDriveDownloader, '_get_file_id_from_sharing_link', file_id_mock)
 
-        downloader = palletjack.GoogleDriveDownloader('/foo/bar')
+        downloader = extract.GoogleDriveDownloader('/foo/bar')
 
-        caplog.set_level(logging.DEBUG, logger='palletjack.loaders.GoogleDriveDownloader')
+        caplog.set_level(logging.DEBUG, logger='palletjack.extract.GoogleDriveDownloader')
         caplog.clear()
         result = downloader.download_file_from_google_drive('', 42)
 
@@ -218,11 +216,11 @@ class TestGoogleDriveDownloader:
     def test_download_file_from_google_drive_handles_None_link(self, mocker, caplog):
 
         file_id_mock = mocker.Mock()
-        mocker.patch.object(palletjack.GoogleDriveDownloader, '_get_file_id_from_sharing_link', file_id_mock)
+        mocker.patch.object(extract.GoogleDriveDownloader, '_get_file_id_from_sharing_link', file_id_mock)
 
-        downloader = palletjack.GoogleDriveDownloader('/foo/bar')
+        downloader = extract.GoogleDriveDownloader('/foo/bar')
 
-        caplog.set_level(logging.DEBUG, logger='palletjack.loaders.GoogleDriveDownloader')
+        caplog.set_level(logging.DEBUG, logger='palletjack.extract.GoogleDriveDownloader')
         caplog.clear()
         result = downloader.download_file_from_google_drive(None, 42)
 
@@ -232,18 +230,16 @@ class TestGoogleDriveDownloader:
 
     def test_download_file_from_google_drive_handles_download_error(self, mocker, caplog):
 
-        mocker.patch.object(
-            palletjack.GoogleDriveDownloader, '_get_file_id_from_sharing_link', return_value='google_id'
-        )
-        mocker.patch.object(palletjack.GoogleDriveDownloader, '_get_http_response', side_effect=Exception('Boom'))
+        mocker.patch.object(extract.GoogleDriveDownloader, '_get_file_id_from_sharing_link', return_value='google_id')
+        mocker.patch.object(extract.GoogleDriveDownloader, '_get_http_response', side_effect=Exception('Boom'))
         filename_mock = mocker.Mock()
-        mocker.patch.object(palletjack.GoogleDriveDownloader, '_get_filename_from_response', new=filename_mock)
+        mocker.patch.object(extract.GoogleDriveDownloader, '_get_filename_from_response', new=filename_mock)
         # save_mock = mocker.Mock()
-        # mocker.patch.object(palletjack.GoogleDriveDownloader, '_save_response_content', save_mock)
+        # mocker.patch.object(extract.GoogleDriveDownloader, '_save_response_content', save_mock)
 
-        downloader = palletjack.GoogleDriveDownloader('/foo/bar')
+        downloader = extract.GoogleDriveDownloader('/foo/bar')
 
-        caplog.set_level(logging.DEBUG, logger='palletjack.loaders.GoogleDriveDownloader')
+        caplog.set_level(logging.DEBUG, logger='palletjack.extract.GoogleDriveDownloader')
         caplog.clear()
         result = downloader.download_file_from_google_drive('1234', 42)
 
@@ -300,7 +296,7 @@ class TestGoogleDriveDownloader:
             'link': ['a', 'b'],
         })
 
-        downloaded_df = palletjack.GoogleDriveDownloader.download_attachments_from_dataframe(
+        downloaded_df = extract.GoogleDriveDownloader.download_attachments_from_dataframe(
             downloader_mock, sheet_dataframe, 'link', 'join_id', 'path'
         )
 
@@ -314,7 +310,7 @@ class TestGoogleDriveDownloader:
 
     def test_get_file_id_from_sharing_link_extracts_group_file_link(self, mocker):
 
-        downloader = palletjack.GoogleDriveDownloader('foo')
+        downloader = extract.GoogleDriveDownloader('foo')
         test_link = 'https://drive.google.com/file/d/abcdefghijklm_opqrstuvwxy/view?usp=sharing'
 
         file_id = downloader._get_file_id_from_sharing_link(test_link)
@@ -323,7 +319,7 @@ class TestGoogleDriveDownloader:
 
     def test_get_file_id_from_sharing_link_extracts_group_file_link_with_dashes(self, mocker):
 
-        downloader = palletjack.GoogleDriveDownloader('foo')
+        downloader = extract.GoogleDriveDownloader('foo')
         test_link = 'https://drive.google.com/file/d/abcdefghijklm-opqrstuvwxy/view?usp=sharing'
 
         file_id = downloader._get_file_id_from_sharing_link(test_link)
@@ -332,7 +328,7 @@ class TestGoogleDriveDownloader:
 
     def test_get_file_id_from_sharing_link_extracts_group_open_link(self, mocker):
 
-        downloader = palletjack.GoogleDriveDownloader('foo')
+        downloader = extract.GoogleDriveDownloader('foo')
         test_link = 'https://drive.google.com/open?id=abcdefghijklm_opqrstuvwxy'
 
         file_id = downloader._get_file_id_from_sharing_link(test_link)
@@ -341,7 +337,7 @@ class TestGoogleDriveDownloader:
 
     def test_get_file_id_from_sharing_link_raises_error_on_failed_match(self, mocker):
 
-        downloader = palletjack.GoogleDriveDownloader('foo')
+        downloader = extract.GoogleDriveDownloader('foo')
         test_link = 'bad_link'
 
         with pytest.raises(RuntimeError, match='Regex could not match sharing link bad_link'):
@@ -541,7 +537,7 @@ class TestSFTPLoader:
         cnopts_mock.side_effect = lambda knownhosts: knownhosts
         mocker.patch('pysftp.CnOpts', new=cnopts_mock)
 
-        palletjack.SFTPLoader.download_sftp_folder_contents(sftploader_mock)
+        extract.SFTPLoader.download_sftp_folder_contents(sftploader_mock)
 
         context_manager_mock.assert_called_with(
             'sftp_host', username='username', password='password', cnopts='knownhosts_file'
@@ -564,7 +560,7 @@ class TestSFTPLoader:
         cnopts_mock.side_effect = lambda knownhosts: knownhosts
         mocker.patch('pysftp.CnOpts', new=cnopts_mock)
 
-        palletjack.SFTPLoader.download_sftp_single_file(sftploader_mock, 'filename', 'upload')
+        extract.SFTPLoader.download_sftp_single_file(sftploader_mock, 'filename', 'upload')
 
         context_manager_mock.assert_called_with(
             'sftp_host', username='username', password='password', cnopts='knownhosts_file', default_path='upload'
@@ -580,7 +576,7 @@ class TestSFTPLoader:
 
         column_types = {'bar': np.float64}
 
-        palletjack.SFTPLoader.read_csv_into_dataframe(sftploader_mock, 'baz', column_types)
+        extract.SFTPLoader.read_csv_into_dataframe(sftploader_mock, 'baz', column_types)
 
         pd_mock.assert_called_with(Path('foo', 'baz'), names=['bar'], dtype=column_types)
 
@@ -592,7 +588,7 @@ class TestSFTPLoader:
         sftploader_mock = mocker.Mock()
         sftploader_mock.download_dir = 'foo'
 
-        palletjack.SFTPLoader.read_csv_into_dataframe(sftploader_mock, 'baz')
+        extract.SFTPLoader.read_csv_into_dataframe(sftploader_mock, 'baz')
 
         pd_mock.assert_called_with(Path('foo', 'baz'), names=None, dtype=None)
 
