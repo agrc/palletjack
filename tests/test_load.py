@@ -15,7 +15,7 @@ from arcgis.features import GeoAccessor, GeoSeriesAccessor
 from mock_arcpy import arcpy
 from pandas.api.types import CategoricalDtype
 
-import palletjack
+from palletjack import load
 
 
 @pytest.fixture
@@ -75,7 +75,7 @@ class TestFeatureServiceInlineUpdater:
         fsupdater_mock = mocker.Mock()
         fsupdater_mock.new_data_as_dict = {'12345': {'Count': '57', 'Amount': 100.00, 'Date': '1/1/2022'}}
 
-        palletjack.FeatureServiceInlineUpdater.update_existing_features_in_feature_service_with_arcpy(
+        load.FeatureServiceInlineUpdater.update_existing_features_in_feature_service_with_arcpy(
             fsupdater_mock, 'foo', ['ZipCode', 'Count', 'Amount', 'Date']
         )
 
@@ -86,7 +86,7 @@ class TestFeatureServiceInlineUpdater:
     def test_update_existing_features_in_feature_service_with_arcpy_reports_error_on_import_failure(self, mocker):
 
         with pytest.raises(ImportError, match='Failure importing arcpy. ArcGIS Pro must be installed.'):
-            palletjack.FeatureServiceInlineUpdater.update_existing_features_in_feature_service_with_arcpy(
+            load.FeatureServiceInlineUpdater.update_existing_features_in_feature_service_with_arcpy(
                 mocker.Mock(), 'foo', ['ZipCode', 'Count', 'Amount', 'Date']
             )
 
@@ -95,7 +95,7 @@ class TestFeatureServiceInlineUpdater:
         fields = ['foo', 'bar']
         dataframe = pd.DataFrame(columns=['foo_x', 'bar_x', 'baz', 'foo_y', 'bar_y'])
 
-        renamed = palletjack.FeatureServiceInlineUpdater._clean_dataframe_columns(class_mock, dataframe, fields)
+        renamed = load.FeatureServiceInlineUpdater._clean_dataframe_columns(class_mock, dataframe, fields)
 
         assert list(renamed.columns) == ['baz', 'foo', 'bar']
 
@@ -104,7 +104,7 @@ class TestFeatureServiceInlineUpdater:
         fields = ['foo', 'bar', 'buz']
         dataframe = pd.DataFrame(columns=['foo_x', 'bar_x', 'baz', 'foo_y', 'bar_y'])
 
-        renamed = palletjack.FeatureServiceInlineUpdater._clean_dataframe_columns(class_mock, dataframe, fields)
+        renamed = load.FeatureServiceInlineUpdater._clean_dataframe_columns(class_mock, dataframe, fields)
 
         assert list(renamed.columns) == ['baz', 'foo', 'bar']
 
@@ -113,7 +113,7 @@ class TestFeatureServiceInlineUpdater:
         fields = ['foo', 'bar', 'buz']
         dataframe = pd.DataFrame(columns=['foo_x', 'bar_x', 'baz', 'foo_y', 'bar_y', '_merge'])
 
-        renamed = palletjack.FeatureServiceInlineUpdater._clean_dataframe_columns(class_mock, dataframe, fields)
+        renamed = load.FeatureServiceInlineUpdater._clean_dataframe_columns(class_mock, dataframe, fields)
 
         assert list(renamed.columns) == ['baz', 'foo', 'bar']
 
@@ -123,7 +123,7 @@ class TestFeatureServiceInlineUpdater:
         class_mock.new_dataframe = pd.DataFrame({'col1': [10, 20, 30], 'col2': [40, 50, 60], 'key': ['a', 'b', 'c']})
         live_dataframe = pd.DataFrame({'col1': [1, 2, 3], 'col2': [4, 5, 6], 'key': ['a', 'b', 'c']})
 
-        joined = palletjack.FeatureServiceInlineUpdater._get_common_rows(class_mock, live_dataframe)
+        joined = load.FeatureServiceInlineUpdater._get_common_rows(class_mock, live_dataframe)
 
         merge_type = CategoricalDtype(categories=['left_only', 'right_only', 'both'], ordered=False)
         expected = pd.DataFrame({
@@ -145,7 +145,7 @@ class TestFeatureServiceInlineUpdater:
         class_mock.new_dataframe = pd.DataFrame({'col1': [20, 30], 'col2': [50, 60], 'key': ['b', 'c']})
         live_dataframe = pd.DataFrame({'col1': [1, 2, 3], 'col2': [4, 5, 6], 'key': ['a', 'b', 'c']})
 
-        joined = palletjack.FeatureServiceInlineUpdater._get_common_rows(class_mock, live_dataframe)
+        joined = load.FeatureServiceInlineUpdater._get_common_rows(class_mock, live_dataframe)
 
         merge_type = CategoricalDtype(categories=['left_only', 'right_only', 'both'], ordered=False)
         expected = pd.DataFrame({
@@ -173,7 +173,7 @@ class TestFeatureServiceInlineUpdater:
         class_mock._class_logger = logging.getLogger('root')
         live_dataframe = pd.DataFrame({'col1': [1, 2, 3], 'col2': [4, 5, 6], 'key': ['a', 'b', 'c']})
 
-        joined = palletjack.FeatureServiceInlineUpdater._get_common_rows(class_mock, live_dataframe)
+        joined = load.FeatureServiceInlineUpdater._get_common_rows(class_mock, live_dataframe)
 
         merge_type = CategoricalDtype(categories=['left_only', 'right_only', 'both'], ordered=False)
         expected = pd.DataFrame({
@@ -215,7 +215,7 @@ class TestFeatureServiceInlineUpdaterResultParsing:
             'data': ['foo', 'bar'],
         })
 
-        rows_updated = palletjack.FeatureServiceInlineUpdater._parse_results(class_mock, results_dict, live_dataframe)
+        rows_updated = load.FeatureServiceInlineUpdater._parse_results(class_mock, results_dict, live_dataframe)
 
         assert rows_updated == 2
 
@@ -241,7 +241,7 @@ class TestFeatureServiceInlineUpdaterResultParsing:
             'data': ['foo', 'bar'],
         })
 
-        rows_updated = palletjack.FeatureServiceInlineUpdater._parse_results(class_mock, results_dict, live_dataframe)
+        rows_updated = load.FeatureServiceInlineUpdater._parse_results(class_mock, results_dict, live_dataframe)
 
         assert rows_updated == 0
 
@@ -291,9 +291,7 @@ class TestFeatureServiceInlineUpdaterResultParsing:
         })
 
         with caplog.at_level(logging.INFO):
-            rows_updated = palletjack.FeatureServiceInlineUpdater._parse_results(
-                class_mock, results_dict, live_dataframe
-            )
+            rows_updated = load.FeatureServiceInlineUpdater._parse_results(class_mock, results_dict, live_dataframe)
 
             assert '2 rows successfully updated' in caplog.text
             assert "Existing data: {'objectId': 1, 'data': 'foo'}" not in caplog.text
@@ -347,9 +345,7 @@ class TestFeatureServiceInlineUpdaterResultParsing:
         })
 
         with caplog.at_level(logging.DEBUG):
-            rows_updated = palletjack.FeatureServiceInlineUpdater._parse_results(
-                class_mock, results_dict, live_dataframe
-            )
+            rows_updated = load.FeatureServiceInlineUpdater._parse_results(class_mock, results_dict, live_dataframe)
 
             assert '2 rows successfully updated' in caplog.text
             assert "Existing data: {'objectId': 1, 'data': 'foo'}" in caplog.text
@@ -404,9 +400,7 @@ class TestFeatureServiceInlineUpdaterResultParsing:
         })
 
         with caplog.at_level(logging.WARNING):
-            rows_updated = palletjack.FeatureServiceInlineUpdater._parse_results(
-                class_mock, results_dict, live_dataframe
-            )
+            rows_updated = load.FeatureServiceInlineUpdater._parse_results(class_mock, results_dict, live_dataframe)
 
             assert caplog.records[
                 0
@@ -465,9 +459,7 @@ class TestFeatureServiceInlineUpdaterResultParsing:
         })
 
         with caplog.at_level(logging.INFO):
-            rows_updated = palletjack.FeatureServiceInlineUpdater._parse_results(
-                class_mock, results_dict, live_dataframe
-            )
+            rows_updated = load.FeatureServiceInlineUpdater._parse_results(class_mock, results_dict, live_dataframe)
 
             assert 'rows successfully updated' not in caplog.text
 
@@ -518,9 +510,7 @@ class TestFeatureServiceInlineUpdaterResultParsing:
         })
 
         with caplog.at_level(logging.DEBUG):
-            rows_updated = palletjack.FeatureServiceInlineUpdater._parse_results(
-                class_mock, results_dict, live_dataframe
-            )
+            rows_updated = load.FeatureServiceInlineUpdater._parse_results(class_mock, results_dict, live_dataframe)
             assert caplog.records[0].message == '1 rows successfully updated:'
             assert caplog.records[0].levelname == 'INFO'
             assert caplog.records[1].message == "Existing data: {'objectId': 1, 'data': 'foo'}"
@@ -549,9 +539,7 @@ class TestFeatureServiceInlineUpdaterResultParsing:
         })
 
         with caplog.at_level(logging.INFO):
-            rows_updated = palletjack.FeatureServiceInlineUpdater._parse_results(
-                class_mock, results_dict, live_dataframe
-            )
+            rows_updated = load.FeatureServiceInlineUpdater._parse_results(class_mock, results_dict, live_dataframe)
 
             assert rows_updated == 0
 
@@ -569,9 +557,7 @@ class TestFeatureServiceInlineUpdaterResultParsing:
         })
 
         with caplog.at_level(logging.INFO):
-            rows_updated = palletjack.FeatureServiceInlineUpdater._parse_results(
-                class_mock, results_dict, live_dataframe
-            )
+            rows_updated = load.FeatureServiceInlineUpdater._parse_results(class_mock, results_dict, live_dataframe)
 
             assert 'No update results returned; no updates attempted' in caplog.text
             assert 'rows successfully updated' not in caplog.text
@@ -612,7 +598,7 @@ class TestFeatureServiceInlineUpdaterResultParsing:
         }
         oids = [10, 2]
 
-        combined_data = palletjack.FeatureServiceInlineUpdater._get_old_and_new_values(class_mock, live_dict, oids)
+        combined_data = load.FeatureServiceInlineUpdater._get_old_and_new_values(class_mock, live_dict, oids)
 
         assert combined_data == {
             2: {
@@ -684,7 +670,7 @@ class TestFeatureServiceInlineUpdaterResultParsing:
         }
         oids = [10, 2]
 
-        combined_data = palletjack.FeatureServiceInlineUpdater._get_old_and_new_values(class_mock, live_dict, oids)
+        combined_data = load.FeatureServiceInlineUpdater._get_old_and_new_values(class_mock, live_dict, oids)
 
         assert combined_data == {
             2: {
@@ -755,7 +741,7 @@ class TestFeatureServiceInlineUpdaterResultParsing:
         }
         oids = [10, 2]
 
-        combined_data = palletjack.FeatureServiceInlineUpdater._get_old_and_new_values(class_mock, live_dict, oids)
+        combined_data = load.FeatureServiceInlineUpdater._get_old_and_new_values(class_mock, live_dict, oids)
 
         assert combined_data == {
             2: {
@@ -798,7 +784,7 @@ class TestFeatureServiceInlineUpdaterFieldValidation:
         updater_mock.new_dataframe = new_df
 
         #: This shouldn't raise an exception and so the test should pass
-        palletjack.FeatureServiceInlineUpdater._validate_working_fields_in_live_and_new_dataframes(
+        load.FeatureServiceInlineUpdater._validate_working_fields_in_live_and_new_dataframes(
             updater_mock, live_df, fields
         )
 
@@ -811,7 +797,7 @@ class TestFeatureServiceInlineUpdaterFieldValidation:
         updater_mock.new_dataframe = new_df
 
         with pytest.raises(RuntimeError) as exc_info:
-            palletjack.FeatureServiceInlineUpdater._validate_working_fields_in_live_and_new_dataframes(
+            load.FeatureServiceInlineUpdater._validate_working_fields_in_live_and_new_dataframes(
                 updater_mock, live_df, fields
             )
         assert exc_info.value.args[
@@ -827,7 +813,7 @@ class TestFeatureServiceInlineUpdaterFieldValidation:
         updater_mock.new_dataframe = new_df
 
         with pytest.raises(RuntimeError) as exc_info:
-            palletjack.FeatureServiceInlineUpdater._validate_working_fields_in_live_and_new_dataframes(
+            load.FeatureServiceInlineUpdater._validate_working_fields_in_live_and_new_dataframes(
                 updater_mock, live_df, fields
             )
         assert exc_info.value.args[
@@ -843,7 +829,7 @@ class TestFeatureServiceInlineUpdaterFieldValidation:
         updater_mock.new_dataframe = new_df
 
         with pytest.raises(RuntimeError) as exc_info:
-            palletjack.FeatureServiceInlineUpdater._validate_working_fields_in_live_and_new_dataframes(
+            load.FeatureServiceInlineUpdater._validate_working_fields_in_live_and_new_dataframes(
                 updater_mock, live_df, fields
             )
         assert exc_info.value.args[
@@ -868,7 +854,7 @@ class TestFeatureServiceInlineUpdaterIntegrated:
             'key': ['c', 'd'],
         })
         gis_mock = mocker.Mock()
-        updater = palletjack.FeatureServiceInlineUpdater(gis_mock, new_dataframe, 'key')
+        updater = load.FeatureServiceInlineUpdater(gis_mock, new_dataframe, 'key')
 
         updated_rows = updater.update_existing_features_in_hosted_feature_layer('1234', ['data', 'key'])
 
@@ -889,7 +875,7 @@ class TestFeatureServiceInlineUpdaterIntegrated:
             'key': ['c', 'd'],
         })
         gis_mock = mocker.Mock()
-        updater = palletjack.FeatureServiceInlineUpdater(gis_mock, new_dataframe, 'key')
+        updater = load.FeatureServiceInlineUpdater(gis_mock, new_dataframe, 'key')
 
         updated_rows = updater.update_existing_features_in_hosted_feature_layer('1234', ['data', 'key'])
 
@@ -926,7 +912,7 @@ class TestFeatureServiceInlineUpdaterIntegrated:
             'deleteResults': [],
         }
         mocker.patch.object(arcgis.features.FeatureLayer, 'fromitem', new=fromitem_function_mock)
-        updater = palletjack.FeatureServiceInlineUpdater(gis_mock, new_dataframe, 'key')
+        updater = load.FeatureServiceInlineUpdater(gis_mock, new_dataframe, 'key')
 
         updated_rows = updater.update_existing_features_in_hosted_feature_layer('1234', ['data', 'key'])
 
@@ -961,7 +947,7 @@ class TestFeatureServiceInlineUpdaterIntegrated:
             'deleteResults': [],
         }
         mocker.patch.object(arcgis.features.FeatureLayer, 'fromitem', new=fromitem_function_mock)
-        updater = palletjack.FeatureServiceInlineUpdater(gis_mock, new_dataframe, 'key')
+        updater = load.FeatureServiceInlineUpdater(gis_mock, new_dataframe, 'key')
 
         with caplog.at_level(logging.DEBUG):
             updated_rows = updater.update_existing_features_in_hosted_feature_layer('1234', ['data', 'key'])
@@ -1001,7 +987,7 @@ class TestFeatureServiceInlineUpdaterIntegrated:
             'deleteResults': [],
         }
         mocker.patch.object(arcgis.features.FeatureLayer, 'fromitem', new=fromitem_function_mock)
-        updater = palletjack.FeatureServiceInlineUpdater(gis_mock, new_dataframe, 'key')
+        updater = load.FeatureServiceInlineUpdater(gis_mock, new_dataframe, 'key')
 
         with caplog.at_level(logging.DEBUG):
             updated_rows = updater.update_existing_features_in_hosted_feature_layer('1234', ['data', 'key'])
@@ -1025,7 +1011,7 @@ class TestColorRampReclassifier:
         get_data_mock = mocker.Mock(return_value=layers)
         webmap_item_mock = mocker.Mock()
         webmap_item_mock.get_data = get_data_mock
-        reclassifier = palletjack.ColorRampReclassifier(webmap_item_mock, 'gis')
+        reclassifier = load.ColorRampReclassifier(webmap_item_mock, 'gis')
 
         layer_id = reclassifier._get_layer_id('foo')
         assert layer_id == 0
@@ -1047,7 +1033,7 @@ class TestColorRampReclassifier:
         get_data_mock = mocker.Mock(return_value=layers)
         webmap_item_mock = mocker.Mock()
         webmap_item_mock.get_data = get_data_mock
-        reclassifier = palletjack.ColorRampReclassifier(webmap_item_mock, 'gis')
+        reclassifier = load.ColorRampReclassifier(webmap_item_mock, 'gis')
 
         layer_id = reclassifier._get_layer_id('bar')
         assert layer_id == 1
@@ -1069,7 +1055,7 @@ class TestColorRampReclassifier:
         get_data_mock = mocker.Mock(return_value=layers)
         webmap_item_mock = mocker.Mock()
         webmap_item_mock.get_data = get_data_mock
-        reclassifier = palletjack.ColorRampReclassifier(webmap_item_mock, 'gis')
+        reclassifier = load.ColorRampReclassifier(webmap_item_mock, 'gis')
 
         layer_id = reclassifier._get_layer_id('bar')
         assert layer_id == 1
@@ -1086,7 +1072,7 @@ class TestColorRampReclassifier:
         webmap_item_mock = mocker.Mock()
         webmap_item_mock.title = 'test map'
         webmap_item_mock.get_data = get_data_mock
-        reclassifier = palletjack.ColorRampReclassifier(webmap_item_mock, 'gis')
+        reclassifier = load.ColorRampReclassifier(webmap_item_mock, 'gis')
 
         with pytest.raises(ValueError) as error_info:
             layer_id = reclassifier._get_layer_id('foo')
@@ -1096,7 +1082,7 @@ class TestColorRampReclassifier:
     def test_calculate_new_stops_with_manual_numbers(self):
         dataframe = pd.DataFrame({'numbers': [100, 300, 500, 700, 900]})
 
-        stops = palletjack.ColorRampReclassifier._calculate_new_stops(dataframe, 'numbers', 5)
+        stops = load.ColorRampReclassifier._calculate_new_stops(dataframe, 'numbers', 5)
 
         assert stops == [100, 279, 458, 637, 816]
 
@@ -1104,7 +1090,7 @@ class TestColorRampReclassifier:
         dataframe = pd.DataFrame({'numbers': [100, 300, 500, 700, 900]})
 
         with pytest.raises(ValueError) as error_info:
-            stops = palletjack.ColorRampReclassifier._calculate_new_stops(dataframe, 'foo', 5)
+            stops = load.ColorRampReclassifier._calculate_new_stops(dataframe, 'foo', 5)
             assert 'Column `foo` not in dataframe`' in str(error_info)
 
     def test_update_stops_values(self, mocker):
@@ -1137,7 +1123,7 @@ class TestColorRampReclassifier:
         webmap_item_mock.get_data = get_data_mock
         update_mock = mocker.Mock()
         webmap_item_mock.update = update_mock
-        reclassifier = palletjack.ColorRampReclassifier(webmap_item_mock, 'gis')
+        reclassifier = load.ColorRampReclassifier(webmap_item_mock, 'gis')
 
         reclassifier._update_stop_values(0, [100, 200, 300, 400])
 
@@ -1162,9 +1148,7 @@ class TestAttachments:
             'new_path': ['bee/foo.png'],
         })
 
-        ops_df = palletjack.FeatureServiceAttachmentsUpdater._create_attachment_action_df(
-            mocker.Mock(), input_df, 'new_path'
-        )
+        ops_df = load.FeatureServiceAttachmentsUpdater._create_attachment_action_df(mocker.Mock(), input_df, 'new_path')
 
         test_df = pd.DataFrame({
             'NAME': [np.nan],
@@ -1181,9 +1165,7 @@ class TestAttachments:
             'new_path': ['bee/foo.png'],
         })
 
-        ops_df = palletjack.FeatureServiceAttachmentsUpdater._create_attachment_action_df(
-            mocker.Mock(), input_df, 'new_path'
-        )
+        ops_df = load.FeatureServiceAttachmentsUpdater._create_attachment_action_df(mocker.Mock(), input_df, 'new_path')
 
         test_df = pd.DataFrame({
             'NAME': ['bar.png'],
@@ -1200,9 +1182,7 @@ class TestAttachments:
             'new_path': ['bee/foo.png'],
         })
 
-        ops_df = palletjack.FeatureServiceAttachmentsUpdater._create_attachment_action_df(
-            mocker.Mock(), input_df, 'new_path'
-        )
+        ops_df = load.FeatureServiceAttachmentsUpdater._create_attachment_action_df(mocker.Mock(), input_df, 'new_path')
 
         test_df = pd.DataFrame({
             'NAME': ['foo.png'],
@@ -1220,9 +1200,7 @@ class TestAttachments:
             'new_path': ['bee/foo.png', 'bee/baz.png', 'bee/bin.png'],
         })
 
-        ops_df = palletjack.FeatureServiceAttachmentsUpdater._create_attachment_action_df(
-            mocker.Mock(), input_df, 'new_path'
-        )
+        ops_df = load.FeatureServiceAttachmentsUpdater._create_attachment_action_df(mocker.Mock(), input_df, 'new_path')
 
         test_df = pd.DataFrame({
             'NAME': ['foo.png', 'bar.png', np.nan],
@@ -1239,9 +1217,7 @@ class TestAttachments:
             'new_path': ['bee/baz.png', 'bee/bin.png', 'bee/foo.png'],
         })
 
-        ops_df = palletjack.FeatureServiceAttachmentsUpdater._create_attachment_action_df(
-            mocker.Mock(), input_df, 'new_path'
-        )
+        ops_df = load.FeatureServiceAttachmentsUpdater._create_attachment_action_df(mocker.Mock(), input_df, 'new_path')
 
         test_df = pd.DataFrame({
             'NAME': ['bar.png', np.nan, 'foo.png'],
@@ -1265,7 +1241,7 @@ class TestAttachments:
             'attachments': ['foo', 'bar'],
         })
 
-        live_data_subset = palletjack.FeatureServiceAttachmentsUpdater._get_live_oid_and_guid_from_join_field_values(
+        live_data_subset = load.FeatureServiceAttachmentsUpdater._get_live_oid_and_guid_from_join_field_values(
             mocker.Mock(), live_features_df, 'attachment_key', attachments_df
         )
 
@@ -1317,7 +1293,7 @@ class TestAttachments:
             'attachments': ['fee', 'ber', 'boo'],
         })
 
-        current_attachments_df = palletjack.FeatureServiceAttachmentsUpdater._get_current_attachment_info_by_oid(
+        current_attachments_df = load.FeatureServiceAttachmentsUpdater._get_current_attachment_info_by_oid(
             updater_mock, live_data_subset_df
         )
 
@@ -1337,7 +1313,7 @@ class TestAttachments:
     def test_check_attachment_dataframe_for_invalid_column_names_doesnt_raise_with_valid_names(self, mocker):
         dataframe = pd.DataFrame(columns=['foo', 'bar'])
         invalid_names = ['baz', 'boo']
-        palletjack.FeatureServiceAttachmentsUpdater._check_attachment_dataframe_for_invalid_column_names(
+        load.FeatureServiceAttachmentsUpdater._check_attachment_dataframe_for_invalid_column_names(
             dataframe, invalid_names
         )
 
@@ -1345,7 +1321,7 @@ class TestAttachments:
         dataframe = pd.DataFrame(columns=['foo', 'bar'])
         invalid_names = ['foo', 'boo']
         with pytest.raises(RuntimeError) as exc_info:
-            palletjack.FeatureServiceAttachmentsUpdater._check_attachment_dataframe_for_invalid_column_names(
+            load.FeatureServiceAttachmentsUpdater._check_attachment_dataframe_for_invalid_column_names(
                 dataframe, invalid_names
             )
         assert exc_info.value.args[0] == 'Attachment dataframe contains the following invalid names: [\'foo\']'
@@ -1354,7 +1330,7 @@ class TestAttachments:
         dataframe = pd.DataFrame(columns=['foo', 'bar'])
         invalid_names = ['foo', 'bar']
         with pytest.raises(RuntimeError) as exc_info:
-            palletjack.FeatureServiceAttachmentsUpdater._check_attachment_dataframe_for_invalid_column_names(
+            load.FeatureServiceAttachmentsUpdater._check_attachment_dataframe_for_invalid_column_names(
                 dataframe, invalid_names
             )
         assert exc_info.value.args[0] == 'Attachment dataframe contains the following invalid names: [\'foo\', \'bar\']'
@@ -1383,7 +1359,7 @@ class TestAttachments:
         updater_mock.feature_layer.attachments.add.side_effect = result_dict
 
         with pytest.warns(None) as warning:
-            count = palletjack.FeatureServiceAttachmentsUpdater._add_attachments_by_oid(updater_mock, action_df, 'path')
+            count = load.FeatureServiceAttachmentsUpdater._add_attachments_by_oid(updater_mock, action_df, 'path')
 
         assert count == 2
         assert not warning
@@ -1416,7 +1392,7 @@ class TestAttachments:
         feature_layer_mock = mocker.Mock()
         feature_layer_mock.attachments.add.side_effect = result_dict
 
-        updater = palletjack.FeatureServiceAttachmentsUpdater(mocker.Mock())
+        updater = load.FeatureServiceAttachmentsUpdater(mocker.Mock())
         updater.feature_layer = feature_layer_mock
 
         with pytest.warns(UserWarning, match='Failed to attach path2 to OID 2'):
@@ -1442,7 +1418,7 @@ class TestAttachments:
             },
         ]
 
-        updater = palletjack.FeatureServiceAttachmentsUpdater(mocker.Mock())
+        updater = load.FeatureServiceAttachmentsUpdater(mocker.Mock())
         updater.feature_layer = feature_layer_mock
 
         count = updater._add_attachments_by_oid(action_df, 'path')
@@ -1469,7 +1445,7 @@ class TestAttachments:
         updater_mock = mocker.Mock()
         updater_mock.feature_layer.attachments.add.side_effect = result_dict
 
-        count = palletjack.FeatureServiceAttachmentsUpdater._add_attachments_by_oid(updater_mock, action_df, 'path')
+        count = load.FeatureServiceAttachmentsUpdater._add_attachments_by_oid(updater_mock, action_df, 'path')
 
         assert updater_mock.feature_layer.attachments.add.call_count == 1
         assert count == 1
@@ -1500,9 +1476,7 @@ class TestAttachments:
         updater_mock.feature_layer.attachments.update.side_effect = result_dict
 
         with pytest.warns(None) as warning:
-            count = palletjack.FeatureServiceAttachmentsUpdater._overwrite_attachments_by_oid(
-                updater_mock, action_df, 'path'
-            )
+            count = load.FeatureServiceAttachmentsUpdater._overwrite_attachments_by_oid(updater_mock, action_df, 'path')
 
         assert count == 2
         assert not warning
@@ -1537,7 +1511,7 @@ class TestAttachments:
         feature_layer_mock = mocker.Mock()
         feature_layer_mock.attachments.update.side_effect = result_dict
 
-        updater = palletjack.FeatureServiceAttachmentsUpdater(mocker.Mock())
+        updater = load.FeatureServiceAttachmentsUpdater(mocker.Mock())
         updater.feature_layer = feature_layer_mock
 
         with pytest.warns(UserWarning, match='Failed to update oldname2, attachment ID 22, on OID 2 with path2'):
@@ -1565,7 +1539,7 @@ class TestAttachments:
             },
         ]
 
-        updater = palletjack.FeatureServiceAttachmentsUpdater(mocker.Mock())
+        updater = load.FeatureServiceAttachmentsUpdater(mocker.Mock())
         updater.feature_layer = feature_layer_mock
 
         count = updater._overwrite_attachments_by_oid(action_df, 'path')
@@ -1594,9 +1568,7 @@ class TestAttachments:
         updater_mock = mocker.Mock()
         updater_mock.feature_layer.attachments.update.side_effect = result_dict
 
-        count = palletjack.FeatureServiceAttachmentsUpdater._overwrite_attachments_by_oid(
-            updater_mock, action_df, 'path'
-        )
+        count = load.FeatureServiceAttachmentsUpdater._overwrite_attachments_by_oid(updater_mock, action_df, 'path')
 
         assert updater_mock.feature_layer.attachments.update.call_count == 1
         assert count == 1
@@ -1608,7 +1580,7 @@ class TestAttachments:
             'data': [11., 12., 13.],
         })
 
-        attachment_df = palletjack.FeatureServiceAttachmentsUpdater.build_attachments_dataframe(
+        attachment_df = load.FeatureServiceAttachmentsUpdater.build_attachments_dataframe(
             input_df, 'join', 'pic', '/foo/bar'
         )
 
@@ -1633,7 +1605,7 @@ class TestAttachments:
             'pic': ['foo.png', None, ''],
         })
 
-        attachment_df = palletjack.FeatureServiceAttachmentsUpdater.build_attachments_dataframe(
+        attachment_df = load.FeatureServiceAttachmentsUpdater.build_attachments_dataframe(
             input_df, 'join', 'pic', '/foo/bar'
         )
 
@@ -1660,9 +1632,9 @@ class TestFeatureServiceOverwriter:
             'lastUpdatedTime': 124,
             'status': 'Completed',
         }
-        overwriter = palletjack.FeatureServiceOverwriter(mocker.Mock())
+        overwriter = load.FeatureServiceOverwriter(mocker.Mock())
 
-        palletjack.FeatureServiceOverwriter._truncate_existing_data(overwriter, fl_mock, 0, 'abc')
+        load.FeatureServiceOverwriter._truncate_existing_data(overwriter, fl_mock, 0, 'abc')
 
     def test_truncate_existing_raises_error_on_failure(self, mocker):
         fl_mock = mocker.Mock()
@@ -1671,10 +1643,10 @@ class TestFeatureServiceOverwriter:
             'lastUpdatedTime': 124,
             'status': 'Foo',
         }
-        overwriter = palletjack.FeatureServiceOverwriter(mocker.Mock())
+        overwriter = load.FeatureServiceOverwriter(mocker.Mock())
 
         with pytest.raises(RuntimeError) as exc_info:
-            palletjack.FeatureServiceOverwriter._truncate_existing_data(overwriter, fl_mock, 0, 'abc')
+            load.FeatureServiceOverwriter._truncate_existing_data(overwriter, fl_mock, 0, 'abc')
 
         assert exc_info.value.args[0] == 'Failed to truncate existing data from layer id 0 in itemid abc'
 
@@ -1687,16 +1659,16 @@ class TestFeatureServiceOverwriter:
                 'status': 'Completed',
             }
         ]
-        overwriter = palletjack.FeatureServiceOverwriter(mocker.Mock())
+        overwriter = load.FeatureServiceOverwriter(mocker.Mock())
 
-        palletjack.FeatureServiceOverwriter._truncate_existing_data(overwriter, fl_mock, 0, 'abc')
+        load.FeatureServiceOverwriter._truncate_existing_data(overwriter, fl_mock, 0, 'abc')
 
     def test_append_new_data_doesnt_raise_on_normal(self, mocker):
         mock_df = mocker.Mock()
         mock_fl = mocker.Mock()
         mock_fl.append.return_value = (True, {'message': 'foo'})
 
-        overwriter = palletjack.FeatureServiceOverwriter(mocker.Mock())
+        overwriter = load.FeatureServiceOverwriter(mocker.Mock())
         overwriter._append_new_data(mock_fl, mock_df, 0, 'abc')
 
     def test_append_new_data_retries_on_httperror(self, mocker):
@@ -1704,7 +1676,7 @@ class TestFeatureServiceOverwriter:
         mock_fl = mocker.Mock()
         mock_fl.append.side_effect = [urllib.error.HTTPError('a', 'b', 'c', 'd', 'e'), (True, {'message': 'foo'})]
 
-        overwriter = palletjack.FeatureServiceOverwriter(mocker.Mock())
+        overwriter = load.FeatureServiceOverwriter(mocker.Mock())
         overwriter._append_new_data(mock_fl, mock_df, 0, 'abc')
 
     def test_append_new_data_raises_on_False_result(self, mocker):
@@ -1712,7 +1684,7 @@ class TestFeatureServiceOverwriter:
         mock_fl = mocker.Mock()
         mock_fl.append.return_value = (False, {'message': 'foo'})
 
-        overwriter = palletjack.FeatureServiceOverwriter(mocker.Mock())
+        overwriter = load.FeatureServiceOverwriter(mocker.Mock())
 
         with pytest.raises(RuntimeError) as exc_info:
             overwriter._append_new_data(mock_fl, mock_df, 'abc', 0)
@@ -1746,7 +1718,7 @@ class TestFeatureServiceOverwriter:
         new_dataframe = pd.DataFrame(columns=['Foo', 'Bar'])
         mocker.patch.object(pd.DataFrame, 'spatial')
 
-        overwriter = palletjack.FeatureServiceOverwriter(mocker.Mock())
+        overwriter = load.FeatureServiceOverwriter(mocker.Mock())
 
         uploaded_features = overwriter.truncate_and_load_feature_service('abc', new_dataframe, 'foo/dir')
 
@@ -1779,7 +1751,7 @@ class TestFeatureServiceOverwriter:
         new_dataframe = pd.DataFrame(columns=['Foo', 'Bar'])
         mocker.patch.object(pd.DataFrame, 'spatial')
 
-        overwriter = palletjack.FeatureServiceOverwriter(mocker.Mock())
+        overwriter = load.FeatureServiceOverwriter(mocker.Mock())
 
         with pytest.raises(
             RuntimeError,
@@ -1817,7 +1789,7 @@ class TestFeatureServiceOverwriter:
         new_dataframe = pd.DataFrame(columns=['Foo', 'Bar', 'Baz'])
         mocker.patch.object(pd.DataFrame, 'spatial')
 
-        overwriter = palletjack.FeatureServiceOverwriter(mocker.Mock())
+        overwriter = load.FeatureServiceOverwriter(mocker.Mock())
 
         with pytest.raises(
             RuntimeError,
@@ -1855,9 +1827,9 @@ class TestFeatureServiceOverwriter:
         new_dataframe = pd.DataFrame(columns=['Foo', 'Bar'])
         mocker.patch.object(pd.DataFrame, 'spatial')
 
-        mocker.patch.object(palletjack.FeatureServiceOverwriter, '_save_truncated_data', return_value='/foo/bar.json')
+        mocker.patch.object(load.FeatureServiceOverwriter, '_save_truncated_data', return_value='/foo/bar.json')
 
-        overwriter = palletjack.FeatureServiceOverwriter(mocker.Mock())
+        overwriter = load.FeatureServiceOverwriter(mocker.Mock())
 
         with pytest.raises(RuntimeError) as exc_info:
             uploaded_features = overwriter.truncate_and_load_feature_service('abc', new_dataframe, 'foo/dir')
@@ -1885,7 +1857,7 @@ class TestFeatureServiceOverwriter:
         context_manager_mock.return_value.__enter__.return_value = open_mock
         mocker.patch('pathlib.Path.open', new=context_manager_mock)
 
-        palletjack.FeatureServiceOverwriter._save_truncated_data(mocker.Mock(), mock_sdf, 'foo')
+        load.FeatureServiceOverwriter._save_truncated_data(mocker.Mock(), mock_sdf, 'foo')
 
         test_json_string = '{"features": [{"geometry": {"spatialReference": {"wkid": 4326}, "x": 11, "y": 14}, "attributes": {"foo": 1, "x": 11, "y": 14, "OBJECTID": 1}}], "objectIdFieldName": "OBJECTID", "displayFieldName": "OBJECTID", "spatialReference": {"wkid": 4326}, "geometryType": "esriGeometryPoint", "fields": [{"name": "OBJECTID", "type": "esriFieldTypeOID", "alias": "OBJECTID"}, {"name": "foo", "type": "esriFieldTypeInteger", "alias": "foo"}, {"name": "x", "type": "esriFieldTypeInteger", "alias": "x"}, {"name": "y", "type": "esriFieldTypeInteger", "alias": "y"}]}'
 
@@ -1910,14 +1882,14 @@ class TestFeatureServiceOverwriter:
 
         datetime_mock = mocker.Mock()
         datetime_mock.date.today.return_value = 'foo-date'
-        mocker.patch('palletjack.updaters.datetime', new=datetime_mock)
+        mocker.patch('palletjack.load.datetime', new=datetime_mock)
 
         open_mock = mocker.MagicMock()
         context_manager_mock = mocker.MagicMock()
         context_manager_mock.return_value.__enter__.return_value = open_mock
         mocker.patch('pathlib.Path.open', new=context_manager_mock)
 
-        out_path = palletjack.FeatureServiceOverwriter._save_truncated_data(mocker.Mock(), mock_sdf, 'foo')
+        out_path = load.FeatureServiceOverwriter._save_truncated_data(mocker.Mock(), mock_sdf, 'foo')
 
         assert out_path == Path('foo/old_data_foo-date.json')
 
@@ -1929,7 +1901,7 @@ class TestFeatureServiceInlineUpdaterUpsert:
         mock_fl = mocker.Mock()
         mock_fl.append.return_value = (True, {'message': 'foo'})
         mocker.patch('palletjack.utils.rename_columns_for_agol')
-        updater = palletjack.FeatureServiceInlineUpdater(mocker.Mock(), mocker.Mock(), 'foo')
+        updater = load.FeatureServiceInlineUpdater(mocker.Mock(), mocker.Mock(), 'foo')
 
         updater._upsert_new_data(mock_fl, mock_df, 'abc', 0)
 
@@ -1939,7 +1911,7 @@ class TestFeatureServiceInlineUpdaterUpsert:
         mock_fl.append.side_effect = [Exception, (True, {'message': 'foo'})]
         mocker.patch('palletjack.utils.rename_columns_for_agol')
 
-        updater = palletjack.FeatureServiceInlineUpdater(mocker.Mock(), mocker.Mock(), 'foo')
+        updater = load.FeatureServiceInlineUpdater(mocker.Mock(), mocker.Mock(), 'foo')
         updater._upsert_new_data(mock_fl, mock_df, 'abc', 0)
 
     def test_upsert_new_data_raises_on_False_result(self, mocker):
@@ -1948,7 +1920,7 @@ class TestFeatureServiceInlineUpdaterUpsert:
         mock_fl.append.return_value = (False, {'message': 'foo'})
         mocker.patch('palletjack.utils.rename_columns_for_agol')
 
-        updater = palletjack.FeatureServiceInlineUpdater(mocker.Mock(), mocker.Mock(), 'foo')
+        updater = load.FeatureServiceInlineUpdater(mocker.Mock(), mocker.Mock(), 'foo')
 
         with pytest.raises(RuntimeError) as exc_info:
             updater._upsert_new_data(mock_fl, mock_df, 'abc', 0)
@@ -1989,7 +1961,7 @@ class TestFeatureServiceInlineUpdaterUpsert:
         new_dataframe = pd.DataFrame(columns=['Foo', 'Bar'])
         mocker.patch.object(pd.DataFrame, 'spatial')
 
-        updater = palletjack.FeatureServiceInlineUpdater(mocker.Mock(), new_dataframe, 'Foo')
+        updater = load.FeatureServiceInlineUpdater(mocker.Mock(), new_dataframe, 'Foo')
 
         uploaded_features = updater.upsert_new_data_in_hosted_feature_layer('abc')
 
@@ -2027,7 +1999,7 @@ class TestFeatureServiceInlineUpdaterUpsert:
         new_dataframe = pd.DataFrame(columns=['Foo field', 'Bar'])
         mocker.patch.object(pd.DataFrame, 'spatial')
 
-        updater = palletjack.FeatureServiceInlineUpdater(mocker.Mock(), new_dataframe, 'Bar')
+        updater = load.FeatureServiceInlineUpdater(mocker.Mock(), new_dataframe, 'Bar')
 
         uploaded_features = updater.upsert_new_data_in_hosted_feature_layer('abc')
 
@@ -2079,7 +2051,7 @@ class TestFeatureServiceInlineUpdaterInit:
         # mocker.patch.object(pd.DataFrame, 'spatial')
 
         with pytest.raises(KeyError) as exc_info:
-            updater = palletjack.FeatureServiceInlineUpdater(mocker.Mock(), new_dataframe, 'Baz')
+            updater = load.FeatureServiceInlineUpdater(mocker.Mock(), new_dataframe, 'Baz')
 
         assert exc_info.value.args[0] == 'Index column Baz not found in dataframe columns'
 
@@ -2088,7 +2060,7 @@ class TestFeatureServiceInlineUpdaterInit:
         new_dataframe = pd.DataFrame(columns=['Foo field', 'Bar'])
         # mocker.patch.object(pd.DataFrame, 'spatial')
 
-        updater = palletjack.FeatureServiceInlineUpdater(mocker.Mock(), new_dataframe, 'Bar')
+        updater = load.FeatureServiceInlineUpdater(mocker.Mock(), new_dataframe, 'Bar')
 
         assert list(updater.new_dataframe.columns) == ['Foo_field', 'Bar']
 
@@ -2097,6 +2069,6 @@ class TestFeatureServiceInlineUpdaterInit:
         new_dataframe = pd.DataFrame(columns=['Foo field', 'Bar'])
         # mocker.patch.object(pd.DataFrame, 'spatial')
 
-        updater = palletjack.FeatureServiceInlineUpdater(mocker.Mock(), new_dataframe, 'Foo field')
+        updater = load.FeatureServiceInlineUpdater(mocker.Mock(), new_dataframe, 'Foo field')
 
         assert updater.index_column == 'Foo_field'
