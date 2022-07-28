@@ -6,13 +6,13 @@ import urllib
 from pathlib import Path
 
 import arcgis
+import mock_arcpy
 import numpy as np
 import pandas as pd
 import pandas.testing as tm
 import pytest
 import requests
 from arcgis.features import GeoAccessor, GeoSeriesAccessor
-from mock_arcpy import arcpy
 from pandas.api.types import CategoricalDtype
 
 from palletjack import load
