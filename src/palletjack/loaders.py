@@ -205,6 +205,7 @@ class GoogleDriveDownloader:
             response = self._get_http_response(file_id)
             filename = self._get_filename_from_response(response)
             out_file_path = self.out_dir / filename
+            self._class_logger.debug('Row %s: writing to %s', join_id, out_file_path)
             self._save_response_content(response, out_file_path)
             return out_file_path
         except Exception as err:
