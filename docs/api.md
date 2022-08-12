@@ -82,10 +82,21 @@ Methods
   - Update `fields` in `feature_service_url` with data from `self.new_dataframe()` using `arcpy.da.UpdateCursor`. Requires arcpy to be installed. Returns the number of rows updated.
 - `update_existing_features_in_hosted_feature_layer(self, feature_layer_itemid, fields)`
   - update `fields` in `self.gis`'s `feature_layer_itemid` item with data from `self.new_dataframe()` using `arcgis.feature.FeatureLayer.edit_features()`. Returns the number of rows successfully updated. If any updates fail, it tries to roll back all successful updates.
+- `upsert_new_data_in_hosted_feature_layer(self, feature_service_item_id, layer_index=0)`
+  - UPdate existing data and inSERT new data into feature service referenced by `feature_service_item_id` (at `layer_index` within the feature service) with data from `self.new_dataframe()` using `arcgis.features.FeatureLayer.append()`. The new data must not include any fields not present in the live data. The index column in the hosted feature service defined by `self.index_column` must be marked as 'Unique' in ArcGIS Online.
+    - You can't set the field as unique if it was specified as the Display Field when it was uploaded from Pro (layer properties -> Display -> Display Field). You can change this value and overwrite the feature service to change the display field. There may be a way to do it without re-writing the service, but I've not found it yet.
+    - I've had trouble specifying string fields as unique. You may have better luck using a numeric field as `self.index_column`.
 
 ### FeatureServiceOverwriter
 
-Not implemented. Will completely overwrite a feature service rather than updating it feature-by-feature.
+Completely overwrite a feature service rather than updating it feature-by-feature.
+
+The initializer requires the `arcgis.gis.GIS` object representing your organization.
+
+Methods
+
+- `truncate_and_load_feature_service(self, feature_service_item_id, new_dataframe, failsafe_dir, layer_index=0)`
+  - Attempts to delete existing data from a feature layer and add new data from a spatially-enabled dataframe. First attempts to truncate existing data and loads it in memory as a dataframe. Then renames new data column names to conform to AGOL scheme (spaces, special chars changed to '_'). Finally attempts to append new data to now-empty feature layer using `arcgis.features.FeatureLayer.append()`. If the new data append fails, it attempts to re-upload the previous data from the in-memory dataframe. If this fails, it attempts to failsafe by writing the old data to disk as a json file.
 
 ### FeatureServiceAttachmentsUpdater
 

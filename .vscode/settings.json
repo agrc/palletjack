@@ -9,6 +9,7 @@
     "instafail",
     "isort",
     "knownhosts",
+    "Overwriter",
     "palletjack",
     "PARENTOBJECTID",
     "pylint",

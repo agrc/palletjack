@@ -642,7 +642,9 @@ class FeatureServiceOverwriter:
         """Attempt to delete existing data from a feature layer and add new data from a spatially-enabled dataframe.
 
         First attempts to truncate existing data. Then renames new data column names to conform to AGOL scheme (spaces,
-        special chars changed to '_'). Finally attempts to append new data to now-empty feature layer.
+        special chars changed to '_'). Finally attempts to append new data to now-empty feature layer. If the new data
+        append fails, it attempts to re-upload the previous data from the in-memory dataframe. If this fails, it
+        attempts to failsafe by writing the old data to disk as a json file.
 
         Args:
             feature_service_item_id (str): AGOL item ID for feature service to truncate and load
@@ -653,7 +655,8 @@ class FeatureServiceOverwriter:
         Raises:
             RuntimeError: If new data contains a field not present in the live data
             RuntimeError: If the truncate fails
-            RuntimeError: If append fails; will attempt to rollback appends that worked.
+            RuntimeError: If append fails; will attempt to rollback appends that worked
+            RuntimeError: If rollback fails; will attempt to write old live data to disk as json
 
         Returns:
             int: The number of new records added after deleting all existing records.
