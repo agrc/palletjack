@@ -21,8 +21,10 @@ class FeatureServiceInlineUpdater:
     """Updates an AGOL Feature Service with data from a pandas DataFrame
     """
 
-    def __init__(self, gis, dataframe, index_column):
+    def __init__(self, gis, dataframe, index_column, field_mapping=None):
         self.gis = gis
+        if field_mapping:
+            dataframe = utils.rename_fields(dataframe, field_mapping)
         self.new_dataframe = dataframe.rename(columns=utils.rename_columns_for_agol(dataframe.columns))
         self.index_column = utils.rename_columns_for_agol([index_column])[index_column]
         try:

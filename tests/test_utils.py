@@ -634,3 +634,51 @@ class TestValidateAPIKey:
         assert check == 'Could not determine key validity; check your API key and/or network connection'
         assert palletjack.utils.requests.get.call_count == 4
         assert 'Random Error' in caplog.messages
+
+
+class TestFieldRenaming:
+
+    def test_rename_fields_renames_all_fields(self):
+        parcels_df = pd.DataFrame({
+            'account_no': [1, 2, 3],
+            'type': ['sf', 'mf', 'condo'],
+        })
+
+        field_mapping = {
+            'account_no': 'PARCEL_ID',
+            'type': 'class',
+        }
+
+        renamed_df = palletjack.utils.rename_fields(parcels_df, field_mapping)
+
+        assert list(renamed_df.columns) == ['PARCEL_ID', 'class']
+
+    def test_rename_fields_renames_some_fields(self):
+        parcels_df = pd.DataFrame({
+            'account_no': [1, 2, 3],
+            'class': ['sf', 'mf', 'condo'],
+        })
+
+        field_mapping = {
+            'account_no': 'PARCEL_ID',
+        }
+
+        renamed_df = palletjack.utils.rename_fields(parcels_df, field_mapping)
+
+        assert list(renamed_df.columns) == ['PARCEL_ID', 'class']
+
+    def test_rename_fields_raises_exception_for_missing_field(self):
+        parcels_df = pd.DataFrame({
+            'account_no': [1, 2, 3],
+            'type': ['sf', 'mf', 'condo'],
+        })
+
+        field_mapping = {
+            'account_no': 'PARCEL_ID',
+            'TYPE': 'class',
+        }
+
+        with pytest.raises(ValueError) as exception_info:
+            renamed_df = palletjack.utils.rename_fields(parcels_df, field_mapping)
+
+            assert 'Field TYPE not found in dataframe.' in str(exception_info)

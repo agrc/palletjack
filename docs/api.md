@@ -70,11 +70,12 @@ Methods
 
 Updates the attributes of existing features in an AGOL Hosted Feature Service using either the `arcpy` or `arcgis` libraries. The `arcgis` library is required for interacting with AGOL.
 
-The initializer takes three arguments:
+The initializer has three required arguments and one optional argument:
 
 1. `gis`: An `arcgis.gis.GIS` object representing your AGOL organization.
 1. `dataframe`: A pandas dataframe containing the new data where each row is a separate record.
 1. `index_column`: The index column that is present in both the existing and new data for joining the datasets.
+1. `field_mapping`(optional): A dictionary of existing field names to new field names for matching the new data to the existing data in AGOL.
 
 Methods
 
