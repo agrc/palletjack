@@ -141,6 +141,29 @@ def check_index_column_in_feature_layer(featurelayer, index_column):
         raise RuntimeError(f'Index column {index_column} not found in feature layer fields {featurelayer_fields}')
 
 
+def rename_fields(dataframe, field_mapping):
+    """Rename fields based on field_mapping
+
+    Args:
+        dataframe (pd.DataFrame): Dataframe with columns to be renamed
+        field_mapping (dict): Mapping of existing field names to new names
+
+    Raises:
+        ValueError: If an existing name from field_mapping is not found in dataframe.columns
+
+    Returns:
+        pd.DataFrame: Dataframe with renamed fields
+    """
+
+    for original_name in field_mapping.keys():
+        if original_name not in dataframe.columns:
+            raise ValueError(f'Field {original_name} not found in dataframe.')
+
+    renamed_df = dataframe.rename(columns=field_mapping)
+
+    return renamed_df
+
+
 #: This isn't used anymore... but it feels like a shame to lose it.
 def build_sql_in_list(series):
     """Generate a properly formatted list to be a target for a SQL 'IN' clause

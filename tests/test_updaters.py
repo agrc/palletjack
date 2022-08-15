@@ -1995,7 +1995,7 @@ class TestFeatureServiceInlineUpdaterUpsert:
 
         assert uploaded_features == 42
 
-    def test_upsert_new_data_in_hosted_feature_layer_handles_field_renaming(self, mocker):
+    def test_upsert_new_data_in_hosted_feature_layer_handles_agol_field_renaming(self, mocker):
         mock_fl = mocker.Mock()
         # mock_fl.manager.truncate.return_value = {
         #     'submissionTime': 123,
@@ -2028,6 +2028,43 @@ class TestFeatureServiceInlineUpdaterUpsert:
         mocker.patch.object(pd.DataFrame, 'spatial')
 
         updater = palletjack.FeatureServiceInlineUpdater(mocker.Mock(), new_dataframe, 'Bar')
+
+        uploaded_features = updater.upsert_new_data_in_hosted_feature_layer('abc')
+
+        assert uploaded_features == 42
+
+    def test_upsert_new_data_in_hosted_feature_layer_handles_manual_field_renaming(self, mocker):
+        mock_fl = mocker.Mock()
+
+        mock_fl.properties = {
+            'fields': [
+                {
+                    'name': 'Shape__Length'
+                },
+                {
+                    'name': 'Bar'
+                },
+            ],
+            'indexes': [
+                {
+                    'fields': 'Bar',
+                    'isUnique': True
+                },
+            ]
+        }
+        mock_fl.append.return_value = (True, {'recordCount': 42})
+
+        fl_class_mock = mocker.Mock()
+        fl_class_mock.fromitem.return_value = mock_fl
+        mocker.patch('arcgis.features.FeatureLayer', fl_class_mock)
+
+        new_dataframe = pd.DataFrame(columns=['st_length(shape)', 'Bar'])
+        field_mapping = {'st_length(shape)': 'Shape__Length'}
+        mocker.patch.object(pd.DataFrame, 'spatial')
+
+        updater = palletjack.FeatureServiceInlineUpdater(
+            mocker.Mock(), new_dataframe, 'Bar', field_mapping=field_mapping
+        )
 
         uploaded_features = updater.upsert_new_data_in_hosted_feature_layer('abc')
 
