@@ -346,6 +346,123 @@ class TestGoogleDriveDownloader:
             file_id = downloader._get_file_id_from_sharing_link(test_link)
 
 
+class TestGoogleDriveDownloaderAPI:
+
+    def test_get_request_and_filename_from_drive_api_returns_both(self, mocker):
+        client = mocker.Mock()
+        client.drive.service.files.return_value.get_media.return_value = 'request'
+        client.drive.service.files.return_value.get.return_value.execute.return_value = {'name': 'foo'}
+
+        request, filename = palletjack.GoogleDriveDownloader._get_request_and_filename_from_drive_api(client, 'bar')
+
+        assert request == 'request'
+        assert filename == 'foo'
+
+    def test_save_get_media_content_works_multiple_chunks(self, mocker):
+        mocker.patch.object(palletjack.loaders, 'BytesIO')
+        downloader_mock = mocker.patch.object(palletjack.loaders, 'MediaIoBaseDownload')
+        downloader_mock.return_value.next_chunk.side_effect = [(1, False), (2, True)]
+
+        palletjack.GoogleDriveDownloader._save_get_media_content(mocker.Mock(), 'foo', mocker.Mock())
+
+        assert downloader_mock.return_value.next_chunk.call_count == 2
+
+    def test_download_file_from_google_drive_using_api_creates_filename(self, mocker):
+
+        mocker.patch.object(palletjack.GoogleDriveDownloader, '_get_file_id_from_sharing_link')
+        mocker.patch.object(
+            palletjack.GoogleDriveDownloader,
+            '_get_request_and_filename_from_drive_api',
+            return_value=('response', 'baz.png')
+        )
+        save_mock = mocker.patch.object(palletjack.GoogleDriveDownloader, '_save_get_media_content')
+
+        downloader = palletjack.GoogleDriveDownloader('/foo/bar')
+
+        downloader.download_file_from_google_drive_using_api(mocker.Mock(), '1234', 42)
+
+        save_mock.assert_called_with('response', Path('/foo/bar/baz.png'))
+
+    def test_download_file_from_google_drive_using_api_handles_empty_string_link(self, mocker, caplog):
+
+        file_id_mock = mocker.patch.object(palletjack.GoogleDriveDownloader, '_get_file_id_from_sharing_link')
+
+        downloader = palletjack.GoogleDriveDownloader('/foo/bar')
+
+        caplog.set_level(logging.DEBUG, logger='palletjack.loaders.GoogleDriveDownloader')
+        caplog.clear()
+        result = downloader.download_file_from_google_drive_using_api(mocker.Mock(), '', 42)
+
+        file_id_mock.assert_not_called()
+        assert ['Row 42 has no attachment info'] == [rec.message for rec in caplog.records]
+        assert result is None
+
+    def test_download_file_from_google_drive_using_api_handles_None_link(self, mocker, caplog):
+
+        file_id_mock = mocker.patch.object(palletjack.GoogleDriveDownloader, '_get_file_id_from_sharing_link')
+
+        downloader = palletjack.GoogleDriveDownloader('/foo/bar')
+
+        caplog.set_level(logging.DEBUG, logger='palletjack.loaders.GoogleDriveDownloader')
+        caplog.clear()
+        result = downloader.download_file_from_google_drive_using_api(mocker.Mock(), None, 42)
+
+        file_id_mock.assert_not_called()
+        assert ['Row 42 has no attachment info'] == [rec.message for rec in caplog.records]
+        assert result is None
+
+    def test_download_file_from_google_drive_using_api_handles_download_error(self, mocker, caplog):
+
+        mocker.patch.object(
+            palletjack.GoogleDriveDownloader, '_get_file_id_from_sharing_link', return_value='google_id'
+        )
+        mocker.patch.object(palletjack.utils, 'sleep')
+        mocker.patch.object(
+            palletjack.GoogleDriveDownloader, '_get_request_and_filename_from_drive_api', side_effect=Exception('Boom')
+        )
+
+        saver_mock = mocker.patch.object(palletjack.GoogleDriveDownloader, '_save_get_media_content')
+
+        downloader = palletjack.GoogleDriveDownloader('/foo/bar')
+
+        caplog.set_level(logging.DEBUG, logger='palletjack.loaders.GoogleDriveDownloader')
+        caplog.clear()
+        result = downloader.download_file_from_google_drive_using_api(mocker.Mock(), '1234', 42)
+
+        saver_mock.assert_not_called()
+        assert [
+            'Row 42: downloading file 1234',
+            'Row 42: extracted file id google_id',
+            'Row 42: Couldn\'t download 1234',
+            'Boom',
+        ] == [rec.message for rec in caplog.records]
+        assert result is None
+
+    def test_download_attachments_from_dataframe_usingapi_handles_multiple_rows(self, mocker):
+
+        mocker.patch.object(palletjack.loaders, 'pygsheets')
+
+        downloader_mock = mocker.Mock()
+        downloader_mock.download_file_from_google_drive_using_api.side_effect = ['foo/bar.png', 'baz/boo.png']
+
+        sheet_dataframe = pd.DataFrame({
+            'join_id': [1, 2],
+            'link': ['a', 'b'],
+        })
+
+        downloaded_df = palletjack.GoogleDriveDownloader.download_attachments_from_dataframe_using_api(
+            downloader_mock, 'service_file', sheet_dataframe, 'link', 'join_id', 'path'
+        )
+
+        test_df = pd.DataFrame({
+            'join_id': [1, 2],
+            'link': ['a', 'b'],
+            'path': ['foo/bar.png', 'baz/boo.png'],
+        })
+
+        tm.assert_frame_equal(downloaded_df, test_df)
+
+
 class TestSFTPLoader:
 
     def test_download_sftp_folder_contents_uses_right_credentials(self, mocker):
