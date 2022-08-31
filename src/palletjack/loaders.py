@@ -3,12 +3,15 @@
 
 import logging
 import re
+from io import BytesIO
 from pathlib import Path
+from time import sleep
 
 import pandas as pd
 import pygsheets
 import pysftp
 import requests
+from googleapiclient.http import MediaIoBaseDownload
 
 logger = logging.getLogger(__name__)
 
@@ -184,17 +187,21 @@ class GoogleDriveDownloader:
                 raise IndexError(f'Regex could not extract the file id from sharing link {sharing_link}') from err
         raise RuntimeError(f'Regex could not match sharing link {sharing_link}')
 
-    def download_file_from_google_drive(self, sharing_link, join_id):
+    def download_file_from_google_drive(self, sharing_link, join_id, pause=0.):
         """Download a publicly-shared image from Google Drive using it's sharing link
 
         Args:
             sharing_link (str): The publicly-shared link to the image.
             join_id (str or int): The unique key for the row (used for reporting)
+            pause (flt, optional): Pause the specified number of seconds before downloading. Defaults to 0.
 
         Returns:
             Path: Path of downloaded file or None if download fails/is not possible
         """
 
+        if pause:
+            self._class_logger.debug('Sleeping for %s', pause)
+        sleep(pause)
         if not sharing_link:
             self._class_logger.debug('Row %s has no attachment info', join_id)
             return None
@@ -213,8 +220,17 @@ class GoogleDriveDownloader:
             self._class_logger.warning(err)
             return None
 
+    def _save_get_media_content(self, request, out_file_path):
+        in_memory = BytesIO()
+        downloader = MediaIoBaseDownload(in_memory, request)
+        done = False
+        while not done:
+            _, done = downloader.next_chunk()
+        out_file_path.write(in_memory.getbuffer())
+
     #: TODO: WIP
-    def download_file_from_google_drive_using_api(self, sharing_link, join_id):
+    def download_file_from_google_drive_using_api(self, service_file, sharing_link, join_id):
+        gsheets_client = pygsheets.authorize(service_file=service_file)
         if not sharing_link:
             self._class_logger.debug('Row %s has no attachment info', join_id)
             return None
@@ -222,10 +238,10 @@ class GoogleDriveDownloader:
         try:
             file_id = self._get_file_id_from_sharing_link(sharing_link)
             self._class_logger.debug('Row %s: extracted file id %s', join_id, file_id)
-            response = self._get_http_response(file_id)
-            filename = self._get_filename_from_response(response)
+            get_media_request = gsheets_client.drive.service.files().get_media(fileId=file_id)  # pylint:disable=no-member
+            filename = gsheets_client.drive.service.files().get(fileId=file_id).execute()['name']  # pylint:disable=no-member
             out_file_path = self.out_dir / filename
-            self._save_response_content(response, out_file_path)
+            self._save_get_media_content(get_media_request, out_file_path)
             return out_file_path
         except Exception as err:
             self._class_logger.warning('Row %s: Couldn\'t download %s', join_id, sharing_link)
@@ -246,7 +262,7 @@ class GoogleDriveDownloader:
         """
 
         dataframe[output_path_column] = dataframe.apply(
-            lambda x: self.download_file_from_google_drive(x[sharing_link_column], x[join_id_column]), axis=1
+            lambda x: self.download_file_from_google_drive(x[sharing_link_column], x[join_id_column], pause=5), axis=1
         )
         return dataframe
 
