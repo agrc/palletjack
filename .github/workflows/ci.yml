@@ -5,13 +5,19 @@ on: [push, pull_request]
 jobs:
   test:
     name: Setup and Test
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
 
     steps:
     - name: Set up Python
       uses: actions/setup-python@v3
       with:
         python-version: 3.9
+
+    - name: Install libkrb5 for Kerberos on Linux
+        # if: contains(matrix.os, 'ubuntu')
+      run: |
+        sudo apt install -y libkrb5-dev
+        pip install requests-kerberos
 
     - name: Checkout code
       uses: actions/checkout@v2
