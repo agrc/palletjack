@@ -11,7 +11,7 @@ from setuptools import find_packages, setup
 
 setup(
     name='ugrc-palletjack',
-    version='2.6.0',
+    version='2.6.2',
     license='MIT',
     description='Updating AGOL feature services with data from SFTP shares.',
     author='Jake Adams, UGRC',
@@ -34,7 +34,7 @@ setup(
     keywords=['gis'],
     install_requires=[
         'pysftp==0.2.9',
-        'arcgis==1.9.*',
+        'arcgis==2.0.*',
         'pygsheets==2.0.*',
     ],
     extras_require={
