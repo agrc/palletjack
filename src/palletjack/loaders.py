@@ -13,6 +13,8 @@ import pysftp
 import requests
 from googleapiclient.http import MediaIoBaseDownload
 
+from . import utils
+
 logger = logging.getLogger(__name__)
 
 
@@ -220,28 +222,36 @@ class GoogleDriveDownloader:
             self._class_logger.warning(err)
             return None
 
+    @staticmethod
+    def _get_request_and_filename_from_drive_api(client, file_id):
+        get_media_request = client.drive.service.files().get_media(fileId=file_id)  # pylint:disable=no-member
+        filename = client.drive.service.files().get(fileId=file_id).execute()['name']  # pylint:disable=no-member
+
+        return get_media_request, filename
+
     def _save_get_media_content(self, request, out_file_path):
         in_memory = BytesIO()
         downloader = MediaIoBaseDownload(in_memory, request)
         done = False
         while not done:
             _, done = downloader.next_chunk()
-        out_file_path.write(in_memory.getbuffer())
+        out_file_path.write_bytes(in_memory.getbuffer())
 
     #: TODO: WIP
-    def download_file_from_google_drive_using_api(self, service_file, sharing_link, join_id):
-        gsheets_client = pygsheets.authorize(service_file=service_file)
+    def download_file_from_google_drive_using_api(self, gsheets_client, sharing_link, join_id):
         if not sharing_link:
             self._class_logger.debug('Row %s has no attachment info', join_id)
             return None
-        self._class_logger.debug('Row %s: downloading shared file %s', join_id, sharing_link)
+        self._class_logger.debug('Row %s: downloading file %s', join_id, sharing_link)
         try:
             file_id = self._get_file_id_from_sharing_link(sharing_link)
             self._class_logger.debug('Row %s: extracted file id %s', join_id, file_id)
-            get_media_request = gsheets_client.drive.service.files().get_media(fileId=file_id)  # pylint:disable=no-member
-            filename = gsheets_client.drive.service.files().get(fileId=file_id).execute()['name']  # pylint:disable=no-member
+            get_media_request, filename = utils.retry(
+                self._get_request_and_filename_from_drive_api, gsheets_client, file_id
+            )
             out_file_path = self.out_dir / filename
-            self._save_get_media_content(get_media_request, out_file_path)
+            self._class_logger.debug('Row %s: writing to %s', join_id, out_file_path)
+            utils.retry(self._save_get_media_content, get_media_request, out_file_path)
             return out_file_path
         except Exception as err:
             self._class_logger.warning('Row %s: Couldn\'t download %s', join_id, sharing_link)
@@ -255,7 +265,8 @@ class GoogleDriveDownloader:
             dataframe (pd.DataFrame): Input dataframe with required columns
             sharing_link_column (str): Column holding the Google sharing link
             join_id_column (str): Column holding a unique key (for reporting purposes)
-            output_path_column (str): Column for the resulting path; will be added if it doesn't existing in the dataframe
+            output_path_column (str): Column for the resulting path; will be added if it doesn't existing in the
+            dataframe
 
         Returns:
             pd.DataFrame: Input dataframe with output path info
@@ -263,6 +274,32 @@ class GoogleDriveDownloader:
 
         dataframe[output_path_column] = dataframe.apply(
             lambda x: self.download_file_from_google_drive(x[sharing_link_column], x[join_id_column], pause=5), axis=1
+        )
+        return dataframe
+
+    def download_attachments_from_dataframe_using_api(
+        self, service_file, dataframe, sharing_link_column, join_id_column, output_path_column
+    ):
+        """Download the attachments linked in a dataframe column using an authenticated api client, creating a new
+        column with the resulting path
+
+        Args:
+            service_file (str): Path to the service account's credential file
+            dataframe (pd.DataFrame): Input dataframe with required columns
+            sharing_link_column (str): Column holding the Google sharing link
+            join_id_column (str): Column holding a unique key (for reporting purposes)
+            output_path_column (str): Column for the resulting path; will be added if it doesn't existing in the
+            dataframe
+
+        Returns:
+            pd.DataFrame: Input dataframe with output path info
+        """
+
+        client = pygsheets.authorize(service_file=service_file)
+
+        dataframe[output_path_column] = dataframe.apply(
+            lambda x: self.download_file_from_google_drive_using_api(client, x[sharing_link_column], x[join_id_column]),
+            axis=1
         )
         return dataframe
 
