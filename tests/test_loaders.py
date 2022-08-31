@@ -254,6 +254,40 @@ class TestGoogleDriveDownloader:
         ] == [rec.message for rec in caplog.records]
         assert result is None
 
+    def test_download_file_from_google_drive_pauses_appropriately(self, mocker):
+        sleep_mock = mocker.patch.object(palletjack.loaders, 'sleep')
+        mocker.patch.object(palletjack.GoogleDriveDownloader, '_get_file_id_from_sharing_link')
+        mocker.patch.object(palletjack.GoogleDriveDownloader, '_get_http_response', return_value='response')
+        mocker.patch.object(palletjack.GoogleDriveDownloader, '_get_filename_from_response', return_value='baz.png')
+        mocker.patch.object(palletjack.GoogleDriveDownloader, '_save_response_content')
+
+        downloader = palletjack.GoogleDriveDownloader('/foo/bar')
+
+        downloader.download_file_from_google_drive('1234', 42, 1.5)
+
+        sleep_mock.assert_called_with(1.5)
+        sleep_mock.assert_called_once()
+
+    def test_download_attachments_from_dataframe_sleeps_specified_time(self, mocker):
+
+        sleep_mock = mocker.patch.object(palletjack.loaders, 'sleep')
+        mocker.patch.object(palletjack.GoogleDriveDownloader, '_get_file_id_from_sharing_link')
+        mocker.patch.object(palletjack.GoogleDriveDownloader, '_get_http_response', return_value='response')
+        mocker.patch.object(palletjack.GoogleDriveDownloader, '_get_filename_from_response', return_value='baz.png')
+        mocker.patch.object(palletjack.GoogleDriveDownloader, '_save_response_content')
+
+        downloader = palletjack.GoogleDriveDownloader('/foo/bar')
+
+        sheet_dataframe = pd.DataFrame({
+            'join_id': [1],
+            'link': ['a'],
+        })
+
+        downloader.download_attachments_from_dataframe(sheet_dataframe, 'link', 'join_id', 'path')
+
+        sleep_mock.assert_called_with(5)
+        sleep_mock.assert_called_once()
+
     def test_download_attachments_from_dataframe_handles_multiple_rows(self, mocker):
 
         downloader_mock = mocker.Mock()

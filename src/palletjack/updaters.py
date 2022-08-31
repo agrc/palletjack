@@ -611,6 +611,7 @@ class FeatureServiceOverwriter:
             target_featurelayer.append,
             upload_format='geojson',
             edits=geojson,
+            #:TODO figure out a way to preserve GUIDs?
             upsert=False,
             return_messages=True,
             rollback=True,
