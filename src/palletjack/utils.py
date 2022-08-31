@@ -14,8 +14,8 @@ def retry(worker_method, *args, **kwargs):
     """Allows you to retry a function/method three times to overcome network jitters
 
     Retries worker_method three times (for a total of four tries, including the initial attempt), pausing 2^trycount
-    seconds between each retry. Any arguments for worker_method can be passed in as additional parameters to _retry()
-    following worker_method: _retry(foo_method, arg1, arg2, keyword_arg=3)
+    seconds between each retry. Any arguments for worker_method can be passed in as additional parameters to retry()
+    following worker_method: retry(foo_method, arg1, arg2, keyword_arg=3)
 
     Args:
         worker_method (callable): The name of the method to be retried (minus the calling parens)
