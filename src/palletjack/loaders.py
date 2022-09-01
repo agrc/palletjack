@@ -224,12 +224,22 @@ class GoogleDriveDownloader:
             return None
 
     def _get_request_and_filename_from_drive_api(self, client, file_id):
+        """Get the request object and filename from a Google drive file_id. Will try to determine extension if missing.
+
+        Args:
+            client (pygsheets.Client): Authenticated client object from pyghseets
+            file_id (str): The Google fileId to be downloaded
+
+        Returns:
+            (googleapiclient.http.HttpRequest, str): Result of the .get_media() call, name of the file
+        """
+
         get_media_request = client.drive.service.files().get_media(fileId=file_id)  # pylint:disable=no-member
         metadata = client.drive.service.files().get(fileId=file_id).execute()  # pylint:disable=no-member
         filename = metadata['name']
         if not Path(filename).suffix:
             try:
-                filename = filename + mimetypes.guess_extension(metadata["mimeType"])
+                filename = filename + mimetypes.guess_extension(metadata['mimeType'])
             except KeyError:
                 self._class_logger.warning('%s: No MIME type in drive info, file extension not set', file_id)
             except TypeError:
@@ -240,6 +250,13 @@ class GoogleDriveDownloader:
         return get_media_request, filename
 
     def _save_get_media_content(self, request, out_file_path):
+        """Save the binary data referenced from a .get_media() call to out_file_path
+
+        Args:
+            request (googleapiclient.http.HttpRequest): Result of the .get_media() call
+            out_file_path (Path): Path object to the location to save the data
+        """
+
         in_memory = BytesIO()
         downloader = MediaIoBaseDownload(in_memory, request)
         done = False
@@ -248,6 +265,16 @@ class GoogleDriveDownloader:
         out_file_path.write_bytes(in_memory.getbuffer())
 
     def download_file_from_google_drive_using_api(self, gsheets_client, sharing_link, join_id):
+        """Download a file from Google Drive using an authenticated client and the Google API via pygsheets
+
+        Args:
+            gsheets_client (pygsheets.Client): The authenticated client object from pygsheets
+            sharing_link (str): Sharing link to the file to be downloaded
+            join_id (str or int): Unique key for the row (used for reporting)
+
+        Returns:
+            Path: Path of downloaded file or None if download fails/is not possible
+        """
         if not sharing_link:
             self._class_logger.debug('Row %s has no attachment info', join_id)
             return None

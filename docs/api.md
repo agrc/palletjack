@@ -26,7 +26,7 @@ The initializer takes five arguments:
 1. `knownhosts_file`: path to a [knownhosts file](https://stackoverflow.com/questions/38939454/verify-host-key-with-pysftp) containing the public key of your sftp server
 1. `download_dir`: the local directory to save the files in
 
-Methods
+#### Methods
 
 - `download_sftp_folder_contents(self, sftp_folder='upload')`
   - Downloads all the files in `sftp_folder` to `self.download_dir`. Returns the number of files downloaded.
@@ -42,7 +42,7 @@ Methods
 
 The initializer requires the path to a service account .json file that has access to the sheet in question. This account and file may need to be created by the GCP gurus.
 
-Methods
+#### Methods
 
 - `load_specific_worksheet_into_dataframe(self, sheet_id, worksheet, by_title=False)`
   - Load a single worksheet from sheet_id into a dataframe, specified either with a 0-based index or the worksheet title.
@@ -53,14 +53,22 @@ Methods
 
 ### GoogleDriveDownloader
 
-`GoogleDriveDownloader` will download any publicly-shared non-html file (ie, Content-Type != text/html) Google Drive file from it's sharing link.
+`GoogleDriveDownloader` provides methods to download any non-html file (ie, Content-Type != text/html) Google Drive file from it's sharing link. The files may be publicly shared or shared with a service account.
 
 The initializer sets the output directory for saving the files. The `out_dir` attribute can be modified at any time to change this destination.
 
-Methods
+This class has two similar sets of methods. The `*_using_api` methods authenticate to the Google API using a service account file and download using the API. If at all possible, use these methods to have the least likelihood of errors. They support publicly shared files along with files just shared to the service account.
 
-- `download_file_from_google_drive(self, sharing_link, join_id)`
-  - Download a file to the out_dir set on the instantiated object. `sharing_link` should be in the form `https://drive.google.com/file/d/big_long_id/etc`. `join_id` is used for logging purposes to identify which attachment is being worked on. Will log an error if the URL doesn't match this pattern or it can't extract the unique id from the sharing URL. Will also log an error if the header's Content-Type is text/html, which usually indicates the HTTP response was an error message instead of the file.
+The other methods just use an anonymous HTTP request, which requires the files to be shared publicly. Google will block you from downloading after a certain amount of time/requests. A pause has been added to overcome this, but I've yet to find a good value for it.
+
+#### Methods
+
+- `download_file_from_google_drive_using_api(self, gsheets_client, sharing_link, join_id)`
+  - Download a file to the out_dir set on the instantiated object using the Google API. `gsheets_client` is the authenticated Client object from `pygsheets.authorize()`. `sharing_link` should be in the form `https://drive.google.com/file/d/big_long_id/etc`. `join_id` is used for logging purposes to identify which attachment is being worked on. Will log an error if the URL doesn't match this pattern or it can't extract the unique id from the sharing URL. Will also log an error if the header's Content-Type is text/html, which usually indicates the HTTP response was an error message instead of the file.
+- `download_attachments_from_dataframe_using_api(self, service_file, dataframe, sharing_link_column, join_id_column, output_path_column)`
+  - Calls `download_file_from_google_drive_using_api` for every row in `dataframe`, saving the full path of the resulting file in `output_path_column`. Uses `service_file` to authenticate to the Google API using `pygsheets.authorize()`
+- `download_file_from_google_drive(self, sharing_link, join_id, pause=0.)`
+  - Download a file to the out_dir set on the instantiated object using an anonymous HTTP request. `sharing_link` should be in the form `https://drive.google.com/file/d/big_long_id/etc`. `join_id` is used for logging purposes to identify which attachment is being worked on. `pause` specifies a sleep in seconds before downloading to try to get around Google's blocking. Will log an error if the URL doesn't match this pattern or it can't extract the unique id from the sharing URL. Will also log an error if the header's Content-Type is text/html, which usually indicates the HTTP response was an error message instead of the file.
 - `download_attachments_from_dataframe(self, dataframe, sharing_link_column, join_id_column, output_path_column)`
   - Calls `download_file_from_google_drive` for every row in `dataframe`, saving the full path of the resulting file in `output_path_column`
 
@@ -77,7 +85,7 @@ The initializer has three required arguments and one optional argument:
 1. `index_column`: The index column that is present in both the existing and new data for joining the datasets.
 1. `field_mapping`(optional): A dictionary of existing field names to new field names for matching the new data to the existing data in AGOL.
 
-Methods
+#### Methods
 
 - `update_existing_features_in_feature_service_with_arcpy(self, feature_service_url, fields)`
   - Update `fields` in `feature_service_url` with data from `self.new_dataframe()` using `arcpy.da.UpdateCursor`. Requires arcpy to be installed. Returns the number of rows updated.
@@ -94,7 +102,7 @@ Completely overwrite a feature service rather than updating it feature-by-featur
 
 The initializer requires the `arcgis.gis.GIS` object representing your organization.
 
-Methods
+#### Methods
 
 - `truncate_and_load_feature_service(self, feature_service_item_id, new_dataframe, failsafe_dir, layer_index=0)`
   - Attempts to delete existing data from a feature layer and add new data from a spatially-enabled dataframe. First attempts to truncate existing data and loads it in memory as a dataframe. Then renames new data column names to conform to AGOL scheme (spaces, special chars changed to '_'). Finally attempts to append new data to now-empty feature layer using `arcgis.features.FeatureLayer.append()`. If the new data append fails, it attempts to re-upload the previous data from the in-memory dataframe. If this fails, it attempts to failsafe by writing the old data to disk as a json file.
@@ -107,7 +115,7 @@ If a matching feature in AGOl doesn't have an attachment, the file referred to b
 
 The initializer requires the `arcgis.gis.GIS` object representing your organization.
 
-Methods
+#### Methods
 
 - `update_attachments(self, feature_layer_itemid, attachment_join_field, attachment_path_field, attachments_df, layer_number=0)`
   - Updates the attachments on layer `layer_number` of `feature_layer_itemid`. Requires a dataframe containing one row for each feature to have it's attachments updated. This dataframe must have an `attachment_join_field` containing the unique key linking the live data to the dataframe and an `attachment_path_field` containing the path to the new attachment.
@@ -121,7 +129,7 @@ The initializer only takes two arguments:
 1. `webmap_item`: The `arcgis.gis.Item` object of the webmap to update.
 1. `gis`: The `arcgis.gis.GIS` object of the AGOL organization.
 
-Methods
+#### Methods
 
 - `update_color_ramp_values(self, layer_name, column_name, stops=5)`
   - Updates the color ramp stop values for `column_name` of `layer_name` in `self.webmap_item` using `stops` number of stops. Returns a boolean indicating success (passed through from `self.webmap_item.update()` call).
