@@ -351,10 +351,65 @@ class TestGoogleDriveDownloaderAPI:
     def test_get_request_and_filename_from_drive_api_returns_both(self, mocker):
         client = mocker.Mock()
         client.drive.service.files.return_value.get_media.return_value = 'request'
-        client.drive.service.files.return_value.get.return_value.execute.return_value = {'name': 'foo'}
+        client.drive.service.files.return_value.get.return_value.execute.return_value = {'name': 'foo.bar'}
 
-        request, filename = palletjack.GoogleDriveDownloader._get_request_and_filename_from_drive_api(client, 'bar')
+        request, filename = palletjack.GoogleDriveDownloader._get_request_and_filename_from_drive_api(
+            mocker.Mock(), client, 'bar'
+        )
 
+        assert request == 'request'
+        assert filename == 'foo.bar'
+
+    def test_get_request_and_filename_from_drive_api_adds_extension(self, mocker):
+        client = mocker.Mock()
+        client.drive.service.files.return_value.get_media.return_value = 'request'
+        client.drive.service.files.return_value.get.return_value.execute.return_value = {
+            'name': 'foo',
+            'mimeType': 'image/jpeg'
+        }
+
+        request, filename = palletjack.GoogleDriveDownloader._get_request_and_filename_from_drive_api(
+            mocker.Mock(), client, 'bar'
+        )
+
+        assert request == 'request'
+        assert filename == 'foo.jpg'
+
+    def test_get_request_and_filename_from_drive_api_warns_on_missing_mimeType(self, mocker, caplog):
+        client = mocker.Mock()
+        client.drive.service.files.return_value.get_media.return_value = 'request'
+        client.drive.service.files.return_value.get.return_value.execute.return_value = {
+            'name': 'foo',
+        }
+
+        downloader = palletjack.GoogleDriveDownloader('/foo/bar')
+
+        caplog.set_level(logging.DEBUG, logger='palletjack.loaders.GoogleDriveDownloader')
+        caplog.clear()
+
+        request, filename = downloader._get_request_and_filename_from_drive_api(client, 'bar')
+
+        assert ['bar: No MIME type in drive info, file extension not set'] == [rec.message for rec in caplog.records]
+        assert request == 'request'
+        assert filename == 'foo'
+
+    def test_get_request_and_filename_from_drive_api_warns_on_cant_find_extension(self, mocker, caplog):
+        client = mocker.Mock()
+        client.drive.service.files.return_value.get_media.return_value = 'request'
+        client.drive.service.files.return_value.get.return_value.execute.return_value = {
+            'name': 'foo',
+            'mimeType': 'bee/boo'
+        }
+
+        downloader = palletjack.GoogleDriveDownloader('/foo/bar')
+
+        caplog.set_level(logging.DEBUG, logger='palletjack.loaders.GoogleDriveDownloader')
+        caplog.clear()
+
+        request, filename = downloader._get_request_and_filename_from_drive_api(client, 'bar')
+
+        assert ['bar: Unable to determine file extension from MIME type, file extension not set'] == \
+            [rec.message for rec in caplog.records]
         assert request == 'request'
         assert filename == 'foo'
 
@@ -438,7 +493,7 @@ class TestGoogleDriveDownloaderAPI:
         ] == [rec.message for rec in caplog.records]
         assert result is None
 
-    def test_download_attachments_from_dataframe_usingapi_handles_multiple_rows(self, mocker):
+    def test_download_attachments_from_dataframe_using_api_handles_multiple_rows(self, mocker):
 
         mocker.patch.object(palletjack.loaders, 'pygsheets')
 

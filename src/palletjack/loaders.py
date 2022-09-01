@@ -2,6 +2,7 @@
 """
 
 import logging
+import mimetypes
 import re
 from io import BytesIO
 from pathlib import Path
@@ -222,10 +223,19 @@ class GoogleDriveDownloader:
             self._class_logger.warning(err)
             return None
 
-    @staticmethod
-    def _get_request_and_filename_from_drive_api(client, file_id):
+    def _get_request_and_filename_from_drive_api(self, client, file_id):
         get_media_request = client.drive.service.files().get_media(fileId=file_id)  # pylint:disable=no-member
-        filename = client.drive.service.files().get(fileId=file_id).execute()['name']  # pylint:disable=no-member
+        metadata = client.drive.service.files().get(fileId=file_id).execute()  # pylint:disable=no-member
+        filename = metadata['name']
+        if not Path(filename).suffix:
+            try:
+                filename = filename + mimetypes.guess_extension(metadata["mimeType"])
+            except KeyError:
+                self._class_logger.warning('%s: No MIME type in drive info, file extension not set', file_id)
+            except TypeError:
+                self._class_logger.warning(
+                    '%s: Unable to determine file extension from MIME type, file extension not set', file_id
+                )
 
         return get_media_request, filename
 
@@ -237,7 +247,6 @@ class GoogleDriveDownloader:
             _, done = downloader.next_chunk()
         out_file_path.write_bytes(in_memory.getbuffer())
 
-    #: TODO: WIP
     def download_file_from_google_drive_using_api(self, gsheets_client, sharing_link, join_id):
         if not sharing_link:
             self._class_logger.debug('Row %s has no attachment info', join_id)
