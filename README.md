@@ -1,8 +1,8 @@
 # agrc/palletjack
 
-<!-- ![Build Status](https://github.com/agrc/python/workflows/Build%20and%20Test/badge.svg)
-[![codecov](https://codecov.io/gh/agrc/python/branch/main/graph/badge.svg)](https://codecov.io/gh/agrc/python)
-1. Navigate to [codecov.io](https://codecov.io/gh/agrc/python) and create a `CODECOV_TOKEN` [project secret](https://github.com/agrc/python/settings/secrets) -->
+![Build Status](https://github.com/agrc/palletjack/workflows/Build%20and%20Test/badge.svg)
+[![codecov](https://codecov.io/gh/agrc/palletjack/branch/main/graph/badge.svg)](https://codecov.io/gh/agrc/palletjack)
+<!-- 1. Navigate to [codecov.io](https://codecov.io/gh/agrc/python) and create a `CODECOV_TOKEN` [project secret](https://github.com/agrc/python/settings/secrets) -->
 
 A library of classes for automatically updating AGOL feature services with data from external sources. Client apps (often called 'skids') can reuse these classes for common use cases. These classes handle different parts of the Extract and Load steps in the ETL process. Tabular data is loaded into dataframes, which are then processed by the skid and passed to the updater classes that update the feature service.
 
