@@ -2,9 +2,10 @@
 
 ![Build Status](https://github.com/agrc/palletjack/workflows/Build%20and%20Test/badge.svg)
 [![codecov](https://codecov.io/gh/agrc/palletjack/branch/main/graph/badge.svg)](https://codecov.io/gh/agrc/palletjack)
-<!-- 1. Navigate to [codecov.io](https://codecov.io/gh/agrc/python) and create a `CODECOV_TOKEN` [project secret](https://github.com/agrc/python/settings/secrets) -->
 
-A library of classes for automatically updating AGOL feature services with data from external sources. Client apps (often called 'skids') can reuse these classes for common use cases. These classes handle different parts of the Extract and Load steps in the ETL process. Tabular data is loaded into dataframes, which are then processed by the skid and passed to the updater classes that update the feature service.
+A library of classes for automatically updating AGOL feature services with data from external sources. Client apps (often called 'skids') can reuse these classes for common use cases. These classes handle different parts of the Extract and Load steps in the ETL process.
+
+`palletjack` works with pandas DataFrames (either regular for tabular data or Esri's spatially-enabled dataframes for spatial data). Most methods either return a dataframe or use a dataframe for their source data.
 
 See `docs/api.md` for documentation on the available classes and methods, logging, and errors.
 
@@ -24,7 +25,8 @@ Pallet jack: [forklift's](https://www.github.com/agrc/forklift) little brother.
 ## Usage
 
 1. `import palletjack`
-1. Instantiate objects as needed:
+1. Instantiate one or more of the classes as needed.
+1. Call the methods on your instantiated objects to perform the specific action desired.
 
    ```python
    loader = palletjack.SFTPLoader(secrets, download_dir)
