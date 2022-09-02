@@ -40,7 +40,7 @@ The initializer takes five arguments:
 
 `GSheetLoader` allows you to import some or all of the worksheets within a Google Sheets document into a pandas dataframe.
 
-The initializer requires the path to a service account .json file that has access to the sheet in question. This account and file may need to be created by the GCP gurus.
+The initializer requires either the path to a service account .json file that has access to the sheet in question or a `google.auth.credentials.Credentials` object. The service account and file may need to be created by the GCP gurus. The Calling `google.auth.default()` in a Cloud Function environment will give you a tuple of the `Credentials` object of the current project and the project id. You can use this `Credentials` object to authorize pygsheets for the same account as the Cloud Function.
 
 #### Methods
 
@@ -57,7 +57,7 @@ The initializer requires the path to a service account .json file that has acces
 
 The initializer sets the output directory for saving the files. The `out_dir` attribute can be modified at any time to change this destination.
 
-This class has two similar sets of methods. The `*_using_api` methods authenticate to the Google API using a service account file and download using the API. If at all possible, use these methods to have the least likelihood of errors. They support publicly shared files along with files just shared to the service account.
+This class has two similar sets of methods. The `*_using_api` methods authenticate to the Google API using either a service account file or a `google.auth.credentials.Credentials` object and downloads using the API. If at all possible, use these methods to have the least likelihood of errors. They support publicly shared files along with files just shared to the service account.
 
 The other methods just use an anonymous HTTP request, which requires the files to be shared publicly. Google will block you from downloading after a certain amount of time/requests. A pause has been added to overcome this, but I've yet to find a good value for it.
 
@@ -65,8 +65,8 @@ The other methods just use an anonymous HTTP request, which requires the files t
 
 - `download_file_from_google_drive_using_api(self, gsheets_client, sharing_link, join_id)`
   - Download a file to the out_dir set on the instantiated object using the Google API. `gsheets_client` is the authenticated Client object from `pygsheets.authorize()`. `sharing_link` should be in the form `https://drive.google.com/file/d/big_long_id/etc`. `join_id` is used for logging purposes to identify which attachment is being worked on. Will log an error if the URL doesn't match this pattern or it can't extract the unique id from the sharing URL. Will also log an error if the header's Content-Type is text/html, which usually indicates the HTTP response was an error message instead of the file.
-- `download_attachments_from_dataframe_using_api(self, service_file, dataframe, sharing_link_column, join_id_column, output_path_column)`
-  - Calls `download_file_from_google_drive_using_api` for every row in `dataframe`, saving the full path of the resulting file in `output_path_column`. Uses `service_file` to authenticate to the Google API using `pygsheets.authorize()`
+- `download_attachments_from_dataframe_using_api(self, credentials, dataframe, sharing_link_column, join_id_column, output_path_column)`
+  - Calls `download_file_from_google_drive_using_api` for every row in `dataframe`, saving the full path of the resulting file in `output_path_column`. Uses `credentials` to authenticate to the Google API using `pygsheets.authorize()`
 - `download_file_from_google_drive(self, sharing_link, join_id, pause=0.)`
   - Download a file to the out_dir set on the instantiated object using an anonymous HTTP request. `sharing_link` should be in the form `https://drive.google.com/file/d/big_long_id/etc`. `join_id` is used for logging purposes to identify which attachment is being worked on. `pause` specifies a sleep in seconds before downloading to try to get around Google's blocking. Will log an error if the URL doesn't match this pattern or it can't extract the unique id from the sharing URL. Will also log an error if the header's Content-Type is text/html, which usually indicates the HTTP response was an error message instead of the file.
 - `download_attachments_from_dataframe(self, dataframe, sharing_link_column, join_id_column, output_path_column)`
