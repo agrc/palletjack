@@ -9,7 +9,6 @@ from pathlib import Path
 from time import sleep
 
 import pandas as pd
-import pygsheets
 import pysftp
 import requests
 from googleapiclient.http import MediaIoBaseDownload
@@ -22,9 +21,9 @@ logger = logging.getLogger(__name__)
 class GSheetLoader:
     """Loads data from a Google Sheets spreadsheet into a pandas data frame"""
 
-    def __init__(self, service_file):
-        self.gsheets_client = pygsheets.authorize(service_file=service_file)
+    def __init__(self, credentials):
         self._class_logger = logging.getLogger(__name__).getChild(self.__class__.__name__)
+        self.gsheets_client = utils.authorize_pygsheets(credentials)
 
     def load_specific_worksheet_into_dataframe(self, sheet_id, worksheet, by_title=False):
         """Load a single worksheet from a spreadsheet into a dataframe by worksheet index or title
@@ -314,13 +313,14 @@ class GoogleDriveDownloader:
         return dataframe
 
     def download_attachments_from_dataframe_using_api(
-        self, service_file, dataframe, sharing_link_column, join_id_column, output_path_column
+        self, credentials, dataframe, sharing_link_column, join_id_column, output_path_column
     ):
         """Download the attachments linked in a dataframe column using an authenticated api client, creating a new
         column with the resulting path
 
         Args:
-            service_file (str): Path to the service account's credential file
+            credentials (str or google.auth.credentials.Credentials): Path to the service file OR credentials object
+                obtained from google.auth.default() within a cloud function.
             dataframe (pd.DataFrame): Input dataframe with required columns
             sharing_link_column (str): Column holding the Google sharing link
             join_id_column (str): Column holding a unique key (for reporting purposes)
@@ -331,7 +331,7 @@ class GoogleDriveDownloader:
             pd.DataFrame: Input dataframe with output path info
         """
 
-        client = pygsheets.authorize(service_file=service_file)
+        client = utils.authorize_pygsheets(credentials)
 
         dataframe[output_path_column] = dataframe.apply(
             lambda x: self.download_file_from_google_drive_using_api(client, x[sharing_link_column], x[join_id_column]),

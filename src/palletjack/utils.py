@@ -5,6 +5,7 @@ from math import floor
 from time import sleep
 
 import pandas as pd
+import pygsheets
 import requests
 
 module_logger = logging.getLogger(__name__)
@@ -328,3 +329,31 @@ def validate_api_key(api_key):
         module_logger.debug(error)
         # return 'Could not determine key validity; check your API key and/or network connection'
     return 'Could not determine key validity; check your API key and/or network connection'
+
+
+def authorize_pygsheets(credentials):
+    """Authenticate pygsheets using either a service file or google.auth.credentials.Credentials object.
+
+    Tries first to load credentials as a service account file; if this fails with a FileNotFoundError, tries to pass
+    credentials directly as a custom_credential.
+
+    Args:
+        credentials (str or google.auth.credentials.Credentials): Path to the service file OR credentials object
+            obtained from google.auth.default() within a cloud function.
+
+    Raises:
+        RuntimeError: If both authorization method attempts fail
+
+    Returns:
+        pygsheets.Client: Authorized pygsheets client
+    """
+
+    try:
+        return pygsheets.authorize(service_file=credentials)
+    except FileNotFoundError as err:
+        module_logger.debug(err)
+        module_logger.debug('Credentials file not found, trying as environment variable')
+    try:
+        return pygsheets.authorize(custom_credentials=credentials)
+    except Exception as err:
+        raise RuntimeError('Could not authenticate to Google API') from err

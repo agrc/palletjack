@@ -682,3 +682,51 @@ class TestFieldRenaming:
             renamed_df = palletjack.utils.rename_fields(parcels_df, field_mapping)
 
             assert 'Field TYPE not found in dataframe.' in str(exception_info)
+
+
+class TestAuthorization:
+
+    def test_authorize_pygsheets_auths_from_file(self, mocker):
+        pygsheets_mock = mocker.patch.object(palletjack.utils, 'pygsheets')
+        pygsheets_mock.authorize.return_value = 'authed'
+
+        client = palletjack.utils.authorize_pygsheets('file')
+
+        assert pygsheets_mock.authorize.called_once_with('file')
+        assert client == 'authed'
+
+    def test_authorize_pygsheets_auths_from_custom_credentials(self, mocker, caplog):
+        pygsheets_mock = mocker.patch.object(palletjack.utils, 'pygsheets')
+        pygsheets_mock.authorize.side_effect = [FileNotFoundError, 'authed']
+
+        caplog.set_level(logging.DEBUG, logger='palletjack.utils')
+        caplog.clear()
+
+        client = palletjack.utils.authorize_pygsheets('credentials')
+
+        assert 'Credentials file not found, trying as environment variable' in [rec.message for rec in caplog.records]
+
+        assert pygsheets_mock.authorize.call_count == 2
+        assert pygsheets_mock.authorize.call_args_list == [
+            mocker.call(service_file='credentials'),
+            mocker.call(custom_credentials='credentials')
+        ]
+        assert client == 'authed'
+
+    def test_authorize_pygsheets_raises_after_failing_both(self, mocker, caplog):
+        pygsheets_mock = mocker.patch.object(palletjack.utils, 'pygsheets')
+        pygsheets_mock.authorize.side_effect = [FileNotFoundError, IOError]
+
+        caplog.set_level(logging.DEBUG, logger='palletjack.utils')
+        caplog.clear()
+
+        with pytest.raises(RuntimeError):
+            client = palletjack.utils.authorize_pygsheets('credentials')
+
+        assert 'Credentials file not found, trying as environment variable' in [rec.message for rec in caplog.records]
+
+        assert pygsheets_mock.authorize.call_count == 2
+        assert pygsheets_mock.authorize.call_args_list == [
+            mocker.call(service_file='credentials'),
+            mocker.call(custom_credentials='credentials')
+        ]

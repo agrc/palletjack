@@ -495,7 +495,7 @@ class TestGoogleDriveDownloaderAPI:
 
     def test_download_attachments_from_dataframe_using_api_handles_multiple_rows(self, mocker):
 
-        mocker.patch.object(palletjack.loaders, 'pygsheets')
+        mocker.patch.object(palletjack.utils, 'authorize_pygsheets')
 
         downloader_mock = mocker.Mock()
         downloader_mock.download_file_from_google_drive_using_api.side_effect = ['foo/bar.png', 'baz/boo.png']
