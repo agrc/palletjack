@@ -58,7 +58,7 @@ def hide_available_pkg(monkeypatch):
     monkeypatch.setattr(builtins, '__import__', mocked_import)
 
 
-class TestFeatureServiceInlineUpdater:
+class TestFeatureServiceUpdater:
 
     def test_update_existing_features_in_feature_service_with_arcpy(self, mocker):
         #: We create a mock that will be returned by UpdateCursor's mock's __enter__, thus becoming our context manager.
@@ -75,7 +75,7 @@ class TestFeatureServiceInlineUpdater:
         fsupdater_mock = mocker.Mock()
         fsupdater_mock.new_data_as_dict = {'12345': {'Count': '57', 'Amount': 100.00, 'Date': '1/1/2022'}}
 
-        load.FeatureServiceInlineUpdater.update_existing_features_in_feature_service_with_arcpy(
+        load.FeatureServiceUpdater.update_existing_features_in_feature_service_with_arcpy(
             fsupdater_mock, 'foo', ['ZipCode', 'Count', 'Amount', 'Date']
         )
 
@@ -86,7 +86,7 @@ class TestFeatureServiceInlineUpdater:
     def test_update_existing_features_in_feature_service_with_arcpy_reports_error_on_import_failure(self, mocker):
 
         with pytest.raises(ImportError, match='Failure importing arcpy. ArcGIS Pro must be installed.'):
-            load.FeatureServiceInlineUpdater.update_existing_features_in_feature_service_with_arcpy(
+            load.FeatureServiceUpdater.update_existing_features_in_feature_service_with_arcpy(
                 mocker.Mock(), 'foo', ['ZipCode', 'Count', 'Amount', 'Date']
             )
 
@@ -95,7 +95,7 @@ class TestFeatureServiceInlineUpdater:
         fields = ['foo', 'bar']
         dataframe = pd.DataFrame(columns=['foo_x', 'bar_x', 'baz', 'foo_y', 'bar_y'])
 
-        renamed = load.FeatureServiceInlineUpdater._clean_dataframe_columns(class_mock, dataframe, fields)
+        renamed = load.FeatureServiceUpdater._clean_dataframe_columns(class_mock, dataframe, fields)
 
         assert list(renamed.columns) == ['baz', 'foo', 'bar']
 
@@ -104,7 +104,7 @@ class TestFeatureServiceInlineUpdater:
         fields = ['foo', 'bar', 'buz']
         dataframe = pd.DataFrame(columns=['foo_x', 'bar_x', 'baz', 'foo_y', 'bar_y'])
 
-        renamed = load.FeatureServiceInlineUpdater._clean_dataframe_columns(class_mock, dataframe, fields)
+        renamed = load.FeatureServiceUpdater._clean_dataframe_columns(class_mock, dataframe, fields)
 
         assert list(renamed.columns) == ['baz', 'foo', 'bar']
 
@@ -113,7 +113,7 @@ class TestFeatureServiceInlineUpdater:
         fields = ['foo', 'bar', 'buz']
         dataframe = pd.DataFrame(columns=['foo_x', 'bar_x', 'baz', 'foo_y', 'bar_y', '_merge'])
 
-        renamed = load.FeatureServiceInlineUpdater._clean_dataframe_columns(class_mock, dataframe, fields)
+        renamed = load.FeatureServiceUpdater._clean_dataframe_columns(class_mock, dataframe, fields)
 
         assert list(renamed.columns) == ['baz', 'foo', 'bar']
 
@@ -123,7 +123,7 @@ class TestFeatureServiceInlineUpdater:
         class_mock.new_dataframe = pd.DataFrame({'col1': [10, 20, 30], 'col2': [40, 50, 60], 'key': ['a', 'b', 'c']})
         live_dataframe = pd.DataFrame({'col1': [1, 2, 3], 'col2': [4, 5, 6], 'key': ['a', 'b', 'c']})
 
-        joined = load.FeatureServiceInlineUpdater._get_common_rows(class_mock, live_dataframe)
+        joined = load.FeatureServiceUpdater._get_common_rows(class_mock, live_dataframe)
 
         merge_type = CategoricalDtype(categories=['left_only', 'right_only', 'both'], ordered=False)
         expected = pd.DataFrame({
@@ -145,7 +145,7 @@ class TestFeatureServiceInlineUpdater:
         class_mock.new_dataframe = pd.DataFrame({'col1': [20, 30], 'col2': [50, 60], 'key': ['b', 'c']})
         live_dataframe = pd.DataFrame({'col1': [1, 2, 3], 'col2': [4, 5, 6], 'key': ['a', 'b', 'c']})
 
-        joined = load.FeatureServiceInlineUpdater._get_common_rows(class_mock, live_dataframe)
+        joined = load.FeatureServiceUpdater._get_common_rows(class_mock, live_dataframe)
 
         merge_type = CategoricalDtype(categories=['left_only', 'right_only', 'both'], ordered=False)
         expected = pd.DataFrame({
@@ -173,7 +173,7 @@ class TestFeatureServiceInlineUpdater:
         class_mock._class_logger = logging.getLogger('root')
         live_dataframe = pd.DataFrame({'col1': [1, 2, 3], 'col2': [4, 5, 6], 'key': ['a', 'b', 'c']})
 
-        joined = load.FeatureServiceInlineUpdater._get_common_rows(class_mock, live_dataframe)
+        joined = load.FeatureServiceUpdater._get_common_rows(class_mock, live_dataframe)
 
         merge_type = CategoricalDtype(categories=['left_only', 'right_only', 'both'], ordered=False)
         expected = pd.DataFrame({
@@ -190,8 +190,40 @@ class TestFeatureServiceInlineUpdater:
         pd.testing.assert_frame_equal(joined, expected, check_dtype=False)
         assert 'The following keys from the new data were not found in the existing dataset: [\'d\']' in caplog.text
 
+    def test_get_common_rows_handles_ints_in_existing_to_float_for_rows_not_in_existing_dataset(self, mocker, caplog):
 
-class TestFeatureServiceInlineUpdaterResultParsing:
+        class_mock = mocker.Mock()
+        class_mock.index_column = 'key'
+        class_mock.new_dataframe = pd.DataFrame({
+            'col1': [10, 20, 30, 80],
+            'col2': [40, 50, 60, 70],
+            'key': ['a', 'b', 'c', 'd']
+        })
+        class_mock._class_logger = logging.getLogger('root')
+        live_dataframe = pd.DataFrame({
+            'col1': [1, 2, 3],
+            'col2': [4, 5, 6],
+            'key': ['a', 'b', 'c'],
+        })
+
+        joined = load.FeatureServiceUpdater._get_common_rows(class_mock, live_dataframe)
+
+        merge_type = CategoricalDtype(categories=['left_only', 'right_only', 'both'], ordered=False)
+        expected = pd.DataFrame({
+            'col1_x': [1, 2, 3],
+            'col2_x': [4, 5, 6],
+            'key': ['a', 'b', 'c'],
+            'col1_y': [10, 20, 30],
+            'col2_y': [40, 50, 60],
+            '_merge': ['both', 'both', 'both']
+        },
+                                index=[0, 1, 2])
+        expected['_merge'] = expected['_merge'].astype(merge_type)
+
+        pd.testing.assert_frame_equal(joined, expected)
+
+
+class TestFeatureServiceUpdaterViaEditResultParsing:
 
     def test_parse_results_returns_correct_number_of_updated_rows(self, mocker, combined_values):
         class_mock = mocker.Mock()
@@ -215,7 +247,7 @@ class TestFeatureServiceInlineUpdaterResultParsing:
             'data': ['foo', 'bar'],
         })
 
-        rows_updated = load.FeatureServiceInlineUpdater._parse_results(class_mock, results_dict, live_dataframe)
+        rows_updated = load.FeatureServiceUpdater._parse_results(class_mock, results_dict, live_dataframe)
 
         assert rows_updated == 2
 
@@ -241,7 +273,7 @@ class TestFeatureServiceInlineUpdaterResultParsing:
             'data': ['foo', 'bar'],
         })
 
-        rows_updated = load.FeatureServiceInlineUpdater._parse_results(class_mock, results_dict, live_dataframe)
+        rows_updated = load.FeatureServiceUpdater._parse_results(class_mock, results_dict, live_dataframe)
 
         assert rows_updated == 0
 
@@ -291,7 +323,7 @@ class TestFeatureServiceInlineUpdaterResultParsing:
         })
 
         with caplog.at_level(logging.INFO):
-            rows_updated = load.FeatureServiceInlineUpdater._parse_results(class_mock, results_dict, live_dataframe)
+            rows_updated = load.FeatureServiceUpdater._parse_results(class_mock, results_dict, live_dataframe)
 
             assert '2 rows successfully updated' in caplog.text
             assert "Existing data: {'objectId': 1, 'data': 'foo'}" not in caplog.text
@@ -345,7 +377,7 @@ class TestFeatureServiceInlineUpdaterResultParsing:
         })
 
         with caplog.at_level(logging.DEBUG):
-            rows_updated = load.FeatureServiceInlineUpdater._parse_results(class_mock, results_dict, live_dataframe)
+            rows_updated = load.FeatureServiceUpdater._parse_results(class_mock, results_dict, live_dataframe)
 
             assert '2 rows successfully updated' in caplog.text
             assert "Existing data: {'objectId': 1, 'data': 'foo'}" in caplog.text
@@ -400,7 +432,7 @@ class TestFeatureServiceInlineUpdaterResultParsing:
         })
 
         with caplog.at_level(logging.WARNING):
-            rows_updated = load.FeatureServiceInlineUpdater._parse_results(class_mock, results_dict, live_dataframe)
+            rows_updated = load.FeatureServiceUpdater._parse_results(class_mock, results_dict, live_dataframe)
 
             assert caplog.records[
                 0
@@ -459,7 +491,7 @@ class TestFeatureServiceInlineUpdaterResultParsing:
         })
 
         with caplog.at_level(logging.INFO):
-            rows_updated = load.FeatureServiceInlineUpdater._parse_results(class_mock, results_dict, live_dataframe)
+            rows_updated = load.FeatureServiceUpdater._parse_results(class_mock, results_dict, live_dataframe)
 
             assert 'rows successfully updated' not in caplog.text
 
@@ -510,7 +542,7 @@ class TestFeatureServiceInlineUpdaterResultParsing:
         })
 
         with caplog.at_level(logging.DEBUG):
-            rows_updated = load.FeatureServiceInlineUpdater._parse_results(class_mock, results_dict, live_dataframe)
+            rows_updated = load.FeatureServiceUpdater._parse_results(class_mock, results_dict, live_dataframe)
             assert caplog.records[0].message == '1 rows successfully updated:'
             assert caplog.records[0].levelname == 'INFO'
             assert caplog.records[1].message == "Existing data: {'objectId': 1, 'data': 'foo'}"
@@ -539,7 +571,7 @@ class TestFeatureServiceInlineUpdaterResultParsing:
         })
 
         with caplog.at_level(logging.INFO):
-            rows_updated = load.FeatureServiceInlineUpdater._parse_results(class_mock, results_dict, live_dataframe)
+            rows_updated = load.FeatureServiceUpdater._parse_results(class_mock, results_dict, live_dataframe)
 
             assert rows_updated == 0
 
@@ -557,7 +589,7 @@ class TestFeatureServiceInlineUpdaterResultParsing:
         })
 
         with caplog.at_level(logging.INFO):
-            rows_updated = load.FeatureServiceInlineUpdater._parse_results(class_mock, results_dict, live_dataframe)
+            rows_updated = load.FeatureServiceUpdater._parse_results(class_mock, results_dict, live_dataframe)
 
             assert 'No update results returned; no updates attempted' in caplog.text
             assert 'rows successfully updated' not in caplog.text
@@ -598,7 +630,7 @@ class TestFeatureServiceInlineUpdaterResultParsing:
         }
         oids = [10, 2]
 
-        combined_data = load.FeatureServiceInlineUpdater._get_old_and_new_values(class_mock, live_dict, oids)
+        combined_data = load.FeatureServiceUpdater._get_old_and_new_values(class_mock, live_dict, oids)
 
         assert combined_data == {
             2: {
@@ -670,7 +702,7 @@ class TestFeatureServiceInlineUpdaterResultParsing:
         }
         oids = [10, 2]
 
-        combined_data = load.FeatureServiceInlineUpdater._get_old_and_new_values(class_mock, live_dict, oids)
+        combined_data = load.FeatureServiceUpdater._get_old_and_new_values(class_mock, live_dict, oids)
 
         assert combined_data == {
             2: {
@@ -741,7 +773,7 @@ class TestFeatureServiceInlineUpdaterResultParsing:
         }
         oids = [10, 2]
 
-        combined_data = load.FeatureServiceInlineUpdater._get_old_and_new_values(class_mock, live_dict, oids)
+        combined_data = load.FeatureServiceUpdater._get_old_and_new_values(class_mock, live_dict, oids)
 
         assert combined_data == {
             2: {
@@ -773,7 +805,7 @@ class TestFeatureServiceInlineUpdaterResultParsing:
         }
 
 
-class TestFeatureServiceInlineUpdaterFieldValidation:
+class TestFeatureServiceUpdaterFieldValidation:
 
     def test_validate_working_fields_in_live_and_new_dataframes_doesnt_raise_when_matching(self, mocker):
         live_df = pd.DataFrame(columns=['field1', 'field2', 'field3'])
@@ -784,9 +816,7 @@ class TestFeatureServiceInlineUpdaterFieldValidation:
         updater_mock.new_dataframe = new_df
 
         #: This shouldn't raise an exception and so the test should pass
-        load.FeatureServiceInlineUpdater._validate_working_fields_in_live_and_new_dataframes(
-            updater_mock, live_df, fields
-        )
+        load.FeatureServiceUpdater._validate_working_fields_in_live_and_new_dataframes(updater_mock, live_df, fields)
 
     def test_validate_working_fields_in_live_and_new_dataframes_raises_not_in_live(self, mocker):
         live_df = pd.DataFrame(columns=['field1', 'field2'])
@@ -797,7 +827,7 @@ class TestFeatureServiceInlineUpdaterFieldValidation:
         updater_mock.new_dataframe = new_df
 
         with pytest.raises(RuntimeError) as exc_info:
-            load.FeatureServiceInlineUpdater._validate_working_fields_in_live_and_new_dataframes(
+            load.FeatureServiceUpdater._validate_working_fields_in_live_and_new_dataframes(
                 updater_mock, live_df, fields
             )
         assert exc_info.value.args[
@@ -813,7 +843,7 @@ class TestFeatureServiceInlineUpdaterFieldValidation:
         updater_mock.new_dataframe = new_df
 
         with pytest.raises(RuntimeError) as exc_info:
-            load.FeatureServiceInlineUpdater._validate_working_fields_in_live_and_new_dataframes(
+            load.FeatureServiceUpdater._validate_working_fields_in_live_and_new_dataframes(
                 updater_mock, live_df, fields
             )
         assert exc_info.value.args[
@@ -829,7 +859,7 @@ class TestFeatureServiceInlineUpdaterFieldValidation:
         updater_mock.new_dataframe = new_df
 
         with pytest.raises(RuntimeError) as exc_info:
-            load.FeatureServiceInlineUpdater._validate_working_fields_in_live_and_new_dataframes(
+            load.FeatureServiceUpdater._validate_working_fields_in_live_and_new_dataframes(
                 updater_mock, live_df, fields
             )
         assert exc_info.value.args[
@@ -837,7 +867,7 @@ class TestFeatureServiceInlineUpdaterFieldValidation:
         ] == 'Field mismatch between defined fields and either new or live data.\nFields not in live data: {\'field3\'}\nFields not in new data: {\'field3\'}'
 
 
-class TestFeatureServiceInlineUpdaterIntegrated:
+class TestFeatureServiceUpdaterIntegrated:
 
     def test_update_existing_features_in_hosted_feature_layer_no_matching_rows_returns_0(self, mocker, caplog):
         pd_mock = mocker.Mock()
@@ -854,7 +884,7 @@ class TestFeatureServiceInlineUpdaterIntegrated:
             'key': ['c', 'd'],
         })
         gis_mock = mocker.Mock()
-        updater = load.FeatureServiceInlineUpdater(gis_mock, new_dataframe, 'key')
+        updater = load.FeatureServiceUpdater(gis_mock, new_dataframe, 'key')
 
         updated_rows = updater.update_existing_features_in_hosted_feature_layer('1234', ['data', 'key'])
 
@@ -875,7 +905,7 @@ class TestFeatureServiceInlineUpdaterIntegrated:
             'key': ['c', 'd'],
         })
         gis_mock = mocker.Mock()
-        updater = load.FeatureServiceInlineUpdater(gis_mock, new_dataframe, 'key')
+        updater = load.FeatureServiceUpdater(gis_mock, new_dataframe, 'key')
 
         updated_rows = updater.update_existing_features_in_hosted_feature_layer('1234', ['data', 'key'])
 
@@ -912,7 +942,7 @@ class TestFeatureServiceInlineUpdaterIntegrated:
             'deleteResults': [],
         }
         mocker.patch.object(arcgis.features.FeatureLayer, 'fromitem', new=fromitem_function_mock)
-        updater = load.FeatureServiceInlineUpdater(gis_mock, new_dataframe, 'key')
+        updater = load.FeatureServiceUpdater(gis_mock, new_dataframe, 'key')
 
         updated_rows = updater.update_existing_features_in_hosted_feature_layer('1234', ['data', 'key'])
 
@@ -947,7 +977,7 @@ class TestFeatureServiceInlineUpdaterIntegrated:
             'deleteResults': [],
         }
         mocker.patch.object(arcgis.features.FeatureLayer, 'fromitem', new=fromitem_function_mock)
-        updater = load.FeatureServiceInlineUpdater(gis_mock, new_dataframe, 'key')
+        updater = load.FeatureServiceUpdater(gis_mock, new_dataframe, 'key')
 
         with caplog.at_level(logging.DEBUG):
             updated_rows = updater.update_existing_features_in_hosted_feature_layer('1234', ['data', 'key'])
@@ -987,7 +1017,7 @@ class TestFeatureServiceInlineUpdaterIntegrated:
             'deleteResults': [],
         }
         mocker.patch.object(arcgis.features.FeatureLayer, 'fromitem', new=fromitem_function_mock)
-        updater = load.FeatureServiceInlineUpdater(gis_mock, new_dataframe, 'key')
+        updater = load.FeatureServiceUpdater(gis_mock, new_dataframe, 'key')
 
         with caplog.at_level(logging.DEBUG):
             updated_rows = updater.update_existing_features_in_hosted_feature_layer('1234', ['data', 'key'])
@@ -1894,14 +1924,14 @@ class TestFeatureServiceOverwriter:
         assert out_path == Path('foo/old_data_foo-date.json')
 
 
-class TestFeatureServiceInlineUpdaterUpsert:
+class TestFeatureServiceUpdaterUpsert:
 
     def test_upsert_new_data_doesnt_raise_on_normal(self, mocker):
         mock_df = mocker.Mock()
         mock_fl = mocker.Mock()
         mock_fl.append.return_value = (True, {'message': 'foo'})
         mocker.patch('palletjack.utils.rename_columns_for_agol')
-        updater = load.FeatureServiceInlineUpdater(mocker.Mock(), mocker.Mock(), 'foo')
+        updater = load.FeatureServiceUpdater(mocker.Mock(), mocker.Mock(), 'foo')
 
         updater._upsert_new_data(mock_fl, mock_df, 'abc', 0)
 
@@ -1911,7 +1941,7 @@ class TestFeatureServiceInlineUpdaterUpsert:
         mock_fl.append.side_effect = [Exception, (True, {'message': 'foo'})]
         mocker.patch('palletjack.utils.rename_columns_for_agol')
 
-        updater = load.FeatureServiceInlineUpdater(mocker.Mock(), mocker.Mock(), 'foo')
+        updater = load.FeatureServiceUpdater(mocker.Mock(), mocker.Mock(), 'foo')
         updater._upsert_new_data(mock_fl, mock_df, 'abc', 0)
 
     def test_upsert_new_data_raises_on_False_result(self, mocker):
@@ -1920,7 +1950,7 @@ class TestFeatureServiceInlineUpdaterUpsert:
         mock_fl.append.return_value = (False, {'message': 'foo'})
         mocker.patch('palletjack.utils.rename_columns_for_agol')
 
-        updater = load.FeatureServiceInlineUpdater(mocker.Mock(), mocker.Mock(), 'foo')
+        updater = load.FeatureServiceUpdater(mocker.Mock(), mocker.Mock(), 'foo')
 
         with pytest.raises(RuntimeError) as exc_info:
             updater._upsert_new_data(mock_fl, mock_df, 'abc', 0)
@@ -1961,7 +1991,7 @@ class TestFeatureServiceInlineUpdaterUpsert:
         new_dataframe = pd.DataFrame(columns=['Foo', 'Bar'])
         mocker.patch.object(pd.DataFrame, 'spatial')
 
-        updater = load.FeatureServiceInlineUpdater(mocker.Mock(), new_dataframe, 'Foo')
+        updater = load.FeatureServiceUpdater(mocker.Mock(), new_dataframe, 'Foo')
 
         uploaded_features = updater.upsert_new_data_in_hosted_feature_layer('abc')
 
@@ -1999,7 +2029,7 @@ class TestFeatureServiceInlineUpdaterUpsert:
         new_dataframe = pd.DataFrame(columns=['Foo field', 'Bar'])
         mocker.patch.object(pd.DataFrame, 'spatial')
 
-        updater = load.FeatureServiceInlineUpdater(mocker.Mock(), new_dataframe, 'Bar')
+        updater = load.FeatureServiceUpdater(mocker.Mock(), new_dataframe, 'Bar')
 
         uploaded_features = updater.upsert_new_data_in_hosted_feature_layer('abc')
 
@@ -2034,16 +2064,128 @@ class TestFeatureServiceInlineUpdaterUpsert:
         field_mapping = {'st_length(shape)': 'Shape__Length'}
         mocker.patch.object(pd.DataFrame, 'spatial')
 
-        updater = palletjack.FeatureServiceInlineUpdater(
-            mocker.Mock(), new_dataframe, 'Bar', field_mapping=field_mapping
-        )
+        updater = load.FeatureServiceUpdater(mocker.Mock(), new_dataframe, 'Bar', field_mapping=field_mapping)
 
         uploaded_features = updater.upsert_new_data_in_hosted_feature_layer('abc')
 
         assert uploaded_features == 42
 
+    def test_upsert_existing_data_in_hosted_feature_layer_normal(self, mocker):
+        mocker.patch.object(load.arcgis.features.FeatureLayer, 'fromitem', return_value='featurelayer')
+        pd_mock = mocker.patch.object(load.pd.DataFrame.spatial, 'from_layer')
+        pd_mock.return_value = pd.DataFrame({
+            'OBJECTID': [1, 2],
+            'data': ['foo', 'bar'],
+            'key': ['a', 'b'],
+        })
 
-class TestFeatureServiceInlineUpdaterInit:
+        upserter_mock = mocker.patch.object(load.FeatureServiceUpdater, '_upsert_new_data')
+
+        new_dataframe = pd.DataFrame({
+            'data': ['FOO', 'BAR'],
+            'key': ['a', 'b'],
+        })
+
+        updater = load.FeatureServiceUpdater(mocker.Mock(), new_dataframe, 'key')
+
+        updater.upsert_existing_features_in_hosted_feature_layer('abc', ['data', 'key'])
+
+        test_df = pd.DataFrame({
+            'OBJECTID': [1, 2],
+            'key': ['a', 'b'],
+            'data': ['FOO', 'BAR'],
+        })
+
+        assert upserter_mock.call_args.args[0] == 'featurelayer'
+        tm.assert_frame_equal(upserter_mock.call_args.args[1], test_df)
+        assert upserter_mock.call_args.args[2:] == ('abc', 0)
+
+    def test_upsert_existing_data_in_hosted_feature_layer_subsets_fields_in_live_df(self, mocker):
+
+        mocker.patch.object(load.arcgis.features.FeatureLayer, 'fromitem')
+        pd_mock = mocker.patch.object(load.pd.DataFrame.spatial, 'from_layer')
+        pd_mock.return_value = pd.DataFrame({
+            'OBJECTID': [1, 2],
+            'data': ['foo', 'bar'],
+            'key': ['a', 'b'],
+        })
+
+        new_dataframe = pd.DataFrame({
+            'data': ['FOO', 'BAR'],
+            'key': ['c', 'd'],
+            'extra_column': ['baz', 'boo'],
+        })
+        mocker.patch.object(load.FeatureServiceUpdater, '_validate_working_fields_in_live_and_new_dataframes')
+        mocker.patch.object(load.FeatureServiceUpdater, '_get_common_rows')
+        mocker.patch.object(load.FeatureServiceUpdater, '_clean_dataframe_columns')
+        mocker.patch.object(load.FeatureServiceUpdater, '_upsert_new_data')
+
+        updater = load.FeatureServiceUpdater(mocker.Mock(), new_dataframe, 'key')
+
+        updater.upsert_existing_features_in_hosted_feature_layer('abc', ['data', 'key'])
+
+        test_df = pd.DataFrame({
+            'data': ['FOO', 'BAR'],
+            'key': ['c', 'd'],
+        })
+
+        tm.assert_frame_equal(updater.new_dataframe, test_df)
+
+    def test_upsert_existing_data_in_hosted_feature_layer_raises_on_missing_fields(self, mocker):
+        mocker.patch.object(load.arcgis.features.FeatureLayer, 'fromitem', return_value='featurelayer')
+        pd_mock = mocker.patch.object(load.pd.DataFrame.spatial, 'from_layer')
+        pd_mock.return_value = pd.DataFrame({
+            'OBJECTID': [1, 2],
+            'data': ['foo', 'bar'],
+            'key': ['a', 'b'],
+        })
+
+        new_dataframe = pd.DataFrame({
+            'data': ['FOO', 'BAR'],
+            'key': ['a', 'b'],
+        })
+
+        updater = load.FeatureServiceUpdater(mocker.Mock(), new_dataframe, 'key')
+
+        with pytest.raises(RuntimeError) as error_info:
+            updater.upsert_existing_features_in_hosted_feature_layer('abc', ['data', 'KEY'])
+
+        assert "Field mismatch between defined fields and either new or live data.\nFields not in live data: {'KEY'}\nFields not in new data: {'KEY'}" in str(
+            error_info.value
+        )
+
+    def test_upsert_existing_data_in_hosted_feature_layer_only_includes_rows_from_new_data(self, mocker):
+        mocker.patch.object(load.arcgis.features.FeatureLayer, 'fromitem', return_value='featurelayer')
+        pd_mock = mocker.patch.object(load.pd.DataFrame.spatial, 'from_layer')
+        pd_mock.return_value = pd.DataFrame({
+            'OBJECTID': [1, 2],
+            'data': ['foo', 'bar'],
+            'key': ['a', 'b'],
+        })
+
+        upserter_mock = mocker.patch.object(load.FeatureServiceUpdater, '_upsert_new_data')
+
+        new_dataframe = pd.DataFrame({
+            'data': ['FOO', 'BAR'],
+            'key': ['x', 'b'],
+        })
+
+        updater = load.FeatureServiceUpdater(mocker.Mock(), new_dataframe, 'key')
+
+        updater.upsert_existing_features_in_hosted_feature_layer('abc', ['data', 'key'])
+
+        test_df = pd.DataFrame({
+            'OBJECTID': [2],
+            'key': ['b'],
+            'data': ['BAR'],
+        }, index=[1])
+
+        assert upserter_mock.call_args.args[0] == 'featurelayer'
+        tm.assert_frame_equal(upserter_mock.call_args.args[1], test_df)
+        assert upserter_mock.call_args.args[2:] == ('abc', 0)
+
+
+class TestFeatureServiceUpdaterInit:
 
     def test_init_raises_on_missing_index_field(self, mocker):
 
@@ -2051,7 +2193,7 @@ class TestFeatureServiceInlineUpdaterInit:
         # mocker.patch.object(pd.DataFrame, 'spatial')
 
         with pytest.raises(KeyError) as exc_info:
-            updater = load.FeatureServiceInlineUpdater(mocker.Mock(), new_dataframe, 'Baz')
+            updater = load.FeatureServiceUpdater(mocker.Mock(), new_dataframe, 'Baz')
 
         assert exc_info.value.args[0] == 'Index column Baz not found in dataframe columns'
 
@@ -2060,7 +2202,7 @@ class TestFeatureServiceInlineUpdaterInit:
         new_dataframe = pd.DataFrame(columns=['Foo field', 'Bar'])
         # mocker.patch.object(pd.DataFrame, 'spatial')
 
-        updater = load.FeatureServiceInlineUpdater(mocker.Mock(), new_dataframe, 'Bar')
+        updater = load.FeatureServiceUpdater(mocker.Mock(), new_dataframe, 'Bar')
 
         assert list(updater.new_dataframe.columns) == ['Foo_field', 'Bar']
 
@@ -2069,6 +2211,6 @@ class TestFeatureServiceInlineUpdaterInit:
         new_dataframe = pd.DataFrame(columns=['Foo field', 'Bar'])
         # mocker.patch.object(pd.DataFrame, 'spatial')
 
-        updater = load.FeatureServiceInlineUpdater(mocker.Mock(), new_dataframe, 'Foo field')
+        updater = load.FeatureServiceUpdater(mocker.Mock(), new_dataframe, 'Foo field')
 
         assert updater.index_column == 'Foo_field'
