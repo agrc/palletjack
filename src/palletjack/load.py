@@ -17,21 +17,23 @@ from . import utils
 logger = logging.getLogger(__name__)
 
 
-class FeatureServiceInlineUpdater:
+class FeatureServiceUpdater:
     """Updates an AGOL Feature Service with data from a pandas DataFrame
     """
 
     def __init__(self, gis, dataframe, index_column, field_mapping=None):
+        self._class_logger = logging.getLogger(__name__).getChild(self.__class__.__name__)
         self.gis = gis
+        self.index_column = utils.rename_columns_for_agol([index_column])[index_column]
+
         if field_mapping:
             dataframe = utils.rename_fields(dataframe, field_mapping)
+
         self.new_dataframe = dataframe.rename(columns=utils.rename_columns_for_agol(dataframe.columns))
-        self.index_column = utils.rename_columns_for_agol([index_column])[index_column]
         try:
             self.new_data_as_dict = self.new_dataframe.set_index(self.index_column).to_dict('index')
         except KeyError as error:
             raise KeyError(f'Index column {index_column} not found in dataframe columns') from error
-        self._class_logger = logging.getLogger(__name__).getChild(self.__class__.__name__)
 
     def update_existing_features_in_feature_service_with_arcpy(self, feature_service_url, fields):
         """Update a feature service in-place with data from pandas data frame using arcpy's UpdateCursor
@@ -233,6 +235,37 @@ class FeatureServiceInlineUpdater:
         log_fields.extend(fields)
         number_of_rows_updated = self._parse_results(results, live_dataframe[log_fields])
         return number_of_rows_updated
+
+    def upsert_existing_features_in_hosted_feature_layer(self, feature_layer_itemid, fields, layer_index=0) -> int:
+        """Update existing features with new attribute data in the defined fields using arcgis instead of arcpy.
+
+        Relies on new data from self.new_dataframe; subsets to only include the columns specified by fields. Uses arcgis.features.FeatureLayer.append() for UPdates and inSERTs.
+
+        Args:
+            feature_layer_itemid (str): The AGOL item id of the hosted feature layer to update.
+            fields (list[str]): The field names in the feature layer to update. Must include the join field specified
+                in self.index_column.
+
+        Returns:
+            int: Number of features successfully updated (any failures will cause rollback and should return 0)
+        """
+
+        self._class_logger.info('Updating itemid `%s` in-place', feature_layer_itemid)
+        self._class_logger.debug('Updating fields %s', fields)
+        feature_layer_item = self.gis.content.get(feature_layer_itemid)
+        feature_layer = arcgis.features.FeatureLayer.fromitem(feature_layer_item)
+        live_dataframe = pd.DataFrame.spatial.from_layer(feature_layer)
+        self._validate_working_fields_in_live_and_new_dataframes(live_dataframe, fields)
+        self.new_dataframe = self.new_dataframe.reindex(columns=fields)
+        subset_dataframe = self._get_common_rows(live_dataframe)
+        if subset_dataframe.empty:
+            self._class_logger.warning(
+                'No matching rows between live dataset and new dataset based on field `%s`', self.index_column
+            )
+            return 0
+        cleaned_dataframe = self._clean_dataframe_columns(subset_dataframe, fields)
+        messages = self._upsert_new_data(feature_layer, cleaned_dataframe, feature_layer_itemid, layer_index)
+        return messages['recordCount']
 
     def _upsert_new_data(self, target_featurelayer, dataframe, feature_service_item_id, layer_index):
         """UPdate and inSERT new data to live dataset with featurelayer.append()
