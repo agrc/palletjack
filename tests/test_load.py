@@ -120,46 +120,51 @@ class TestFeatureServiceUpdater:
     def test_get_common_rows_joins_properly_all_rows_in_both(self, mocker):
         class_mock = mocker.Mock()
         class_mock.index_column = 'key'
-        class_mock.new_dataframe = pd.DataFrame({'col1': [10, 20, 30], 'col2': [40, 50, 60], 'key': ['a', 'b', 'c']})
-        live_dataframe = pd.DataFrame({'col1': [1, 2, 3], 'col2': [4, 5, 6], 'key': ['a', 'b', 'c']})
+        class_mock.new_dataframe = pd.DataFrame({
+            'col1': [10, 20, 30],
+            'col2': [40, 50, 60],
+            'key': ['a', 'b', 'c'],
+        })
+        live_dataframe = pd.DataFrame({
+            'col1': [1, 2, 3],
+            'col2': [4, 5, 6],
+            'key': ['a', 'b', 'c'],
+        })
 
         joined = load.FeatureServiceUpdater._get_common_rows(class_mock, live_dataframe)
 
-        merge_type = CategoricalDtype(categories=['left_only', 'right_only', 'both'], ordered=False)
         expected = pd.DataFrame({
-            'col1_x': [1, 2, 3],
-            'col2_x': [4, 5, 6],
+            'col1': [10, 20, 30],
+            'col2': [40, 50, 60],
             'key': ['a', 'b', 'c'],
-            'col1_y': [10, 20, 30],
-            'col2_y': [40, 50, 60],
-            '_merge': ['both', 'both', 'both']
         })
-        expected['_merge'] = expected['_merge'].astype(merge_type)
 
-        pd.testing.assert_frame_equal(joined, expected)
+        pd.testing.assert_frame_equal(joined, expected, check_like=True)
 
     def test_get_common_rows_subsets_properly_new_has_fewer_rows(self, mocker):
 
         class_mock = mocker.Mock()
         class_mock.index_column = 'key'
-        class_mock.new_dataframe = pd.DataFrame({'col1': [20, 30], 'col2': [50, 60], 'key': ['b', 'c']})
-        live_dataframe = pd.DataFrame({'col1': [1, 2, 3], 'col2': [4, 5, 6], 'key': ['a', 'b', 'c']})
+        class_mock.new_dataframe = pd.DataFrame({
+            'col1': [20, 30],
+            'col2': [50, 60],
+            'key': ['b', 'c'],
+        })
+        live_dataframe = pd.DataFrame({
+            'col1': [1, 2, 3],
+            'col2': [4, 5, 6],
+            'key': ['a', 'b', 'c'],
+        })
 
         joined = load.FeatureServiceUpdater._get_common_rows(class_mock, live_dataframe)
 
-        merge_type = CategoricalDtype(categories=['left_only', 'right_only', 'both'], ordered=False)
         expected = pd.DataFrame({
-            'col1_x': [2, 3],
-            'col2_x': [5, 6],
+            'col1': [20, 30],
+            'col2': [50, 60],
             'key': ['b', 'c'],
-            'col1_y': [20, 30],
-            'col2_y': [50, 60],
-            '_merge': ['both', 'both']
-        },
-                                index=[1, 2])
-        expected['_merge'] = expected['_merge'].astype(merge_type)
+        })
 
-        pd.testing.assert_frame_equal(joined, expected, check_dtype=False)
+        pd.testing.assert_frame_equal(joined, expected, check_like=True)
 
     def test_get_common_rows_logs_warning_for_rows_not_in_existing_dataset(self, mocker, caplog):
 
@@ -171,23 +176,21 @@ class TestFeatureServiceUpdater:
             'key': ['a', 'b', 'c', 'd']
         })
         class_mock._class_logger = logging.getLogger('root')
-        live_dataframe = pd.DataFrame({'col1': [1, 2, 3], 'col2': [4, 5, 6], 'key': ['a', 'b', 'c']})
+        live_dataframe = pd.DataFrame({
+            'col1': [1, 2, 3],
+            'col2': [4, 5, 6],
+            'key': ['a', 'b', 'c'],
+        })
 
         joined = load.FeatureServiceUpdater._get_common_rows(class_mock, live_dataframe)
 
-        merge_type = CategoricalDtype(categories=['left_only', 'right_only', 'both'], ordered=False)
         expected = pd.DataFrame({
-            'col1_x': [1, 2, 3],
-            'col2_x': [4, 5, 6],
             'key': ['a', 'b', 'c'],
-            'col1_y': [10, 20, 30],
-            'col2_y': [40, 50, 60],
-            '_merge': ['both', 'both', 'both']
-        },
-                                index=[0, 1, 2])
-        expected['_merge'] = expected['_merge'].astype(merge_type)
+            'col1': [10, 20, 30],
+            'col2': [40, 50, 60],
+        },)
 
-        pd.testing.assert_frame_equal(joined, expected, check_dtype=False)
+        pd.testing.assert_frame_equal(joined, expected, check_like=True)
         assert 'The following keys from the new data were not found in the existing dataset: [\'d\']' in caplog.text
 
     def test_get_common_rows_handles_ints_in_existing_to_float_for_rows_not_in_existing_dataset(self, mocker, caplog):
@@ -208,19 +211,13 @@ class TestFeatureServiceUpdater:
 
         joined = load.FeatureServiceUpdater._get_common_rows(class_mock, live_dataframe)
 
-        merge_type = CategoricalDtype(categories=['left_only', 'right_only', 'both'], ordered=False)
         expected = pd.DataFrame({
-            'col1_x': [1, 2, 3],
-            'col2_x': [4, 5, 6],
             'key': ['a', 'b', 'c'],
-            'col1_y': [10, 20, 30],
-            'col2_y': [40, 50, 60],
-            '_merge': ['both', 'both', 'both']
-        },
-                                index=[0, 1, 2])
-        expected['_merge'] = expected['_merge'].astype(merge_type)
+            'col1': [10, 20, 30],
+            'col2': [40, 50, 60],
+        },)
 
-        pd.testing.assert_frame_equal(joined, expected)
+        pd.testing.assert_frame_equal(joined, expected, check_like=True)
 
 
 class TestFeatureServiceUpdaterViaEditResultParsing:
