@@ -1024,6 +1024,49 @@ class TestFeatureServiceUpdaterIntegrated:
             assert "Existing data: {'OBJECTID': 2, 'data': 'bar', 'key': 'b'}" in caplog.text
             assert "New data: {'data': 'BAR', 'key': 'b'}" in caplog.text
 
+    def test_update_existing_features_in_hosted_feature_layer_only_includes_rows_from_new_data(self, mocker):
+        mocker.patch.object(
+            load.pd.DataFrame.spatial,
+            'from_layer',
+            return_value=pd.DataFrame({
+                'OBJECTID': [1, 2],
+                'data': ['foo', 'bar'],
+                'key': ['a', 'b'],
+            })
+        )
+
+        fromitem_function_mock = mocker.patch.object(arcgis.features.FeatureLayer, 'fromitem')
+        fromitem_function_mock.return_value.edit_features.return_value = {
+            'addResults': [],
+            'updateResults': [
+                {
+                    'objectId': 2,
+                    'success': True
+                },
+            ],
+            'deleteResults': [],
+        }
+
+        new_dataframe = pd.DataFrame({
+            'data': ['FOO', 'BAR'],
+            'key': ['x', 'b'],
+        })
+
+        updater = load.FeatureServiceUpdater(mocker.Mock(), new_dataframe, 'key')
+
+        updated_rows = updater.update_existing_features_in_hosted_feature_layer('1234', ['data', 'key'])
+
+        test_df = pd.DataFrame({
+            'OBJECTID': [2],
+            'key': ['b'],
+            'data': ['BAR'],
+        })
+
+        tm.assert_frame_equal(
+            fromitem_function_mock.return_value.edit_features.call_args.kwargs['updates'].sdf, test_df, check_like=True
+        )
+        assert updated_rows == 1
+
 
 class TestColorRampReclassifier:
 
@@ -2094,7 +2137,7 @@ class TestFeatureServiceUpdaterUpsert:
         })
 
         assert upserter_mock.call_args.args[0] == 'featurelayer'
-        tm.assert_frame_equal(upserter_mock.call_args.args[1], test_df)
+        tm.assert_frame_equal(upserter_mock.call_args.args[1], test_df, check_like=True)
         assert upserter_mock.call_args.args[2:] == ('abc', 0)
 
     def test_upsert_existing_data_in_hosted_feature_layer_subsets_fields_in_live_df(self, mocker):
@@ -2153,12 +2196,15 @@ class TestFeatureServiceUpdaterUpsert:
 
     def test_upsert_existing_data_in_hosted_feature_layer_only_includes_rows_from_new_data(self, mocker):
         mocker.patch.object(load.arcgis.features.FeatureLayer, 'fromitem', return_value='featurelayer')
-        pd_mock = mocker.patch.object(load.pd.DataFrame.spatial, 'from_layer')
-        pd_mock.return_value = pd.DataFrame({
-            'OBJECTID': [1, 2],
-            'data': ['foo', 'bar'],
-            'key': ['a', 'b'],
-        })
+        mocker.patch.object(
+            load.pd.DataFrame.spatial,
+            'from_layer',
+            return_value=pd.DataFrame({
+                'OBJECTID': [1, 2],
+                'data': ['foo', 'bar'],
+                'key': ['a', 'b'],
+            })
+        )
 
         upserter_mock = mocker.patch.object(load.FeatureServiceUpdater, '_upsert_new_data')
 
@@ -2175,10 +2221,10 @@ class TestFeatureServiceUpdaterUpsert:
             'OBJECTID': [2],
             'key': ['b'],
             'data': ['BAR'],
-        }, index=[1])
+        })
 
         assert upserter_mock.call_args.args[0] == 'featurelayer'
-        tm.assert_frame_equal(upserter_mock.call_args.args[1], test_df)
+        tm.assert_frame_equal(upserter_mock.call_args.args[1], test_df, check_like=True)
         assert upserter_mock.call_args.args[2:] == ('abc', 0)
 
 
