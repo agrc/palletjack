@@ -93,17 +93,17 @@ class FeatureServiceUpdater:
             pd.DataFrame: A new dataframe containing the common rows created by .merge()ing.
         """
 
-        joined_dataframe = live_dataframe.merge(self.new_dataframe, on=[self.index_column], how='outer', indicator=True)
-        subset_dataframe = joined_dataframe[joined_dataframe['_merge'] == 'both'].copy()
+        subset_dataframe = live_dataframe[live_dataframe['key'].isin(self.new_dataframe['key'])].set_index('key')
+        subset_dataframe.update(self.new_dataframe.set_index('key'))
 
-        not_found_dataframe = joined_dataframe[joined_dataframe['_merge'] == 'right_only'].copy()
+        not_found_dataframe = self.new_dataframe[~self.new_dataframe['key'].isin(live_dataframe['key'])]
         if not not_found_dataframe.empty:
             keys_not_found = list(not_found_dataframe[self.index_column])
             self._class_logger.warning(
                 'The following keys from the new data were not found in the existing dataset: %s', keys_not_found
             )
 
-        return subset_dataframe
+        return subset_dataframe.reset_index()
 
     def _clean_dataframe_columns(self, dataframe, fields) -> pd.DataFrame:
         """Delete superfluous fields from dataframe that will be used for the .edit() operation
