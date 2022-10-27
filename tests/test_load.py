@@ -805,23 +805,25 @@ class TestFeatureServiceUpdaterViaEditResultParsing:
 class TestFeatureServiceUpdaterFieldValidation:
 
     def test_validate_working_fields_in_live_and_new_dataframes_doesnt_raise_when_matching(self, mocker):
-        live_df = pd.DataFrame(columns=['field1', 'field2', 'field3'])
-        new_df = pd.DataFrame(columns=['field1', 'field2', 'field3'])
+        live_df = pd.DataFrame(columns=['field1', 'field2', 'field3', 'join'])
+        new_df = pd.DataFrame(columns=['field1', 'field2', 'field3', 'join'])
         fields = ['field1', 'field2', 'field3']
 
         updater_mock = mocker.Mock()
         updater_mock.new_dataframe = new_df
+        updater_mock.index_column = 'join'
 
         #: This shouldn't raise an exception and so the test should pass
         load.FeatureServiceUpdater._validate_working_fields_in_live_and_new_dataframes(updater_mock, live_df, fields)
 
     def test_validate_working_fields_in_live_and_new_dataframes_raises_not_in_live(self, mocker):
-        live_df = pd.DataFrame(columns=['field1', 'field2'])
-        new_df = pd.DataFrame(columns=['field1', 'field2', 'field3'])
+        live_df = pd.DataFrame(columns=['field1', 'field2', 'join'])
+        new_df = pd.DataFrame(columns=['field1', 'field2', 'field3', 'join'])
         fields = ['field1', 'field2', 'field3']
 
         updater_mock = mocker.Mock()
         updater_mock.new_dataframe = new_df
+        updater_mock.index_column = 'join'
 
         with pytest.raises(RuntimeError) as exc_info:
             load.FeatureServiceUpdater._validate_working_fields_in_live_and_new_dataframes(
@@ -832,12 +834,13 @@ class TestFeatureServiceUpdaterFieldValidation:
         ] == 'Field mismatch between defined fields and either new or live data.\nFields not in live data: {\'field3\'}\nFields not in new data: set()'
 
     def test_validate_working_fields_in_live_and_new_dataframes_raises_not_in_new(self, mocker):
-        live_df = pd.DataFrame(columns=['field1', 'field2', 'field3'])
-        new_df = pd.DataFrame(columns=['field1', 'field2'])
+        live_df = pd.DataFrame(columns=['field1', 'field2', 'field3', 'join'])
+        new_df = pd.DataFrame(columns=['field1', 'field2', 'join'])
         fields = ['field1', 'field2', 'field3']
 
         updater_mock = mocker.Mock()
         updater_mock.new_dataframe = new_df
+        updater_mock.index_column = 'join'
 
         with pytest.raises(RuntimeError) as exc_info:
             load.FeatureServiceUpdater._validate_working_fields_in_live_and_new_dataframes(
@@ -848,12 +851,13 @@ class TestFeatureServiceUpdaterFieldValidation:
         ] == 'Field mismatch between defined fields and either new or live data.\nFields not in live data: set()\nFields not in new data: {\'field3\'}'
 
     def test_validate_working_fields_in_live_and_new_dataframes_raises_not_in_both(self, mocker):
-        live_df = pd.DataFrame(columns=['field1', 'field2'])
-        new_df = pd.DataFrame(columns=['field1', 'field2'])
+        live_df = pd.DataFrame(columns=['field1', 'field2', 'join'])
+        new_df = pd.DataFrame(columns=['field1', 'field2', 'join'])
         fields = ['field1', 'field2', 'field3']
 
         updater_mock = mocker.Mock()
         updater_mock.new_dataframe = new_df
+        updater_mock.index_column = 'join'
 
         with pytest.raises(RuntimeError) as exc_info:
             load.FeatureServiceUpdater._validate_working_fields_in_live_and_new_dataframes(
@@ -862,6 +866,23 @@ class TestFeatureServiceUpdaterFieldValidation:
         assert exc_info.value.args[
             0
         ] == 'Field mismatch between defined fields and either new or live data.\nFields not in live data: {\'field3\'}\nFields not in new data: {\'field3\'}'
+
+    def test_validate_working_fields_in_live_and_new_dataframes_raises_join_not_in_either(self, mocker):
+        live_df = pd.DataFrame(columns=['field1', 'field2'])
+        new_df = pd.DataFrame(columns=['field1', 'field2'])
+        fields = ['field1', 'field2']
+
+        updater_mock = mocker.Mock()
+        updater_mock.new_dataframe = new_df
+        updater_mock.index_column = 'join'
+
+        with pytest.raises(RuntimeError) as exc_info:
+            load.FeatureServiceUpdater._validate_working_fields_in_live_and_new_dataframes(
+                updater_mock, live_df, fields
+            )
+        assert exc_info.value.args[
+            0
+        ] == 'Field mismatch between defined fields and either new or live data.\nFields not in live data: {\'join\'}\nFields not in new data: {\'join\'}'
 
 
 class TestFeatureServiceUpdaterIntegrated:
@@ -1960,63 +1981,68 @@ class TestFeatureServiceOverwriter:
 
 class TestFeatureServiceUpdaterUpsert:
 
-    def test_upsert_new_data_doesnt_raise_on_normal(self, mocker):
-        mock_df = mocker.MagicMock()
-        mock_fl = mocker.MagicMock()
+    def test_upsert_data_calls_append_with_proper_args(self, mocker):
+        mock_fl = mocker.Mock()
+        mock_fl.append.return_value = (True, {'message': 'foo'})
+        mock_df = mocker.Mock()
+        mock_df.spatial.to_featureset.return_value.to_geojson = 'json'
+        mocker.patch('palletjack.utils.sleep')
+
+        load.FeatureServiceUpdater._upsert_data(mocker.Mock(), mock_fl, mock_df, upsert=True)
+
+        mock_fl.append.assert_called_with(
+            upload_format='geojson', edits='json', upsert=True, rollback=True, return_messages=True
+        )
+
+    def test_upsert_data_doesnt_raise_on_normal(self, mocker):
+        mock_df = mocker.Mock()
+        mock_fl = mocker.Mock()
         mock_fl.append.return_value = (True, {'message': 'foo'})
         mocker.patch('palletjack.utils.rename_columns_for_agol')
         updater = load.FeatureServiceUpdater(mocker.Mock(), mocker.Mock(), 'foo')
 
-        updater._upsert_new_data(mock_fl, mock_df, 'abc', 0)
+        updater._upsert_data(mock_fl, mock_df)
 
-    def test_upsert_new_data_retries_on_httperror(self, mocker):
-        mock_df = mocker.MagicMock()
-        mock_fl = mocker.MagicMock()
+    def test_upsert_data_retries_on_httperror(self, mocker):
+        mock_df = mocker.Mock()
+        mock_fl = mocker.Mock()
         mock_fl.append.side_effect = [Exception, (True, {'message': 'foo'})]
         mocker.patch('palletjack.utils.rename_columns_for_agol')
 
         updater = load.FeatureServiceUpdater(mocker.Mock(), mocker.Mock(), 'foo')
-        updater._upsert_new_data(mock_fl, mock_df, 'abc', 0)
+        updater._upsert_data(mock_fl, mock_df)
 
-    def test_upsert_new_data_raises_on_False_result(self, mocker):
-        mock_df = mocker.MagicMock()
-        mock_fl = mocker.MagicMock()
+    def test_upsert_data_raises_on_False_result(self, mocker):
+        mock_df = mocker.Mock()
+        mock_fl = mocker.Mock()
         mock_fl.append.return_value = (False, {'message': 'foo'})
         mocker.patch('palletjack.utils.rename_columns_for_agol')
 
         updater = load.FeatureServiceUpdater(mocker.Mock(), mocker.Mock(), 'foo')
 
         with pytest.raises(RuntimeError) as exc_info:
-            updater._upsert_new_data(mock_fl, mock_df, 'abc', 0)
+            updater._upsert_data(mock_fl, mock_df)
 
-        assert exc_info.value.args[
-            0] == 'Failed to append data to layer id 0 in itemid abc. Append should have been rolled back.'
+        assert exc_info.value.args[0] == 'Failed to append data. Append operation should have been rolled back.'
 
-    def test_upsert_new_data_in_hosted_feature_layer_normal(self, mocker):
-        mock_fl = mocker.MagicMock()
-        # mock_fl.manager.truncate.return_value = {
-        #     'submissionTime': 123,
-        #     'lastUpdatedTime': 124,
-        #     'status': 'Completed',
-        # }
-        mock_fl.properties.fields = [
-            {
-                'name': 'Foo',
-                'type': 'esriFieldTypeString',
-                'nullable': True,
-            },
-            {
-                'name': 'Bar',
-                'type': 'esriFieldTypeString',
-                'nullable': True,
-            },
-        ]
-        mock_fl.properties.indexes = [
-            {
-                'fields': 'Foo',
-                'isUnique': True
-            },
-        ]
+    def test_append_new_data_to_hosted_feature_layer_normal(self, mocker):
+        mock_fl = mocker.Mock()
+        mock_fl.properties = {
+            'fields': [
+                {
+                    'name': 'Foo'
+                },
+                {
+                    'name': 'Bar'
+                },
+            ],
+            'indexes': [
+                {
+                    'fields': 'Foo',
+                    'isUnique': True
+                },
+            ]
+        }
 
         mock_fl.append.return_value = (True, {'recordCount': 42})
 
@@ -2029,35 +2055,28 @@ class TestFeatureServiceUpdaterUpsert:
 
         updater = load.FeatureServiceUpdater(mocker.Mock(), new_dataframe, 'Foo')
 
-        uploaded_features = updater.upsert_new_data_in_hosted_feature_layer('abc')
+        uploaded_features = updater.append_new_data_to_hosted_feature_layer('abc')
 
         assert uploaded_features == 42
 
-    def test_upsert_new_data_in_hosted_feature_layer_handles_agol_field_renaming(self, mocker):
-        mock_fl = mocker.MagicMock()
-        # mock_fl.manager.truncate.return_value = {
-        #     'submissionTime': 123,
-        #     'lastUpdatedTime': 124,
-        #     'status': 'Completed',
-        # }
-        mock_fl.properties.fields = [
-            {
-                'name': 'Foo_field',
-                'type': 'esriFieldTypeString',
-                'nullable': True,
-            },
-            {
-                'name': 'Bar',
-                'type': 'esriFieldTypeString',
-                'nullable': True,
-            },
-        ]
-        mock_fl.properties.indexes = [
-            {
-                'fields': 'Bar',
-                'isUnique': True
-            },
-        ]
+    def test_append_new_data_to_hosted_feature_layer_handles_agol_field_renaming(self, mocker):
+        mock_fl = mocker.Mock()
+        mock_fl.properties = {
+            'fields': [
+                {
+                    'name': 'Foo_field'
+                },
+                {
+                    'name': 'Bar'
+                },
+            ],
+            'indexes': [
+                {
+                    'fields': 'Bar',
+                    'isUnique': True
+                },
+            ]
+        }
         mock_fl.append.return_value = (True, {'recordCount': 42})
 
         fl_class_mock = mocker.Mock()
@@ -2069,12 +2088,12 @@ class TestFeatureServiceUpdaterUpsert:
 
         updater = load.FeatureServiceUpdater(mocker.Mock(), new_dataframe, 'Bar')
 
-        uploaded_features = updater.upsert_new_data_in_hosted_feature_layer('abc')
+        uploaded_features = updater.append_new_data_to_hosted_feature_layer('abc')
 
         assert uploaded_features == 42
 
-    def test_upsert_new_data_in_hosted_feature_layer_handles_manual_field_renaming(self, mocker):
-        mock_fl = mocker.MagicMock()
+    def test_append_new_data_to_hosted_feature_layer_handles_manual_field_renaming(self, mocker):
+        mock_fl = mocker.Mock()
 
         mock_fl.properties.fields = [
             {
@@ -2106,20 +2125,30 @@ class TestFeatureServiceUpdaterUpsert:
 
         updater = load.FeatureServiceUpdater(mocker.Mock(), new_dataframe, 'Bar', field_mapping=field_mapping)
 
-        uploaded_features = updater.upsert_new_data_in_hosted_feature_layer('abc')
+        uploaded_features = updater.append_new_data_to_hosted_feature_layer('abc')
 
         assert uploaded_features == 42
 
-    def test_upsert_existing_data_in_hosted_feature_layer_normal(self, mocker):
-        mocker.patch.object(load.arcgis.features.FeatureLayer, 'fromitem', return_value='featurelayer')
+    def test_upsert_existing_data_in_hosted_feature_layer_autogen_OIDs_dont_get_added(self, mocker):
+
+        mock_fl = mocker.Mock()
+        mock_fl.properties = {
+            'fields': [
+                {'name': 'OBJECTID'},
+                {'name': 'data'},
+                {'name': 'key'},
+            ],
+            'indexes': [{'fields': 'key', 'isUnique': True},]
+        }  # yapf: disable
+        mocker.patch.object(load.arcgis.features.FeatureLayer, 'fromitem', return_value=mock_fl)
         pd_mock = mocker.patch.object(load.pd.DataFrame.spatial, 'from_layer')
         pd_mock.return_value = pd.DataFrame({
-            'OBJECTID': [1, 2],
+            'OBJECTID': [14, 15],
             'data': ['foo', 'bar'],
             'key': ['a', 'b'],
         })
 
-        upserter_mock = mocker.patch.object(load.FeatureServiceUpdater, '_upsert_new_data')
+        upserter_mock = mocker.patch.object(load.FeatureServiceUpdater, '_upsert_data')
 
         new_dataframe = pd.DataFrame({
             'data': ['FOO', 'BAR'],
@@ -2131,18 +2160,22 @@ class TestFeatureServiceUpdaterUpsert:
         updater.upsert_existing_features_in_hosted_feature_layer('abc', ['data', 'key'])
 
         test_df = pd.DataFrame({
-            'OBJECTID': [1, 2],
             'key': ['a', 'b'],
             'data': ['FOO', 'BAR'],
         })
 
-        assert upserter_mock.call_args.args[0] == 'featurelayer'
+        assert upserter_mock.call_args.args[0] == mock_fl
         tm.assert_frame_equal(upserter_mock.call_args.args[1], test_df, check_like=True)
-        assert upserter_mock.call_args.args[2:] == ('abc', 0)
+        assert upserter_mock.call_args.kwargs == {
+            'upsert': True,
+            'upsert_matching_field': 'key',
+            'append_fields': ['data', 'key']
+        }
 
     def test_upsert_existing_data_in_hosted_feature_layer_subsets_fields_in_live_df(self, mocker):
 
         mocker.patch.object(load.arcgis.features.FeatureLayer, 'fromitem')
+
         pd_mock = mocker.patch.object(load.pd.DataFrame.spatial, 'from_layer')
         pd_mock.return_value = pd.DataFrame({
             'OBJECTID': [1, 2],
@@ -2157,8 +2190,9 @@ class TestFeatureServiceUpdaterUpsert:
         })
         mocker.patch.object(load.FeatureServiceUpdater, '_validate_working_fields_in_live_and_new_dataframes')
         mocker.patch.object(load.FeatureServiceUpdater, '_get_common_rows')
-        mocker.patch.object(load.FeatureServiceUpdater, '_clean_dataframe_columns')
-        mocker.patch.object(load.FeatureServiceUpdater, '_upsert_new_data')
+        mocker.patch.object(load.FeatureServiceUpdater, '_upsert_data')
+        mocker.patch.object(load.utils, 'check_index_column_in_feature_layer')
+        mocker.patch.object(load.utils, 'check_field_set_to_unique')
 
         updater = load.FeatureServiceUpdater(mocker.Mock(), new_dataframe, 'key')
 
@@ -2172,7 +2206,17 @@ class TestFeatureServiceUpdaterUpsert:
         tm.assert_frame_equal(updater.new_dataframe, test_df)
 
     def test_upsert_existing_data_in_hosted_feature_layer_raises_on_missing_fields(self, mocker):
-        mocker.patch.object(load.arcgis.features.FeatureLayer, 'fromitem', return_value='featurelayer')
+
+        mock_fl = mocker.Mock()
+        mock_fl.properties = {
+            'fields': [
+                {'name': 'OBJECTID'},
+                {'name': 'data'},
+                {'name': 'key'},
+            ],
+            'indexes': [{'fields': 'key', 'isUnique': True},]
+        }  # yapf: disable
+        mocker.patch.object(load.arcgis.features.FeatureLayer, 'fromitem', return_value=mock_fl)
         pd_mock = mocker.patch.object(load.pd.DataFrame.spatial, 'from_layer')
         pd_mock.return_value = pd.DataFrame({
             'OBJECTID': [1, 2],
@@ -2195,7 +2239,18 @@ class TestFeatureServiceUpdaterUpsert:
         )
 
     def test_upsert_existing_data_in_hosted_feature_layer_only_includes_rows_from_new_data(self, mocker):
-        mocker.patch.object(load.arcgis.features.FeatureLayer, 'fromitem', return_value='featurelayer')
+        mock_fl = mocker.Mock()
+        mock_fl.properties = {
+            'fields': [
+                {'name': 'OBJECTID'},
+                {'name': 'data'},
+                {'name': 'key'},
+            ],
+            'indexes': [
+                {'fields': 'key', 'isUnique': True},
+            ]
+        }  # yapf: disable
+        mocker.patch.object(load.arcgis.features.FeatureLayer, 'fromitem', return_value=mock_fl)
         mocker.patch.object(
             load.pd.DataFrame.spatial,
             'from_layer',
@@ -2206,7 +2261,7 @@ class TestFeatureServiceUpdaterUpsert:
             })
         )
 
-        upserter_mock = mocker.patch.object(load.FeatureServiceUpdater, '_upsert_new_data')
+        upserter_mock = mocker.patch.object(load.FeatureServiceUpdater, '_upsert_data')
 
         new_dataframe = pd.DataFrame({
             'data': ['FOO', 'BAR'],
@@ -2218,14 +2273,17 @@ class TestFeatureServiceUpdaterUpsert:
         updater.upsert_existing_features_in_hosted_feature_layer('abc', ['data', 'key'])
 
         test_df = pd.DataFrame({
-            'OBJECTID': [2],
             'key': ['b'],
             'data': ['BAR'],
         })
 
-        assert upserter_mock.call_args.args[0] == 'featurelayer'
+        assert upserter_mock.call_args.args[0] == mock_fl
         tm.assert_frame_equal(upserter_mock.call_args.args[1], test_df, check_like=True)
-        assert upserter_mock.call_args.args[2:] == ('abc', 0)
+        assert upserter_mock.call_args.kwargs == {
+            'upsert': True,
+            'upsert_matching_field': 'key',
+            'append_fields': ['data', 'key']
+        }
 
 
 class TestFeatureServiceUpdaterInit:
