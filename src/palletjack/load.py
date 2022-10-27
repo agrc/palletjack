@@ -73,6 +73,7 @@ class FeatureServiceUpdater:
         live_fields = set(live_dataframe.columns)
         new_fields = set(self.new_dataframe.columns)
         working_fields = set(fields)
+        working_fields.add(self.index_column)
 
         live_dif = working_fields - live_fields
         new_dif = working_fields - new_fields
@@ -93,10 +94,13 @@ class FeatureServiceUpdater:
             pd.DataFrame: A new dataframe containing the common rows created by .merge()ing.
         """
 
-        subset_dataframe = live_dataframe[live_dataframe['key'].isin(self.new_dataframe['key'])].set_index('key')
-        subset_dataframe.update(self.new_dataframe.set_index('key'))
+        subset_dataframe = live_dataframe[live_dataframe[self.index_column] \
+            .isin(self.new_dataframe[self.index_column])] \
+            .set_index(self.index_column)
+        subset_dataframe.update(self.new_dataframe.set_index(self.index_column))
 
-        not_found_dataframe = self.new_dataframe[~self.new_dataframe['key'].isin(live_dataframe['key'])]
+        not_found_dataframe = self.new_dataframe[~self.new_dataframe[self.index_column]
+                                                 .isin(live_dataframe[self.index_column])]
         if not not_found_dataframe.empty:
             keys_not_found = list(not_found_dataframe[self.index_column])
             self._class_logger.warning(
@@ -204,8 +208,9 @@ class FeatureServiceUpdater:
         """Update existing features with new attribute data in the defined fields using arcgis instead of arcpy.
 
         Relies on new data from self.new_dataframe. Uses the ArcGIS API for Python's .edit_features() method on a
-        hosted feature layer item. May be fragile for large datasets, per .edit_features() documentation. Can't get
-        .append() working properly.
+        hosted feature layer item. May be fragile for large datasets, per .edit_features() documentation.
+        .edit_features() requires a featureset, which will add an OBJECTID if not present, and also reports outcome
+        using OBJECTIDs, so they need to be present.
 
         Args:
             feature_layer_itemid (str): The AGOL item id of the hosted feature layer to update.
@@ -219,7 +224,8 @@ class FeatureServiceUpdater:
         self._class_logger.debug('Updating fields %s', fields)
         feature_layer_item = self.gis.content.get(feature_layer_itemid)
         feature_layer = arcgis.features.FeatureLayer.fromitem(feature_layer_item)
-        live_dataframe = pd.DataFrame.spatial.from_layer(feature_layer)
+        # live_dataframe = pd.DataFrame.spatial.from_layer(feature_layer)
+        live_dataframe = feature_layer.query().sdf
         self._validate_working_fields_in_live_and_new_dataframes(live_dataframe, fields)
         subset_dataframe = self._get_common_rows(live_dataframe)
         if subset_dataframe.empty:
@@ -236,26 +242,42 @@ class FeatureServiceUpdater:
         number_of_rows_updated = self._parse_results(results, live_dataframe[log_fields])
         return number_of_rows_updated
 
-    def upsert_existing_features_in_hosted_feature_layer(self, feature_layer_itemid, fields, layer_index=0) -> int:
-        """Update existing features with new attribute data in the defined fields using arcgis instead of arcpy.
+    def upsert_existing_features_in_hosted_feature_layer(self, feature_service_itemid, fields, layer_index=0) -> int:
+        """Update existing features with new attribute data in the defined fields using .append's upsert functionality.
 
-        Relies on new data from self.new_dataframe; subsets to only include the columns specified by fields. Uses arcgis.features.FeatureLayer.append() for UPdates and inSERTs.
+        Relies on new data from self.new_dataframe; subsets to only include the columns specified by fields. Uses
+        arcgis.features.FeatureLayer.append() for UPdates and inSERTs.
 
         Args:
-            feature_layer_itemid (str): The AGOL item id of the hosted feature layer to update.
+            feature_service_itemid (str): The AGOL item id of the hosted feature layer to update.
             fields (list[str]): The field names in the feature layer to update. Must include the join field specified
                 in self.index_column.
+            layer_index (int, optional): The index of the desired layer within the feature service. Defaults to 0.
+
+        Raises:
+            RuntimeError: If append fails; will attempt to rollback appends that worked.
+            RuntimeError: If new data contains a field not present in the live data.
+            Warning: If live data contains a field not present in the new data.
+            Warning: If there are not matching rows based on self.index_column.
 
         Returns:
             int: Number of features successfully updated (any failures will cause rollback and should return 0)
         """
 
-        self._class_logger.info('Updating itemid `%s` in-place', feature_layer_itemid)
+        self._class_logger.info('Updating layer `%s` in itemid `%s` in-place', layer_index, feature_service_itemid)
         self._class_logger.debug('Updating fields %s', fields)
-        feature_layer_item = self.gis.content.get(feature_layer_itemid)
+
+        #: Get live data
+        feature_layer_item = self.gis.content.get(feature_service_itemid, layer_id=layer_index)
         feature_layer = arcgis.features.FeatureLayer.fromitem(feature_layer_item)
         live_dataframe = pd.DataFrame.spatial.from_layer(feature_layer)
+
+        #: Validate data
         self._validate_working_fields_in_live_and_new_dataframes(live_dataframe, fields)
+        utils.check_index_column_in_feature_layer(feature_layer, self.index_column)
+        utils.check_field_set_to_unique(feature_layer, self.index_column)
+
+        #: Combine new and live data
         self.new_dataframe = self.new_dataframe.reindex(columns=fields)
         subset_dataframe = self._get_common_rows(live_dataframe)
         if subset_dataframe.empty:
@@ -263,19 +285,31 @@ class FeatureServiceUpdater:
                 'No matching rows between live dataset and new dataset based on field `%s`', self.index_column
             )
             return 0
-        cleaned_dataframe = self._clean_dataframe_columns(subset_dataframe, fields)
-        messages = self._upsert_new_data(feature_layer, cleaned_dataframe, feature_layer_itemid, layer_index)
+        cleaned_dataframe = subset_dataframe.reindex(columns=fields)
+
+        #: Upsert
+        messages = self._upsert_data(
+            feature_layer,
+            cleaned_dataframe,
+            upsert=True,
+            upsert_matching_field=self.index_column,
+            append_fields=fields
+        )
         return messages['recordCount']
 
-    def _upsert_new_data(self, target_featurelayer, dataframe, feature_service_item_id, layer_index):
-        """UPdate and inSERT new data to live dataset with featurelayer.append()
+    #: TODO: Figuring out which fields to pass to upsert. Upsert doesn't need OBJECTID (will use existing if it's not included in append_fields). to_featureset() requires a SHAPE field, so we have to get shape for updating existing data (can we pass a stand-in, simple geometry and see if it's ignored if SHAPE isn't in append_fields?). Test whether upsert_new_data requires matching field. Make sure matching field are in append_fields (either explicitly or in earlier steps?).
+    #: to_featureset() will set objectid if it's not provided.
+    #: TODO: join live and new dataframes by self.index_column, but append using OID/GUID
+    def _upsert_data(self, target_featurelayer, dataframe, **append_kwargs):
+        """UPdate and inSERT data into live dataset with featurelayer.append()
+
+        Note: The call to to_featureset() in this method will add new OBJECTIDs to the new data if they aren't already present. If
 
         Args:
             target_featurelayer (arcgis.features.FeatureLayer): Live dataset
-            dataframe (pd.DataFrame): Spatially-enabled dataframe containing new data. Column names should match live
+            dataframe (pd.DataFrame): Spatially-enabled dataframe containing new data. Column names must match live
             data. New data must have a valid shape column
-            feature_service_item_id (int): Layer ID within the main feature service
-            layer_index (str): AGOL item ID for the main feature service
+            append_kwargs (keyword arguments): Arguments to be passed to .append()
 
         Raises:
             RuntimeError: If append fails; will attempt to rollback appends that worked.
@@ -284,29 +318,31 @@ class FeatureServiceUpdater:
             dict: Messages returned from append operation
         """
 
-        feature_set = utils.fix_numeric_empty_strings(
-            dataframe.spatial.to_featureset(), target_featurelayer.properties.fields
-        )
+        try:
+            if append_kwargs['upsert'] \
+                and 'OBJECTID' in append_kwargs['append_fields'] \
+                and 'OBJECTID' not in dataframe.columns():
+                raise ValueError('')
+        except KeyError:
+            pass
+
+        geojson = dataframe.spatial.to_featureset().to_geojson
         result, messages = utils.retry(
             target_featurelayer.append,
             upload_format='geojson',
-            edits=feature_set.to_geojson,
-            upsert=True,
+            edits=geojson,
             return_messages=True,
             rollback=True,
-            upsert_matching_field=self.index_column
+            **append_kwargs
         )
 
         self._class_logger.debug(messages)
         if not result:
-            raise RuntimeError(
-                f'Failed to append data to layer id {layer_index} in itemid {feature_service_item_id}. Append should'
-                ' have been rolled back.'
-            )
+            raise RuntimeError('Failed to append data. Append operation should have been rolled back.')
 
         return messages
 
-    def upsert_new_data_in_hosted_feature_layer(self, feature_service_item_id, layer_index=0):
+    def append_new_data_to_hosted_feature_layer(self, feature_service_itemid, layer_index=0):
         """UPdate existing data and inSERT new data to a hosted feature layer from a spatially-enabled data frame
 
         Relies on the FeatureServiceInlineUpdater's self.new_dataframe for the new data and self.index_column to define
@@ -314,7 +350,7 @@ class FeatureServiceUpdater:
         "unique constraint" in the target feature layer (ie, it must be indexed and be unique).
 
         Args:
-            feature_service_item_id (arcgis.features.FeatureLayer): The target feature layer
+            feature_service_itemid (str): The AGOL item id for the target feature layer
             layer_index (int, optional): The layer id within the target feature layer. Defaults to 0.
 
         Raises:
@@ -328,16 +364,16 @@ class FeatureServiceUpdater:
             int: The number of records updated
         """
 
+        self._class_logger.info('Updating layer `%s` in itemid `%s` in-place', layer_index, feature_service_itemid)
         target_featurelayer = arcgis.features.FeatureLayer.fromitem(
-            self.gis.content.get(feature_service_item_id), layer_id=layer_index
+            self.gis.content.get(feature_service_itemid), layer_id=layer_index
         )
         #: temp fix until Esri fixes empty series as NaN bug
         fixed_dataframe = utils.replace_nan_series_with_empty_strings(self.new_dataframe)
         utils.check_fields_match(target_featurelayer, fixed_dataframe)
-        utils.check_index_column_in_feature_layer(target_featurelayer, self.index_column)
-        utils.check_field_set_to_unique(target_featurelayer, self.index_column)
-        self._class_logger.info('Loading new data...')
-        messages = self._upsert_new_data(target_featurelayer, fixed_dataframe, feature_service_item_id, layer_index)
+        # utils.check_index_column_in_feature_layer(target_featurelayer, self.index_column)
+        # utils.check_field_set_to_unique(target_featurelayer, self.index_column)
+        messages = self._upsert_data(target_featurelayer, fixed_dataframe, upsert=False)
 
         return messages['recordCount']
 
