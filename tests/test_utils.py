@@ -716,7 +716,7 @@ class TestAuthorization:
         ]
 
 
-class TestChecFieldsMatch:
+class TestCheckFieldsMatch:
 
     def test_check_live_and_new_field_types_match_normal(self):
         new_df = pd.DataFrame({
@@ -757,9 +757,8 @@ class TestChecFieldsMatch:
         }
 
         #: If it raises an error, it failed.
-        palletjack.utils.check_live_and_new_field_types_match(
-            properties, new_df, ['ints', 'floats', 'strings', 'OBJECTID', 'GlobalID']
-        )
+        checker = palletjack.utils.FieldChecker(properties, new_df)
+        checker.check_live_and_new_field_types_match(['ints', 'floats', 'strings', 'OBJECTID', 'GlobalID'])
 
     def test_check_live_and_new_field_types_match_converted(self):
         new_df = pd.DataFrame({
@@ -800,9 +799,8 @@ class TestChecFieldsMatch:
         }
 
         #: If it raises an error, it failed.
-        palletjack.utils.check_live_and_new_field_types_match(
-            properties, new_df, ['ints', 'floats', 'strings', 'OBJECTID', 'GlobalID']
-        )
+        checker = palletjack.utils.FieldChecker(properties, new_df)
+        checker.check_live_and_new_field_types_match(['ints', 'floats', 'strings', 'OBJECTID', 'GlobalID'])
 
     def test_check_live_and_new_field_types_match_raises_on_incompatible(self):
         new_df = pd.DataFrame({
@@ -812,7 +810,8 @@ class TestChecFieldsMatch:
         properties = {'fields': [{'name': 'ints', 'type': 'esriFieldTypeDouble'}]}
 
         with pytest.raises(ValueError) as exc_info:
-            palletjack.utils.check_live_and_new_field_types_match(properties, new_df, ['ints'])
+            checker = palletjack.utils.FieldChecker(properties, new_df)
+            checker.check_live_and_new_field_types_match(['ints'])
 
         assert 'ints types incompatible. Live type: esriFieldTypeDouble. New type: int64' in str(exc_info.value)
 
@@ -824,12 +823,13 @@ class TestChecFieldsMatch:
         properties = {'fields': [{'name': 'ints', 'type': 'esriFieldTypeDate'}]}
 
         with pytest.raises(NotImplementedError) as exc_info:
-            palletjack.utils.check_live_and_new_field_types_match(properties, new_df, ['ints'])
+            checker = palletjack.utils.FieldChecker(properties, new_df)
+            checker.check_live_and_new_field_types_match(['ints'])
 
         assert 'Live field "ints" type "esriFieldTypeDate" not yet mapped to a pandas dtype' in str(exc_info.value)
 
     def test_check_live_and_new_field_types_removes_SHAPE(self, mocker):
-        geocheck_mock = mocker.patch('palletjack.utils._check_geometry_types')
+        geocheck_mock = mocker.patch('palletjack.utils.FieldChecker._check_geometry_types')
         new_df = pd.DataFrame({
             'ints': [1, 2, 3],
             'SHAPE': [geometry.Geometry([0, 0])] * 3,
@@ -838,7 +838,8 @@ class TestChecFieldsMatch:
         properties = {'fields': [{'name': 'ints', 'type': 'esriFieldTypeInteger'}]}
 
         #: If it raises an error, it failed.
-        palletjack.utils.check_live_and_new_field_types_match(properties, new_df, ['ints', 'SHAPE'])
+        checker = palletjack.utils.FieldChecker(properties, new_df)
+        checker.check_live_and_new_field_types_match(['ints', 'SHAPE'])
         geocheck_mock.assert_called_once()
 
     def test_check_geometry_types_normal(self):
@@ -853,7 +854,8 @@ class TestChecFieldsMatch:
         properties = {'geometryType': 'esriGeometryPoint'}
 
         #: If it raises an error, it failed.
-        palletjack.utils._check_geometry_types(properties, new_df)
+        checker = palletjack.utils.FieldChecker(properties, new_df)
+        checker._check_geometry_types()
 
     def test_check_geometry_types_raises_on_multiple_types(self, mocker):
         new_df = mocker.Mock()
@@ -863,7 +865,8 @@ class TestChecFieldsMatch:
         properties = {'geometryType': 'esriGeometryPoint'}
 
         with pytest.raises(ValueError) as exc_info:
-            palletjack.utils._check_geometry_types(properties, new_df)
+            checker = palletjack.utils.FieldChecker(properties, new_df)
+            checker._check_geometry_types()
 
         assert 'New dataframe has multiple geometry types' in str(exc_info.value)
 
@@ -875,7 +878,8 @@ class TestChecFieldsMatch:
         properties = {'geometryType': 'esriGeometryPoint'}
 
         with pytest.raises(ValueError) as exc_info:
-            palletjack.utils._check_geometry_types(properties, new_df)
+            checker = palletjack.utils.FieldChecker(properties, new_df)
+            checker._check_geometry_types()
 
         assert 'New dataframe geometry type "Polygon" incompatible with live geometry type "esriGeometryPoint"' in str(
             exc_info.value
