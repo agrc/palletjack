@@ -359,91 +359,101 @@ def authorize_pygsheets(credentials):
         raise RuntimeError('Could not authenticate to Google API') from err
 
 
-def check_live_and_new_field_types_match(live_data_properties, new_dataframe, fields):
-    """Raise an error if the field types of the live and new data don't match.
+class FieldChecker:
 
-    Uses a dictionary mapping Esri field types to pandas dtypes. If 'SHAPE' is included in the fields, it calls
-    _check_geometry_types to verify the spatial types are compatible.
+    def __init__(self, live_data_properties, new_dataframe):
+        self.live_data_properties = live_data_properties
+        self.new_dataframe = new_dataframe
 
-    Args:
-        live_data_properties (dict): FeatureLayer.properties of the live data
-        new_dataframe (pd.DataFrame): New data to be added/updated
-        fields (List[str]): Fields to be updated
+    def check_live_and_new_field_types_match(self, fields):
+        """Raise an error if the field types of the live and new data don't match.
 
-    Raises:
-        ValueError: If the field types or spatial types are incompatible, the new data has multiple geometry types, or
-        the new data is not a valid spatially-enabled dataframe.
-        NotImplementedError: If the live data has a field that has not yet been mapped to a pandas dtype.
-    """
+        Uses a dictionary mapping Esri field types to pandas dtypes. If 'SHAPE' is included in the fields, it calls
+        _check_geometry_types to verify the spatial types are compatible.
 
-    short_ints = ['UInt8', 'UInt16', 'uint8', 'uint16', 'Int8', 'Int16', 'int8', 'int16']
-    long_ints = ['UInt32', 'UInt64', 'uint32', 'uint64', 'Int32', 'Int64', 'int32', 'int64']
+        Args:
+            live_data_properties (dict): FeatureLayer.properties of the live data
+            new_dataframe (pd.DataFrame): New data to be added/updated
+            fields (List[str]): Fields to be updated
 
-    #: Leaving the commented types here for future implementation if necessary
-    esri_to_pandas_types_mapping = {
-        'esriFieldTypeInteger': ['int'] + short_ints + long_ints,
-        'esriFieldTypeSmallInteger': short_ints,
-        'esriFieldTypeDouble': ['float64', 'Float64', 'float', 'float32', 'Float32'],
-        'esriFieldTypeSingle': ['float32', 'Float32'],
-        'esriFieldTypeString': ['str', 'object', 'string'],
-        #  'esriFieldTypeDate': [],
-        'esriFieldTypeGeometry': ['geometry'],
-        'esriFieldTypeOID': ['int'] + short_ints + long_ints,
-        #  'esriFieldTypeBlob': [],
-        'esriFieldTypeGlobalID': ['str', 'object', 'string'],
-        #  'esriFieldTypeRaster': [],
-        #  'esriFieldTypeGUID': [],
-        #  'esriFieldTypeXML': [],
-    }
+        Raises:
+            ValueError: If the field types or spatial types are incompatible, the new data has multiple geometry types,
+            or the new data is not a valid spatially-enabled dataframe.
+            NotImplementedError: If the live data has a field that has not yet been mapped to a pandas dtype.
+        """
 
-    #: geometry checking gets its own function
-    if 'SHAPE' in fields:
-        _check_geometry_types(live_data_properties, new_dataframe)
-        fields.remove('SHAPE')
+        short_ints = ['UInt8', 'UInt16', 'uint8', 'uint16', 'Int8', 'Int16', 'int8', 'int16']
+        long_ints = ['UInt32', 'UInt64', 'uint32', 'uint64', 'Int32', 'Int64', 'int32', 'int64']
 
-    for field in live_data_properties['fields']:
-        field_name = field['name']
-        if field_name not in fields:
-            continue
+        #: Leaving the commented types here for future implementation if necessary
+        esri_to_pandas_types_mapping = {
+            'esriFieldTypeInteger': ['int'] + short_ints + long_ints,
+            'esriFieldTypeSmallInteger': short_ints,
+            'esriFieldTypeDouble': ['float64', 'Float64', 'float', 'float32', 'Float32'],
+            'esriFieldTypeSingle': ['float32', 'Float32'],
+            'esriFieldTypeString': ['str', 'object', 'string'],
+            #  'esriFieldTypeDate': [],
+            'esriFieldTypeGeometry': ['geometry'],
+            'esriFieldTypeOID': ['int'] + short_ints + long_ints,
+            #  'esriFieldTypeBlob': [],
+            'esriFieldTypeGlobalID': ['str', 'object', 'string'],
+            #  'esriFieldTypeRaster': [],
+            #  'esriFieldTypeGUID': [],
+            #  'esriFieldTypeXML': [],
+        }
 
-        new_dtype = str(new_dataframe[field_name].dtype)
-        live_type = field['type']
+        #: geometry checking gets its own function
+        if 'SHAPE' in fields:
+            self._check_geometry_types()
+            fields.remove('SHAPE')
 
-        try:
-            if new_dtype not in esri_to_pandas_types_mapping[live_type]:
-                raise ValueError(f'{field_name} types incompatible. Live type: {live_type}. New type: {new_dtype}.')
-        except KeyError:
-            raise NotImplementedError(f'Live field "{field_name}" type "{live_type}" not yet mapped to a pandas dtype')
+        for field in self.live_data_properties['fields']:
+            field_name = field['name']
+            if field_name not in fields:
+                continue
 
+            new_dtype = str(self.new_dataframe[field_name].dtype)
+            live_type = field['type']
 
-def _check_geometry_types(live_data_properties, new_dataframe):
-    """Raise an error if the live and new data geometry types are incompatible.
+            try:
+                if new_dtype not in esri_to_pandas_types_mapping[live_type]:
+                    raise ValueError(f'{field_name} types incompatible. Live type: {live_type}. New type: {new_dtype}.')
+            except KeyError:
+                raise NotImplementedError(
+                    f'Live field "{field_name}" type "{live_type}" not yet mapped to a pandas dtype'
+                )
 
-    Args:
-        live_data_properties (dict): FeatureLayer.properties of live data
-        new_dataframe (pd.DataFrame): New data to be added/updated
+    def _check_geometry_types(self):
+        """Raise an error if the live and new data geometry types are incompatible.
 
-    Raises:
-        ValueError: If the new data is not a valid spatially-enabled dataframe, has multiple geometry types, or has a
-        geometry type that doesn't match the live data.
-    """
+        Args:
+            live_data_properties (dict): FeatureLayer.properties of live data
+            new_dataframe (pd.DataFrame): New data to be added/updated
 
-    esri_to_sedf_geometry_mapping = {
-        'esriGeometryPoint': 'point',
-        'esriGeometryMultipoint': 'multipoint',
-        'esriGeometryPolyline': 'Polyline',
-        'esriGeometryPolygon': 'Polygon',
-        'esriGeometryEnvelope': 'Envelope',
-    }
+        Raises:
+            ValueError: If the new data is not a valid spatially-enabled dataframe, has multiple geometry types, or has
+            a geometry type that doesn't match the live data.
+        """
 
-    if not new_dataframe.spatial.validate():
-        raise ValueError('New dataframe is not a valid spatial dataframe.')
+        esri_to_sedf_geometry_mapping = {
+            'esriGeometryPoint': 'point',
+            'esriGeometryMultipoint': 'multipoint',
+            'esriGeometryPolyline': 'Polyline',
+            'esriGeometryPolygon': 'Polygon',
+            'esriGeometryEnvelope': 'Envelope',
+        }
 
-    live_geometry_type = live_data_properties['geometryType']
-    new_geometry_types = new_dataframe.spatial.geometry_type
-    if len(new_geometry_types) > 1:
-        raise ValueError('New dataframe has multiple geometry types')
-    if esri_to_sedf_geometry_mapping[live_geometry_type] != new_geometry_types[0]:
-        raise ValueError(
-            f'New dataframe geometry type "{new_geometry_types[0]}" incompatible with live geometry type "{live_geometry_type}"'
-        )
+        if not self.new_dataframe.spatial.validate():
+            raise ValueError('New dataframe is not a valid spatial dataframe.')
+
+        live_geometry_type = self.live_data_properties['geometryType']
+        new_geometry_types = self.new_dataframe.spatial.geometry_type
+        if len(new_geometry_types) > 1:
+            raise ValueError('New dataframe has multiple geometry types')
+        if esri_to_sedf_geometry_mapping[live_geometry_type] != new_geometry_types[0]:
+            raise ValueError(
+                f'New dataframe geometry type "{new_geometry_types[0]}" incompatible with live geometry type "{live_geometry_type}"'
+            )
+
+    def check_for_non_null_fields(self):
+        pass
