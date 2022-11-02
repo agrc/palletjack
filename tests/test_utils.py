@@ -4,6 +4,7 @@ from collections import namedtuple
 import numpy as np
 import pandas as pd
 import pytest
+from arcgis import geometry
 from pandas import testing as tm
 
 import palletjack
@@ -715,94 +716,167 @@ class TestAuthorization:
         ]
 
 
-class TestEmptyStringsAsNulls:
+class TestChecFieldsMatch:
 
-    def test_converts_empty_strings_to_null(self):
-        FeatureSet = namedtuple('FeatureSet', ['features'])
-        Feature = namedtuple('Feature', ['attributes'])
-        feature_set = FeatureSet([Feature({
-            'a': 'foo',
-            'b': 'baz',
-        }), Feature({
-            'a': '',
-            'b': '',
-        })])
-        fields = [{
-            'name': 'a',
-            'type': 'esriFieldTypeInteger',
-            'nullable': False,
-        }, {
-            'name': 'b',
-            'type': 'esriFieldTypeInteger',
-            'nullable': True,
-        }]
+    def test_check_live_and_new_field_types_match_normal(self):
+        new_df = pd.DataFrame({
+            'ints': [1, 2, 3],
+            'floats': [4., 5., 6.],
+            'strings': ['a', 'b', 'c'],
+            'OBJECTID': [11, 12, 13],
+            'GlobalID': [
+                'cc1cd617-1e55-4153-914d-8abb6ef22f24', '0f45d56f-249e-494a-863e-6b3999619bae',
+                'd3a64873-8a09-4351-9ea0-802e450329ea'
+            ],
+            # 'SHAPE': [geometry.Geometry([0, 0])] * 3
+        })
 
-        fixed_feature_set = palletjack.utils.fix_numeric_empty_strings(feature_set, fields)
-        fixed_feature = fixed_feature_set.features[1]
+        properties = {
+            'fields': [
+                {
+                    'name': 'OBJECTID',
+                    'type': 'esriFieldTypeOID'
+                },
+                {
+                    'name': 'strings',
+                    'type': 'esriFieldTypeString'
+                },
+                {
+                    'name': 'ints',
+                    'type': 'esriFieldTypeInteger'
+                },
+                {
+                    'name': 'floats',
+                    'type': 'esriFieldTypeDouble'
+                },
+                {
+                    'name': 'GlobalID',
+                    'type': 'esriFieldTypeGlobalID'
+                },
+            ]
+        }
 
-        assert fixed_feature.attributes['a'] == ''
-        assert fixed_feature.attributes['b'] is None
+        #: If it raises an error, it failed.
+        palletjack.utils.check_live_and_new_field_types_match(
+            properties, new_df, ['ints', 'floats', 'strings', 'OBJECTID', 'GlobalID']
+        )
 
-    def test_fix_numeric_empty_strings_handles_both_missing_shape_info_fields(self):
-        FeatureSet = namedtuple('FeatureSet', ['features'])
-        Feature = namedtuple('Feature', ['attributes'])
-        feature_set = FeatureSet([Feature({
-            'a': 'foo',
-            'b': 'baz',
-        }), Feature({
-            'a': '',
-            'b': '',
-        })])
-        fields = [{
-            'name': 'a',
-            'type': 'esriFieldTypeInteger',
-            'nullable': False,
-        }, {
-            'name': 'b',
-            'type': 'esriFieldTypeInteger',
-            'nullable': True,
-        }, {
-            'name': 'Shape__Length',
-            'type': 'esriFieldTypeDouble',
-            'nullable': True,
-        }, {
-            'name': 'Shape__Area',
-            'type': 'esriFieldTypeDouble',
-            'nullable': True,
-        }]
+    def test_check_live_and_new_field_types_match_converted(self):
+        new_df = pd.DataFrame({
+            'ints': [1, 2, 3],
+            'floats': [4.1, 5.1, 6.1],
+            'strings': ['a', 'b', 'c'],
+            'OBJECTID': [11, 12, 13],
+            'GlobalID': [
+                'cc1cd617-1e55-4153-914d-8abb6ef22f24', '0f45d56f-249e-494a-863e-6b3999619bae',
+                'd3a64873-8a09-4351-9ea0-802e450329ea'
+            ],
+            # 'SHAPE': [geometry.Geometry([0, 0])] * 3
+        }).convert_dtypes()
 
-        fixed_feature_set = palletjack.utils.fix_numeric_empty_strings(feature_set, fields)
-        fixed_feature = fixed_feature_set.features[1]
+        properties = {
+            'fields': [
+                {
+                    'name': 'OBJECTID',
+                    'type': 'esriFieldTypeOID',
+                },
+                {
+                    'name': 'strings',
+                    'type': 'esriFieldTypeString',
+                },
+                {
+                    'name': 'ints',
+                    'type': 'esriFieldTypeInteger',
+                },
+                {
+                    'name': 'floats',
+                    'type': 'esriFieldTypeDouble',
+                },
+                {
+                    'name': 'GlobalID',
+                    'type': 'esriFieldTypeGlobalID',
+                },
+            ]
+        }
 
-        assert fixed_feature.attributes['a'] == ''
-        assert fixed_feature.attributes['b'] is None
+        #: If it raises an error, it failed.
+        palletjack.utils.check_live_and_new_field_types_match(
+            properties, new_df, ['ints', 'floats', 'strings', 'OBJECTID', 'GlobalID']
+        )
 
-    def test_fix_numeric_empty_strings_handles_single_missing_shape_info_field(self):
-        FeatureSet = namedtuple('FeatureSet', ['features'])
-        Feature = namedtuple('Feature', ['attributes'])
-        feature_set = FeatureSet([Feature({
-            'a': 'foo',
-            'b': 'baz',
-        }), Feature({
-            'a': '',
-            'b': '',
-        })])
-        fields = [{
-            'name': 'a',
-            'type': 'esriFieldTypeInteger',
-            'nullable': False,
-        }, {
-            'name': 'b',
-            'type': 'esriFieldTypeInteger',
-            'nullable': True,
-        }, {
-            'name': 'Shape__Length',
-            'type': 'esriFieldTypeDouble',
-            'nullable': True,
-        }]
+    def test_check_live_and_new_field_types_match_raises_on_incompatible(self):
+        new_df = pd.DataFrame({
+            'ints': [1, 2, 3],
+        })
 
-        fixed_feature_set = palletjack.utils.fix_numeric_empty_strings(feature_set, fields)
-        fixed_feature = fixed_feature_set.features[1]
+        properties = {'fields': [{'name': 'ints', 'type': 'esriFieldTypeDouble'}]}
 
-        assert fixed_feature.attributes['a'] == ''
-        assert fixed_feature.attributes['b'] is None
+        with pytest.raises(ValueError) as exc_info:
+            palletjack.utils.check_live_and_new_field_types_match(properties, new_df, ['ints'])
+
+        assert 'ints types incompatible. Live type: esriFieldTypeDouble. New type: int64' in str(exc_info.value)
+
+    def test_check_live_and_new_field_types_match_raises_on_notimplemented_esri_type(self):
+        new_df = pd.DataFrame({
+            'ints': [1, 2, 3],
+        })
+
+        properties = {'fields': [{'name': 'ints', 'type': 'esriFieldTypeDate'}]}
+
+        with pytest.raises(NotImplementedError) as exc_info:
+            palletjack.utils.check_live_and_new_field_types_match(properties, new_df, ['ints'])
+
+        assert 'Live field "ints" type "esriFieldTypeDate" not yet mapped to a pandas dtype' in str(exc_info.value)
+
+    def test_check_live_and_new_field_types_removes_SHAPE(self, mocker):
+        geocheck_mock = mocker.patch('palletjack.utils._check_geometry_types')
+        new_df = pd.DataFrame({
+            'ints': [1, 2, 3],
+            'SHAPE': [geometry.Geometry([0, 0])] * 3,
+        }).convert_dtypes()
+
+        properties = {'fields': [{'name': 'ints', 'type': 'esriFieldTypeInteger'}]}
+
+        #: If it raises an error, it failed.
+        palletjack.utils.check_live_and_new_field_types_match(properties, new_df, ['ints', 'SHAPE'])
+        geocheck_mock.assert_called_once()
+
+    def test_check_geometry_types_normal(self):
+        new_df = pd.DataFrame.spatial.from_xy(
+            pd.DataFrame({
+                'OBJECTID': [11, 12, 13],
+                'x': [0, 0, 0],
+                'y': [0, 0, 0],
+            }), x_column='x', y_column='y'
+        )
+
+        properties = {'geometryType': 'esriGeometryPoint'}
+
+        #: If it raises an error, it failed.
+        palletjack.utils._check_geometry_types(properties, new_df)
+
+    def test_check_geometry_types_raises_on_multiple_types(self, mocker):
+        new_df = mocker.Mock()
+        new_df.spatial.validate.return_value = True
+        new_df.spatial.geometry_type = [1, 2]
+
+        properties = {'geometryType': 'esriGeometryPoint'}
+
+        with pytest.raises(ValueError) as exc_info:
+            palletjack.utils._check_geometry_types(properties, new_df)
+
+        assert 'New dataframe has multiple geometry types' in str(exc_info.value)
+
+    def test_check_geometry_types_raises_on_incompatible_type(self, mocker):
+        new_df = mocker.Mock()
+        new_df.spatial.validate.return_value = True
+        new_df.spatial.geometry_type = ['Polygon']
+
+        properties = {'geometryType': 'esriGeometryPoint'}
+
+        with pytest.raises(ValueError) as exc_info:
+            palletjack.utils._check_geometry_types(properties, new_df)
+
+        assert 'New dataframe geometry type "Polygon" incompatible with live geometry type "esriGeometryPoint"' in str(
+            exc_info.value
+        )
