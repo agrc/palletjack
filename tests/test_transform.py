@@ -269,3 +269,130 @@ class TestAPIGeocoder:
         ]
 
         assert list(geocoded_df.columns) == out_cols
+
+
+class TestFeatureServiceMerging:
+
+    def test_update_live_data_with_new_data_works_normally(self):
+        new_dataframe = pd.DataFrame({
+            'col1': [10, 20, 30],
+            'col2': [40, 50, 60],
+            'key': ['a', 'b', 'c'],
+        })
+        live_dataframe = pd.DataFrame({
+            'col1': [1, 2, 3],
+            'col2': [4, 5, 6],
+            'key': ['a', 'b', 'c'],
+        })
+
+        joined = palletjack.transform.FeatureServiceMerging.update_live_data_with_new_data(
+            live_dataframe, new_dataframe, 'key'
+        )
+
+        expected = pd.DataFrame({
+            'key': ['a', 'b', 'c'],
+            'col1': [10, 20, 30],
+            'col2': [40, 50, 60],
+        }).convert_dtypes()
+
+        pd.testing.assert_frame_equal(joined, expected, check_like=True)
+
+    def test_update_live_data_with_new_data_only_updates_common_rows(self):
+
+        new_dataframe = pd.DataFrame({
+            'col1': [20, 30],
+            'col2': [50, 60],
+            'key': ['b', 'c'],
+        })
+        live_dataframe = pd.DataFrame({
+            'col1': [1, 2, 3],
+            'col2': [4, 5, 6],
+            'key': ['a', 'b', 'c'],
+        })
+
+        joined = palletjack.transform.FeatureServiceMerging.update_live_data_with_new_data(
+            live_dataframe, new_dataframe, 'key'
+        )
+
+        expected = pd.DataFrame({
+            'col1': [1, 20, 30],
+            'col2': [4, 50, 60],
+            'key': ['a', 'b', 'c'],
+        }).convert_dtypes()
+
+        pd.testing.assert_frame_equal(joined, expected, check_like=True)
+
+    def test_update_live_data_with_new_data_warns_on_missing_keys_and_handles_ints(self):
+        new_dataframe = pd.DataFrame({
+            'col1': [10, 20, 30, 80],
+            'col2': [40, 50, 60, 70],
+            'key': ['a', 'b', 'c', 'd'],
+        })
+        live_dataframe = pd.DataFrame({
+            'col1': [1, 2, 3],
+            'col2': [4, 5, 6],
+            'key': ['a', 'b', 'c'],
+        })
+
+        with pytest.warns(RuntimeWarning) as warning:
+            joined = palletjack.transform.FeatureServiceMerging.update_live_data_with_new_data(
+                live_dataframe, new_dataframe, 'key'
+            )
+
+        expected = pd.DataFrame({
+            'key': ['a', 'b', 'c'],
+            'col1': [10, 20, 30],
+            'col2': [40, 50, 60],
+        }).convert_dtypes()
+
+        pd.testing.assert_frame_equal(joined, expected, check_like=True)
+        assert 'The following keys from the new data were not found in the existing dataset: [\'d\']' in \
+            warning[0].message.args[0]
+
+    def test_get_live_dataframe_calls_each_method(self, mocker):
+        mock_arcgis = mocker.patch('palletjack.transform.arcgis')
+        mock_gis = mocker.Mock()
+
+        palletjack.transform.FeatureServiceMerging.get_live_dataframe(mock_gis, 'itemid', 42)
+
+        mock_gis.content.get.assert_called_once_with('itemid')
+        mock_arcgis.features.FeatureLayer.fromitem.assert_called_once_with(
+            mock_gis.content.get.return_value, layer_id=42
+        )
+        mock_arcgis.features.FeatureLayer.fromitem.return_value.query.assert_called_once_with(as_df=True)
+
+    def test_get_live_dataframe_raises_error_on_get_error(self, mocker):
+        mock_arcgis = mocker.patch('palletjack.transform.arcgis')
+        mock_gis = mocker.Mock()
+        mock_gis.content.get.side_effect = ValueError('get error')
+
+        with pytest.raises(RuntimeError) as error:
+            palletjack.transform.FeatureServiceMerging.get_live_dataframe(mock_gis, 'itemid')
+
+        assert 'Failed to load live dataframe' in str(error.value)
+        assert isinstance(error.value.__cause__, ValueError)
+        assert error.value.__cause__.args[0] == 'get error'
+
+    def test_get_live_dataframe_raises_error_on_fromitem_error(self, mocker):
+        mock_arcgis = mocker.patch('palletjack.transform.arcgis')
+        mock_gis = mocker.Mock()
+        mock_arcgis.features.FeatureLayer.fromitem.side_effect = ValueError('fromitem error')
+
+        with pytest.raises(RuntimeError) as error:
+            palletjack.transform.FeatureServiceMerging.get_live_dataframe(mock_gis, 'itemid')
+
+        assert 'Failed to load live dataframe' in str(error.value)
+        assert isinstance(error.value.__cause__, ValueError)
+        assert error.value.__cause__.args[0] == 'fromitem error'
+
+    def test_get_live_dataframe_raises_error_on_query_error(self, mocker):
+        mock_arcgis = mocker.patch('palletjack.transform.arcgis')
+        mock_gis = mocker.Mock()
+        mock_arcgis.features.FeatureLayer.fromitem.return_value.query.side_effect = ValueError('query error')
+
+        with pytest.raises(RuntimeError) as error:
+            palletjack.transform.FeatureServiceMerging.get_live_dataframe(mock_gis, 'itemid')
+
+        assert 'Failed to load live dataframe' in str(error.value)
+        assert isinstance(error.value.__cause__, ValueError)
+        assert error.value.__cause__.args[0] == 'query error'
