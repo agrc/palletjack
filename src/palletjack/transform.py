@@ -1,9 +1,10 @@
-"""transform.py: Processes in the Transfomation step of ETL
+"""transform.py: Processes in the Transformation step of ETL
 """
 import logging
 import warnings
 from datetime import datetime
 
+import arcgis
 import pandas as pd
 from arcgis import GeoAccessor, GeoSeriesAccessor
 
@@ -81,3 +82,39 @@ class APIGeocoder:
         except ZeroDivisionError:
             warnings.warn('Empty spatial dataframe after geocoding', RuntimeWarning)
         return spatial_dataframe
+
+
+class FeatureServiceMerging:
+
+    @staticmethod
+    def update_live_data_with_new_data(live_dataframe, new_dataframe, join_column):
+
+        try:
+            live_dataframe.set_index(join_column, inplace=True)
+            new_dataframe.set_index(join_column, inplace=True)
+        except KeyError as error:
+            raise ValueError('Join column not found in live or new dataframes') from error
+
+        indicator_dataframe = live_dataframe.merge(new_dataframe, on=join_column, how='outer', indicator=True)
+        new_only_dataframe = indicator_dataframe[indicator_dataframe['_merge'] == 'right_only']
+        if not new_only_dataframe.empty:
+            keys_not_found = list(new_only_dataframe.index)
+            warnings.warn(
+                f'The following keys from the new data were not found in the existing dataset: {keys_not_found}',
+                RuntimeWarning
+            )
+
+        live_dataframe.update(new_dataframe)
+        return (live_dataframe.reset_index().convert_dtypes())
+
+    @staticmethod
+    def get_live_dataframe(gis, feature_service_itemid, layer_index=0):
+        try:
+            feature_layer = arcgis.features.FeatureLayer.fromitem(
+                gis.content.get(feature_service_itemid), layer_id=layer_index
+            )
+            live_dataframe = feature_layer.query(as_df=True)
+        except Exception as error:
+            raise RuntimeError('Failed to load live dataframe') from error
+
+        return live_dataframe
