@@ -419,6 +419,7 @@ class FieldChecker:
                 if new_dtype not in esri_to_pandas_types_mapping[live_type]:
                     raise ValueError(f'{field_name} types incompatible. Live type: {live_type}. New type: {new_dtype}.')
             except KeyError:
+                # pylint: disable-next=raise-missing-from
                 raise NotImplementedError(
                     f'Live field "{field_name}" type "{live_type}" not yet mapped to a pandas dtype'
                 )
@@ -455,5 +456,37 @@ class FieldChecker:
                 f'New dataframe geometry type "{new_geometry_types[0]}" incompatible with live geometry type "{live_geometry_type}"'
             )
 
-    def check_for_non_null_fields(self):
-        pass
+    def check_for_non_null_fields(self, fields):
+        """Raise an error if the new data contains nulls in a field that the live data says is not nullable.
+
+        If this error occurs, the client should use pandas fillna() method to replace NaNs/Nones with empty strings or
+        appropriate nodata values.
+
+        Args:
+            fields (List[str]): Fields to check
+
+        Raises:
+            ValueError: If the new data contains nulls in a field that the live data says is not nullable and doesn't
+            have a default value.
+        """
+
+        columns_with_nulls = self.new_dataframe.columns[self.new_dataframe.isna().any()].tolist()
+        fields_dataframe = pd.DataFrame(self.live_data_properties['fields'])
+        non_nullable_live_columns = fields_dataframe[~(fields_dataframe['nullable']) &
+                                                     ~(fields_dataframe['defaultValue'].astype(bool))]['name'].tolist()
+
+        columns_to_check = [column for column in columns_with_nulls if column in fields]
+
+        #: If none of the columns have nulls, we don't need to check further
+        if not columns_to_check:
+            return
+
+        problem_fields = []
+        for column in columns_to_check:
+            if column in non_nullable_live_columns:
+                problem_fields.append(column)
+
+        if problem_fields:
+            raise ValueError(
+                f'The following fields cannot have null values in the live data but one or more nulls exist in the new data: {", ".join(problem_fields)}'
+            )
