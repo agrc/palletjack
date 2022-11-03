@@ -901,3 +901,98 @@ class TestCheckFieldsMatch:
         assert 'New dataframe geometry type "Polygon" incompatible with live geometry type "esriGeometryPoint"' in str(
             exc_info.value
         )
+
+
+class TestFieldNullChecker:
+
+    def test_check_for_non_null_fields_raises_on_null_data_in_nonnullable_field(self):
+        properties = {
+            'fields': [
+                {
+                    'name': 'regular',
+                    'nullable': True,
+                    'defaultValue': None,
+                },
+                {
+                    'name': 'non-nullable',
+                    'nullable': False,
+                    'defaultValue': None,
+                },
+            ]
+        }
+        new_df = pd.DataFrame({
+            'regular': ['a', 'b'],
+            'non-nullable': ['c', None],
+        })
+
+        checker = palletjack.utils.FieldChecker(properties, new_df)
+
+        with pytest.raises(ValueError) as exc_info:
+            checker.check_for_non_null_fields(['regular', 'non-nullable'])
+
+        assert 'The following fields cannot have null values in the live data but one or more nulls exist in the new data: non-nullable' in str(
+            exc_info.value
+        )
+
+    def test_check_for_non_null_fields_doesnt_raise_on_null_in_nullable_field(self):
+        properties = {
+            'fields': [
+                {
+                    'name': 'regular',
+                    'nullable': True,
+                    'defaultValue': None,
+                },
+            ]
+        }
+        new_df = pd.DataFrame({
+            'regular': ['a', None],
+        })
+
+        checker = palletjack.utils.FieldChecker(properties, new_df)
+
+        #: Should not raise an error
+        checker.check_for_non_null_fields(['regular'])
+
+    def test_check_for_non_null_fields_doesnt_raise_on_null_in_nonnullable_with_default(self):
+        properties = {
+            'fields': [
+                {
+                    'name': 'regular',
+                    'nullable': True,
+                    'defaultValue': 'foo',
+                },
+            ]
+        }
+        new_df = pd.DataFrame({
+            'regular': ['a', None],
+        })
+
+        checker = palletjack.utils.FieldChecker(properties, new_df)
+
+        #: Should not raise an error
+        checker.check_for_non_null_fields(['regular'])
+
+    def test_check_for_non_null_fields_skips_field(self):
+        properties = {
+            'fields': [
+                {
+                    'name': 'regular',
+                    'nullable': True,
+                    'defaultValue': None,
+                },
+                {
+                    'name': 'non-nullable',
+                    'nullable': False,
+                    'defaultValue': None,
+                },
+            ]
+        }
+        new_df = pd.DataFrame({
+            'regular': ['a', 'b'],
+            'non-nullable': ['c', None],
+        })
+
+        checker = palletjack.utils.FieldChecker(properties, new_df)
+
+        #: Should not raise
+        checker.check_for_non_null_fields(['regular'])
