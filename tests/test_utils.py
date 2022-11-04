@@ -851,7 +851,7 @@ class TestCheckFieldsMatch:
             }), x_column='x', y_column='y'
         )
 
-        properties = {'geometryType': 'esriGeometryPoint'}
+        properties = {'geometryType': 'esriGeometryPoint', 'fields': {'a': ['b']}}
 
         #: If it raises an error, it failed.
         checker = palletjack.utils.FieldChecker(properties, new_df)
@@ -862,7 +862,7 @@ class TestCheckFieldsMatch:
         new_df.spatial.validate.return_value = True
         new_df.spatial.geometry_type = [1, 2]
 
-        properties = {'geometryType': 'esriGeometryPoint'}
+        properties = {'geometryType': 'esriGeometryPoint', 'fields': {'a': ['b']}}
 
         with pytest.raises(ValueError) as exc_info:
             checker = palletjack.utils.FieldChecker(properties, new_df)
@@ -875,7 +875,7 @@ class TestCheckFieldsMatch:
         new_df.spatial.validate.return_value = True
         new_df.spatial.geometry_type = ['Polygon']
 
-        properties = {'geometryType': 'esriGeometryPoint'}
+        properties = {'geometryType': 'esriGeometryPoint', 'fields': {'a': ['b']}}
 
         with pytest.raises(ValueError) as exc_info:
             checker = palletjack.utils.FieldChecker(properties, new_df)
@@ -979,6 +979,9 @@ class TestFieldNullChecker:
 
         #: Should not raise
         checker.check_for_non_null_fields(['regular'])
+
+
+class TestFieldLength:
 
     def test_check_field_length_normal_string(self):
         properties = {

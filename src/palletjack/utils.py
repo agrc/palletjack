@@ -363,6 +363,7 @@ class FieldChecker:
 
     def __init__(self, live_data_properties, new_dataframe):
         self.live_data_properties = live_data_properties
+        self.fields_dataframe = pd.DataFrame(live_data_properties['fields'])
         self.new_dataframe = new_dataframe
 
     def check_live_and_new_field_types_match(self, fields):
@@ -372,8 +373,6 @@ class FieldChecker:
         _check_geometry_types to verify the spatial types are compatible.
 
         Args:
-            live_data_properties (dict): FeatureLayer.properties of the live data
-            new_dataframe (pd.DataFrame): New data to be added/updated
             fields (List[str]): Fields to be updated
 
         Raises:
@@ -382,15 +381,17 @@ class FieldChecker:
             NotImplementedError: If the live data has a field that has not yet been mapped to a pandas dtype.
         """
 
-        short_ints = ['UInt8', 'UInt16', 'uint8', 'uint16', 'Int8', 'Int16', 'int8', 'int16']
-        long_ints = ['UInt32', 'UInt64', 'uint32', 'uint64', 'Int32', 'Int64', 'int32', 'int64']
+        #: Converting dtypes to str and comparing seems to be the only way to break out into shorts and longs, singles
+        #: and doubles. Otherwise, checking subclass is probably more pythonic.
+        short_ints = ['uint8', 'uint16', 'int8', 'int16']
+        long_ints = ['int', 'uint32', 'uint64', 'int32', 'int64']
 
         #: Leaving the commented types here for future implementation if necessary
         esri_to_pandas_types_mapping = {
             'esriFieldTypeInteger': ['int'] + short_ints + long_ints,
             'esriFieldTypeSmallInteger': short_ints,
-            'esriFieldTypeDouble': ['float64', 'Float64', 'float', 'float32', 'Float32'],
-            'esriFieldTypeSingle': ['float32', 'Float32'],
+            'esriFieldTypeDouble': ['float', 'float32', 'float64'],
+            'esriFieldTypeSingle': ['float32'],
             'esriFieldTypeString': ['str', 'object', 'string'],
             #  'esriFieldTypeDate': [],
             'esriFieldTypeGeometry': ['geometry'],
@@ -407,22 +408,19 @@ class FieldChecker:
             self._check_geometry_types()
             fields.remove('SHAPE')
 
-        for field in self.live_data_properties['fields']:
-            field_name = field['name']
-            if field_name not in fields:
-                continue
+        fields_to_check = self.fields_dataframe[self.fields_dataframe['name'].isin(fields)].set_index('name')
 
-            new_dtype = str(self.new_dataframe[field_name].dtype)
-            live_type = field['type']
+        for field in fields:
+            #: check against the str.lower to catch normal dtypes (int64) and the new, pd.NA-aware dtypes (Int64)
+            new_dtype = str(self.new_dataframe[field].dtype).lower()
+            live_type = fields_to_check.loc[field, 'type']
 
             try:
                 if new_dtype not in esri_to_pandas_types_mapping[live_type]:
-                    raise ValueError(f'{field_name} types incompatible. Live type: {live_type}. New type: {new_dtype}.')
+                    raise ValueError(f'{field} types incompatible. Live type: {live_type}. New type: {new_dtype}.')
             except KeyError:
                 # pylint: disable-next=raise-missing-from
-                raise NotImplementedError(
-                    f'Live field "{field_name}" type "{live_type}" not yet mapped to a pandas dtype'
-                )
+                raise NotImplementedError(f'Live field "{field}" type "{live_type}" not yet mapped to a pandas dtype')
 
     def _check_geometry_types(self):
         """Raise an error if the live and new data geometry types are incompatible.
@@ -471,9 +469,10 @@ class FieldChecker:
         """
 
         columns_with_nulls = self.new_dataframe.columns[self.new_dataframe.isna().any()].tolist()
-        fields_dataframe = pd.DataFrame(self.live_data_properties['fields'])
-        non_nullable_live_columns = fields_dataframe[~(fields_dataframe['nullable']) &
-                                                     ~(fields_dataframe['defaultValue'].astype(bool))]['name'].tolist()
+        # fields_dataframe = pd.DataFrame(self.live_data_properties['fields'])
+        non_nullable_live_columns = self.fields_dataframe[
+            ~(self.fields_dataframe['nullable']) &
+            ~(self.fields_dataframe['defaultValue'].astype(bool))]['name'].tolist()
 
         columns_to_check = [column for column in columns_with_nulls if column in fields]
 
@@ -498,13 +497,14 @@ class FieldChecker:
             fields (List[str]): Fields to check
 
         Raises:
-            ValueError: If the string fields in the new data contain a value longer than the corresponding field in the live data allows.
+            ValueError: If the string fields in the new data contain a value longer than the corresponding field in the
+            live data allows.
         """
 
-        fields_dataframe = pd.DataFrame(self.live_data_properties['fields'])
-        length_limited_fields = fields_dataframe[
-            (fields_dataframe['type'].isin(['esriFieldTypeString', 'esriFieldTypeGlobalID'])) &
-            (fields_dataframe['length'].astype(bool))]
+        # fields_dataframe = pd.DataFrame(self.live_data_properties['fields'])
+        length_limited_fields = self.fields_dataframe[
+            (self.fields_dataframe['type'].isin(['esriFieldTypeString', 'esriFieldTypeGlobalID'])) &
+            (self.fields_dataframe['length'].astype(bool))]
 
         columns_to_check = length_limited_fields[length_limited_fields['name'].isin(fields)]
 
