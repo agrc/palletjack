@@ -996,3 +996,88 @@ class TestFieldNullChecker:
 
         #: Should not raise
         checker.check_for_non_null_fields(['regular'])
+
+    def test_check_field_length_normal_string(self):
+        properties = {
+            'fields': [
+                {
+                    'name': 'foo',
+                    'type': 'esriFieldTypeString',
+                    'length': 10,
+                },
+            ]
+        }
+        new_df = pd.DataFrame({
+            'foo': ['aaa', 'bbbb'],
+        })
+
+        checker = palletjack.utils.FieldChecker(properties, new_df)
+
+        #: Should not raise
+        checker.check_field_length(['foo'])
+
+    def test_check_field_length_raises_on_long_string(self):
+        properties = {
+            'fields': [
+                {
+                    'name': 'foo',
+                    'type': 'esriFieldTypeString',
+                    'length': 10,
+                },
+            ]
+        }
+        new_df = pd.DataFrame({
+            'foo': ['aaa', 'bbbb', 'this string is far too long'],
+        })
+
+        checker = palletjack.utils.FieldChecker(properties, new_df)
+
+        with pytest.raises(ValueError) as exc_info:
+            checker.check_field_length(['foo'])
+
+        assert 'Row 2, column foo in new data exceeds the live data max length of 10' in str(exc_info.value)
+
+    def test_check_field_length_uses_fields_arg(self):
+        properties = {
+            'fields': [
+                {
+                    'name': 'foo',
+                    'type': 'esriFieldTypeString',
+                    'length': 10,
+                },
+                {
+                    'name': 'bar',
+                    'type': 'esriFieldTypeString',
+                    'length': 10,
+                },
+            ]
+        }
+        new_df = pd.DataFrame({
+            'foo': ['aaa', 'bbbb'],
+            'bar': ['a', 'way too long field'],
+        })
+
+        checker = palletjack.utils.FieldChecker(properties, new_df)
+
+        #: bar shouldn't trigger an exception
+        checker.check_field_length(['foo'])
+
+    def test_check_field_length_uses_ignores_new_field_not_in_live_data(self):
+        properties = {
+            'fields': [
+                {
+                    'name': 'foo',
+                    'type': 'esriFieldTypeString',
+                    'length': 10,
+                },
+            ]
+        }
+        new_df = pd.DataFrame({
+            'foo': ['aaa', 'bbbb'],
+            'bar': ['a', 'way too long field'],
+        })
+
+        checker = palletjack.utils.FieldChecker(properties, new_df)
+
+        #: bar shouldn't trigger an exception
+        checker.check_field_length(['foo'])

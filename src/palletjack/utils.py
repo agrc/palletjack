@@ -490,3 +490,28 @@ class FieldChecker:
             raise ValueError(
                 f'The following fields cannot have null values in the live data but one or more nulls exist in the new data: {", ".join(problem_fields)}'
             )
+
+    def check_field_length(self, fields):
+        """Raise an error if a new data string value is longer than allowed in the live data.
+
+        Args:
+            fields (List[str]): Fields to check
+
+        Raises:
+            ValueError: If the string fields in the new data contain a value longer than the corresponding field in the live data allows.
+        """
+
+        fields_dataframe = pd.DataFrame(self.live_data_properties['fields'])
+        length_limited_fields = fields_dataframe[
+            (fields_dataframe['type'].isin(['esriFieldTypeString', 'esriFieldTypeGlobalID'])) &
+            (fields_dataframe['length'].astype(bool))]
+
+        columns_to_check = length_limited_fields[length_limited_fields['name'].isin(fields)]
+
+        for field, live_max_length in columns_to_check[['name', 'length']].to_records(index=False):
+            new_data_lengths = self.new_dataframe[field].str.len()
+            new_max_length = new_data_lengths.max()
+            if new_max_length > live_max_length:
+                raise ValueError(
+                    f'Row {new_data_lengths.argmax()}, column {field} in new data exceeds the live data max length of {live_max_length}'
+                )
