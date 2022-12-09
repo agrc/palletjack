@@ -515,3 +515,33 @@ class FieldChecker:
                 raise ValueError(
                     f'Row {new_data_lengths.argmax()}, column {field} in new data exceeds the live data max length of {live_max_length}'
                 )
+
+    def check_fields_present(self, fields, add_oid):
+        """Raise an error if the fields to be operated on aren't present in either the live or new data.
+
+        Args:
+            fields (List[str]): The fields to be operated on.
+            add_oid (bool): Add OBJECTID to fields if its not already present (for operations that are dependent on
+                            OBJECTID, such as upsert)
+
+        Raises:
+            RuntimeError: If any of fields are not in live or new data.
+        """
+
+        live_fields = set(self.fields_dataframe['name'])
+        new_fields = set(self.new_dataframe.columns)
+        working_fields = set(fields)
+        if add_oid:
+            working_fields.add('OBJECTID')
+
+        live_dif = working_fields - live_fields
+        new_dif = working_fields - new_fields
+
+        error_message = []
+        if live_dif:
+            error_message.append(f'Fields missing in live data: {", ".join(live_dif)}')
+        if new_dif:
+            error_message.append(f'Fields missing in new data: {", ".join(new_dif)}')
+
+        if error_message:
+            raise RuntimeError('. '.join(error_message))
