@@ -1067,3 +1067,59 @@ class TestFieldLength:
 
         #: bar shouldn't trigger an exception
         checker.check_field_length(['foo'])
+
+
+class TestFieldsPresent:
+
+    def test_check_fields_present_normal_in_both(self):
+        properties = {'fields': [{'name': 'foo'}, {'name': 'bar'}]}
+
+        new_df = pd.DataFrame(columns=['foo', 'bar'])
+
+        checker = palletjack.utils.FieldChecker(properties, new_df)
+
+        #: Should not raise
+        checker.check_fields_present(['foo', 'bar'], False)
+
+    def test_check_fields_present_raises_missing_live(self):
+        properties = {'fields': [{'name': 'foo'}]}
+
+        new_df = pd.DataFrame(columns=['foo', 'bar'])
+
+        checker = palletjack.utils.FieldChecker(properties, new_df)
+
+        with pytest.raises(RuntimeError) as exc_info:
+            checker.check_fields_present(['foo', 'bar'], False)
+        assert 'Fields missing in live data: bar' in str(exc_info.value)
+
+    def test_check_fields_present_raises_missing_new(self):
+        properties = {'fields': [{'name': 'foo'}, {'name': 'bar'}]}
+
+        new_df = pd.DataFrame(columns=['foo'])
+
+        checker = palletjack.utils.FieldChecker(properties, new_df)
+
+        with pytest.raises(RuntimeError) as exc_info:
+            checker.check_fields_present(['foo', 'bar'], False)
+        assert 'Fields missing in new data: bar' in str(exc_info.value)
+
+    def test_check_fields_present_raises_missing_both(self):
+        properties = {'fields': [{'name': 'foo'}]}
+
+        new_df = pd.DataFrame(columns=['bar'])
+
+        checker = palletjack.utils.FieldChecker(properties, new_df)
+
+        with pytest.raises(RuntimeError) as exc_info:
+            checker.check_fields_present(['foo', 'bar'], False)
+        assert 'Fields missing in live data: bar. Fields missing in new data: foo' in str(exc_info.value)
+
+    def test_check_fields_present_adds_oid_to_list_of_fields_to_check(self):
+        properties = {'fields': [{'name': 'foo'}, {'name': 'bar'}, {'name': 'OBJECTID'}]}
+
+        new_df = pd.DataFrame(columns=['foo', 'bar', 'OBJECTID'])
+
+        checker = palletjack.utils.FieldChecker(properties, new_df)
+
+        #: Should not raise
+        checker.check_fields_present(['foo', 'bar'], True)
