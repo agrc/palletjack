@@ -31,10 +31,20 @@ class FeatureServiceUpdater:
 
     @classmethod
     def update_data(cls, gis, feature_service_itemid, dataframe, join_column, fields, layer_index=0):
+        """Updates existing features within a hosted feature layer using OBJECTID as the join field
+
+        Raises:
+            ValueError: If the new field and existing fields don't match, the new data contains null fields,
+                        the new data exceeds the existing field lengths, or a specified field is missing from either
+                        new or live data.
+
+        Returns:
+            int: Number of features updated
+        """
         updater = cls(
             gis, feature_service_itemid, dataframe, join_column=join_column, fields=fields, layer_index=layer_index
         )
-        updater.update_hosted_feature_layer()
+        return updater.update_hosted_feature_layer()
 
     @classmethod
     def overwrite_data(cls, gis, feature_service_itemid, dataframe, failsafe_dir, layer_index=0):
@@ -46,9 +56,11 @@ class FeatureServiceUpdater:
         self._class_logger = logging.getLogger(__name__).getChild(self.__class__.__name__)
         self.feature_service_itemid = feature_service_itemid
         self.feature_layer = arcgis.features.FeatureLayer.fromitem(gis.content.get(feature_service_itemid))
-        self.new_datframe = dataframe.rename(columns=utils.rename_columns_for_agol(dataframe.columns))
-        self.fields = utils.rename_columns_for_agol(fields)
-        self.join_column = utils.rename_columns_for_agol([join_column])[join_column]
+        self.new_dataframe = dataframe.rename(columns=utils.rename_columns_for_agol(dataframe.columns))
+        if fields:
+            self.fields = list(utils.rename_columns_for_agol(fields).values())
+        if join_column:
+            self.join_column = utils.rename_columns_for_agol([join_column])[join_column]
         self.failsafe_dir = failsafe_dir
         self.layer_index = layer_index
 
@@ -65,66 +77,6 @@ class FeatureServiceUpdater:
     #         self.new_data_as_dict = self.new_dataframe.set_index(self.index_column).to_dict('index')
     #     except KeyError as error:
     #         raise KeyError(f'Index column {index_column} not found in dataframe columns') from error
-
-    # def update_existing_features_in_feature_service_with_arcpy(self, feature_service_url, fields):
-    #     """Update a feature service in-place with data from pandas data frame using arcpy's UpdateCursor
-
-    #     Args:
-    #         feature_service_url (str): URL to feature service
-    #         fields (list): Names of fields to update
-    #     """
-
-    #     #: Put this here to enable the package to install/run without arcpy installed if desired
-    #     try:
-    #         import arcpy  # pylint: disable=import-outside-toplevel
-    #     except ImportError as error:
-    #         raise ImportError('Failure importing arcpy. ArcGIS Pro must be installed.') from error
-
-    #     self._class_logger.info('Updating `%s` in-place', feature_service_url)
-    #     self._class_logger.debug('Updating fields %s', fields)
-    #     rows_updated = 0
-    #     with arcpy.da.UpdateCursor(feature_service_url, fields) as update_cursor:
-    #         for row in update_cursor:
-    #             self._class_logger.debug('Evaluating row: %s', row)
-    #             key = row[0]
-    #             if key in self.new_data_as_dict:
-    #                 row[1:] = list(self.new_data_as_dict[key].values())
-    #                 self._class_logger.debug('Updating row: %s', row)
-    #                 try:
-    #                     update_cursor.updateRow(row)
-    #                     rows_updated += 1
-    #                 except RuntimeError as error:
-    #                     if 'The value type is incompatible with the field type' in str(error):
-    #                         raise ValueError('Field type mismatch between dataframe and feature service') from error
-    #     self._class_logger.info('%s rows updated', rows_updated)
-
-    #     return rows_updated
-
-    # @staticmethod
-    # def _validate_working_fields_in_live_and_new_dataframes(live_dataframe, new_dataframe, fields, join_column):
-    #     """Raise RuntimeError if fields are not in live_dataframe and new_dataframe
-
-    #     Args:
-    #         live_dataframe (pd.DataFrame): Data from hosted feature layer
-    #         new_dataframe (pd.DataFrame): New data to be loaded
-    #         fields (List[str]): Fields to verify
-
-    #     Raises:
-    #         RuntimeError: If fields are not found in either dataset
-    #     """
-    #     live_fields = set(live_dataframe.columns)
-    #     new_fields = set(new_dataframe.columns)
-    #     working_fields = set(fields)
-    #     working_fields.add(join_column)
-
-    #     live_dif = working_fields - live_fields
-    #     new_dif = working_fields - new_fields
-
-    #     if live_dif or new_dif:
-    #         raise RuntimeError(
-    #             f'Field mismatch between defined fields and either new or live data.\nFields not in live data: '
-    #             f'{live_dif}\nFields not in new data: {new_dif}'
-    #         )
 
     # def _get_common_rows(self, live_dataframe) -> pd.DataFrame:
     #     """Create a dataframe containing only the rows common to both the existing live dataset and the new updates
@@ -246,53 +198,25 @@ class FeatureServiceUpdater:
 
     #     return rows_updated
 
-    # def update_existing_features_in_hosted_feature_layer(self, feature_layer_itemid, fields) -> int:
-    #     """Update existing features with new attribute data in the defined fields using arcgis instead of arcpy.
-
-    #     Relies on new data from self.new_dataframe. Uses the ArcGIS API for Python's .edit_features() method on a
-    #     hosted feature layer item. May be fragile for large datasets, per .edit_features() documentation.
-    #     .edit_features() requires a featureset, which will add an OBJECTID if not present, and also reports outcome
-    #     using OBJECTIDs, so they need to be present.
-
-    #     Args:
-    #         feature_layer_itemid (str): The AGOL item id of the hosted feature layer to update.
-    #         fields (list[str]): The field names in the feature layer to update.
-
-    #     Returns:
-    #         int: Number of features successfully updated (any failures will cause rollback and should return 0)
-    #     """
-
-    #     self._class_logger.info('Updating itemid `%s` in-place', feature_layer_itemid)
-    #     self._class_logger.debug('Updating fields %s', fields)
-    #     feature_layer_item = self.gis.content.get(feature_layer_itemid)
-    #     feature_layer = arcgis.features.FeatureLayer.fromitem(feature_layer_item)
-    #     # live_dataframe = pd.DataFrame.spatial.from_layer(feature_layer)
-    #     live_dataframe = feature_layer.query().sdf
-    #     self._validate_working_fields_in_live_and_new_dataframes(live_dataframe, fields)
-    #     subset_dataframe = self._get_common_rows(live_dataframe)
-    #     if subset_dataframe.empty:
-    #         self._class_logger.warning(
-    #             'No matching rows between live dataset and new dataset based on field `%s`', self.index_column
-    #         )
-    #         return 0
-    #     cleaned_dataframe = self._clean_dataframe_columns(subset_dataframe, fields)
-    #     results = feature_layer.edit_features(
-    #         updates=cleaned_dataframe.spatial.to_featureset(), rollback_on_failure=True
-    #     )
-    #     log_fields = ['OBJECTID']
-    #     log_fields.extend(fields)
-    #     number_of_rows_updated = self._parse_results(results, live_dataframe[log_fields])
-    #     return number_of_rows_updated
-
     def update_hosted_feature_layer(self) -> int:
-        #: Updates existing rows using OBJECTID as uspert matching field.
+        """Updates existing features within a hosted feature layer using OBJECTID as the join field
+
+        Raises:
+            ValueError: If the new field and existing fields don't match, the new data contains null fields,
+                        the new data exceeds the existing field lengths, or a specified field is missing from either
+                        new or live data.
+
+        Returns:
+            int: Number of features updated
+        """
+
         self._class_logger.info(
             'Updating layer `%s` in itemid `%s` in-place', self.layer_index, self.feature_service_itemid
         )
         self._class_logger.debug('Updating fields %s', self.fields)
 
         #: Field checks to prevent Error: 400 errors from AGOL
-        field_checker = utils.FieldChecker(self.feature_layer.properties, self.new_datframe)
+        field_checker = utils.FieldChecker(self.feature_layer.properties, self.new_dataframe)
         field_checker.check_live_and_new_field_types_match(self.fields)
         field_checker.check_for_non_null_fields(self.fields)
         field_checker.check_field_length(self.fields)
@@ -301,7 +225,7 @@ class FeatureServiceUpdater:
         #: Upsert
         messages = self._upsert_data(
             self.feature_layer,
-            self.new_datframe,
+            self.new_dataframe,
             upsert=True,
             upsert_matching_field='OBJECTID',
             append_fields=self.fields
@@ -336,9 +260,9 @@ class FeatureServiceUpdater:
                         or
                         append_kwargs['upsert_matching_field'] not in dataframe.columns
                     ):
-                # and 'OBJECTID' in append_kwargs['append_fields'] \
-                # and 'OBJECTID' not in dataframe.columns():
-                raise ValueError('')
+                raise ValueError(
+                    f'Upsert matching field {append_kwargs["upsert_matching_field"]} not found in either append fields or existing fields.'
+                )
         except KeyError:
             pass
 
