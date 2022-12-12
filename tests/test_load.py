@@ -1,1234 +1,98 @@
-import builtins
 import json
 import logging
 import sys
 import urllib
 from pathlib import Path
 
-import arcgis
-import mock_arcpy
 import numpy as np
 import pandas as pd
 import pandas.testing as tm
 import pytest
-import requests
-from arcgis.features import GeoAccessor, GeoSeriesAccessor
-from pandas.api.types import CategoricalDtype
 
 from palletjack import load
 
 
-@pytest.fixture
-def combined_values():
-    values = {
-        1: {
-            'old_values': {
-                'objectId': 1,
-                'data': 'foo',
-            },
-            'new_values': {
-                'key': 'a',
-                'data': 'FOO'
-            }
-        },
-        2: {
-            'old_values': {
-                'objectId': 2,
-                'data': 'bar',
-            },
-            'new_values': {
-                'key': 'b',
-                'data': 'BAR'
-            }
-        }
-    }
-    return values
+class TestFeatureServiceUpdaterInit:
+
+    def test_init_raises_on_missing_index_field(self, mocker):
+
+        new_dataframe = pd.DataFrame(columns=['Foo_field', 'Bar'])
+        # mocker.patch.object(pd.DataFrame, 'spatial')
+
+        with pytest.raises(KeyError) as exc_info:
+            updater = load.FeatureServiceUpdater(mocker.Mock(), new_dataframe, 'Baz')
+
+        assert exc_info.value.args[0] == 'Index column Baz not found in dataframe columns'
+
+    def test_init_renames_dataframe_columns(self, mocker):
+
+        new_dataframe = pd.DataFrame(columns=['Foo field', 'Bar'])
+        # mocker.patch.object(pd.DataFrame, 'spatial')
+
+        updater = load.FeatureServiceUpdater(mocker.Mock(), new_dataframe, 'Bar')
+
+        assert list(updater.new_dataframe.columns) == ['Foo_field', 'Bar']
+
+    def test_init_renames_index_column(self, mocker):
+
+        new_dataframe = pd.DataFrame(columns=['Foo field', 'Bar'])
+        # mocker.patch.object(pd.DataFrame, 'spatial')
+
+        updater = load.FeatureServiceUpdater(mocker.Mock(), new_dataframe, 'Foo field')
+
+        assert updater.index_column == 'Foo_field'
 
 
-@pytest.fixture
-def hide_available_pkg(monkeypatch):
-    """Mocks import to throw an ImportError (for error handling testing purposes) for a package that does, in fact, exist"""
-    import_orig = builtins.__import__
+class TestUpdateLayer:
 
-    def mocked_import(name, *args, **kwargs):
-        if name == 'arcpy':
-            raise ImportError()
-        return import_orig(name, *args, **kwargs)
-
-    monkeypatch.setattr(builtins, '__import__', mocked_import)
-
-
-class TestFeatureServiceUpdater:
-
-    def test_update_existing_features_in_feature_service_with_arcpy(self, mocker):
-        #: We create a mock that will be returned by UpdateCursor's mock's __enter__, thus becoming our context manager.
-        #: We then set it's __iter__.return_value to define the data we want it to iterate over.
-        cursor_mock = mocker.MagicMock()
-        cursor_mock.__iter__.return_value = [
-            ['12345', '42', 123.45, '12/25/2021'],
-            ['67890', '18', 67.89, '12/25/2021'],
-        ]
-        context_manager_mock = mocker.MagicMock()
-        context_manager_mock.return_value.__enter__.return_value = cursor_mock
-        mocker.patch('arcpy.da.UpdateCursor', new=context_manager_mock)
-
-        fsupdater_mock = mocker.Mock()
-        fsupdater_mock.new_data_as_dict = {'12345': {'Count': '57', 'Amount': 100.00, 'Date': '1/1/2022'}}
-
-        load.FeatureServiceUpdater.update_existing_features_in_feature_service_with_arcpy(
-            fsupdater_mock, 'foo', ['ZipCode', 'Count', 'Amount', 'Date']
-        )
-
-        cursor_mock.updateRow.assert_called_with(['12345', '57', 100.00, '1/1/2022'])
-        cursor_mock.updateRow.assert_called_once()
-
-    @pytest.mark.usefixtures('hide_available_pkg')
-    def test_update_existing_features_in_feature_service_with_arcpy_reports_error_on_import_failure(self, mocker):
-
-        with pytest.raises(ImportError, match='Failure importing arcpy. ArcGIS Pro must be installed.'):
-            load.FeatureServiceUpdater.update_existing_features_in_feature_service_with_arcpy(
-                mocker.Mock(), 'foo', ['ZipCode', 'Count', 'Amount', 'Date']
-            )
-
-    def test_clean_dataframe_columns_renames_and_drops_columns(self, mocker):
-        class_mock = mocker.Mock()
-        fields = ['foo', 'bar']
-        dataframe = pd.DataFrame(columns=['foo_x', 'bar_x', 'baz', 'foo_y', 'bar_y'])
-
-        renamed = load.FeatureServiceUpdater._clean_dataframe_columns(class_mock, dataframe, fields)
-
-        assert list(renamed.columns) == ['baz', 'foo', 'bar']
-
-    def test_clean_dataframe_columns_handles_field_not_found_in_dataframe(self, mocker):
-        class_mock = mocker.Mock()
-        fields = ['foo', 'bar', 'buz']
-        dataframe = pd.DataFrame(columns=['foo_x', 'bar_x', 'baz', 'foo_y', 'bar_y'])
-
-        renamed = load.FeatureServiceUpdater._clean_dataframe_columns(class_mock, dataframe, fields)
-
-        assert list(renamed.columns) == ['baz', 'foo', 'bar']
-
-    def test_clean_dataframe_columns_deletes_merge_field(self, mocker):
-        class_mock = mocker.Mock()
-        fields = ['foo', 'bar', 'buz']
-        dataframe = pd.DataFrame(columns=['foo_x', 'bar_x', 'baz', 'foo_y', 'bar_y', '_merge'])
-
-        renamed = load.FeatureServiceUpdater._clean_dataframe_columns(class_mock, dataframe, fields)
-
-        assert list(renamed.columns) == ['baz', 'foo', 'bar']
-
-    def test_get_common_rows_joins_properly_all_rows_in_both(self, mocker):
-        class_mock = mocker.Mock()
-        class_mock.index_column = 'key'
-        class_mock.new_dataframe = pd.DataFrame({
-            'col1': [10, 20, 30],
-            'col2': [40, 50, 60],
-            'key': ['a', 'b', 'c'],
+    def test_update_hosted_feature_layer_calls_upsert(self, mocker):
+        new_dataframe = pd.DataFrame({
+            'foo': [1, 2],
+            'bar': [3, 4],
+            'OBJECTID': [11, 12],
         })
-        live_dataframe = pd.DataFrame({
-            'col1': [1, 2, 3],
-            'col2': [4, 5, 6],
-            'key': ['a', 'b', 'c'],
-        })
-
-        joined = load.FeatureServiceUpdater._get_common_rows(class_mock, live_dataframe)
-
-        expected = pd.DataFrame({
-            'col1': [10, 20, 30],
-            'col2': [40, 50, 60],
-            'key': ['a', 'b', 'c'],
-        })
-
-        pd.testing.assert_frame_equal(joined, expected, check_like=True)
-
-    def test_get_common_rows_subsets_properly_new_has_fewer_rows(self, mocker):
-
-        class_mock = mocker.Mock()
-        class_mock.index_column = 'key'
-        class_mock.new_dataframe = pd.DataFrame({
-            'col1': [20, 30],
-            'col2': [50, 60],
-            'key': ['b', 'c'],
-        })
-        live_dataframe = pd.DataFrame({
-            'col1': [1, 2, 3],
-            'col2': [4, 5, 6],
-            'key': ['a', 'b', 'c'],
-        })
-
-        joined = load.FeatureServiceUpdater._get_common_rows(class_mock, live_dataframe)
-
-        expected = pd.DataFrame({
-            'col1': [20, 30],
-            'col2': [50, 60],
-            'key': ['b', 'c'],
-        })
-
-        pd.testing.assert_frame_equal(joined, expected, check_like=True)
-
-    def test_get_common_rows_logs_warning_for_rows_not_in_existing_dataset(self, mocker, caplog):
-
-        class_mock = mocker.Mock()
-        class_mock.index_column = 'key'
-        class_mock.new_dataframe = pd.DataFrame({
-            'col1': [10, 20, 30, 80],
-            'col2': [40, 50, 60, 70],
-            'key': ['a', 'b', 'c', 'd']
-        })
-        class_mock._class_logger = logging.getLogger('root')
-        live_dataframe = pd.DataFrame({
-            'col1': [1, 2, 3],
-            'col2': [4, 5, 6],
-            'key': ['a', 'b', 'c'],
-        })
-
-        joined = load.FeatureServiceUpdater._get_common_rows(class_mock, live_dataframe)
-
-        expected = pd.DataFrame({
-            'key': ['a', 'b', 'c'],
-            'col1': [10, 20, 30],
-            'col2': [40, 50, 60],
-        },)
-
-        pd.testing.assert_frame_equal(joined, expected, check_like=True)
-        assert 'The following keys from the new data were not found in the existing dataset: [\'d\']' in caplog.text
-
-    def test_get_common_rows_handles_ints_in_existing_to_float_for_rows_not_in_existing_dataset(self, mocker, caplog):
-
-        class_mock = mocker.Mock()
-        class_mock.index_column = 'key'
-        class_mock.new_dataframe = pd.DataFrame({
-            'col1': [10, 20, 30, 80],
-            'col2': [40, 50, 60, 70],
-            'key': ['a', 'b', 'c', 'd']
-        })
-        class_mock._class_logger = logging.getLogger('root')
-        live_dataframe = pd.DataFrame({
-            'col1': [1, 2, 3],
-            'col2': [4, 5, 6],
-            'key': ['a', 'b', 'c'],
-        })
-
-        joined = load.FeatureServiceUpdater._get_common_rows(class_mock, live_dataframe)
-
-        expected = pd.DataFrame({
-            'key': ['a', 'b', 'c'],
-            'col1': [10, 20, 30],
-            'col2': [40, 50, 60],
-        },)
-
-        pd.testing.assert_frame_equal(joined, expected, check_like=True)
-
-
-class TestFeatureServiceUpdaterViaEditResultParsing:
-
-    def test_parse_results_returns_correct_number_of_updated_rows(self, mocker, combined_values):
-        class_mock = mocker.Mock()
-        class_mock._get_old_and_new_values.return_value = (combined_values)
-        results_dict = {
-            'addResults': [],
-            'updateResults': [
-                {
-                    'objectId': 1,
-                    'success': True
-                },
-                {
-                    'objectId': 2,
-                    'success': True
-                },
-            ],
-            'deleteResults': [],
-        }
-        live_dataframe = pd.DataFrame({
-            'objectId': [1, 2],
-            'data': ['foo', 'bar'],
-        })
-
-        rows_updated = load.FeatureServiceUpdater._parse_results(class_mock, results_dict, live_dataframe)
-
-        assert rows_updated == 2
-
-    def test_parse_results_returns_0_if_both_successful_and_failed_result(self, mocker, combined_values):
-        class_mock = mocker.Mock()
-        class_mock._get_old_and_new_values.return_value = (combined_values)
-        results_dict = {
-            'addResults': [],
-            'updateResults': [
-                {
-                    'objectId': 1,
-                    'success': True
-                },
-                {
-                    'objectId': 2,
-                    'success': False
-                },
-            ],
-            'deleteResults': [],
-        }
-        live_dataframe = pd.DataFrame({
-            'objectId': [1, 2],
-            'data': ['foo', 'bar'],
-        })
-
-        rows_updated = load.FeatureServiceUpdater._parse_results(class_mock, results_dict, live_dataframe)
-
-        assert rows_updated == 0
-
-    def test_parse_results_logs_success_info(self, mocker, caplog, combined_values):
-        class_mock = mocker.Mock()
-        class_mock._class_logger = logging.getLogger('root')
-        # combined_values = {
-        #     1: {
-        #         'old_values': {
-        #             'objectId': 1,
-        #             'data': 'foo',
-        #         },
-        #         'new_values': {
-        #             'key': 'a',
-        #             'data': 'FOO'
-        #         }
-        #     },
-        #     2: {
-        #         'old_values': {
-        #             'objectId': 2,
-        #             'data': 'bar',
-        #         },
-        #         'new_values': {
-        #             'key': 'b',
-        #             'data': 'BAR'
-        #         }
-        #     }
-        # }
-        class_mock._get_old_and_new_values.return_value = combined_values
-        results_dict = {
-            'addResults': [],
-            'updateResults': [
-                {
-                    'objectId': 1,
-                    'success': True
-                },
-                {
-                    'objectId': 2,
-                    'success': True
-                },
-            ],
-            'deleteResults': [],
-        }
-        live_dataframe = pd.DataFrame({
-            'objectId': [1, 2],
-            'data': ['foo', 'bar'],
-        })
-
-        with caplog.at_level(logging.INFO):
-            rows_updated = load.FeatureServiceUpdater._parse_results(class_mock, results_dict, live_dataframe)
-
-            assert '2 rows successfully updated' in caplog.text
-            assert "Existing data: {'objectId': 1, 'data': 'foo'}" not in caplog.text
-            assert "New data: {'key': 'a', 'data': 'FOO'}" not in caplog.text
-            assert "Existing data: {'objectId': 2, 'data': 'bar'}" not in caplog.text
-            assert "New data: {'key': 'b', 'data': 'BAR'}" not in caplog.text
-
-    def test_parse_results_logs_success_debug(self, mocker, caplog, combined_values):
-        class_mock = mocker.Mock()
-        class_mock._class_logger = logging.getLogger('root')
-        # combined_values = {
-        #     1: {
-        #         'old_values': {
-        #             'objectId': 1,
-        #             'data': 'foo',
-        #         },
-        #         'new_values': {
-        #             'key': 'a',
-        #             'data': 'FOO'
-        #         }
-        #     },
-        #     2: {
-        #         'old_values': {
-        #             'objectId': 2,
-        #             'data': 'bar',
-        #         },
-        #         'new_values': {
-        #             'key': 'b',
-        #             'data': 'BAR'
-        #         }
-        #     }
-        # }
-        class_mock._get_old_and_new_values.return_value = combined_values
-        results_dict = {
-            'addResults': [],
-            'updateResults': [
-                {
-                    'objectId': 1,
-                    'success': True
-                },
-                {
-                    'objectId': 2,
-                    'success': True
-                },
-            ],
-            'deleteResults': [],
-        }
-        live_dataframe = pd.DataFrame({
-            'objectId': [1, 2],
-            'data': ['foo', 'bar'],
-        })
-
-        with caplog.at_level(logging.DEBUG):
-            rows_updated = load.FeatureServiceUpdater._parse_results(class_mock, results_dict, live_dataframe)
-
-            assert '2 rows successfully updated' in caplog.text
-            assert "Existing data: {'objectId': 1, 'data': 'foo'}" in caplog.text
-            assert "New data: {'key': 'a', 'data': 'FOO'}" in caplog.text
-            assert "Existing data: {'objectId': 2, 'data': 'bar'}" in caplog.text
-            assert "New data: {'key': 'b', 'data': 'BAR'}" in caplog.text
-
-    def test_parse_results_logs_failures_at_warning(self, mocker, caplog):
-        class_mock = mocker.Mock()
-        class_mock._class_logger = logging.getLogger('root')
-        combined_values = [{
-            1: {
-                'old_values': {
-                    'objectId': 1,
-                    'data': 'foo',
-                },
-                'new_values': {
-                    'key': 'a',
-                    'data': 'FOO'
-                }
-            },
-        }, {
-            2: {
-                'old_values': {
-                    'objectId': 2,
-                    'data': 'bar',
-                },
-                'new_values': {
-                    'key': 'b',
-                    'data': 'BAR'
-                }
-            }
-        }]
-        class_mock._get_old_and_new_values.side_effect = combined_values
-        results_dict = {
-            'addResults': [],
-            'updateResults': [
-                {
-                    'objectId': 1,
-                    'success': True
-                },
-                {
-                    'objectId': 2,
-                    'success': False
-                },
-            ],
-            'deleteResults': [],
-        }
-        live_dataframe = pd.DataFrame({
-            'objectId': [1, 2],
-            'data': ['foo', 'bar'],
-        })
-
-        with caplog.at_level(logging.WARNING):
-            rows_updated = load.FeatureServiceUpdater._parse_results(class_mock, results_dict, live_dataframe)
-
-            assert caplog.records[
-                0
-            ].message == 'The following 1 updates failed. As a result, all successful updates should have been rolled back.'
-            assert caplog.records[0].levelname == 'WARNING'
-
-            assert caplog.records[1].message == "Existing data: {'objectId': 2, 'data': 'bar'}"
-            assert caplog.records[1].levelname == 'WARNING'
-
-            assert caplog.records[2].message == "New data: {'key': 'b', 'data': 'BAR'}"
-            assert caplog.records[2].levelname == 'WARNING'
-
-    def test_parse_results_doesnt_log_any_success_on_all_failed(self, mocker, caplog):
-        class_mock = mocker.Mock()
-        class_mock._class_logger = logging.getLogger('root')
-        combined_values = {
-            1: {
-                'old_values': {
-                    'objectId': 1,
-                    'data': 'foo',
-                },
-                'new_values': {
-                    'key': 'a',
-                    'data': 'FOO'
-                }
-            },
-            2: {
-                'old_values': {
-                    'objectId': 2,
-                    'data': 'bar',
-                },
-                'new_values': {
-                    'key': 'b',
-                    'data': 'BAR'
-                }
-            }
-        }
-        class_mock._get_old_and_new_values.return_value = combined_values
-        results_dict = {
-            'addResults': [],
-            'updateResults': [
-                {
-                    'objectId': 1,
-                    'success': False
-                },
-                {
-                    'objectId': 2,
-                    'success': False
-                },
-            ],
-            'deleteResults': [],
-        }
-        live_dataframe = pd.DataFrame({
-            'objectId': [1, 2],
-            'data': ['foo', 'bar'],
-        })
-
-        with caplog.at_level(logging.INFO):
-            rows_updated = load.FeatureServiceUpdater._parse_results(class_mock, results_dict, live_dataframe)
-
-            assert 'rows successfully updated' not in caplog.text
-
-    def test_parse_results_logs_successes_before_failure(self, mocker, caplog):
-        class_mock = mocker.Mock()
-        class_mock._class_logger = logging.getLogger('root')
-        combined_values = [{
-            1: {
-                'old_values': {
-                    'objectId': 1,
-                    'data': 'foo',
-                },
-                'new_values': {
-                    'key': 'a',
-                    'data': 'FOO'
-                }
-            },
-        }, {
-            2: {
-                'old_values': {
-                    'objectId': 2,
-                    'data': 'bar',
-                },
-                'new_values': {
-                    'key': 'b',
-                    'data': 'BAR'
-                }
-            }
-        }]
-        class_mock._get_old_and_new_values.side_effect = combined_values
-        results_dict = {
-            'addResults': [],
-            'updateResults': [
-                {
-                    'objectId': 1,
-                    'success': True
-                },
-                {
-                    'objectId': 2,
-                    'success': False
-                },
-            ],
-            'deleteResults': [],
-        }
-        live_dataframe = pd.DataFrame({
-            'objectId': [1, 2],
-            'data': ['foo', 'bar'],
-        })
-
-        with caplog.at_level(logging.DEBUG):
-            rows_updated = load.FeatureServiceUpdater._parse_results(class_mock, results_dict, live_dataframe)
-            assert caplog.records[0].message == '1 rows successfully updated:'
-            assert caplog.records[0].levelname == 'INFO'
-            assert caplog.records[1].message == "Existing data: {'objectId': 1, 'data': 'foo'}"
-            assert caplog.records[1].levelname == 'DEBUG'
-            assert caplog.records[2].message == "New data: {'key': 'a', 'data': 'FOO'}"
-            assert caplog.records[2].levelname == 'DEBUG'
-            assert caplog.records[
-                3
-            ].message == 'The following 1 updates failed. As a result, all successful updates should have been rolled back.'
-            assert caplog.records[3].levelname == 'WARNING'
-            assert caplog.records[4].message == "Existing data: {'objectId': 2, 'data': 'bar'}"
-            assert caplog.records[4].levelname == 'WARNING'
-            assert caplog.records[5].message == "New data: {'key': 'b', 'data': 'BAR'}"
-            assert caplog.records[5].levelname == 'WARNING'
-
-    def test_parse_results_returns_0_when_results_are_empty(self, mocker, caplog):
-        class_mock = mocker.Mock()
-        results_dict = {
-            'addResults': [],
-            'updateResults': [],
-            'deleteResults': [],
-        }
-        live_dataframe = pd.DataFrame({
-            'objectId': [1, 2],
-            'data': ['foo', 'bar'],
-        })
-
-        with caplog.at_level(logging.INFO):
-            rows_updated = load.FeatureServiceUpdater._parse_results(class_mock, results_dict, live_dataframe)
-
-            assert rows_updated == 0
-
-    def test_parse_results_logs_appropriately_when_results_are_empty(self, mocker, caplog):
-        class_mock = mocker.Mock()
-        class_mock._class_logger = logging.getLogger('root')
-        results_dict = {
-            'addResults': [],
-            'updateResults': [],
-            'deleteResults': [],
-        }
-        live_dataframe = pd.DataFrame({
-            'objectId': [1, 2],
-            'data': ['foo', 'bar'],
-        })
-
-        with caplog.at_level(logging.INFO):
-            rows_updated = load.FeatureServiceUpdater._parse_results(class_mock, results_dict, live_dataframe)
-
-            assert 'No update results returned; no updates attempted' in caplog.text
-            assert 'rows successfully updated' not in caplog.text
-            assert 'updates failed.' not in caplog.text
-
-    def test_get_old_and_new_values_with_correct_data(self, mocker):
-        class_mock = mocker.Mock()
-        class_mock.new_dataframe = pd.DataFrame.from_dict(
-            orient='index',
-            data={
-                0: {
-                    'foo': '42',
-                    'bar': 32,
-                    'key': 'a'
-                },
-                1: {
-                    'foo': '56',
-                    'bar': 8,
-                    'key': 'b'
-                },
-            },
-        )
-
-        class_mock.index_column = 'key'
-        live_dict = {
-            1: {
-                'OBJECTID': 2,
-                'key': 'a',
-                'foo': '42000',
-                'bar': 32000
-            },
-            2: {
-                'OBJECTID': 10,
-                'key': 'b',
-                'foo': '56000',
-                'bar': 8000
-            }
-        }
-        oids = [10, 2]
-
-        combined_data = load.FeatureServiceUpdater._get_old_and_new_values(class_mock, live_dict, oids)
-
-        assert combined_data == {
-            2: {
-                'old_values': {
-                    'OBJECTID': 2,
-                    'key': 'a',
-                    'foo': '42000',
-                    'bar': 32000
-                },
-                'new_values': {
-                    'foo': '42',
-                    'bar': 32,
-                    'key': 'a',
-                }
-            },
-            10: {
-                'old_values': {
-                    'OBJECTID': 10,
-                    'key': 'b',
-                    'foo': '56000',
-                    'bar': 8000
-                },
-                'new_values': {
-                    'foo': '56',
-                    'bar': 8,
-                    'key': 'b'
-                }
-            }
-        }
-
-    def test_get_old_and_new_values_only_includes_existing_data_that_match_passed_objectids(self, mocker):
-        class_mock = mocker.Mock()
-        class_mock.new_dataframe = pd.DataFrame.from_dict(
-            orient='index',
-            data={
-                0: {
-                    'foo': '42',
-                    'bar': 32,
-                    'key': 'a'
-                },
-                1: {
-                    'foo': '56',
-                    'bar': 8,
-                    'key': 'b'
-                },
-            },
-        )
-
-        class_mock.index_column = 'key'
-        live_dict = {
-            1: {
-                'OBJECTID': 2,
-                'key': 'a',
-                'foo': '42000',
-                'bar': 32000
-            },
-            2: {
-                'OBJECTID': 10,
-                'key': 'b',
-                'foo': '56000',
-                'bar': 8000
-            },
-            3: {
-                'OBJECTID': 42,
-                'key': 'c',
-                'foo': '-10',
-                'bar': -88
-            }
-        }
-        oids = [10, 2]
-
-        combined_data = load.FeatureServiceUpdater._get_old_and_new_values(class_mock, live_dict, oids)
-
-        assert combined_data == {
-            2: {
-                'old_values': {
-                    'OBJECTID': 2,
-                    'key': 'a',
-                    'foo': '42000',
-                    'bar': 32000
-                },
-                'new_values': {
-                    'foo': '42',
-                    'bar': 32,
-                    'key': 'a',
-                }
-            },
-            10: {
-                'old_values': {
-                    'OBJECTID': 10,
-                    'key': 'b',
-                    'foo': '56000',
-                    'bar': 8000
-                },
-                'new_values': {
-                    'foo': '56',
-                    'bar': 8,
-                    'key': 'b'
-                }
-            }
-        }
-
-    def test_get_old_and_new_values_only_returns_new_data_that_match_passed_objectids(self, mocker):
-        class_mock = mocker.Mock()
-        class_mock.new_dataframe = pd.DataFrame.from_dict(
-            orient='index',
-            data={
-                0: {
-                    'foo': '42',
-                    'bar': 32,
-                    'key': 'a'
-                },
-                1: {
-                    'foo': '56',
-                    'bar': 8,
-                    'key': 'b'
-                },
-                2: {
-                    'foo': '88',
-                    'bar': 64,
-                    'key': 'z'
-                },
-            },
-        )
-
-        class_mock.index_column = 'key'
-        live_dict = {
-            1: {
-                'OBJECTID': 2,
-                'key': 'a',
-                'foo': '42000',
-                'bar': 32000
-            },
-            2: {
-                'OBJECTID': 10,
-                'key': 'b',
-                'foo': '56000',
-                'bar': 8000
-            }
-        }
-        oids = [10, 2]
-
-        combined_data = load.FeatureServiceUpdater._get_old_and_new_values(class_mock, live_dict, oids)
-
-        assert combined_data == {
-            2: {
-                'old_values': {
-                    'OBJECTID': 2,
-                    'key': 'a',
-                    'foo': '42000',
-                    'bar': 32000
-                },
-                'new_values': {
-                    'foo': '42',
-                    'bar': 32,
-                    'key': 'a',
-                }
-            },
-            10: {
-                'old_values': {
-                    'OBJECTID': 10,
-                    'key': 'b',
-                    'foo': '56000',
-                    'bar': 8000
-                },
-                'new_values': {
-                    'foo': '56',
-                    'bar': 8,
-                    'key': 'b'
-                }
-            }
-        }
-
-
-class TestFeatureServiceUpdaterFieldValidation:
-
-    def test_validate_working_fields_in_live_and_new_dataframes_doesnt_raise_when_matching(self, mocker):
-        live_df = pd.DataFrame(columns=['field1', 'field2', 'field3', 'join'])
-        new_df = pd.DataFrame(columns=['field1', 'field2', 'field3', 'join'])
-        fields = ['field1', 'field2', 'field3']
-
         updater_mock = mocker.Mock()
-        updater_mock.new_dataframe = new_df
-        updater_mock.index_column = 'join'
+        updater_mock.feature_service_itemid = 'foo123'
+        updater_mock.feature_layer = mocker.Mock()
+        updater_mock.new_datframe = new_dataframe
+        updater_mock.fields = ['foo', 'bar']
+        updater_mock.join_column = 'OBJECTID'
+        updater_mock.layer_index = 0
 
-        #: This shouldn't raise an exception and so the test should pass
-        load.FeatureServiceUpdater._validate_working_fields_in_live_and_new_dataframes(updater_mock, live_df, fields)
+        updater_mock._upsert_data.return_value = {'recordCount': 1}
 
-    def test_validate_working_fields_in_live_and_new_dataframes_raises_not_in_live(self, mocker):
-        live_df = pd.DataFrame(columns=['field1', 'field2', 'join'])
-        new_df = pd.DataFrame(columns=['field1', 'field2', 'field3', 'join'])
-        fields = ['field1', 'field2', 'field3']
+        field_checker_mock = mocker.patch('palletjack.utils.FieldChecker')
 
-        updater_mock = mocker.Mock()
-        updater_mock.new_dataframe = new_df
-        updater_mock.index_column = 'join'
+        load.FeatureServiceUpdater.update_hosted_feature_layer(updater_mock)
 
-        with pytest.raises(RuntimeError) as exc_info:
-            load.FeatureServiceUpdater._validate_working_fields_in_live_and_new_dataframes(
-                updater_mock, live_df, fields
-            )
-        assert exc_info.value.args[
-            0
-        ] == 'Field mismatch between defined fields and either new or live data.\nFields not in live data: {\'field3\'}\nFields not in new data: set()'
-
-    def test_validate_working_fields_in_live_and_new_dataframes_raises_not_in_new(self, mocker):
-        live_df = pd.DataFrame(columns=['field1', 'field2', 'field3', 'join'])
-        new_df = pd.DataFrame(columns=['field1', 'field2', 'join'])
-        fields = ['field1', 'field2', 'field3']
-
-        updater_mock = mocker.Mock()
-        updater_mock.new_dataframe = new_df
-        updater_mock.index_column = 'join'
-
-        with pytest.raises(RuntimeError) as exc_info:
-            load.FeatureServiceUpdater._validate_working_fields_in_live_and_new_dataframes(
-                updater_mock, live_df, fields
-            )
-        assert exc_info.value.args[
-            0
-        ] == 'Field mismatch between defined fields and either new or live data.\nFields not in live data: set()\nFields not in new data: {\'field3\'}'
-
-    def test_validate_working_fields_in_live_and_new_dataframes_raises_not_in_both(self, mocker):
-        live_df = pd.DataFrame(columns=['field1', 'field2', 'join'])
-        new_df = pd.DataFrame(columns=['field1', 'field2', 'join'])
-        fields = ['field1', 'field2', 'field3']
-
-        updater_mock = mocker.Mock()
-        updater_mock.new_dataframe = new_df
-        updater_mock.index_column = 'join'
-
-        with pytest.raises(RuntimeError) as exc_info:
-            load.FeatureServiceUpdater._validate_working_fields_in_live_and_new_dataframes(
-                updater_mock, live_df, fields
-            )
-        assert exc_info.value.args[
-            0
-        ] == 'Field mismatch between defined fields and either new or live data.\nFields not in live data: {\'field3\'}\nFields not in new data: {\'field3\'}'
-
-    def test_validate_working_fields_in_live_and_new_dataframes_raises_join_not_in_either(self, mocker):
-        live_df = pd.DataFrame(columns=['field1', 'field2'])
-        new_df = pd.DataFrame(columns=['field1', 'field2'])
-        fields = ['field1', 'field2']
-
-        updater_mock = mocker.Mock()
-        updater_mock.new_dataframe = new_df
-        updater_mock.index_column = 'join'
-
-        with pytest.raises(RuntimeError) as exc_info:
-            load.FeatureServiceUpdater._validate_working_fields_in_live_and_new_dataframes(
-                updater_mock, live_df, fields
-            )
-        assert exc_info.value.args[
-            0
-        ] == 'Field mismatch between defined fields and either new or live data.\nFields not in live data: {\'join\'}\nFields not in new data: {\'join\'}'
-
-
-class TestFeatureServiceUpdaterIntegrated:
-
-    def test_update_existing_features_in_hosted_feature_layer_no_matching_rows_returns_0(self, mocker, caplog):
-        pd_mock = mocker.Mock()
-        pd_mock.return_value = pd.DataFrame({
-            'OBJECTID': [1, 2],
-            'data': ['foo', 'bar'],
-            'key': ['a', 'b'],
-        })
-        mocker.patch.object(pd.DataFrame.spatial, 'from_layer', new=pd_mock)
-        mocker.patch.object(arcgis.features.FeatureLayer, 'fromitem')
-
-        new_dataframe = pd.DataFrame({
-            'data': ['FOO', 'BAR'],
-            'key': ['c', 'd'],
-        })
-        gis_mock = mocker.Mock()
-        updater = load.FeatureServiceUpdater(gis_mock, new_dataframe, 'key')
-
-        updated_rows = updater.update_existing_features_in_hosted_feature_layer('1234', ['data', 'key'])
-
-        assert updated_rows == 0
-
-    def test_update_existing_features_in_hosted_feature_layer_no_matching_rows_properly_logs(self, mocker, caplog):
-        pd_mock = mocker.Mock()
-        pd_mock.return_value = pd.DataFrame({
-            'OBJECTID': [1, 2],
-            'data': ['foo', 'bar'],
-            'key': ['a', 'b'],
-        })
-        mocker.patch.object(pd.DataFrame.spatial, 'from_layer', new=pd_mock)
-        mocker.patch.object(arcgis.features.FeatureLayer, 'fromitem')
-
-        new_dataframe = pd.DataFrame({
-            'data': ['FOO', 'BAR'],
-            'key': ['c', 'd'],
-        })
-        gis_mock = mocker.Mock()
-        updater = load.FeatureServiceUpdater(gis_mock, new_dataframe, 'key')
-
-        updated_rows = updater.update_existing_features_in_hosted_feature_layer('1234', ['data', 'key'])
-
-        assert 'No matching rows between live dataset and new dataset based on field `key`' in caplog.text
-        assert "The following keys from the new data were not found in the existing dataset: ['c', 'd']" in caplog.text
-
-    def test_update_existing_features_in_hosted_feature_layer_all_matching_returns_2(self, mocker, caplog):
-        pd_mock = mocker.Mock()
-        pd_mock.return_value = pd.DataFrame({
-            'OBJECTID': [1, 2],
-            'data': ['foo', 'bar'],
-            'key': ['a', 'b'],
-        })
-        mocker.patch.object(pd.DataFrame.spatial, 'from_layer', new=pd_mock)
-
-        new_dataframe = pd.DataFrame({
-            'data': ['FOO', 'BAR'],
-            'key': ['a', 'b'],
-        })
-        gis_mock = mocker.Mock()
-        fromitem_function_mock = mocker.Mock()
-        fromitem_function_mock.return_value.edit_features.return_value = {
-            'addResults': [],
-            'updateResults': [
-                {
-                    'objectId': 1,
-                    'success': True
-                },
-                {
-                    'objectId': 2,
-                    'success': True
-                },
-            ],
-            'deleteResults': [],
-        }
-        mocker.patch.object(arcgis.features.FeatureLayer, 'fromitem', new=fromitem_function_mock)
-        updater = load.FeatureServiceUpdater(gis_mock, new_dataframe, 'key')
-
-        updated_rows = updater.update_existing_features_in_hosted_feature_layer('1234', ['data', 'key'])
-
-        assert updated_rows == 2
-
-    def test_update_existing_features_in_hosted_feature_layer_all_matching_logs_properly(self, mocker, caplog):
-        pd_mock = mocker.Mock()
-        pd_mock.return_value = pd.DataFrame({
-            'OBJECTID': [1, 2],
-            'data': ['foo', 'bar'],
-            'key': ['a', 'b'],
-        })
-        mocker.patch.object(pd.DataFrame.spatial, 'from_layer', new=pd_mock)
-        new_dataframe = pd.DataFrame({
-            'data': ['FOO', 'BAR'],
-            'key': ['a', 'b'],
-        })
-        gis_mock = mocker.Mock()
-        fromitem_function_mock = mocker.Mock()
-        fromitem_function_mock.return_value.edit_features.return_value = {
-            'addResults': [],
-            'updateResults': [
-                {
-                    'objectId': 1,
-                    'success': True
-                },
-                {
-                    'objectId': 2,
-                    'success': True
-                },
-            ],
-            'deleteResults': [],
-        }
-        mocker.patch.object(arcgis.features.FeatureLayer, 'fromitem', new=fromitem_function_mock)
-        updater = load.FeatureServiceUpdater(gis_mock, new_dataframe, 'key')
-
-        with caplog.at_level(logging.DEBUG):
-            updated_rows = updater.update_existing_features_in_hosted_feature_layer('1234', ['data', 'key'])
-            assert '2 rows successfully updated:' in caplog.text
-            assert "Existing data: {'OBJECTID': 1, 'data': 'foo', 'key': 'a'}" in caplog.text
-            assert "New data: {'data': 'FOO', 'key': 'a'}" in caplog.text
-            assert "Existing data: {'OBJECTID': 2, 'data': 'bar', 'key': 'b'}" in caplog.text
-            assert "New data: {'data': 'BAR', 'key': 'b'}" in caplog.text
-
-    def test_update_existing_features_in_hosted_feature_layer_subsets_logging_fields_properly(self, mocker, caplog):
-        pd_mock = mocker.Mock()
-        pd_mock.return_value = pd.DataFrame({
-            'OBJECTID': [1, 2],
-            'data': ['foo', 'bar'],
-            'key': ['a', 'b'],
-            'extra_field': ['muck', 'slime']
-        })
-        mocker.patch.object(pd.DataFrame.spatial, 'from_layer', new=pd_mock)
-        new_dataframe = pd.DataFrame({
-            'data': ['FOO', 'BAR'],
-            'key': ['a', 'b'],
-        })
-        gis_mock = mocker.Mock()
-        fromitem_function_mock = mocker.Mock()
-        fromitem_function_mock.return_value.edit_features.return_value = {
-            'addResults': [],
-            'updateResults': [
-                {
-                    'objectId': 1,
-                    'success': True
-                },
-                {
-                    'objectId': 2,
-                    'success': True
-                },
-            ],
-            'deleteResults': [],
-        }
-        mocker.patch.object(arcgis.features.FeatureLayer, 'fromitem', new=fromitem_function_mock)
-        updater = load.FeatureServiceUpdater(gis_mock, new_dataframe, 'key')
-
-        with caplog.at_level(logging.DEBUG):
-            updated_rows = updater.update_existing_features_in_hosted_feature_layer('1234', ['data', 'key'])
-            assert '2 rows successfully updated:' in caplog.text
-            assert "Existing data: {'OBJECTID': 1, 'data': 'foo', 'key': 'a'}" in caplog.text
-            assert "New data: {'data': 'FOO', 'key': 'a'}" in caplog.text
-            assert "Existing data: {'OBJECTID': 2, 'data': 'bar', 'key': 'b'}" in caplog.text
-            assert "New data: {'data': 'BAR', 'key': 'b'}" in caplog.text
-
-    def test_update_existing_features_in_hosted_feature_layer_only_includes_rows_from_new_data(self, mocker):
-        mocker.patch.object(
-            load.pd.DataFrame.spatial,
-            'from_layer',
-            return_value=pd.DataFrame({
-                'OBJECTID': [1, 2],
-                'data': ['foo', 'bar'],
-                'key': ['a', 'b'],
-            })
+        assert updater_mock._upsert_data.called_once_with(
+            'foo123', new_dataframe, upsert=True, upsert_matching_field='OBJECTID', append_fields=['foo', 'bar']
         )
 
-        fromitem_function_mock = mocker.patch.object(arcgis.features.FeatureLayer, 'fromitem')
-        fromitem_function_mock.return_value.edit_features.return_value = {
-            'addResults': [],
-            'updateResults': [
-                {
-                    'objectId': 2,
-                    'success': True
-                },
-            ],
-            'deleteResults': [],
-        }
-
+    def test_update_hosted_feature_layer_calls_field_checkers(self, mocker):
         new_dataframe = pd.DataFrame({
-            'data': ['FOO', 'BAR'],
-            'key': ['x', 'b'],
+            'foo': [1, 2],
+            'bar': [3, 4],
+            'OBJECTID': [11, 12],
         })
+        updater_mock = mocker.Mock()
+        updater_mock.feature_service_itemid = 'foo123'
+        updater_mock.feature_layer = mocker.Mock()
+        updater_mock.new_datframe = new_dataframe
+        updater_mock.fields = ['foo', 'bar']
+        updater_mock.join_column = 'OBJECTID'
+        updater_mock.layer_index = 0
 
-        updater = load.FeatureServiceUpdater(mocker.Mock(), new_dataframe, 'key')
+        updater_mock._upsert_data.return_value = {'recordCount': 1}
 
-        updated_rows = updater.update_existing_features_in_hosted_feature_layer('1234', ['data', 'key'])
+        field_checker_mock = mocker.patch('palletjack.utils.FieldChecker')
 
-        test_df = pd.DataFrame({
-            'OBJECTID': [2],
-            'key': ['b'],
-            'data': ['BAR'],
-        })
+        load.FeatureServiceUpdater.update_hosted_feature_layer(updater_mock)
 
-        tm.assert_frame_equal(
-            fromitem_function_mock.return_value.edit_features.call_args.kwargs['updates'].sdf, test_df, check_like=True
-        )
-        assert updated_rows == 1
-
-
-class TestColorRampReclassifier:
-
-    def test_get_layer_id_returns_match_single_layer(self, mocker):
-        layers = {
-            'operationalLayers': [
-                {
-                    'title': 'foo'
-                },
-            ],
-        }
-        get_data_mock = mocker.Mock(return_value=layers)
-        webmap_item_mock = mocker.Mock()
-        webmap_item_mock.get_data = get_data_mock
-        reclassifier = load.ColorRampReclassifier(webmap_item_mock, 'gis')
-
-        layer_id = reclassifier._get_layer_id('foo')
-        assert layer_id == 0
-
-    def test_get_layer_id_returns_match_many_layers(self, mocker):
-        layers = {
-            'operationalLayers': [
-                {
-                    'title': 'foo'
-                },
-                {
-                    'title': 'bar'
-                },
-                {
-                    'title': 'baz'
-                },
-            ],
-        }
-        get_data_mock = mocker.Mock(return_value=layers)
-        webmap_item_mock = mocker.Mock()
-        webmap_item_mock.get_data = get_data_mock
-        reclassifier = load.ColorRampReclassifier(webmap_item_mock, 'gis')
-
-        layer_id = reclassifier._get_layer_id('bar')
-        assert layer_id == 1
-
-    def test_get_layer_id_returns_first_match(self, mocker):
-        layers = {
-            'operationalLayers': [
-                {
-                    'title': 'foo'
-                },
-                {
-                    'title': 'bar'
-                },
-                {
-                    'title': 'bar'
-                },
-            ],
-        }
-        get_data_mock = mocker.Mock(return_value=layers)
-        webmap_item_mock = mocker.Mock()
-        webmap_item_mock.get_data = get_data_mock
-        reclassifier = load.ColorRampReclassifier(webmap_item_mock, 'gis')
-
-        layer_id = reclassifier._get_layer_id('bar')
-        assert layer_id == 1
-
-    def test_get_layer_id_raises_error_when_not_found(self, mocker):
-        layers = {
-            'operationalLayers': [
-                {
-                    'title': 'bar'
-                },
-            ],
-        }
-        get_data_mock = mocker.Mock(return_value=layers)
-        webmap_item_mock = mocker.Mock()
-        webmap_item_mock.title = 'test map'
-        webmap_item_mock.get_data = get_data_mock
-        reclassifier = load.ColorRampReclassifier(webmap_item_mock, 'gis')
-
-        with pytest.raises(ValueError) as error_info:
-            layer_id = reclassifier._get_layer_id('foo')
-
-        assert 'Could not find "foo" in test map' in str(error_info.value)
-
-    def test_calculate_new_stops_with_manual_numbers(self):
-        dataframe = pd.DataFrame({'numbers': [100, 300, 500, 700, 900]})
-
-        stops = load.ColorRampReclassifier._calculate_new_stops(dataframe, 'numbers', 5)
-
-        assert stops == [100, 279, 458, 637, 816]
-
-    def test_calculate_new_stops_mismatched_column_raises_error(self):
-        dataframe = pd.DataFrame({'numbers': [100, 300, 500, 700, 900]})
-
-        with pytest.raises(ValueError) as error_info:
-            stops = load.ColorRampReclassifier._calculate_new_stops(dataframe, 'foo', 5)
-            assert 'Column `foo` not in dataframe`' in str(error_info)
-
-    def test_update_stops_values(self, mocker):
-        # renderer = data['operationalLayers'][layer_number]['layerDefinition']['drawingInfo']['renderer']
-        # stops = renderer['visualVariables'][0]['stops']
-
-        data = {
-            'operationalLayers': [{
-                'layerDefinition': {
-                    'drawingInfo': {
-                        'renderer': {
-                            'visualVariables': [{
-                                'stops': [{
-                                    'value': 0
-                                }, {
-                                    'value': 1
-                                }, {
-                                    'value': 2
-                                }, {
-                                    'value': 3
-                                }]
-                            }]
-                        }
-                    }
-                }
-            }],
-        }
-        get_data_mock = mocker.Mock(return_value=data)
-        webmap_item_mock = mocker.Mock()
-        webmap_item_mock.get_data = get_data_mock
-        update_mock = mocker.Mock()
-        webmap_item_mock.update = update_mock
-        reclassifier = load.ColorRampReclassifier(webmap_item_mock, 'gis')
-
-        reclassifier._update_stop_values(0, [100, 200, 300, 400])
-
-        data['operationalLayers'][0]['layerDefinition']['drawingInfo']['renderer']['visualVariables'][0]['stops'] = [{
-            'value': 100
-        }, {
-            'value': 200
-        }, {
-            'value': 300
-        }, {
-            'value': 400
-        }]
-
-        assert update_mock.called_with(item_properties={'text': json.dumps(data)})
+        assert field_checker_mock.check_live_and_new_field_types_match.called_once_with(['foo', 'bar'])
+        assert field_checker_mock.check_for_non_null_fields.called_once_with(['foo', 'bar'])
+        assert field_checker_mock.check_field_length.called_once_with(['foo', 'bar'])
+        assert field_checker_mock.check_fields_present.called_once_with(['foo', 'bar'], True)
 
 
 class TestAttachments:
@@ -2290,32 +1154,143 @@ class TestFeatureServiceUpdaterUpsert:
         }
 
 
-class TestFeatureServiceUpdaterInit:
+class TestColorRampReclassifier:
 
-    def test_init_raises_on_missing_index_field(self, mocker):
+    def test_get_layer_id_returns_match_single_layer(self, mocker):
+        layers = {
+            'operationalLayers': [
+                {
+                    'title': 'foo'
+                },
+            ],
+        }
+        get_data_mock = mocker.Mock(return_value=layers)
+        webmap_item_mock = mocker.Mock()
+        webmap_item_mock.get_data = get_data_mock
+        reclassifier = load.ColorRampReclassifier(webmap_item_mock, 'gis')
 
-        new_dataframe = pd.DataFrame(columns=['Foo_field', 'Bar'])
-        # mocker.patch.object(pd.DataFrame, 'spatial')
+        layer_id = reclassifier._get_layer_id('foo')
+        assert layer_id == 0
 
-        with pytest.raises(KeyError) as exc_info:
-            updater = load.FeatureServiceUpdater(mocker.Mock(), new_dataframe, 'Baz')
+    def test_get_layer_id_returns_match_many_layers(self, mocker):
+        layers = {
+            'operationalLayers': [
+                {
+                    'title': 'foo'
+                },
+                {
+                    'title': 'bar'
+                },
+                {
+                    'title': 'baz'
+                },
+            ],
+        }
+        get_data_mock = mocker.Mock(return_value=layers)
+        webmap_item_mock = mocker.Mock()
+        webmap_item_mock.get_data = get_data_mock
+        reclassifier = load.ColorRampReclassifier(webmap_item_mock, 'gis')
 
-        assert exc_info.value.args[0] == 'Index column Baz not found in dataframe columns'
+        layer_id = reclassifier._get_layer_id('bar')
+        assert layer_id == 1
 
-    def test_init_renames_dataframe_columns(self, mocker):
+    def test_get_layer_id_returns_first_match(self, mocker):
+        layers = {
+            'operationalLayers': [
+                {
+                    'title': 'foo'
+                },
+                {
+                    'title': 'bar'
+                },
+                {
+                    'title': 'bar'
+                },
+            ],
+        }
+        get_data_mock = mocker.Mock(return_value=layers)
+        webmap_item_mock = mocker.Mock()
+        webmap_item_mock.get_data = get_data_mock
+        reclassifier = load.ColorRampReclassifier(webmap_item_mock, 'gis')
 
-        new_dataframe = pd.DataFrame(columns=['Foo field', 'Bar'])
-        # mocker.patch.object(pd.DataFrame, 'spatial')
+        layer_id = reclassifier._get_layer_id('bar')
+        assert layer_id == 1
 
-        updater = load.FeatureServiceUpdater(mocker.Mock(), new_dataframe, 'Bar')
+    def test_get_layer_id_raises_error_when_not_found(self, mocker):
+        layers = {
+            'operationalLayers': [
+                {
+                    'title': 'bar'
+                },
+            ],
+        }
+        get_data_mock = mocker.Mock(return_value=layers)
+        webmap_item_mock = mocker.Mock()
+        webmap_item_mock.title = 'test map'
+        webmap_item_mock.get_data = get_data_mock
+        reclassifier = load.ColorRampReclassifier(webmap_item_mock, 'gis')
 
-        assert list(updater.new_dataframe.columns) == ['Foo_field', 'Bar']
+        with pytest.raises(ValueError) as error_info:
+            layer_id = reclassifier._get_layer_id('foo')
 
-    def test_init_renames_index_column(self, mocker):
+        assert 'Could not find "foo" in test map' in str(error_info.value)
 
-        new_dataframe = pd.DataFrame(columns=['Foo field', 'Bar'])
-        # mocker.patch.object(pd.DataFrame, 'spatial')
+    def test_calculate_new_stops_with_manual_numbers(self):
+        dataframe = pd.DataFrame({'numbers': [100, 300, 500, 700, 900]})
 
-        updater = load.FeatureServiceUpdater(mocker.Mock(), new_dataframe, 'Foo field')
+        stops = load.ColorRampReclassifier._calculate_new_stops(dataframe, 'numbers', 5)
 
-        assert updater.index_column == 'Foo_field'
+        assert stops == [100, 279, 458, 637, 816]
+
+    def test_calculate_new_stops_mismatched_column_raises_error(self):
+        dataframe = pd.DataFrame({'numbers': [100, 300, 500, 700, 900]})
+
+        with pytest.raises(ValueError) as error_info:
+            stops = load.ColorRampReclassifier._calculate_new_stops(dataframe, 'foo', 5)
+            assert 'Column `foo` not in dataframe`' in str(error_info)
+
+    def test_update_stops_values(self, mocker):
+        # renderer = data['operationalLayers'][layer_number]['layerDefinition']['drawingInfo']['renderer']
+        # stops = renderer['visualVariables'][0]['stops']
+
+        data = {
+            'operationalLayers': [{
+                'layerDefinition': {
+                    'drawingInfo': {
+                        'renderer': {
+                            'visualVariables': [{
+                                'stops': [{
+                                    'value': 0
+                                }, {
+                                    'value': 1
+                                }, {
+                                    'value': 2
+                                }, {
+                                    'value': 3
+                                }]
+                            }]
+                        }
+                    }
+                }
+            }],
+        }
+        get_data_mock = mocker.Mock(return_value=data)
+        webmap_item_mock = mocker.Mock()
+        webmap_item_mock.get_data = get_data_mock
+        update_mock = mocker.Mock()
+        webmap_item_mock.update = update_mock
+        reclassifier = load.ColorRampReclassifier(webmap_item_mock, 'gis')
+
+        reclassifier._update_stop_values(0, [100, 200, 300, 400])
+
+        data['operationalLayers'][0]['layerDefinition']['drawingInfo']['renderer']['visualVariables'][0]['stops'] = [{
+            'value': 100
+        }, {
+            'value': 200
+        }, {
+            'value': 300
+        }, {
+            'value': 400
+        }]
+
+        assert update_mock.called_with(item_properties={'text': json.dumps(data)})
