@@ -876,7 +876,7 @@ class TestCheckFieldsMatch:
 
     def test_check_geometry_types_raises_on_multiple_types(self, mocker):
         new_df = mocker.Mock()
-        new_df.spatial.validate.return_value = True
+        new_df.columns = ['SHAPE']
         new_df.spatial.geometry_type = [1, 2]
 
         properties = {'geometryType': 'esriGeometryPoint', 'fields': {'a': ['b']}}
@@ -889,7 +889,7 @@ class TestCheckFieldsMatch:
 
     def test_check_geometry_types_raises_on_incompatible_type(self, mocker):
         new_df = mocker.Mock()
-        new_df.spatial.validate.return_value = True
+        new_df.columns = ['SHAPE']
         new_df.spatial.geometry_type = ['Polygon']
 
         properties = {'geometryType': 'esriGeometryPoint', 'fields': {'a': ['b']}}
@@ -901,6 +901,18 @@ class TestCheckFieldsMatch:
         assert 'New dataframe geometry type "Polygon" incompatible with live geometry type "esriGeometryPoint"' in str(
             exc_info.value
         )
+
+    def test_check_geometry_types_raises_on_missing_SHAPE(self, mocker):
+        new_df = mocker.Mock()
+        new_df.columns = ['foo']
+
+        checker_mock = mocker.Mock()
+        checker_mock.new_dataframe = new_df
+
+        with pytest.raises(ValueError) as exc_info:
+            palletjack.utils.FieldChecker._check_geometry_types(checker_mock)
+
+        assert 'New dataframe does not have a SHAPE column' in str(exc_info.value)
 
 
 class TestFieldNullChecker:
