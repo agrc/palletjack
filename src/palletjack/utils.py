@@ -437,19 +437,19 @@ class FieldChecker:
         esri_to_sedf_geometry_mapping = {
             'esriGeometryPoint': 'point',
             'esriGeometryMultipoint': 'multipoint',
-            'esriGeometryPolyline': 'Polyline',
-            'esriGeometryPolygon': 'Polygon',
-            'esriGeometryEnvelope': 'Envelope',
+            'esriGeometryPolyline': 'polyline',
+            'esriGeometryPolygon': 'polygon',
+            'esriGeometryEnvelope': 'envelope',
         }
 
-        if not self.new_dataframe.spatial.validate():
-            raise ValueError('New dataframe is not a valid spatial dataframe.')
+        if 'SHAPE' not in self.new_dataframe.columns:
+            raise ValueError('New dataframe does not have a SHAPE column')
 
         live_geometry_type = self.live_data_properties['geometryType']
         new_geometry_types = self.new_dataframe.spatial.geometry_type
         if len(new_geometry_types) > 1:
             raise ValueError('New dataframe has multiple geometry types')
-        if esri_to_sedf_geometry_mapping[live_geometry_type] != new_geometry_types[0]:
+        if esri_to_sedf_geometry_mapping[live_geometry_type] != new_geometry_types[0].lower():
             raise ValueError(
                 f'New dataframe geometry type "{new_geometry_types[0]}" incompatible with live geometry type "{live_geometry_type}"'
             )
