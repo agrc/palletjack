@@ -71,7 +71,7 @@ class TestUpdateLayer:
 
         field_checker_mock = mocker.patch('palletjack.utils.FieldChecker')
 
-        load.FeatureServiceUpdater.update_hosted_feature_layer(updater_mock)
+        load.FeatureServiceUpdater._update_hosted_feature_layer(updater_mock)
 
         assert updater_mock._upsert_data.called_once_with(
             'foo123', new_dataframe, upsert=True, upsert_matching_field='OBJECTID', append_fields=['foo', 'bar']
@@ -95,7 +95,57 @@ class TestUpdateLayer:
 
         field_checker_mock = mocker.patch('palletjack.utils.FieldChecker')
 
-        load.FeatureServiceUpdater.update_hosted_feature_layer(updater_mock)
+        load.FeatureServiceUpdater._update_hosted_feature_layer(updater_mock)
+
+        assert field_checker_mock.check_live_and_new_field_types_match.called_once_with(['foo', 'bar'])
+        assert field_checker_mock.check_for_non_null_fields.called_once_with(['foo', 'bar'])
+        assert field_checker_mock.check_field_length.called_once_with(['foo', 'bar'])
+        assert field_checker_mock.check_fields_present.called_once_with(['foo', 'bar'], True)
+
+
+class TestAddToLayer:
+
+    def test_add_new_data_to_hosted_feature_layer_calls_upsert(self, mocker):
+        new_dataframe = pd.DataFrame({
+            'foo': [1, 2],
+            'bar': [3, 4],
+            # 'OBJECTID': [11, 12],
+        })
+        updater_mock = mocker.Mock()
+        updater_mock.feature_service_itemid = 'foo123'
+        updater_mock.feature_layer = mocker.Mock()
+        updater_mock.new_datframe = new_dataframe
+        updater_mock.fields = ['foo', 'bar']
+        # updater_mock.join_column = 'OBJECTID'
+        updater_mock.layer_index = 0
+
+        updater_mock._upsert_data.return_value = {'recordCount': 1}
+
+        field_checker_mock = mocker.patch('palletjack.utils.FieldChecker')
+
+        load.FeatureServiceUpdater._add_new_data_to_hosted_feature_layer(updater_mock)
+
+        assert updater_mock._upsert_data.called_once_with('foo123', new_dataframe, upsert=False)
+
+    def test_add_new_data_to_hosted_feature_layer_calls_field_checkers(self, mocker):
+        new_dataframe = pd.DataFrame({
+            'foo': [1, 2],
+            'bar': [3, 4],
+            # 'OBJECTID': [11, 12],
+        })
+        updater_mock = mocker.Mock()
+        updater_mock.feature_service_itemid = 'foo123'
+        updater_mock.feature_layer = mocker.Mock()
+        updater_mock.new_datframe = new_dataframe
+        updater_mock.fields = ['foo', 'bar']
+        # updater_mock.join_column = 'OBJECTID'
+        updater_mock.layer_index = 0
+
+        updater_mock._upsert_data.return_value = {'recordCount': 1}
+
+        field_checker_mock = mocker.patch('palletjack.utils.FieldChecker')
+
+        load.FeatureServiceUpdater._add_new_data_to_hosted_feature_layer(updater_mock)
 
         assert field_checker_mock.check_live_and_new_field_types_match.called_once_with(['foo', 'bar'])
         assert field_checker_mock.check_for_non_null_fields.called_once_with(['foo', 'bar'])
