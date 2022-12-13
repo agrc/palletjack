@@ -1152,3 +1152,35 @@ class TestFieldsPresent:
 
         #: Should not raise
         checker.check_fields_present(['foo', 'bar'], True)
+
+
+class TestNullGeometryGenerators:
+
+    def test_get_null_geometries_point(self):
+        properties = {'geometryType': 'esriGeometryPoint'}
+
+        nullo = palletjack.utils.get_null_geometries(properties)
+
+        assert nullo.JSON == '{"x": 0, "y": 0, "spatialReference": {"wkid": 4326}}'
+
+    def test_get_null_geometries_polyline(self):
+        properties = {'geometryType': 'esriGeometryPolyline'}
+
+        nullo = palletjack.utils.get_null_geometries(properties)
+
+        assert nullo.JSON == '{"paths": [[[0, 0], [0.1, 0.1], [0.2, 0.2]]], "spatialReference": {"wkid": 4326}}'
+
+    def test_get_null_geometries_polygon(self):
+        properties = {'geometryType': 'esriGeometryPolygon'}
+
+        nullo = palletjack.utils.get_null_geometries(properties)
+
+        assert nullo.JSON == '{"rings": [[[0, 0.1], [0.1, 0.1], [0.1, 0], [0, 0]]], "spatialReference": {"wkid": 4326}}'
+
+    def test_get_null_geometries_raises_on_other(self):
+        properties = {'geometryType': 'other'}
+
+        with pytest.raises(NotImplementedError) as exc_info:
+            nullo = palletjack.utils.get_null_geometries(properties)
+
+        assert 'Null value generator for live geometry type other not yet implemented' in str(exc_info.value)

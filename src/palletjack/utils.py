@@ -4,6 +4,7 @@ import re
 from math import floor
 from time import sleep
 
+import arcgis
 import pandas as pd
 import pygsheets
 import requests
@@ -545,3 +546,43 @@ class FieldChecker:
 
         if error_message:
             raise RuntimeError('. '.join(error_message))
+
+
+def get_null_geometries(feature_layer_properties):
+    """Generate placeholder geometries near 0, 0 with type based on provided feature layer properties dictionary.
+
+    Args:
+        feature_layer_properties (dict): .properties from a feature layer item, contains 'geometryType' key
+
+    Raises:
+        NotImplementedError: If we get a geometryType we haven't implmented a null-geometry generator for
+
+    Returns:
+        arcgis.geometry.Geometry: A geometry object of the corresponding type centered around null island.
+    """
+
+    # esri_to_sedf_geometry_mapping = {
+    #     'esriGeometryPoint': 'point',
+    #     'esriGeometryMultipoint': 'multipoint',
+    #     'esriGeometryPolyline': 'polyline',
+    #     'esriGeometryPolygon': 'polygon',
+    #     'esriGeometryEnvelope': 'envelope',
+    # }
+
+    live_geometry_type = feature_layer_properties['geometryType']
+
+    if live_geometry_type == 'esriGeometryPoint':
+        return arcgis.geometry.Point({'x': 0, 'y': 0, 'spatialReference': {'wkid': 4326}})
+
+    if live_geometry_type == 'esriGeometryPolyline':
+        return arcgis.geometry.Polyline({'paths': [[[0, 0], [.1, .1], [.2, .2]]], 'spatialReference': {'wkid': 4326}})
+
+    if live_geometry_type == 'esriGeometryPolygon':
+        return arcgis.geometry.Polygon({
+            'rings': [[[0, .1], [.1, .1], [.1, 0], [0, 0]]],
+            'spatialReference': {
+                'wkid': 4326
+            }
+        })
+
+    raise NotImplementedError(f'Null value generator for live geometry type {live_geometry_type} not yet implemented')

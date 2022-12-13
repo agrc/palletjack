@@ -53,17 +53,19 @@ class TestFeatureServiceUpdaterInit:
 
 class TestUpdateLayer:
 
-    def test_update_hosted_feature_layer_calls_upsert(self, mocker):
+    def test_update_hosted_feature_layer_calls_upsert_correctly(self, mocker):
         new_dataframe = pd.DataFrame({
             'foo': [1, 2],
             'bar': [3, 4],
             'OBJECTID': [11, 12],
+            'SHAPE': ['s1', 's2'],
         })
         updater_mock = mocker.Mock()
         updater_mock.feature_service_itemid = 'foo123'
-        updater_mock.feature_layer = mocker.Mock()
-        updater_mock.new_datframe = new_dataframe
-        updater_mock.fields = ['foo', 'bar']
+        fl_mock = mocker.Mock()
+        updater_mock.feature_layer = fl_mock
+        updater_mock.new_dataframe = new_dataframe
+        updater_mock.fields = list(new_dataframe.columns)
         updater_mock.join_column = 'OBJECTID'
         updater_mock.layer_index = 0
 
@@ -71,10 +73,15 @@ class TestUpdateLayer:
 
         field_checker_mock = mocker.patch('palletjack.utils.FieldChecker')
 
-        load.FeatureServiceUpdater._update_hosted_feature_layer(updater_mock)
+        load.FeatureServiceUpdater._update_hosted_feature_layer(updater_mock, update_geometry=True)
 
-        assert updater_mock._upsert_data.called_once_with(
-            'foo123', new_dataframe, upsert=True, upsert_matching_field='OBJECTID', append_fields=['foo', 'bar']
+        updater_mock._upsert_data.assert_called_once_with(
+            fl_mock,
+            new_dataframe,
+            upsert=True,
+            upsert_matching_field='OBJECTID',
+            append_fields=['foo', 'bar', 'OBJECTID', 'SHAPE'],
+            update_geometry=True
         )
 
     def test_update_hosted_feature_layer_calls_field_checkers(self, mocker):
@@ -86,8 +93,8 @@ class TestUpdateLayer:
         updater_mock = mocker.Mock()
         updater_mock.feature_service_itemid = 'foo123'
         updater_mock.feature_layer = mocker.Mock()
-        updater_mock.new_datframe = new_dataframe
-        updater_mock.fields = ['foo', 'bar']
+        updater_mock.new_dataframe = new_dataframe
+        updater_mock.fields = list(new_dataframe.columns)
         updater_mock.join_column = 'OBJECTID'
         updater_mock.layer_index = 0
 
@@ -95,12 +102,70 @@ class TestUpdateLayer:
 
         field_checker_mock = mocker.patch('palletjack.utils.FieldChecker')
 
-        load.FeatureServiceUpdater._update_hosted_feature_layer(updater_mock)
+        load.FeatureServiceUpdater._update_hosted_feature_layer(updater_mock, update_geometry=True)
 
-        assert field_checker_mock.check_live_and_new_field_types_match.called_once_with(['foo', 'bar'])
-        assert field_checker_mock.check_for_non_null_fields.called_once_with(['foo', 'bar'])
-        assert field_checker_mock.check_field_length.called_once_with(['foo', 'bar'])
-        assert field_checker_mock.check_fields_present.called_once_with(['foo', 'bar'], True)
+        field_checker_mock.return_value.check_live_and_new_field_types_match.assert_called_once_with([
+            'foo', 'bar', 'OBJECTID'
+        ])
+        field_checker_mock.return_value.check_for_non_null_fields.assert_called_once_with(['foo', 'bar', 'OBJECTID'])
+        field_checker_mock.return_value.check_field_length.assert_called_once_with(['foo', 'bar', 'OBJECTID'])
+        field_checker_mock.return_value.check_fields_present.assert_called_once_with(['foo', 'bar', 'OBJECTID'],
+                                                                                     add_oid=True)
+
+    def test_update_hosted_feature_layer_no_geometry_calls_null_geometry_generator(self, mocker):
+        new_dataframe = pd.DataFrame({
+            'foo': [1, 2],
+            'bar': [3, 4],
+            'OBJECTID': [11, 12],
+        })
+        updater_mock = mocker.Mock()
+        updater_mock.feature_service_itemid = 'foo123'
+        updater_mock.feature_layer = mocker.Mock()
+        updater_mock.feature_layer.properties = {'geometryType': 'esriGeometryPoint'}
+        updater_mock.new_dataframe = new_dataframe
+        # updater_mock.fields = ['foo', 'bar']
+        updater_mock.join_column = 'OBJECTID'
+        updater_mock.layer_index = 0
+
+        updater_mock._upsert_data.return_value = {'recordCount': 1}
+
+        field_checker_mock = mocker.patch('palletjack.utils.FieldChecker')
+        null_generator_mock = mocker.patch('palletjack.utils.get_null_geometries', return_value='Nullo')
+
+        load.FeatureServiceUpdater._update_hosted_feature_layer(updater_mock, update_geometry=False)
+
+        null_generator_mock.assert_called_once_with({'geometryType': 'esriGeometryPoint'})
+
+    def test_update_hosted_feature_layer_no_geometry_calls_upsert_correctly(self, mocker):
+        new_dataframe = pd.DataFrame({
+            'foo': [1, 2],
+            'bar': [3, 4],
+            'OBJECTID': [11, 12],
+        })
+        updater_mock = mocker.Mock()
+        updater_mock.feature_service_itemid = 'foo123'
+        updater_mock.feature_layer = mocker.Mock()
+        updater_mock.feature_layer.properties = {'geometryType': 'esriGeometryPoint'}
+        updater_mock.new_dataframe = new_dataframe
+        updater_mock.fields = list(new_dataframe.columns)
+        updater_mock.join_column = 'OBJECTID'
+        updater_mock.layer_index = 0
+
+        updater_mock._upsert_data.return_value = {'recordCount': 1}
+
+        field_checker_mock = mocker.patch('palletjack.utils.FieldChecker')
+        null_generator_mock = mocker.patch('palletjack.utils.get_null_geometries', return_value='Nullo')
+
+        load.FeatureServiceUpdater._update_hosted_feature_layer(updater_mock, update_geometry=False)
+
+        updater_mock._upsert_data.assert_called_once_with(
+            updater_mock.feature_layer,
+            new_dataframe,
+            upsert=True,
+            upsert_matching_field='OBJECTID',
+            append_fields=['foo', 'bar', 'OBJECTID'],
+            update_geometry=False
+        )
 
 
 class TestAddToLayer:
