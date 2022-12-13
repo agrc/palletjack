@@ -41,7 +41,7 @@ class FeatureServiceUpdater:
         pass
 
     @classmethod
-    def update_data(cls, gis, feature_service_itemid, dataframe, join_column, layer_index=0):
+    def update_data(cls, gis, feature_service_itemid, dataframe, join_column, layer_index=0, update_geometry=True):
         """Updates existing features within a hosted feature layer using OBJECTID as the join field
 
         Raises:
@@ -61,9 +61,9 @@ class FeatureServiceUpdater:
             dataframe,
             join_column=join_column,
             fields=list(dataframe.columns),
-            layer_index=layer_index
+            layer_index=layer_index,
         )
-        return updater._update_hosted_feature_layer()
+        return updater._update_hosted_feature_layer(update_geometry)
 
     @classmethod
     def overwrite_data(cls, gis, feature_service_itemid, dataframe, failsafe_dir, layer_index=0):
@@ -251,7 +251,7 @@ class FeatureServiceUpdater:
         )
         return messages['recordCount']
 
-    def _update_hosted_feature_layer(self) -> int:
+    def _update_hosted_feature_layer(self, update_geometry) -> int:
         """Updates existing features within a hosted feature layer using OBJECTID as the join field
 
         Raises:
@@ -268,6 +268,11 @@ class FeatureServiceUpdater:
         )
         self._class_logger.debug('Updating fields %s', self.fields)
 
+        #: Add null geometries if update_geometry==False
+        if not update_geometry:
+            self._class_logger.debug('Attribute-only update; inserting null geometries')
+            self.new_dataframe['SHAPE'] = utils.get_null_geometries(self.feature_layer.properties)
+
         #: Field checks to prevent Error: 400 errors from AGOL
         field_checker = utils.FieldChecker(self.feature_layer.properties, self.new_dataframe)
         field_checker.check_live_and_new_field_types_match(self.fields)
@@ -281,7 +286,8 @@ class FeatureServiceUpdater:
             self.new_dataframe,
             upsert=True,
             upsert_matching_field='OBJECTID',
-            append_fields=self.fields
+            append_fields=self.fields,  #: Apparently this works if append_fields is all the fields, but not a subset?
+            update_geometry=update_geometry
         )
         return messages['recordCount']
 
