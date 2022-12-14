@@ -20,7 +20,7 @@ class TestFeatureServiceUpdaterInit:
 
         updater = load.FeatureServiceUpdater(mocker.Mock(), 'itemid', new_dataframe)
 
-        assert arcgis_mock.features.FeatureLayer.fromitem.called_once()
+        arcgis_mock.features.FeatureLayer.fromitem.assert_called_once()
 
     def test_init_renames_dataframe_columns(self, mocker):
 
@@ -179,7 +179,7 @@ class TestAddToLayer:
         updater_mock = mocker.Mock()
         updater_mock.feature_service_itemid = 'foo123'
         updater_mock.feature_layer = mocker.Mock()
-        updater_mock.new_datframe = new_dataframe
+        updater_mock.new_dataframe = new_dataframe
         updater_mock.fields = ['foo', 'bar']
         # updater_mock.join_column = 'OBJECTID'
         updater_mock.layer_index = 0
@@ -190,7 +190,11 @@ class TestAddToLayer:
 
         load.FeatureServiceUpdater._add_new_data_to_hosted_feature_layer(updater_mock)
 
-        assert updater_mock._upsert_data.called_once_with('foo123', new_dataframe, upsert=False)
+        updater_mock._upsert_data.assert_called_once_with(
+            updater_mock.feature_layer,
+            new_dataframe,
+            upsert=False,
+        )
 
     def test_add_new_data_to_hosted_feature_layer_calls_field_checkers(self, mocker):
         new_dataframe = pd.DataFrame({
@@ -201,8 +205,8 @@ class TestAddToLayer:
         updater_mock = mocker.Mock()
         updater_mock.feature_service_itemid = 'foo123'
         updater_mock.feature_layer = mocker.Mock()
-        updater_mock.new_datframe = new_dataframe
-        updater_mock.fields = ['foo', 'bar']
+        updater_mock.new_dataframe = new_dataframe
+        updater_mock.fields = list(new_dataframe.columns)
         # updater_mock.join_column = 'OBJECTID'
         updater_mock.layer_index = 0
 
@@ -212,10 +216,10 @@ class TestAddToLayer:
 
         load.FeatureServiceUpdater._add_new_data_to_hosted_feature_layer(updater_mock)
 
-        assert field_checker_mock.check_live_and_new_field_types_match.called_once_with(['foo', 'bar'])
-        assert field_checker_mock.check_for_non_null_fields.called_once_with(['foo', 'bar'])
-        assert field_checker_mock.check_field_length.called_once_with(['foo', 'bar'])
-        assert field_checker_mock.check_fields_present.called_once_with(['foo', 'bar'], True)
+        field_checker_mock.return_value.check_live_and_new_field_types_match.assert_called_once_with(['foo', 'bar'])
+        field_checker_mock.return_value.check_for_non_null_fields.assert_called_once_with(['foo', 'bar'])
+        field_checker_mock.return_value.check_field_length.assert_called_once_with(['foo', 'bar'])
+        field_checker_mock.return_value.check_fields_present.assert_called_once_with(['foo', 'bar'], add_oid=False)
 
 
 class TestAttachments:
