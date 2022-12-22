@@ -357,3 +357,23 @@ def authorize_pygsheets(credentials):
         return pygsheets.authorize(custom_credentials=credentials)
     except Exception as err:
         raise RuntimeError('Could not authenticate to Google API') from err
+
+
+def fix_numeric_empty_strings(feature_set, feature_layer_fields):
+    """Replace empty strings with None for numeric fields that allow nulls
+
+    Args:
+        feature_set (arcgis.features.FeatureSet): Feature set to clean
+        fields (Dict): fields from feature layer
+    """
+    fix_field_names = []
+    for field in feature_layer_fields:
+        if field['type'] in ['esriFieldTypeDouble', 'esriFieldTypeInteger'] and field['nullable']:
+            fix_field_names.append(field['name'])
+
+    for feature in feature_set.features:
+        for field_name in fix_field_names:
+            if feature.attributes[field_name] == '':
+                feature.attributes[field_name] = None
+
+    return feature_set

@@ -251,11 +251,13 @@ class FeatureServiceInlineUpdater:
             dict: Messages returned from append operation
         """
 
-        geojson = dataframe.spatial.to_featureset().to_geojson
+        feature_set = utils.fix_numeric_empty_strings(
+            dataframe.spatial.to_featureset(), target_featurelayer.properties.fields
+        )
         result, messages = utils.retry(
             target_featurelayer.append,
             upload_format='geojson',
-            edits=geojson,
+            edits=feature_set.to_geojson,
             upsert=True,
             return_messages=True,
             rollback=True,
