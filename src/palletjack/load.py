@@ -23,12 +23,25 @@ class FeatureServiceUpdater:
 
     @classmethod
     def add_data(cls, gis, feature_service_itemid, dataframe, layer_index=0):
-        """Adds new features to existing hosted feature layer. Uses fields from new dataframe.
+        """Adds new features to existing hosted feature layer from new dataframe.
+
+        The new dataframe must have a 'SHAPE' column containing geometries of the same type as the live data. New
+        OBJECTIDs will be automatically generated.
+
+        The new dataframe's columns and data must match the existing data's fields (with the exception of generated
+        fields like shape area and length) in name, type, and allowable length. Live fields that are not nullable and
+        don't have a default value must have a value in the new data; missing data in these fields will raise an error.
+
+        Args:
+            gis (arcgis.gis.GIS): GIS item for AGOL org
+            features_service_item_id (str): itemid for service to update
+            dataframe (pd.DataFrame.spatial): Spatially enabled dataframe of data to be added
+            layer_index (int): Index of layer within service to update. Defaults to 0.
 
         Raises:
-            ValueError: If the new field and existing fields don't match, the new data contains null fields,
-                        the new data exceeds the existing field lengths, or a specified field is missing from either
-                        new or live data.
+            ValueError: If the new field and existing fields don't match, the SHAPE field is missing or has an
+                        incompatible type, the new data contains null fields, the new data exceeds the existing field
+                        lengths, or a specified field is missing from either new or live data.
 
         Returns:
             int: Number of features added
@@ -37,29 +50,39 @@ class FeatureServiceUpdater:
         return updater._add_new_data_to_hosted_feature_layer()
 
     @classmethod
-    def remove_data(cls, gis, feature_service_itemid, dataframe, join_column, layer_index=0):
+    def remove_data(cls, gis, feature_service_itemid, deletes, layer_index=0):
         pass
 
     @classmethod
-    def update_data(cls, gis, feature_service_itemid, dataframe, join_column, layer_index=0, update_geometry=True):
-        """Updates existing features within a hosted feature layer using OBJECTID as the join field
+    def update_data(cls, gis, feature_service_itemid, dataframe, layer_index=0, update_geometry=True):
+        """Updates existing features within a hosted feature layer using OBJECTID as the join field.
+
+        The new data can have either attributes and geometries or just attributes based on the update_geometry flag. A combination of attribute & geometry updates and attribute-only updates must be done with two separate calls. The geometries must be provided in a SHAPE column and be the same type as the live data.
+
+        The new dataframe's columns and data must match the existing data's fields (with the exception of generated
+        fields like shape area and length) in name, type, and allowable length. Live fields that are not nullable and
+        don't have a default value must have a value in the new data; missing data in these fields will raise an error.
+
+        Args:
+            gis (arcgis.gis.GIS): GIS item for AGOL org
+            features_service_item_id (str): itemid for service to update
+            dataframe (pd.DataFrame.spatial): Spatially enabled dataframe of data to be updated
+            layer_index (int): Index of layer within service to update. Defaults to 0.
+            update_geometry (bool): Whether to update attributes and geometry (True) or just attributes (False). Defaults to False.
 
         Raises:
-            ValueError: If the new field and existing fields don't match, the new data contains null fields,
-                        the new data exceeds the existing field lengths, or a specified field is missing from either
-                        new or live data.
+            ValueError: If the new field and existing fields don't match, the SHAPE field is missing or has an
+                        incompatible type, the new data contains null fields, the new data exceeds the existing field
+                        lengths, or a specified field is missing from either new or live data.
 
         Returns:
             int: Number of features updated
         """
-        # updater = cls(
-        #     gis, feature_service_itemid, dataframe, join_column=join_column, fields=fields, layer_index=layer_index
-        # )
+
         updater = cls(
             gis,
             feature_service_itemid,
             dataframe,
-            join_column=join_column,
             fields=list(dataframe.columns),
             layer_index=layer_index,
         )
@@ -70,12 +93,20 @@ class FeatureServiceUpdater:
         pass
 
     def __init__(
-        self, gis, feature_service_itemid, dataframe, fields=None, join_column=None, failsafe_dir=None, layer_index=0
+        self,
+        gis,
+        feature_service_itemid,
+        dataframe=None,
+        fields=None,
+        join_column=None,
+        failsafe_dir=None,
+        layer_index=0
     ):
         self._class_logger = logging.getLogger(__name__).getChild(self.__class__.__name__)
         self.feature_service_itemid = feature_service_itemid
         self.feature_layer = arcgis.features.FeatureLayer.fromitem(gis.content.get(feature_service_itemid))
-        self.new_dataframe = dataframe.rename(columns=utils.rename_columns_for_agol(dataframe.columns))
+        if dataframe:
+            self.new_dataframe = dataframe.rename(columns=utils.rename_columns_for_agol(dataframe.columns))
         if 'SHAPE' in self.new_dataframe.columns:
             self.new_dataframe.spatial.set_geometry('SHAPE')
         if fields:
@@ -250,6 +281,19 @@ class FeatureServiceUpdater:
             upsert=False,
         )
         return messages['recordCount']
+
+    def _delete_data_from_hosted_feature_layer(self) -> int:
+        self._class_logger.info(
+            'Deleting features from layer `%s` in itemid `%s`', self.layer_index, self.feature_service_itemid
+        )
+
+        #: verify deletes is a comma-delimited string of OIDs
+
+        deletes = utils.retry(
+            self.feature_layer.delete_features,
+            deletes=deletes,
+            rollback_on_failure=True,
+        )
 
     def _update_hosted_feature_layer(self, update_geometry) -> int:
         """Updates existing features within a hosted feature layer using OBJECTID as the join field
