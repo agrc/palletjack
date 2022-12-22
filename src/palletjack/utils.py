@@ -1,6 +1,7 @@
 import logging
 import random
 import re
+import warnings
 from math import floor
 from time import sleep
 
@@ -586,3 +587,42 @@ def get_null_geometries(feature_layer_properties):
         })
 
     raise NotImplementedError(f'Null value generator for live geometry type {live_geometry_type} not yet implemented')
+
+
+class DeleteUtils:
+
+    @staticmethod
+    def check_delete_oids_are_comma_separated(oid_string):
+        try:
+            oids = oid_string.split(',')
+        except AttributeError as error:
+            raise ValueError(f'Can\'t split OBJECTID string `{oid_string}` into comma-separated values') from error
+
+        return oids
+
+    @staticmethod
+    def check_delete_oids_are_ints(oid_list):
+        numeric_oids = []
+        bad_oids = []
+        for oid in oid_list:
+            try:
+                numeric_oids.append(int(oid))
+            except ValueError:
+                bad_oids.append(oid)
+        if bad_oids:
+            raise TypeError(f'Couldn\'t convert OBJECTID(s) `{bad_oids}` to integer')
+        return numeric_oids
+
+    @staticmethod
+    def check_for_empty_oid_list(oid_string, numeric_oids):
+
+        if not numeric_oids:
+            raise ValueError(f'No OBJECTIDs found in string `{oid_string}`')
+
+    @staticmethod
+    def check_delete_oids_are_in_live_data(oid_string, numeric_oids, feature_layer):
+        query_oids = feature_layer.query(object_ids=oid_string, return_ids_only=True)
+        oids_not_in_layer = set(numeric_oids) - set(query_oids)
+
+        if oids_not_in_layer:
+            warnings.warn(f'OBJECTIDs {oids_not_in_layer} were not found in the live data')

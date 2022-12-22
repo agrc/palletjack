@@ -1167,3 +1167,81 @@ class TestNullGeometryGenerators:
             nullo = palletjack.utils.get_null_geometries(properties)
 
         assert 'Null value generator for live geometry type other not yet implemented' in str(exc_info.value)
+
+
+class TestDeleteUtils:
+
+    def test_check_delete_oids_are_comma_separated_returns_oid_list_no_spaces(self):
+        oid_string = '1,2,3'
+
+        oid_list = palletjack.utils.DeleteUtils.check_delete_oids_are_comma_separated(oid_string)
+
+        assert oid_list == ['1', '2', '3']
+
+    def test_check_delete_oids_are_comma_separated_returns_oid_list_with_spaces(self):
+        oid_string = ' 1, 2,3'
+
+        oid_list = palletjack.utils.DeleteUtils.check_delete_oids_are_comma_separated(oid_string)
+
+        assert oid_list == [' 1', ' 2', '3']
+
+    def test_check_delete_oids_are_comma_separated_raises_on_list_of_strings(self):
+        oid_string = ['1', '2', '3']
+
+        with pytest.raises(ValueError) as exc_info:
+            palletjack.utils.DeleteUtils.check_delete_oids_are_comma_separated(oid_string)
+
+        assert 'Can\'t split OBJECTID string `[\'1\', \'2\', \'3\']` into comma-separated values' in str(exc_info.value)
+
+    def test_check_delete_oids_are_comma_separated_raises_on_list_of_ints(self):
+        oid_string = [1, 2, 3]
+
+        with pytest.raises(ValueError) as exc_info:
+            palletjack.utils.DeleteUtils.check_delete_oids_are_comma_separated(oid_string)
+
+        assert 'Can\'t split OBJECTID string `[1, 2, 3]` into comma-separated values' in str(exc_info.value)
+
+    def test_check_delete_oids_are_ints_returns_int_list_with_spaces(self):
+        oid_list = [' 1', ' 2', '3']
+
+        numeric_oids = palletjack.utils.DeleteUtils.check_delete_oids_are_ints(oid_list)
+
+        assert numeric_oids == [1, 2, 3]
+
+    def test_check_delete_oids_are_ints_returns_int_list_without_spaces(self):
+        oid_list = ['1', '2', '3']
+
+        numeric_oids = palletjack.utils.DeleteUtils.check_delete_oids_are_ints(oid_list)
+
+        assert numeric_oids == [1, 2, 3]
+
+    def test_check_delete_oids_are_ints_raises_first_non_int(self):
+        oid_list = ['one', 2, 3]
+
+        with pytest.raises(TypeError) as exc_info:
+            palletjack.utils.DeleteUtils.check_delete_oids_are_ints(oid_list)
+
+        assert 'Couldn\'t convert OBJECTID(s) `[\'one\']` to integer' in str(exc_info.value)
+
+    def test_check_delete_oids_are_ints_raises_later_non_ints(self):
+        oid_list = [1, 'two', 'three']
+
+        with pytest.raises(TypeError) as exc_info:
+            palletjack.utils.DeleteUtils.check_delete_oids_are_ints(oid_list)
+
+        assert 'Couldn\'t convert OBJECTID(s) `[\'two\', \'three\']` to integer' in str(exc_info.value)
+
+    def test_check_for_empty_oid_list_doesnt_raise_on_list(self):
+        oid_string = ['1, 2, 3']
+        numeric_oids = [1, 2, 3]
+
+        palletjack.utils.DeleteUtils.check_for_empty_oid_list(oid_string, numeric_oids)
+
+    def test_check_for_empty_oid_list_raises_on_empty_list(self):
+        oid_string = ''
+        numeric_oids = []
+
+        with pytest.raises(ValueError) as exc_info:
+            palletjack.utils.DeleteUtils.check_for_empty_oid_list(oid_string, numeric_oids)
+
+        assert 'No OBJECTIDs found in string ``' in str(exc_info.value)
