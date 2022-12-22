@@ -1919,8 +1919,8 @@ class TestFeatureServiceOverwriter:
 class TestFeatureServiceInlineUpdaterUpsert:
 
     def test_upsert_new_data_doesnt_raise_on_normal(self, mocker):
-        mock_df = mocker.Mock()
-        mock_fl = mocker.Mock()
+        mock_df = mocker.MagicMock()
+        mock_fl = mocker.MagicMock()
         mock_fl.append.return_value = (True, {'message': 'foo'})
         mocker.patch('palletjack.utils.rename_columns_for_agol')
         updater = palletjack.FeatureServiceInlineUpdater(mocker.Mock(), mocker.Mock(), 'foo')
@@ -1928,8 +1928,8 @@ class TestFeatureServiceInlineUpdaterUpsert:
         updater._upsert_new_data(mock_fl, mock_df, 'abc', 0)
 
     def test_upsert_new_data_retries_on_httperror(self, mocker):
-        mock_df = mocker.Mock()
-        mock_fl = mocker.Mock()
+        mock_df = mocker.MagicMock()
+        mock_fl = mocker.MagicMock()
         mock_fl.append.side_effect = [Exception, (True, {'message': 'foo'})]
         mocker.patch('palletjack.utils.rename_columns_for_agol')
 
@@ -1937,8 +1937,8 @@ class TestFeatureServiceInlineUpdaterUpsert:
         updater._upsert_new_data(mock_fl, mock_df, 'abc', 0)
 
     def test_upsert_new_data_raises_on_False_result(self, mocker):
-        mock_df = mocker.Mock()
-        mock_fl = mocker.Mock()
+        mock_df = mocker.MagicMock()
+        mock_fl = mocker.MagicMock()
         mock_fl.append.return_value = (False, {'message': 'foo'})
         mocker.patch('palletjack.utils.rename_columns_for_agol')
 
@@ -1951,28 +1951,30 @@ class TestFeatureServiceInlineUpdaterUpsert:
             0] == 'Failed to append data to layer id 0 in itemid abc. Append should have been rolled back.'
 
     def test_upsert_new_data_in_hosted_feature_layer_normal(self, mocker):
-        mock_fl = mocker.Mock()
+        mock_fl = mocker.MagicMock()
         # mock_fl.manager.truncate.return_value = {
         #     'submissionTime': 123,
         #     'lastUpdatedTime': 124,
         #     'status': 'Completed',
         # }
-        mock_fl.properties = {
-            'fields': [
-                {
-                    'name': 'Foo'
-                },
-                {
-                    'name': 'Bar'
-                },
-            ],
-            'indexes': [
-                {
-                    'fields': 'Foo',
-                    'isUnique': True
-                },
-            ]
-        }
+        mock_fl.properties.fields = [
+            {
+                'name': 'Foo',
+                'type': 'esriFieldTypeString',
+                'nullable': True,
+            },
+            {
+                'name': 'Bar',
+                'type': 'esriFieldTypeString',
+                'nullable': True,
+            },
+        ]
+        mock_fl.properties.indexes = [
+            {
+                'fields': 'Foo',
+                'isUnique': True
+            },
+        ]
 
         mock_fl.append.return_value = (True, {'recordCount': 42})
 
@@ -1990,28 +1992,30 @@ class TestFeatureServiceInlineUpdaterUpsert:
         assert uploaded_features == 42
 
     def test_upsert_new_data_in_hosted_feature_layer_handles_agol_field_renaming(self, mocker):
-        mock_fl = mocker.Mock()
+        mock_fl = mocker.MagicMock()
         # mock_fl.manager.truncate.return_value = {
         #     'submissionTime': 123,
         #     'lastUpdatedTime': 124,
         #     'status': 'Completed',
         # }
-        mock_fl.properties = {
-            'fields': [
-                {
-                    'name': 'Foo_field'
-                },
-                {
-                    'name': 'Bar'
-                },
-            ],
-            'indexes': [
-                {
-                    'fields': 'Bar',
-                    'isUnique': True
-                },
-            ]
-        }
+        mock_fl.properties.fields = [
+            {
+                'name': 'Foo_field',
+                'type': 'esriFieldTypeString',
+                'nullable': True,
+            },
+            {
+                'name': 'Bar',
+                'type': 'esriFieldTypeString',
+                'nullable': True,
+            },
+        ]
+        mock_fl.properties.indexes = [
+            {
+                'fields': 'Bar',
+                'isUnique': True
+            },
+        ]
         mock_fl.append.return_value = (True, {'recordCount': 42})
 
         fl_class_mock = mocker.Mock()
@@ -2028,24 +2032,26 @@ class TestFeatureServiceInlineUpdaterUpsert:
         assert uploaded_features == 42
 
     def test_upsert_new_data_in_hosted_feature_layer_handles_manual_field_renaming(self, mocker):
-        mock_fl = mocker.Mock()
+        mock_fl = mocker.MagicMock()
 
-        mock_fl.properties = {
-            'fields': [
-                {
-                    'name': 'Shape__Length'
-                },
-                {
-                    'name': 'Bar'
-                },
-            ],
-            'indexes': [
-                {
-                    'fields': 'Bar',
-                    'isUnique': True
-                },
-            ]
-        }
+        mock_fl.properties.fields = [
+            {
+                'name': 'Shape__Length',
+                'type': 'esriFieldTypeString',
+                'nullable': True,
+            },
+            {
+                'name': 'Bar',
+                'type': 'esriFieldTypeString',
+                'nullable': True,
+            },
+        ]
+        mock_fl.properties.indexes = [
+            {
+                'fields': 'Bar',
+                'isUnique': True
+            },
+        ]
         mock_fl.append.return_value = (True, {'recordCount': 42})
 
         fl_class_mock = mocker.Mock()
