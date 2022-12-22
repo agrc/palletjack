@@ -8,10 +8,12 @@ from io import BytesIO
 from pathlib import Path
 from time import sleep
 
+import geopandas as gpd
 import pandas as pd
 import pysftp
 import requests
 from googleapiclient.http import MediaIoBaseDownload
+from sqlalchemy import create_engine
 
 from . import utils
 
@@ -429,3 +431,43 @@ class SFTPLoader:
         if len(dataframe.index) == 0:
             self._class_logger.warning('Dataframe contains no rows. Shape: %s', dataframe.shape)
         return dataframe
+
+
+class PostgresLoader:
+    """Loads data from a Postgres/PostGIS database into a pandas data frame"""
+
+    def __init__(self, host, database, username, password, port=5432):
+        self._class_logger = logging.getLogger(__name__).getChild(self.__class__.__name__)
+
+        connection_string = f'postgresql://{username}:{password}@{host}:{port}/{database}'
+        self.engine = create_engine(connection_string)
+
+    def read_table_into_dataframe(self, table_name, index_column, crs, spatial_column):
+        """Read a table into a dataframe
+
+        Args:
+            table_name (str): Name of table or view to read in the following format: schema.table_name
+            index_column (str): Name of column to use as the dataframe's index
+            crs (str): Coordinate reference system of the table's geometry column
+            spatial_column (str): Name of the table's geometry or geography column
+
+        Returns:
+            pd.DataFrame.spatial: Table as a spatially enabled dataframe
+        """
+
+        self._class_logger.info('Reading `%s` into dataframe', table_name)
+
+        dataframe = gpd.read_postgis(
+            f'select * from {table_name}', self.engine, index_col=index_column, crs=crs, geom_col=spatial_column
+        )
+
+        spatial_dataframe = pd.DataFrame.spatial.from_geodataframe(dataframe, column_name=spatial_column)
+        for column in spatial_dataframe.select_dtypes(include=['datetime64[ns, UTC]']):
+            self._class_logger.debug('Converting column `%s` to ISO string format', column)
+            spatial_dataframe[column] = spatial_dataframe[column].apply(pd.Timestamp.isoformat)
+
+        self._class_logger.debug('Dataframe shape: %s', spatial_dataframe.shape)
+        if len(spatial_dataframe.index) == 0:
+            self._class_logger.warning('Dataframe contains no rows. Shape: %s', spatial_dataframe.shape)
+
+        return spatial_dataframe

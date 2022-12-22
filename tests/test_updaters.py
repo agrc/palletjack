@@ -1721,22 +1721,20 @@ class TestFeatureServiceOverwriter:
             0] == 'Failed to append data to layer id 0 in itemid abc. Append should have been rolled back.'
 
     def test_truncate_and_load_feature_service_normal(self, mocker):
-        mock_fl = mocker.Mock()
+        mock_fl = mocker.MagicMock()
         mock_fl.manager.truncate.return_value = {
             'submissionTime': 123,
             'lastUpdatedTime': 124,
             'status': 'Completed',
         }
-        mock_fl.properties = {
-            'fields': [
-                {
-                    'name': 'Foo'
-                },
-                {
-                    'name': 'Bar'
-                },
-            ]
-        }
+        mock_fl.properties.fields = [
+            {
+                'name': 'Foo'
+            },
+            {
+                'name': 'Bar'
+            },
+        ]
         mock_fl.append.return_value = (True, {'recordCount': 42})
 
         fl_class_mock = mocker.Mock()
@@ -1760,16 +1758,14 @@ class TestFeatureServiceOverwriter:
             'lastUpdatedTime': 124,
             'status': 'Completed',
         }
-        mock_fl.properties = {
-            'fields': [
-                {
-                    'name': 'Foo'
-                },
-                {
-                    'name': 'Bar'
-                },
-            ]
-        }
+        mock_fl.properties.fields = [
+            {
+                'name': 'Foo'
+            },
+            {
+                'name': 'Bar'
+            },
+        ]
         mock_fl.append.side_effect = [(False, 'foo'), (True, {'recordCount': 42})]
 
         fl_class_mock = mocker.Mock()
@@ -1798,16 +1794,14 @@ class TestFeatureServiceOverwriter:
             'lastUpdatedTime': 124,
             'status': 'Completed',
         }
-        mock_fl.properties = {
-            'fields': [
-                {
-                    'name': 'Foo'
-                },
-                {
-                    'name': 'Bar'
-                },
-            ]
-        }
+        mock_fl.properties.fields = [
+            {
+                'name': 'Foo'
+            },
+            {
+                'name': 'Bar'
+            },
+        ]
         mock_fl.append.return_value = (True, {'recordCount': 42})
 
         fl_class_mock = mocker.Mock()

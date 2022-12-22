@@ -2,7 +2,7 @@
 """
 
 from . import transform
-from .loaders import GoogleDriveDownloader, GSheetLoader, SFTPLoader
+from .loaders import GoogleDriveDownloader, GSheetLoader, PostgresLoader, SFTPLoader
 from .updaters import (
     ColorRampReclassifier, FeatureServiceAttachmentsUpdater, FeatureServiceInlineUpdater, FeatureServiceOverwriter
 )

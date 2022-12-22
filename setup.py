@@ -36,6 +36,10 @@ setup(
         'pysftp==0.2.9',
         'arcgis==2.0.*',
         'pygsheets==2.0.*',
+        'geopandas==0.12.*',
+        'SQLAlchemy==1.4.*',
+        'psycopg2==2.9.*',
+        'numpy==1.23.*',  #: Pinned to fix "module 'numpy' has no attribute 'str'" error
     ],
     extras_require={
         'tests': [
