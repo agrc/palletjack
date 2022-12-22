@@ -107,7 +107,7 @@ def check_fields_match(featurelayer, new_dataframe):
         RuntimeError: If new data contains a field not present in the live data
     """
 
-    live_fields = {field['name'] for field in featurelayer.properties['fields']}
+    live_fields = {field['name'] for field in featurelayer.properties.fields}
     new_fields = set(new_dataframe.columns)
     #: Remove SHAPE field from set (live "featurelayer.properties['fields']" does not expose the 'SHAPE' field)
     try:
@@ -137,7 +137,7 @@ def check_index_column_in_feature_layer(featurelayer, index_column):
         RuntimeError: If index_column is not in featurelayer's fields
     """
 
-    featurelayer_fields = [field['name'] for field in featurelayer.properties['fields']]
+    featurelayer_fields = [field['name'] for field in featurelayer.properties.fields]
     if index_column not in featurelayer_fields:
         raise RuntimeError(f'Index column {index_column} not found in feature layer fields {featurelayer_fields}')
 
@@ -193,10 +193,10 @@ def check_field_set_to_unique(featurelayer, field_name):
         RuntimeError: If the field is not unique (or if it's indexed but not unique)
     """
 
-    fields = [field['fields'] for field in featurelayer.properties['indexes']]
+    fields = [field['fields'] for field in featurelayer.properties.indexes]
     if field_name not in fields:
         raise RuntimeError(f'{field_name} does not have a "unique constraint" set within the feature layer')
-    for field in featurelayer.properties['indexes']:
+    for field in featurelayer.properties.indexes:
         if field['fields'] == field_name:
             if not field['isUnique']:
                 raise RuntimeError(f'{field_name} does not have a "unique constraint" set within the feature layer')
