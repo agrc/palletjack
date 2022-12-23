@@ -105,7 +105,7 @@ class FeatureServiceUpdater:
         self._class_logger = logging.getLogger(__name__).getChild(self.__class__.__name__)
         self.feature_service_itemid = feature_service_itemid
         self.feature_layer = arcgis.features.FeatureLayer.fromitem(gis.content.get(feature_service_itemid))
-        if dataframe:
+        if dataframe is not None:
             self.new_dataframe = dataframe.rename(columns=utils.rename_columns_for_agol(dataframe.columns))
         if 'SHAPE' in self.new_dataframe.columns:
             self.new_dataframe.spatial.set_geometry('SHAPE')
