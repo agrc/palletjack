@@ -57,7 +57,10 @@ class FeatureServiceUpdater:
     def update_data(cls, gis, feature_service_itemid, dataframe, layer_index=0, update_geometry=True):
         """Updates existing features within a hosted feature layer using OBJECTID as the join field.
 
-        The new data can have either attributes and geometries or just attributes based on the update_geometry flag. A combination of attribute & geometry updates and attribute-only updates must be done with two separate calls. The geometries must be provided in a SHAPE column and be the same type as the live data.
+        The new data can have either attributes and geometries or only attributes based on the update_geometry flag. A
+        combination of updates from a source with both attributes & geometries and a source with attributes-only must
+        be done with two separate calls. The geometries must be provided in a SHAPE column and be the same type as the
+        live data.
 
         The new dataframe's columns and data must match the existing data's fields (with the exception of generated
         fields like shape area and length) in name, type, and allowable length. Live fields that are not nullable and
@@ -282,6 +285,7 @@ class FeatureServiceUpdater:
         )
         return messages['recordCount']
 
+    #: WIP
     def _delete_data_from_hosted_feature_layer(self) -> int:
         self._class_logger.info(
             'Deleting features from layer `%s` in itemid `%s`', self.layer_index, self.feature_service_itemid
@@ -312,7 +316,8 @@ class FeatureServiceUpdater:
         )
         self._class_logger.debug('Updating fields %s', self.fields)
 
-        #: Add null geometries if update_geometry==False
+        #: Add null geometries if update_geometry==False so that we can create a featureset from the dataframe
+        #: (geometries will be ignored by upsert call)
         if not update_geometry:
             self._class_logger.debug('Attribute-only update; inserting null geometries')
             self.new_dataframe['SHAPE'] = utils.get_null_geometries(self.feature_layer.properties)
@@ -335,10 +340,6 @@ class FeatureServiceUpdater:
         )
         return messages['recordCount']
 
-    #: TODO: Figuring out which fields to pass to upsert. Upsert doesn't need OBJECTID (will use existing if it's not included in append_fields). to_featureset() requires a SHAPE field, so we have to get shape for updating existing data (can we pass a stand-in, simple geometry and see if it's ignored if SHAPE isn't in append_fields?). Test whether upsert_new_data requires matching field. Make sure matching field are in append_fields (either explicitly or in earlier steps?).
-    #: to_featureset() will set objectid if it's not provided.
-    #: TODO: join live and new dataframes by self.index_column, but append using OID/GUID
-    #: TODO: Need to allow table-only (no geometry) updates, but to_geojson requires geometry. auto add null geometries and verify they don't get used.
     def _upsert_data(self, target_featurelayer, dataframe, **append_kwargs):
         """UPdate and inSERT data into live dataset with featurelayer.append()
 
