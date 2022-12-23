@@ -36,6 +36,7 @@ setup(
         'pysftp==0.2.9',
         'arcgis==2.0.*',
         'pygsheets==2.0.*',
+        'numpy==1.23.*',
     ],
     extras_require={
         'tests': [
