@@ -50,8 +50,29 @@ class FeatureServiceUpdater:
         return updater._add_new_data_to_hosted_feature_layer()
 
     @classmethod
-    def remove_data(cls, gis, feature_service_itemid, deletes, layer_index=0):
-        pass
+    def remove_data(cls, gis, feature_service_itemid, delete_string, layer_index=0):
+        """Deletes features from a hosted feature layer based on comma-separated string of Object IDs
+
+        This is a wrapper around the arcgis.FeatureLayer.delete_features method that adds some sanity checking. The delete operation is rolled-back if any of the features fail to delete using (rollback_on_failure=True). This function will raise a RuntimeError as well after delete_features() returns if any of them fail.
+
+        The sanity checks will raise errors or warnings as appropriate if any of them fail.
+
+        Args:
+            delete_string (str): comma-separated string of OIDs to delete (ie, "1,2,3")
+
+        Raises:
+            ValueError: If delete_string can't be split on `,`
+            TypeError: If any of the items in delete_string can't be cast to ints
+            ValueError: If delete_string is empty
+            UserWarning: If any of the Object IDs in delete_string don't exist in the live data
+            RuntimeError: If any of the OIDs fail to delete
+
+        Returns:
+            int: The number of features deleted
+        """
+
+        updater = cls(gis, feature_service_itemid, layer_index=layer_index)
+        return updater._delete_data_from_hosted_feature_layer(delete_string)
 
     @classmethod
     def update_data(cls, gis, feature_service_itemid, dataframe, layer_index=0, update_geometry=True):
@@ -92,7 +113,7 @@ class FeatureServiceUpdater:
         return updater._update_hosted_feature_layer(update_geometry)
 
     @classmethod
-    def overwrite_data(cls, gis, feature_service_itemid, dataframe, failsafe_dir, layer_index=0):
+    def truncate_and_load(cls, gis, feature_service_itemid, dataframe, failsafe_dir, layer_index=0):
         pass
 
     def __init__(
@@ -110,8 +131,8 @@ class FeatureServiceUpdater:
         self.feature_layer = arcgis.features.FeatureLayer.fromitem(gis.content.get(feature_service_itemid))
         if dataframe is not None:
             self.new_dataframe = dataframe.rename(columns=utils.rename_columns_for_agol(dataframe.columns))
-        if 'SHAPE' in self.new_dataframe.columns:
-            self.new_dataframe.spatial.set_geometry('SHAPE')
+            if 'SHAPE' in self.new_dataframe.columns:
+                self.new_dataframe.spatial.set_geometry('SHAPE')
         if fields:
             self.fields = list(utils.rename_columns_for_agol(fields).values())
         if join_column:
@@ -285,19 +306,47 @@ class FeatureServiceUpdater:
         )
         return messages['recordCount']
 
-    #: WIP
-    def _delete_data_from_hosted_feature_layer(self) -> int:
+    def _delete_data_from_hosted_feature_layer(self, delete_string) -> int:
+        """Deletes features from a hosted feature layer based on comma-separated string of OIDS
+
+        Args:
+            delete_string (str): comma-separated string of OIDs to delete
+
+        Raises:
+            RuntimeError: If any of the OIDs fail to delete
+
+        Returns:
+            int: The number of features deleted
+        """
+
         self._class_logger.info(
             'Deleting features from layer `%s` in itemid `%s`', self.layer_index, self.feature_service_itemid
         )
+        self._class_logger.debug('Delete string: %s', delete_string)
 
-        #: verify deletes is a comma-delimited string of OIDs
+        #: Verify delete list
+        oid_list = utils.DeleteUtils.check_delete_oids_are_comma_separated(delete_string)
+        oid_numeric = utils.DeleteUtils.check_delete_oids_are_ints(oid_list)
+        utils.DeleteUtils.check_for_empty_oid_list(oid_numeric, delete_string)
+        num_missing_oids = utils.DeleteUtils.check_delete_oids_are_in_live_data(
+            delete_string, oid_numeric, self.feature_layer
+        )
 
+        #: Note: apparently not all services support rollback: https://developers.arcgis.com/rest/services-reference/enterprise/delete-features.htm
         deletes = utils.retry(
             self.feature_layer.delete_features,
-            deletes=deletes,
+            deletes=delete_string,
             rollback_on_failure=True,
         )
+
+        failed_deletes = [result['objectId'] for result in deletes['deleteResults'] if not result['success']]
+        if failed_deletes:
+            raise RuntimeError(f'The following Object IDs failed to delete: {failed_deletes}')
+
+        #: The REST API still returns success: True on missing OIDs, so we have to track this ourselves
+        actual_delete_count = len(deletes['deleteResults']) - num_missing_oids
+
+        return actual_delete_count
 
     def _update_hosted_feature_layer(self, update_geometry) -> int:
         """Updates existing features within a hosted feature layer using OBJECTID as the join field

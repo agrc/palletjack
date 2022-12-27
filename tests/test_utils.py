@@ -1278,4 +1278,8 @@ class TestDeleteUtils:
         oid_numeric = [1, 2, 3]
 
         with pytest.warns(UserWarning, match='OBJECTIDs \{3\} were not found in the live data'):
-            palletjack.utils.DeleteUtils.check_delete_oids_are_in_live_data(oid_string, oid_numeric, fl_mock)
+            number_of_missing_oids = palletjack.utils.DeleteUtils.check_delete_oids_are_in_live_data(
+                oid_string, oid_numeric, fl_mock
+            )
+
+        assert number_of_missing_oids == 1
