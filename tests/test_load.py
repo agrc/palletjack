@@ -222,6 +222,60 @@ class TestAddToLayer:
         field_checker_mock.return_value.check_fields_present.assert_called_once_with(['foo', 'bar'], add_oid=False)
 
 
+class TestDeleteFromLayer:
+
+    def test_delete_data_from_hosted_feature_layer_returns_number_of_deleted_features(self, mocker):
+        updater_mock = mocker.Mock()
+        updater_mock.feature_service_itemid = 'foo123'
+        updater_mock.layer_index = 0
+        updater_mock.feature_layer.delete_features.return_value = {
+            'deleteResults': [
+                {'objectId': 11, 'uniqueId': 11, 'globalId': None, 'success': True},
+                {'objectId': 17, 'uniqueId': 17, 'globalId': None, 'success': True},
+            ]
+        }  # yapf: disable
+
+        delete_utils_mock = mocker.patch('palletjack.utils.DeleteUtils')
+        delete_utils_mock.check_delete_oids_are_in_live_data.return_value = 0
+
+        deleted = load.FeatureServiceUpdater._delete_data_from_hosted_feature_layer(updater_mock, '11,17')
+
+        assert deleted == 2
+
+    def test_delete_data_from_hosted_feature_layer_raises_on_failed_delete(self, mocker):
+        updater_mock = mocker.Mock()
+        updater_mock.feature_service_itemid = 'foo123'
+        updater_mock.layer_index = 0
+        updater_mock.feature_layer.delete_features.return_value = {
+            'deleteResults': [
+                {'objectId': 11, 'uniqueId': 11, 'globalId': None, 'success': True},
+                {'objectId': 17, 'uniqueId': 17, 'globalId': None, 'success': False},
+            ]
+        }  # yapf: disable
+
+        mocker.patch('palletjack.utils.DeleteUtils')
+
+        with pytest.raises(RuntimeError, match='The following Object IDs failed to delete: \[17\]'):  # as exc_info:
+            deleted = load.FeatureServiceUpdater._delete_data_from_hosted_feature_layer(updater_mock, '11,17')
+
+        # assert  exc_info.value.args[0] == 'The following Object IDs failed to delete: 17' in str(exc_info.value)
+
+    def test_delete_data_from_hosted_feature_layer_runs_proper_check_sequence(self, mocker):
+        updater_mock = mocker.Mock()
+        updater_mock.feature_service_itemid = 'foo123'
+        updater_mock.layer_index = 0
+        updater_mock.feature_layer.query.return_value = {'objectIdFieldName': 'OBJECTID', 'objectIds': [11, 17]}
+        updater_mock.feature_layer.delete_features.return_value = {
+            'deleteResults': [
+                {'objectId': 11, 'uniqueId': 11, 'globalId': None, 'success': True},
+            ]
+        }  # yapf: disable
+
+        deleted = load.FeatureServiceUpdater._delete_data_from_hosted_feature_layer(updater_mock, '11')
+
+        assert deleted == 1
+
+
 class TestAttachments:
 
     def test_create_attachment_action_df_adds_for_blank_existing_name(self, mocker):
