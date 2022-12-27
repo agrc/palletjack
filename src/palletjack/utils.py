@@ -593,6 +593,18 @@ class DeleteUtils:
 
     @staticmethod
     def check_delete_oids_are_comma_separated(oid_string):
+        """Raise an error if an Object ID string used for deletes isn't comma separated
+
+        Args:
+            oid_string (str): String to be passed to FeatureLayer.delete_features
+
+        Raises:
+            ValueError: If oid_string can't be split on `,`
+
+        Returns:
+            list[str]: The individual elements from the comma-separated oid_string
+        """
+
         try:
             oids = oid_string.split(',')
         except AttributeError as error:
@@ -602,6 +614,18 @@ class DeleteUtils:
 
     @staticmethod
     def check_delete_oids_are_ints(oid_list):
+        """Raise an error if a list of strings can't be parsed as ints
+
+        Args:
+            oid_list (list[str]): List of strings coming from check_delete_oids_are_comma_separated
+
+        Raises:
+            TypeError: If any of the items in oid_list can't be cast to ints
+
+        Returns:
+            list[int]: oid_list converted to ints
+        """
+
         numeric_oids = []
         bad_oids = []
         for oid in oid_list:
@@ -615,13 +639,34 @@ class DeleteUtils:
 
     @staticmethod
     def check_for_empty_oid_list(oid_string, numeric_oids):
+        """Raise an error if the parsed Object ID list is empty
+
+        Args:
+            oid_string (str): The original, comma-separated delete Object ID string
+            numeric_oids (list[int]): The parsed and cast-to-int Object IDs
+
+        Raises:
+            ValueError: If numeric_oids is empty
+        """
 
         if not numeric_oids:
             raise ValueError(f'No OBJECTIDs found in string `{oid_string}`')
 
     @staticmethod
     def check_delete_oids_are_in_live_data(oid_string, numeric_oids, feature_layer):
-        query_oids = feature_layer.query(object_ids=oid_string, return_ids_only=True)
+        """Warn if a delete Object ID doesn't exist in the live data
+
+        Args:
+            oid_string (str): Original, comma-separated delete Object ID string
+            numeric_oids (list[int]): The parsed and cast-to-int Object IDs
+            feature_layer (arcgis.features.FeatureLayer): Live FeatureLayer item
+
+        Raises:
+            UserWarning: If any of the Object IDs in numeric_oids don't exist in the live data.
+        """
+
+        query_results = feature_layer.query(object_ids=oid_string, return_ids_only=True)
+        query_oids = query_results['objectIds']
         oids_not_in_layer = set(numeric_oids) - set(query_oids)
 
         if oids_not_in_layer:

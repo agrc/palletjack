@@ -1262,3 +1262,20 @@ class TestDeleteUtils:
             palletjack.utils.DeleteUtils.check_for_empty_oid_list(oid_string, numeric_oids)
 
         assert 'No OBJECTIDs found in string ``' in str(exc_info.value)
+
+    def test_check_delete_oids_are_in_live_data_doesnt_warn_on_good_oids(self, mocker):
+        fl_mock = mocker.Mock()
+        fl_mock.query.return_value = {'objectIdFieldName': 'OBJECTID', 'objectIds': [1, 2, 3]}
+        oid_string = '1,2,3'
+        oid_numeric = [1, 2, 3]
+
+        palletjack.utils.DeleteUtils.check_delete_oids_are_in_live_data(oid_string, oid_numeric, fl_mock)
+
+    def test_check_delete_oids_are_in_live_data_warns_on_missing_oid(self, mocker):
+        fl_mock = mocker.Mock()
+        fl_mock.query.return_value = {'objectIdFieldName': 'OBJECTID', 'objectIds': [1, 2]}
+        oid_string = '1,2,3'
+        oid_numeric = [1, 2, 3]
+
+        with pytest.warns(UserWarning, match='OBJECTIDs \{3\} were not found in the live data'):
+            palletjack.utils.DeleteUtils.check_delete_oids_are_in_live_data(oid_string, oid_numeric, fl_mock)
