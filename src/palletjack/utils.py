@@ -654,7 +654,7 @@ class DeleteUtils:
 
     @staticmethod
     def check_delete_oids_are_in_live_data(oid_string, numeric_oids, feature_layer):
-        """Warn if a delete Object ID doesn't exist in the live data
+        """Warn if a delete Object ID doesn't exist in the live data, return number missing
 
         Args:
             oid_string (str): Original, comma-separated delete Object ID string
@@ -663,6 +663,9 @@ class DeleteUtils:
 
         Raises:
             UserWarning: If any of the Object IDs in numeric_oids don't exist in the live data.
+
+        Returns:
+            int: Number of Object IDs missing from live data
         """
 
         query_results = feature_layer.query(object_ids=oid_string, return_ids_only=True)
@@ -671,3 +674,5 @@ class DeleteUtils:
 
         if oids_not_in_layer:
             warnings.warn(f'OBJECTIDs {oids_not_in_layer} were not found in the live data')
+
+        return len(oids_not_in_layer)
