@@ -1098,6 +1098,56 @@ class TestFieldLength:
         #: bar shouldn't trigger an exception
         checker.check_field_length(['foo'])
 
+    def test_check_field_length_works_with_int_field(self):
+        properties = {
+            'fields': [
+                {
+                    'name': 'foo',
+                    'type': 'esriFieldTypeString',
+                    'length': 10,
+                },
+                {
+                    'name': 'int',
+                    'type': 'esriFieldTypeInteger',
+                },
+            ]
+        }
+        new_df = pd.DataFrame({
+            'foo': ['aaa', 'bbbb'],
+            'int': [1, 2],
+        })
+
+        checker = palletjack.utils.FieldChecker(properties, new_df)
+
+        #: Should not raise
+        checker.check_field_length(['foo', 'int'])
+
+    def test_check_field_length_passes_with_only_int_fields(self, caplog):
+        caplog.set_level(logging.DEBUG)
+        properties = {
+            'fields': [
+                {
+                    'name': 'foo',
+                    'type': 'esriFieldTypeInteger',
+                },
+                {
+                    'name': 'int',
+                    'type': 'esriFieldTypeInteger',
+                },
+            ]
+        }
+        new_df = pd.DataFrame({
+            'foo': ['aaa', 'bbbb'],
+            'int': [1, 2],
+        })
+
+        checker = palletjack.utils.FieldChecker(properties, new_df)
+
+        #: Should not raise
+        checker.check_field_length(['foo'])
+
+        assert 'No fields with length property' in caplog.text
+
 
 class TestFieldsPresent:
 
