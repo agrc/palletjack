@@ -53,7 +53,9 @@ class FeatureServiceUpdater:
     def remove_data(cls, gis, feature_service_itemid, delete_string, layer_index=0):
         """Deletes features from a hosted feature layer based on comma-separated string of Object IDs
 
-        This is a wrapper around the arcgis.FeatureLayer.delete_features method that adds some sanity checking. The delete operation is rolled-back if any of the features fail to delete using (rollback_on_failure=True). This function will raise a RuntimeError as well after delete_features() returns if any of them fail.
+        This is a wrapper around the arcgis.FeatureLayer.delete_features method that adds some sanity checking. The
+        delete operation is rolled-back if any of the features fail to delete using (rollback_on_failure=True). This
+        function will raise a RuntimeError as well after delete_features() returns if any of them fail.
 
         The sanity checks will raise errors or warnings as appropriate if any of them fail.
 
@@ -92,7 +94,8 @@ class FeatureServiceUpdater:
             features_service_item_id (str): itemid for service to update
             dataframe (pd.DataFrame.spatial): Spatially enabled dataframe of data to be updated
             layer_index (int): Index of layer within service to update. Defaults to 0.
-            update_geometry (bool): Whether to update attributes and geometry (True) or just attributes (False). Defaults to False.
+            update_geometry (bool): Whether to update attributes and geometry (True) or just attributes (False).
+            Defaults to False.
 
         Raises:
             ValueError: If the new field and existing fields don't match, the SHAPE field is missing or has an
@@ -114,7 +117,38 @@ class FeatureServiceUpdater:
 
     @classmethod
     def truncate_and_load(cls, gis, feature_service_itemid, dataframe, failsafe_dir, layer_index=0):
-        updater = cls(gis, feature_service_itemid, dataframe, failsafe_dir=failsafe_dir, layer_index=layer_index)
+        """Overwrite a hosted feature layer by truncating and loading the new data
+
+        When the existing dataset is truncated, a copy is kept in memory as a spatially-enabled dataframe. If the new
+        data fail to load, this copy is reloaded. If the reload fails, the copy is written to failsafe_dir with the
+        filename {todays_date}.json (2022-12-31.json).
+
+        The new dataframe must have a 'SHAPE' column containing geometries of the same type as the live data. New
+        OBJECTIDs will be automatically generated.
+
+        The new dataframe's columns and data must match the existing data's fields (with the exception of generated
+        fields like shape area and length) in name, type, and allowable length. Live fields that are not nullable and
+        don't have a default value must have a value in the new data; missing data in these fields will raise an error.
+
+        Args:
+            gis (arcgis.gis.GIS): GIS item for AGOL org
+            feature_service_itemid (str): itemid for service to update
+            dataframe (pd.DataFrame.spatial): Spatially enalbed dataframe of new data to be loaded
+            failsafe_dir (str): Directory to save original data in case of complete failure
+            layer_index (int, optional): Index of lyaer within service to update. Defaults to 0.
+
+        Returns:
+            int: Number of features loaded
+        """
+
+        updater = cls(
+            gis,
+            feature_service_itemid,
+            dataframe,
+            fields=list(dataframe.columns),
+            failsafe_dir=failsafe_dir,
+            layer_index=layer_index
+        )
         return updater._truncate_and_load_data()
 
     def __init__(
@@ -440,19 +474,36 @@ class FeatureServiceUpdater:
 
         return messages
 
-    #: TODO: move tests over from old class, test for realsies
+    #: TODO: add pre-append checks
     def _truncate_and_load_data(self):
+        """Overwrite a layer by truncating and loading new data
+
+        Raises:
+            RuntimeError: If loading fails and reloading of old data fails (old data will be written to disk)
+
+        Returns:
+            int: Number of features loaded
+        """
+
         self._class_logger.info(
             'Truncating and loading layer `%s` in itemid `%s`', self.layer_index, self.feature_service_itemid
         )
 
+        #: temp fix until Esri fixes empty series as NaN bug
+        fixed_dataframe = utils.replace_nan_series_with_empty_strings(self.new_dataframe)
+
+        #: Field checks to prevent Error: 400 errors from AGOL
+        field_checker = utils.FieldChecker(self.feature_layer.properties, self.new_dataframe)
+        field_checker.check_live_and_new_field_types_match(self.fields)
+        field_checker.check_for_non_null_fields(self.fields)
+        field_checker.check_field_length(self.fields)
+        field_checker.check_fields_present(self.fields, add_oid=False)
+
+        #: NOTE: Should this call and method save the old data to disk on truncate failure in case it fails halfway
+        #: through and leaves a bad dataset?
         old_dataframe = self._truncate_existing_data()
 
         try:
-            #: temp fix until Esri fixes empty series as NaN bug
-            fixed_dataframe = utils.replace_nan_series_with_empty_strings(self.new_dataframe)
-            #: TODO: roll into utils.FieldChecker class?
-            utils.check_fields_match(self.feature_layer, fixed_dataframe)
             self._class_logger.info('Loading new data...')
             messages = self._upsert_data(self.feature_layer, fixed_dataframe, upsert=False)
         except Exception:
@@ -775,143 +826,6 @@ class FeatureServiceAttachmentsUpdater:
                                                     .apply(lambda filename: str(Path(out_dir, filename)))
 
         return attachments_dataframe
-
-
-class FeatureServiceOverwriter:
-    """Overwrites an AGOL Feature Service with data from a spatially-enabled DataFrame.
-    """
-
-    def __init__(self, gis):
-        self.gis = gis
-        self._class_logger = logging.getLogger(__name__).getChild(self.__class__.__name__)
-
-    def _truncate_existing_data(self, featurelayer, layer_index, itemid):
-        """Remove all existing features from live dataset
-
-        Args:
-            featurelayer (arcgis.features.FeatureLayer): Live data
-            layer_index (int): Layer id within the main feature service
-            itemid (str): AGOL item ID for the main feature service
-
-        Raises:
-            RuntimeError: If the truncate fails
-
-        Returns:
-            pd.DataFrame: The feature layer's data prior to truncating
-        """
-
-        old_data = featurelayer.query(as_df=True)
-        truncate_result = utils.retry(featurelayer.manager.truncate, asynchronous=True, wait=True)
-        self._class_logger.debug(truncate_result)
-        if truncate_result['status'] != 'Completed':
-            raise RuntimeError(f'Failed to truncate existing data from layer id {layer_index} in itemid {itemid}')
-        return old_data
-
-    def _append_new_data(self, target_featurelayer, dataframe, feature_service_item_id, layer_index):
-        """Add new data to live dataset
-
-        Args:
-            target_featurelayer (arcgis.features.FeatureLayer): Live dataset; should be empty
-            dataframe (pd.DataFrame): Spatially-enabled dataframe containing new data. Column names should match live
-            data
-            feature_service_item_id (int): Layer ID within the main feature service
-            layer_index (str): AGOL item ID for the main feature service
-
-        Raises:
-            RuntimeError: If append fails; will attempt to rollback appends that worked.
-
-        Returns:
-            dict: Messages returned from append operation
-        """
-
-        geojson = dataframe.spatial.to_featureset().to_geojson
-        result, messages = utils.retry(
-            target_featurelayer.append,
-            upload_format='geojson',
-            edits=geojson,
-            #:TODO figure out a way to preserve GUIDs?
-            upsert=False,
-            return_messages=True,
-            rollback=True,
-        )
-
-        self._class_logger.debug(messages)
-        if not result:
-            raise RuntimeError(
-                f'Failed to append data to layer id {layer_index} in itemid {feature_service_item_id}. Append should'
-                ' have been rolled back.'
-            )
-
-        return messages
-
-    def _save_truncated_data(self, dataframe, directory):
-        """Save the pre-truncate dataframe to directory for safety
-
-        Args:
-            dataframe (pd.DataFrame): The data extracted from the feature layer prior to truncating
-            directory (str or Path): The directory to save the data to.
-
-        Returns:
-            Path: The full path to the output file, named with today's date.
-        """
-
-        out_path = Path(directory, f'old_data_{datetime.date.today()}.json')
-        out_path.write_text(dataframe.spatial.to_featureset().to_json)
-        return out_path
-
-    def truncate_and_load_feature_service(self, feature_service_item_id, new_dataframe, failsafe_dir, layer_index=0):
-        """Attempt to delete existing data from a feature layer and add new data from a spatially-enabled dataframe.
-
-        First attempts to truncate existing data. Then renames new data column names to conform to AGOL scheme (spaces,
-        special chars changed to '_'). Finally attempts to append new data to now-empty feature layer. If the new data
-        append fails, it attempts to re-upload the previous data from the in-memory dataframe. If this fails, it
-        attempts to failsafe by writing the old data to disk as a json file.
-
-        Args:
-            feature_service_item_id (str): AGOL item ID for feature service to truncate and load
-            new_dataframe (pd.DataFrame): Spatially-enabled dataframe containing new data. Must not contain columns
-            that do not exist in the live data. Geometry type must match existing data.
-            layer_index (int, optional): ID for the feature service layer to be truncated and loaded. Defaults to 0.
-
-        Raises:
-            RuntimeError: If new data contains a field not present in the live data
-            RuntimeError: If the truncate fails
-            RuntimeError: If append fails; will attempt to rollback appends that worked
-            RuntimeError: If rollback fails; will attempt to write old live data to disk as json
-
-        Returns:
-            int: The number of new records added after deleting all existing records.
-        """
-
-        target_featurelayer = arcgis.features.FeatureLayer.fromitem(
-            self.gis.content.get(feature_service_item_id), layer_id=layer_index
-        )
-        self._class_logger.info('Truncating existing data...')
-        old_dataframe = self._truncate_existing_data(target_featurelayer, layer_index, feature_service_item_id)
-        try:
-            cleaned_dataframe = new_dataframe.rename(columns=utils.rename_columns_for_agol(new_dataframe.columns))
-            #: temp fix until Esri fixes empty series as NaN bug
-            fixed_dataframe = utils.replace_nan_series_with_empty_strings(cleaned_dataframe)
-            utils.check_fields_match(target_featurelayer, fixed_dataframe)
-            self._class_logger.info('Loading new data...')
-
-            messages = self._append_new_data(target_featurelayer, fixed_dataframe, feature_service_item_id, layer_index)
-        except Exception:
-            try:
-                self._class_logger.info('Append failed; attempting to re-load truncated data...')
-                messages = self._append_new_data(
-                    target_featurelayer, old_dataframe, feature_service_item_id, layer_index
-                )
-                self._class_logger.info('%s features reloaded', messages['recordCount'])
-            except Exception as inner_error:
-                failsafe_path = self._save_truncated_data(old_dataframe, failsafe_dir)
-                raise RuntimeError(
-                    f'Failed to re-add truncated data after failed append; data saved to {failsafe_path}'
-                ) from inner_error
-            finally:
-                raise
-
-        return messages['recordCount']
 
 
 class ColorRampReclassifier:
