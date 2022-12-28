@@ -9,6 +9,7 @@ import numpy as np
 import pandas as pd
 import pandas.testing as tm
 import pytest
+from arcgis import GeoAccessor, GeoSeriesAccessor
 
 from palletjack import load
 
@@ -344,7 +345,7 @@ class TestTruncateAndLoadLayer:
         updater_mock.new_dataframe = pd.DataFrame(columns=['Foo', 'Bar'])
         updater_mock._truncate_existing_data.return_value = 'old_data'
 
-        mocker.patch('palletjack.utils.replace_nan_series_with_empty_strings', return_value='new_data')
+        # mocker.patch('palletjack.utils.replace_nan_series_with_bogus_value', return_value='new_data')
         mocker.patch('palletjack.utils.FieldChecker')
         mocker.patch('palletjack.utils.sleep')
 
@@ -357,7 +358,9 @@ class TestTruncateAndLoadLayer:
         with pytest.raises(RuntimeError, match='Failed to append data. Append operation should have been rolled back.'):
             uploaded_features = load.FeatureServiceUpdater._truncate_and_load_data(updater_mock)
 
-        assert updater_mock._upsert_data.call_args_list[0].args == (updater_mock.feature_layer, 'new_data')
+        assert updater_mock._upsert_data.call_args_list[0].args == (
+            updater_mock.feature_layer, updater_mock.new_dataframe
+        )
         assert updater_mock._upsert_data.call_args_list[0].kwargs == {'upsert': False}
 
         assert updater_mock._upsert_data.call_args_list[1].args == (updater_mock.feature_layer, 'old_data')
@@ -377,7 +380,6 @@ class TestTruncateAndLoadLayer:
         updater_mock.fields = ['Foo', 'Bar']
         updater_mock._truncate_existing_data.return_value = 'old_data'
 
-        mocker.patch('palletjack.utils.replace_nan_series_with_empty_strings', return_value='new_data')
         mocker.patch('palletjack.utils.sleep')
         field_checker_mock = mocker.patch('palletjack.utils.FieldChecker')
 
@@ -402,7 +404,6 @@ class TestTruncateAndLoadLayer:
         updater_mock.failsafe_dir = '/foo'
         updater_mock._truncate_existing_data.return_value = 'old_data'
 
-        mocker.patch('palletjack.utils.replace_nan_series_with_empty_strings', return_value='new_data')
         mocker.patch('palletjack.utils.FieldChecker')
         save_mock = mocker.patch(
             'palletjack.utils.save_spatially_enabled_dataframe_to_json', return_value='/foo/bar.json'
@@ -420,7 +421,9 @@ class TestTruncateAndLoadLayer:
         ):
             uploaded_features = load.FeatureServiceUpdater._truncate_and_load_data(updater_mock)
 
-        assert updater_mock._upsert_data.call_args_list[0].args == (updater_mock.feature_layer, 'new_data')
+        assert updater_mock._upsert_data.call_args_list[0].args == (
+            updater_mock.feature_layer, updater_mock.new_dataframe
+        )
         assert updater_mock._upsert_data.call_args_list[0].kwargs == {'upsert': False}
 
         assert updater_mock._upsert_data.call_args_list[1].args == (updater_mock.feature_layer, 'old_data')
@@ -430,6 +433,72 @@ class TestTruncateAndLoadLayer:
 
         assert 'Append failed; attempting to re-load truncated data...' in caplog.text
         assert 'features reloaded' not in caplog.text
+
+    def test_truncate_and_load_raises_on_empty_column(self, mocker, caplog):
+
+        caplog.set_level(logging.DEBUG)
+
+        new_dataframe = pd.DataFrame({
+            'id': [0, 1, 2],
+            'floats': [np.nan, np.nan, np.nan],
+            'x': [21, 22, 23],
+            'y': [31, 32, 33]
+        })
+        spatial_df = pd.DataFrame.spatial.from_xy(new_dataframe, 'x', 'y')
+
+        updater_mock = mocker.Mock()
+        updater_mock.new_dataframe = spatial_df
+        updater_mock._class_logger = logging.getLogger('mock logger')
+        updater_mock.feature_service_itemid = 'foo123'
+        updater_mock.layer_index = 0
+        updater_mock.fields = ['id', 'floats', 'x', 'y']
+        updater_mock._truncate_existing_data.return_value = 'old_data'
+
+        updater_mock.feature_layer.properties = {
+            'fields': [
+                {
+                    'name': 'id',
+                    'type': 'esriFieldTypeInteger',
+                    'nullable': True,
+                    'defaultValue': None,
+                },
+                {
+                    'name': 'floats',
+                    'type': 'esriFieldTypeDouble',
+                    'nullable': True,
+                    'defaultValue': None,
+                },
+                {
+                    'name': 'x',
+                    'type': 'esriFieldTypeInteger',
+                    'nullable': True,
+                    'defaultValue': None,
+                },
+                {
+                    'name': 'y',
+                    'type': 'esriFieldTypeInteger',
+                    'nullable': True,
+                    'defaultValue': None,
+                },
+            ],
+            'geometryType': 'esriGeometryPoint'
+        }
+
+        # mocker.patch('palletjack.utils.replace_nan_series_with_bogus_value', return_value='new_data')
+        mocker.patch('palletjack.utils.sleep')
+        # field_checker_mock = mocker.patch('palletjack.utils.FieldChecker')
+
+        updater_mock._upsert_data.return_value = {'recordCount': 42}
+
+        with pytest.raises(
+            ValueError,
+            match=re.escape(
+                'The following float/double column(s) are completely empty: [\'floats\'] (suggestion: insert at least one bogus value)'
+            )
+        ):
+            uploaded_features = load.FeatureServiceUpdater._truncate_and_load_data(updater_mock)
+
+        # assert uploaded_features == 42
 
 
 class TestAttachments:
