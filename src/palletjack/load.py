@@ -114,7 +114,8 @@ class FeatureServiceUpdater:
 
     @classmethod
     def truncate_and_load(cls, gis, feature_service_itemid, dataframe, failsafe_dir, layer_index=0):
-        pass
+        updater = cls(gis, feature_service_itemid, dataframe, failsafe_dir=failsafe_dir, layer_index=layer_index)
+        return updater._truncate_and_load_data()
 
     def __init__(
         self,
@@ -139,6 +140,8 @@ class FeatureServiceUpdater:
             self.join_column = utils.rename_columns_for_agol([join_column])[join_column]
         self.failsafe_dir = failsafe_dir
         self.layer_index = layer_index
+
+    #: NOTE: Saving all this for potential reuse in transform.py
 
     # def __init__(self, gis, dataframe, index_column, field_mapping=None):
     #     self._class_logger = logging.getLogger(__name__).getChild(self.__class__.__name__)
@@ -389,6 +392,7 @@ class FeatureServiceUpdater:
         )
         return messages['recordCount']
 
+    #: TODO: rename this method? not everything is an upsert
     def _upsert_data(self, target_featurelayer, dataframe, **append_kwargs):
         """UPdate and inSERT data into live dataset with featurelayer.append()
 
@@ -435,6 +439,55 @@ class FeatureServiceUpdater:
             raise RuntimeError('Failed to append data. Append operation should have been rolled back.')
 
         return messages
+
+    #: TODO: move tests over from old class, test for realsies
+    def _truncate_and_load_data(self):
+        self._class_logger.info(
+            'Truncating and loading layer `%s` in itemid `%s`', self.layer_index, self.feature_service_itemid
+        )
+
+        old_dataframe = self._truncate_existing_data()
+
+        try:
+            #: temp fix until Esri fixes empty series as NaN bug
+            fixed_dataframe = utils.replace_nan_series_with_empty_strings(self.new_dataframe)
+            #: TODO: roll into utils.FieldChecker class?
+            utils.check_fields_match(self.feature_layer, fixed_dataframe)
+            self._class_logger.info('Loading new data...')
+            messages = self._upsert_data(self.feature_layer, fixed_dataframe, upsert=False)
+        except Exception:
+            try:
+                self._class_logger.info('Append failed; attempting to re-load truncated data...')
+                messages = self._upsert_data(self.feature_layer, old_dataframe, upsert=False)
+                self._class_logger.info('%s features reloaded', messages['recordCount'])
+            except Exception as inner_error:
+                failsafe_path = utils.save_spatially_enabled_dataframe_to_json(old_dataframe, self.failsafe_dir)
+                raise RuntimeError(
+                    f'Failed to re-add truncated data after failed append; data saved to {failsafe_path}'
+                ) from inner_error
+            finally:
+                raise
+
+        return messages['recordCount']
+
+    def _truncate_existing_data(self):
+        """Remove all existing features from the live dataset
+
+        Raises:
+            RuntimeError: If the truncate fails
+
+        Returns:
+            pd.DataFrame: The feature layer's data as a spatially-enabled dataframe prior to truncating
+        """
+
+        old_data = self.feature_layer.query().sdf
+        truncate_result = utils.retry(self.feature_layer.manager.truncate, asynchronous=True, wait=True)
+        self._class_logger.debug(truncate_result)
+        if truncate_result['status'] != 'Completed':
+            raise RuntimeError(
+                f'Failed to truncate existing data from layer id {self.layer_index} in itemid {self.feature_service_itemid}'
+            )
+        return old_data
 
     # def append_new_data_to_hosted_feature_layer(self, feature_service_itemid, layer_index=0):
     #     """UPdate existing data and inSERT new data to a hosted feature layer from a spatially-enabled data frame
