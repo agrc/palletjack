@@ -1,5 +1,6 @@
 import json
 import logging
+import re
 import sys
 import urllib
 from pathlib import Path
@@ -274,6 +275,161 @@ class TestDeleteFromLayer:
         deleted = load.FeatureServiceUpdater._delete_data_from_hosted_feature_layer(updater_mock, '11')
 
         assert deleted == 1
+
+
+class TestTruncateAndLoadLayer:
+
+    def test_truncate_existing_data_normal(self, mocker):
+        updater_mock = mocker.Mock()
+        updater_mock.feature_service_itemid = 'foo123'
+        updater_mock.layer_index = 0
+
+        updater_mock.feature_layer.manager.truncate.return_value = {
+            'submissionTime': 123,
+            'lastUpdatedTime': 124,
+            'status': 'Completed',
+        }
+
+        load.FeatureServiceUpdater._truncate_existing_data(updater_mock)
+
+    def test_truncate_existing_raises_error_on_failure(self, mocker):
+        updater_mock = mocker.Mock()
+        updater_mock.feature_service_itemid = 'foo123'
+        updater_mock.layer_index = 0
+        updater_mock.feature_layer.manager.truncate.return_value = {
+            'submissionTime': 123,
+            'lastUpdatedTime': 124,
+            'status': 'Foo',
+        }
+
+        with pytest.raises(RuntimeError, match='Failed to truncate existing data from layer id 0 in itemid foo123'):
+            load.FeatureServiceUpdater._truncate_existing_data(updater_mock)
+
+    def test_truncate_existing_retries_on_HTTPError(self, mocker):
+        updater_mock = mocker.Mock()
+        updater_mock.feature_service_itemid = 'foo123'
+        updater_mock.layer_index = 0
+        updater_mock.feature_layer.manager.truncate.side_effect = [
+            urllib.error.HTTPError('url', 'code', 'msg', 'hdrs', 'fp'), {
+                'submissionTime': 123,
+                'lastUpdatedTime': 124,
+                'status': 'Completed',
+            }
+        ]
+
+        load.FeatureServiceUpdater._truncate_existing_data(updater_mock)
+
+    def test_truncate_and_load_feature_service_normal(self, mocker):
+        updater_mock = mocker.Mock()
+        updater_mock.feature_service_itemid = 'foo123'
+        updater_mock.layer_index = 0
+
+        updater_mock.new_dataframe = pd.DataFrame(columns=['Foo', 'Bar'])
+
+        mocker.patch('palletjack.utils.FieldChecker')
+
+        updater_mock._upsert_data.return_value = {'recordCount': 42}
+
+        uploaded_features = load.FeatureServiceUpdater._truncate_and_load_data(updater_mock)
+
+        assert uploaded_features == 42
+
+    def test_truncate_and_load_append_fails_reload_works(self, mocker, caplog):
+        caplog.set_level(logging.DEBUG)
+
+        updater_mock = mocker.Mock()
+        updater_mock._class_logger = logging.getLogger('mock logger')
+        updater_mock.feature_service_itemid = 'foo123'
+        updater_mock.layer_index = 0
+        updater_mock.new_dataframe = pd.DataFrame(columns=['Foo', 'Bar'])
+        updater_mock._truncate_existing_data.return_value = 'old_data'
+
+        mocker.patch('palletjack.utils.replace_nan_series_with_empty_strings', return_value='new_data')
+        mocker.patch('palletjack.utils.FieldChecker')
+        mocker.patch('palletjack.utils.sleep')
+
+        updater_mock._upsert_data.side_effect = [
+            RuntimeError('Failed to append data. Append operation should have been rolled back.'), {
+                'recordCount': 42
+            }
+        ]
+
+        with pytest.raises(RuntimeError, match='Failed to append data. Append operation should have been rolled back.'):
+            uploaded_features = load.FeatureServiceUpdater._truncate_and_load_data(updater_mock)
+
+        assert updater_mock._upsert_data.call_args_list[0].args == (updater_mock.feature_layer, 'new_data')
+        assert updater_mock._upsert_data.call_args_list[0].kwargs == {'upsert': False}
+
+        assert updater_mock._upsert_data.call_args_list[1].args == (updater_mock.feature_layer, 'old_data')
+        assert updater_mock._upsert_data.call_args_list[1].kwargs == {'upsert': False}
+
+        assert 'Append failed; attempting to re-load truncated data...' in caplog.text
+        assert '42 features reloaded' in caplog.text
+
+    def test_truncate_and_load_calls_field_checkers(self, mocker, caplog):
+
+        caplog.set_level(logging.DEBUG)
+
+        updater_mock = mocker.Mock()
+        updater_mock._class_logger = logging.getLogger('mock logger')
+        updater_mock.feature_service_itemid = 'foo123'
+        updater_mock.layer_index = 0
+        updater_mock.fields = ['Foo', 'Bar']
+        updater_mock._truncate_existing_data.return_value = 'old_data'
+
+        mocker.patch('palletjack.utils.replace_nan_series_with_empty_strings', return_value='new_data')
+        mocker.patch('palletjack.utils.sleep')
+        field_checker_mock = mocker.patch('palletjack.utils.FieldChecker')
+
+        updater_mock._upsert_data.return_value = {'recordCount': 42}
+
+        uploaded_features = load.FeatureServiceUpdater._truncate_and_load_data(updater_mock)
+
+        field_checker_mock.return_value.check_live_and_new_field_types_match.assert_called_once_with(['Foo', 'Bar'])
+        field_checker_mock.return_value.check_for_non_null_fields.assert_called_once_with(['Foo', 'Bar'])
+        field_checker_mock.return_value.check_field_length.assert_called_once_with(['Foo', 'Bar'])
+        field_checker_mock.return_value.check_fields_present.assert_called_once_with(['Foo', 'Bar'], add_oid=False)
+        assert uploaded_features == 42
+
+    def test_truncate_and_load_saves_to_json_after_append_and_reload_fail(self, mocker, caplog):
+        caplog.set_level(logging.DEBUG)
+
+        updater_mock = mocker.Mock()
+        updater_mock._class_logger = logging.getLogger('mock logger')
+        updater_mock.feature_service_itemid = 'foo123'
+        updater_mock.layer_index = 0
+        updater_mock.new_dataframe = pd.DataFrame(columns=['Foo', 'Bar'])
+        updater_mock.failsafe_dir = '/foo'
+        updater_mock._truncate_existing_data.return_value = 'old_data'
+
+        mocker.patch('palletjack.utils.replace_nan_series_with_empty_strings', return_value='new_data')
+        mocker.patch('palletjack.utils.FieldChecker')
+        save_mock = mocker.patch(
+            'palletjack.utils.save_spatially_enabled_dataframe_to_json', return_value='/foo/bar.json'
+        )
+        mocker.patch('palletjack.utils.sleep')
+
+        updater_mock._upsert_data.side_effect = [
+            RuntimeError('Failed to append data. Append operation should have been rolled back.'),
+            RuntimeError('Failed to append data. Append operation should have been rolled back.')
+        ]
+
+        with pytest.raises(
+            RuntimeError,
+            match=re.escape('Failed to re-add truncated data after failed append; data saved to /foo/bar.json')
+        ):
+            uploaded_features = load.FeatureServiceUpdater._truncate_and_load_data(updater_mock)
+
+        assert updater_mock._upsert_data.call_args_list[0].args == (updater_mock.feature_layer, 'new_data')
+        assert updater_mock._upsert_data.call_args_list[0].kwargs == {'upsert': False}
+
+        assert updater_mock._upsert_data.call_args_list[1].args == (updater_mock.feature_layer, 'old_data')
+        assert updater_mock._upsert_data.call_args_list[1].kwargs == {'upsert': False}
+
+        save_mock.assert_called_once_with('old_data', '/foo')
+
+        assert 'Append failed; attempting to re-load truncated data...' in caplog.text
+        assert 'features reloaded' not in caplog.text
 
 
 class TestAttachments:
@@ -757,277 +913,6 @@ class TestAttachments:
         tm.assert_frame_equal(attachment_df[other_fields], test_df[other_fields])
         assert [str(path) for path in attachment_df['full_file_path']
                ] == [str(path) for path in test_df['full_file_path']]
-
-
-class TestFeatureServiceOverwriter:
-
-    def test_truncate_existing_data_normal(self, mocker):
-        fl_mock = mocker.Mock()
-        fl_mock.manager.truncate.return_value = {
-            'submissionTime': 123,
-            'lastUpdatedTime': 124,
-            'status': 'Completed',
-        }
-        overwriter = load.FeatureServiceOverwriter(mocker.Mock())
-
-        load.FeatureServiceOverwriter._truncate_existing_data(overwriter, fl_mock, 0, 'abc')
-
-    def test_truncate_existing_raises_error_on_failure(self, mocker):
-        fl_mock = mocker.Mock()
-        fl_mock.manager.truncate.return_value = {
-            'submissionTime': 123,
-            'lastUpdatedTime': 124,
-            'status': 'Foo',
-        }
-        overwriter = load.FeatureServiceOverwriter(mocker.Mock())
-
-        with pytest.raises(RuntimeError) as exc_info:
-            load.FeatureServiceOverwriter._truncate_existing_data(overwriter, fl_mock, 0, 'abc')
-
-        assert exc_info.value.args[0] == 'Failed to truncate existing data from layer id 0 in itemid abc'
-
-    def test_truncate_existing_retries_on_HTTPError(self, mocker):
-        fl_mock = mocker.Mock()
-        fl_mock.manager.truncate.side_effect = [
-            urllib.error.HTTPError('url', 'code', 'msg', 'hdrs', 'fp'), {
-                'submissionTime': 123,
-                'lastUpdatedTime': 124,
-                'status': 'Completed',
-            }
-        ]
-        overwriter = load.FeatureServiceOverwriter(mocker.Mock())
-
-        load.FeatureServiceOverwriter._truncate_existing_data(overwriter, fl_mock, 0, 'abc')
-
-    def test_append_new_data_doesnt_raise_on_normal(self, mocker):
-        mock_df = mocker.Mock()
-        mock_fl = mocker.Mock()
-        mock_fl.append.return_value = (True, {'message': 'foo'})
-
-        overwriter = load.FeatureServiceOverwriter(mocker.Mock())
-        overwriter._append_new_data(mock_fl, mock_df, 0, 'abc')
-
-    def test_append_new_data_retries_on_httperror(self, mocker):
-        mock_df = mocker.Mock()
-        mock_fl = mocker.Mock()
-        mock_fl.append.side_effect = [urllib.error.HTTPError('a', 'b', 'c', 'd', 'e'), (True, {'message': 'foo'})]
-
-        overwriter = load.FeatureServiceOverwriter(mocker.Mock())
-        overwriter._append_new_data(mock_fl, mock_df, 0, 'abc')
-
-    def test_append_new_data_raises_on_False_result(self, mocker):
-        mock_df = mocker.Mock()
-        mock_fl = mocker.Mock()
-        mock_fl.append.return_value = (False, {'message': 'foo'})
-
-        overwriter = load.FeatureServiceOverwriter(mocker.Mock())
-
-        with pytest.raises(RuntimeError) as exc_info:
-            overwriter._append_new_data(mock_fl, mock_df, 'abc', 0)
-
-        assert exc_info.value.args[
-            0] == 'Failed to append data to layer id 0 in itemid abc. Append should have been rolled back.'
-
-    def test_truncate_and_load_feature_service_normal(self, mocker):
-        mock_fl = mocker.Mock()
-        mock_fl.manager.truncate.return_value = {
-            'submissionTime': 123,
-            'lastUpdatedTime': 124,
-            'status': 'Completed',
-        }
-        mock_fl.properties = {
-            'fields': [
-                {
-                    'name': 'Foo'
-                },
-                {
-                    'name': 'Bar'
-                },
-            ]
-        }
-        mock_fl.append.return_value = (True, {'recordCount': 42})
-
-        fl_class_mock = mocker.Mock()
-        fl_class_mock.fromitem.return_value = mock_fl
-        mocker.patch('arcgis.features.FeatureLayer', fl_class_mock)
-
-        new_dataframe = pd.DataFrame(columns=['Foo', 'Bar'])
-        mocker.patch.object(pd.DataFrame, 'spatial')
-
-        overwriter = load.FeatureServiceOverwriter(mocker.Mock())
-
-        uploaded_features = overwriter.truncate_and_load_feature_service('abc', new_dataframe, 'foo/dir')
-
-        assert uploaded_features == 42
-
-    def test_truncate_and_load_append_fails_reload_works(self, mocker, caplog):
-        caplog.set_level(logging.DEBUG)
-        mock_fl = mocker.Mock()
-        mock_fl.manager.truncate.return_value = {
-            'submissionTime': 123,
-            'lastUpdatedTime': 124,
-            'status': 'Completed',
-        }
-        mock_fl.properties = {
-            'fields': [
-                {
-                    'name': 'Foo'
-                },
-                {
-                    'name': 'Bar'
-                },
-            ]
-        }
-        mock_fl.append.side_effect = [(False, 'foo'), (True, {'recordCount': 42})]
-
-        fl_class_mock = mocker.Mock()
-        fl_class_mock.fromitem.return_value = mock_fl
-        mocker.patch('arcgis.features.FeatureLayer', fl_class_mock)
-
-        new_dataframe = pd.DataFrame(columns=['Foo', 'Bar'])
-        mocker.patch.object(pd.DataFrame, 'spatial')
-
-        overwriter = load.FeatureServiceOverwriter(mocker.Mock())
-
-        with pytest.raises(
-            RuntimeError,
-            match='Failed to append data to layer id 0 in itemid abc. Append should have been rolled back.'
-        ):
-            uploaded_features = overwriter.truncate_and_load_feature_service('abc', new_dataframe, 'foo/dir')
-
-        assert 'Append failed; attempting to re-load truncated data...' in caplog.text
-        assert '42 features reloaded' in caplog.text
-
-    def test_truncate_and_load_field_check_fails_reload_works(self, mocker, caplog):
-        caplog.set_level(logging.DEBUG)
-        mock_fl = mocker.Mock()
-        mock_fl.manager.truncate.return_value = {
-            'submissionTime': 123,
-            'lastUpdatedTime': 124,
-            'status': 'Completed',
-        }
-        mock_fl.properties = {
-            'fields': [
-                {
-                    'name': 'Foo'
-                },
-                {
-                    'name': 'Bar'
-                },
-            ]
-        }
-        mock_fl.append.return_value = (True, {'recordCount': 42})
-
-        fl_class_mock = mocker.Mock()
-        fl_class_mock.fromitem.return_value = mock_fl
-        mocker.patch('arcgis.features.FeatureLayer', fl_class_mock)
-
-        new_dataframe = pd.DataFrame(columns=['Foo', 'Bar', 'Baz'])
-        mocker.patch.object(pd.DataFrame, 'spatial')
-
-        overwriter = load.FeatureServiceOverwriter(mocker.Mock())
-
-        with pytest.raises(
-            RuntimeError,
-            match='New dataset contains the following fields that are not present in the live dataset: {\'Baz\'}'
-        ):
-            uploaded_features = overwriter.truncate_and_load_feature_service('abc', new_dataframe, 'foo/dir')
-
-        assert 'Append failed; attempting to re-load truncated data...' in caplog.text
-        assert '42 features reloaded' in caplog.text
-
-    def test_truncate_and_load_append_fails_reload_fails(self, mocker, caplog):
-        caplog.set_level(logging.DEBUG)
-        mock_fl = mocker.Mock()
-        mock_fl.manager.truncate.return_value = {
-            'submissionTime': 123,
-            'lastUpdatedTime': 124,
-            'status': 'Completed',
-        }
-        mock_fl.properties = {
-            'fields': [
-                {
-                    'name': 'Foo'
-                },
-                {
-                    'name': 'Bar'
-                },
-            ]
-        }
-        mock_fl.append.side_effect = [(False, 'foo'), (False, 'bar')]
-
-        fl_class_mock = mocker.Mock()
-        fl_class_mock.fromitem.return_value = mock_fl
-        mocker.patch('arcgis.features.FeatureLayer', fl_class_mock)
-
-        new_dataframe = pd.DataFrame(columns=['Foo', 'Bar'])
-        mocker.patch.object(pd.DataFrame, 'spatial')
-
-        mocker.patch.object(load.FeatureServiceOverwriter, '_save_truncated_data', return_value='/foo/bar.json')
-
-        overwriter = load.FeatureServiceOverwriter(mocker.Mock())
-
-        with pytest.raises(RuntimeError) as exc_info:
-            uploaded_features = overwriter.truncate_and_load_feature_service('abc', new_dataframe, 'foo/dir')
-
-        assert exc_info.value.args[
-            0] == 'Failed to re-add truncated data after failed append; data saved to /foo/bar.json'
-        assert 'Append failed; attempting to re-load truncated data...' in caplog.text
-        assert 'features reloaded' not in caplog.text
-
-    def test_save_truncated_data_calls_write_with_json(self, mocker):
-        mock_df = pd.DataFrame({
-            'foo': [1],
-            'x': [11],
-            'y': [14],
-        })
-        #: Need to 'unload' the mocked arcpy used in tests above so that .from_xy() works. This could be pulled
-        #: out if these tests or the other tests are in their own files.
-        if 'arcpy' in sys.modules:
-            del sys.modules['arcpy']
-
-        mock_sdf = pd.DataFrame.spatial.from_xy(mock_df, 'x', 'y')
-
-        open_mock = mocker.MagicMock()
-        context_manager_mock = mocker.MagicMock()
-        context_manager_mock.return_value.__enter__.return_value = open_mock
-        mocker.patch('pathlib.Path.open', new=context_manager_mock)
-
-        load.FeatureServiceOverwriter._save_truncated_data(mocker.Mock(), mock_sdf, 'foo')
-
-        test_json_string = '{"features": [{"geometry": {"spatialReference": {"wkid": 4326}, "x": 11, "y": 14}, "attributes": {"foo": 1, "x": 11, "y": 14, "OBJECTID": 1}}], "objectIdFieldName": "OBJECTID", "displayFieldName": "OBJECTID", "spatialReference": {"wkid": 4326}, "geometryType": "esriGeometryPoint", "fields": [{"name": "OBJECTID", "type": "esriFieldTypeOID", "alias": "OBJECTID"}, {"name": "foo", "type": "esriFieldTypeInteger", "alias": "foo"}, {"name": "x", "type": "esriFieldTypeInteger", "alias": "x"}, {"name": "y", "type": "esriFieldTypeInteger", "alias": "y"}]}'
-
-        assert open_mock.write.called_with(test_json_string)
-
-    def test_save_truncated_data_opens_file_with_right_name(self, mocker):
-        mock_df = pd.DataFrame({
-            'foo': [1],
-            'x': [11],
-            'y': [14],
-        })
-        #: Need to 'unload' the mocked arcpy used in tests above so that .from_xy() works. This could be pulled
-        #: out if these tests or the other tests are in their own files.
-        if 'arcpy' in sys.modules:
-            del sys.modules['arcpy']
-
-        mock_sdf = pd.DataFrame.spatial.from_xy(mock_df, 'x', 'y')
-
-        open_mock = mocker.MagicMock()
-        context_manager_mock = mocker.MagicMock()
-        context_manager_mock.return_value.__enter__.return_value = open_mock
-
-        datetime_mock = mocker.Mock()
-        datetime_mock.date.today.return_value = 'foo-date'
-        mocker.patch('palletjack.load.datetime', new=datetime_mock)
-
-        open_mock = mocker.MagicMock()
-        context_manager_mock = mocker.MagicMock()
-        context_manager_mock.return_value.__enter__.return_value = open_mock
-        mocker.patch('pathlib.Path.open', new=context_manager_mock)
-
-        out_path = load.FeatureServiceOverwriter._save_truncated_data(mocker.Mock(), mock_sdf, 'foo')
-
-        assert out_path == Path('foo/old_data_foo-date.json')
 
 
 class TestUpsertData:
