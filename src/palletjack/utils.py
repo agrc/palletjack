@@ -521,7 +521,10 @@ class FieldChecker:
             live data allows.
         """
 
-        # fields_dataframe = pd.DataFrame(self.live_data_properties['fields'])
+        if 'length' not in self.fields_dataframe.columns:
+            module_logger.debug('No fields with length property')
+            return
+
         length_limited_fields = self.fields_dataframe[
             (self.fields_dataframe['type'].isin(['esriFieldTypeString', 'esriFieldTypeGlobalID'])) &
             (self.fields_dataframe['length'].astype(bool))]
