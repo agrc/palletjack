@@ -1,8 +1,10 @@
+import datetime
 import logging
 import random
 import re
 import warnings
 from math import floor
+from pathlib import Path
 from time import sleep
 
 import arcgis
@@ -359,6 +361,22 @@ def authorize_pygsheets(credentials):
         return pygsheets.authorize(custom_credentials=credentials)
     except Exception as err:
         raise RuntimeError('Could not authenticate to Google API') from err
+
+
+def save_spatially_enabled_dataframe_to_json(dataframe, directory):
+    """Save a dataframe to directory for safety as old_data_{todays date}.json
+
+    Args:
+        dataframe (pd.DataFrame): A spatially-enabled dataframe.
+        directory (str or Path): The directory to save the data to.
+
+    Returns:
+        Path: The full path to the output file, named with today's date.
+    """
+
+    out_path = Path(directory, f'old_data_{datetime.date.today()}.json')
+    out_path.write_text(dataframe.spatial.to_featureset().to_json, encoding='utf-8')
+    return out_path
 
 
 class FieldChecker:
