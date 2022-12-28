@@ -569,6 +569,32 @@ class FieldChecker:
         if error_message:
             raise RuntimeError('. '.join(error_message))
 
+    def check_for_empty_float_fields(self, fields):
+        """Raise an error if any of the float fields are completely empty.
+
+        As of arcgis 2.0.1. to_featureset() doesn't handle completely empty series properly (it relies on str;
+        https://github.com/Esri/arcgis-python-api/issues/1281), so we give the user a warning if they're passing an
+        empty field.
+
+        Args:
+            fields (list[str]): The fields to be operated on.
+
+        Raises:
+            ValueError: If any of the columns only contain nulls
+        """
+
+        float_types = ['float', 'float32', 'float64']
+        float_fields = [field for field in fields if str(self.new_dataframe[field].dtype) in float_types]
+        empty_fields = []
+        for field in float_fields:
+            if self.new_dataframe[field].isnull().all():
+                empty_fields.append(field)
+
+        if empty_fields:
+            raise ValueError(
+                f'The following float/double column(s) are completely empty: {empty_fields} (suggestion: insert at least one bogus value)'
+            )
+
 
 def get_null_geometries(feature_layer_properties):
     """Generate placeholder geometries near 0, 0 with type based on provided feature layer properties dictionary.
