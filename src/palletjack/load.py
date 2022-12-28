@@ -334,6 +334,8 @@ class FeatureServiceUpdater:
         field_checker.check_for_non_null_fields(self.fields)
         field_checker.check_field_length(self.fields)
         field_checker.check_fields_present(self.fields, add_oid=False)
+        #: FIXME: remove once Esri fixes https://github.com/Esri/arcgis-python-api/issues/1281
+        field_checker.check_for_empty_float_fields(self.fields)
 
         #: Upsert
         messages = self._upsert_data(
@@ -414,6 +416,8 @@ class FeatureServiceUpdater:
         field_checker.check_for_non_null_fields(self.fields)
         field_checker.check_field_length(self.fields)
         field_checker.check_fields_present(self.fields, add_oid=True)
+        #: FIXME: remove once Esri fixes https://github.com/Esri/arcgis-python-api/issues/1281
+        field_checker.check_for_empty_float_fields(self.fields)
 
         #: Upsert
         messages = self._upsert_data(
@@ -474,7 +478,6 @@ class FeatureServiceUpdater:
 
         return messages
 
-    #: TODO: add pre-append checks
     def _truncate_and_load_data(self):
         """Overwrite a layer by truncating and loading new data
 
@@ -489,15 +492,14 @@ class FeatureServiceUpdater:
             'Truncating and loading layer `%s` in itemid `%s`', self.layer_index, self.feature_service_itemid
         )
 
-        #: temp fix until Esri fixes empty series as NaN bug
-        fixed_dataframe = utils.replace_nan_series_with_empty_strings(self.new_dataframe)
-
         #: Field checks to prevent Error: 400 errors from AGOL
         field_checker = utils.FieldChecker(self.feature_layer.properties, self.new_dataframe)
         field_checker.check_live_and_new_field_types_match(self.fields)
         field_checker.check_for_non_null_fields(self.fields)
         field_checker.check_field_length(self.fields)
         field_checker.check_fields_present(self.fields, add_oid=False)
+        #: FIXME: remove once Esri fixes https://github.com/Esri/arcgis-python-api/issues/1281
+        field_checker.check_for_empty_float_fields(self.fields)
 
         #: NOTE: Should this call and method save the old data to disk on truncate failure in case it fails halfway
         #: through and leaves a bad dataset?
@@ -505,7 +507,7 @@ class FeatureServiceUpdater:
 
         try:
             self._class_logger.info('Loading new data...')
-            messages = self._upsert_data(self.feature_layer, fixed_dataframe, upsert=False)
+            messages = self._upsert_data(self.feature_layer, self.new_dataframe, upsert=False)
         except Exception:
             try:
                 self._class_logger.info('Append failed; attempting to re-load truncated data...')
