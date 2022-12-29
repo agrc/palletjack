@@ -99,6 +99,7 @@ def replace_nan_series_with_bogus_value(dataframe):
             dataframe[column].fillna(value=-999.9, inplace=True)
     return dataframe
 
+
 #: Unused?
 def check_fields_match(featurelayer, new_dataframe):
     """Make sure new data doesn't have any extra fields, warn if it doesn't contain all live fields
@@ -128,6 +129,7 @@ def check_fields_match(featurelayer, new_dataframe):
         module_logger.warning(
             'New dataset does not contain the following fields that are present in the live dataset: %s', live_dif
         )
+
 
 #: Unused?
 def check_index_column_in_feature_layer(featurelayer, index_column):
@@ -431,6 +433,7 @@ class FieldChecker:
 
         fields_to_check = self.fields_dataframe[self.fields_dataframe['name'].isin(fields)].set_index('name')
 
+        invalid_fields = []
         for field in fields:
             #: check against the str.lower to catch normal dtypes (int64) and the new, pd.NA-aware dtypes (Int64)
             new_dtype = str(self.new_dataframe[field].dtype).lower()
@@ -438,10 +441,14 @@ class FieldChecker:
 
             try:
                 if new_dtype not in esri_to_pandas_types_mapping[live_type]:
-                    raise ValueError(f'{field} types incompatible. Live type: {live_type}. New type: {new_dtype}.')
+                    invalid_fields.append((field, live_type, new_dtype))
+                    # raise ValueError(f'{field} types incompatible. Live type: {live_type}. New type: {new_dtype}.')
             except KeyError:
                 # pylint: disable-next=raise-missing-from
                 raise NotImplementedError(f'Live field "{field}" type "{live_type}" not yet mapped to a pandas dtype')
+
+        if invalid_fields:
+            raise ValueError(f'Field type incompatibilities (field, live type, new type): {invalid_fields}')
 
     def _check_geometry_types(self):
         """Raise an error if the live and new data geometry types are incompatible.
