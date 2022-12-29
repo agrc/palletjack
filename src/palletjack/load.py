@@ -1,7 +1,6 @@
-"""Objects for bringing data from SFTP-hosted CSVs into AGOL Feature Services
+"""Classes for loading data from spatially-enabled pandas DataFrames into AGOL Feature Services
 """
 
-import datetime
 import json
 import logging
 import warnings
@@ -12,17 +11,20 @@ import numpy as np
 import pandas as pd
 from arcgis.features import GeoAccessor, GeoSeriesAccessor
 
-from . import transform, utils
+from . import utils
 
 logger = logging.getLogger(__name__)
 
 
 class FeatureServiceUpdater:
-    """Updates an AGOL Feature Service with data from a pandas DataFrame
+    """Update an AGOL Feature Service with data from a pandas DataFrame.
+
+    Contains four class methods that should be called directly without need to instantiate an instance: add_features,
+    remove_features, update_features, and truncate_and_load_features.
     """
 
     @classmethod
-    def add_data(cls, gis, feature_service_itemid, dataframe, layer_index=0):
+    def add_features(cls, gis, feature_service_itemid, dataframe, layer_index=0):
         """Adds new features to existing hosted feature layer from new dataframe.
 
         The new dataframe must have a 'SHAPE' column containing geometries of the same type as the live data. New
@@ -50,7 +52,7 @@ class FeatureServiceUpdater:
         return updater._add_new_data_to_hosted_feature_layer()
 
     @classmethod
-    def remove_data(cls, gis, feature_service_itemid, delete_string, layer_index=0):
+    def remove_features(cls, gis, feature_service_itemid, delete_string, layer_index=0):
         """Deletes features from a hosted feature layer based on comma-separated string of Object IDs
 
         This is a wrapper around the arcgis.FeatureLayer.delete_features method that adds some sanity checking. The
@@ -77,7 +79,7 @@ class FeatureServiceUpdater:
         return updater._delete_data_from_hosted_feature_layer(delete_string)
 
     @classmethod
-    def update_data(cls, gis, feature_service_itemid, dataframe, layer_index=0, update_geometry=True):
+    def update_features(cls, gis, feature_service_itemid, dataframe, layer_index=0, update_geometry=True):
         """Updates existing features within a hosted feature layer using OBJECTID as the join field.
 
         The new data can have either attributes and geometries or only attributes based on the update_geometry flag. A
@@ -116,7 +118,7 @@ class FeatureServiceUpdater:
         return updater._update_hosted_feature_layer(update_geometry)
 
     @classmethod
-    def truncate_and_load(cls, gis, feature_service_itemid, dataframe, failsafe_dir, layer_index=0):
+    def truncate_and_load_features(cls, gis, feature_service_itemid, dataframe, failsafe_dir, layer_index=0):
         """Overwrite a hosted feature layer by truncating and loading the new data
 
         When the existing dataset is truncated, a copy is kept in memory as a spatially-enabled dataframe. If the new
@@ -133,9 +135,9 @@ class FeatureServiceUpdater:
         Args:
             gis (arcgis.gis.GIS): GIS item for AGOL org
             feature_service_itemid (str): itemid for service to update
-            dataframe (pd.DataFrame.spatial): Spatially enalbed dataframe of new data to be loaded
+            dataframe (pd.DataFrame.spatial): Spatially enabled dataframe of new data to be loaded
             failsafe_dir (str): Directory to save original data in case of complete failure
-            layer_index (int, optional): Index of lyaer within service to update. Defaults to 0.
+            layer_index (int, optional): Index of layer within service to update. Defaults to 0.
 
         Returns:
             int: Number of features loaded
@@ -169,7 +171,8 @@ class FeatureServiceUpdater:
             if 'SHAPE' in self.new_dataframe.columns:
                 self.new_dataframe.spatial.set_geometry('SHAPE')
         if fields:
-            self.fields = list(utils.rename_columns_for_agol(fields).values())
+            renamed_fields = set(utils.rename_columns_for_agol(fields).values())
+            self.fields = list(renamed_fields - {'Shape_Area', 'Shape_Length'})  #: We don't use these auto-gen fields
         if join_column:
             self.join_column = utils.rename_columns_for_agol([join_column])[join_column]
         self.failsafe_dir = failsafe_dir
@@ -501,6 +504,7 @@ class FeatureServiceUpdater:
         #: FIXME: remove once Esri fixes https://github.com/Esri/arcgis-python-api/issues/1281
         field_checker.check_for_empty_float_fields(self.fields)
 
+        self._class_logger.info('Truncating existing features...')
         #: NOTE: Should this call and method save the old data to disk on truncate failure in case it fails halfway
         #: through and leaves a bad dataset?
         old_dataframe = self._truncate_existing_data()
@@ -541,41 +545,6 @@ class FeatureServiceUpdater:
                 f'Failed to truncate existing data from layer id {self.layer_index} in itemid {self.feature_service_itemid}'
             )
         return old_data
-
-    # def append_new_data_to_hosted_feature_layer(self, feature_service_itemid, layer_index=0):
-    #     """UPdate existing data and inSERT new data to a hosted feature layer from a spatially-enabled data frame
-
-    #     Relies on the FeatureServiceInlineUpdater's self.new_dataframe for the new data and self.index_column to define
-    #     the common column used to match new and existing data. The field specified by self.index_column must have a
-    #     "unique constraint" in the target feature layer (ie, it must be indexed and be unique).
-
-    #     Args:
-    #         feature_service_itemid (str): The AGOL item id for the target feature layer
-    #         layer_index (int, optional): The layer id within the target feature layer. Defaults to 0.
-
-    #     Raises:
-    #         RuntimeError: If append fails; will attempt to rollback appends that worked.
-    #         RuntimeError: If new data contains a field not present in the live data
-    #         Warning: If live data contains a field not present in the new data
-    #         RuntimeError: If index_column is not in featurelayer's fields
-    #         RuntimeError: If the field is not unique (or if it's indexed but not unique)
-
-    #     Returns:
-    #         int: The number of records updated
-    #     """
-
-    #     self._class_logger.info('Updating layer `%s` in itemid `%s` in-place', layer_index, feature_service_itemid)
-    #     target_featurelayer = arcgis.features.FeatureLayer.fromitem(
-    #         self.gis.content.get(feature_service_itemid), layer_id=layer_index
-    #     )
-    #     #: temp fix until Esri fixes empty series as NaN bug
-    #     fixed_dataframe = utils.replace_nan_series_with_empty_strings(self.new_dataframe)
-    #     utils.check_fields_match(target_featurelayer, fixed_dataframe)
-    #     # utils.check_index_column_in_feature_layer(target_featurelayer, self.index_column)
-    #     # utils.check_field_set_to_unique(target_featurelayer, self.index_column)
-    #     messages = self._upsert_data(target_featurelayer, fixed_dataframe, upsert=False)
-
-    #     return messages['recordCount']
 
 
 class FeatureServiceAttachmentsUpdater:
