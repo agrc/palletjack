@@ -810,11 +810,42 @@ class TestCheckFieldsMatch:
 
         properties = {'fields': [{'name': 'ints', 'type': 'esriFieldTypeDouble'}]}
 
-        with pytest.raises(ValueError) as exc_info:
+        with pytest.raises(
+            ValueError,
+            match=re.escape(
+                'Field type incompatibilities (field, live type, new type): [(\'ints\', \'esriFieldTypeDouble\', \'int64\')]'
+            )
+        ):
             checker = palletjack.utils.FieldChecker(properties, new_df)
             checker.check_live_and_new_field_types_match(['ints'])
 
-        assert 'ints types incompatible. Live type: esriFieldTypeDouble. New type: int64' in str(exc_info.value)
+    def test_check_live_and_new_field_types_match_raises_on_multiple_incompatible(self):
+        new_df = pd.DataFrame({
+            'ints': [1, 2, 3],
+            'floats': [1.1, 1.2, 1.3],
+        })
+
+        properties = {
+            'fields': [
+                {
+                    'name': 'ints',
+                    'type': 'esriFieldTypeDouble'
+                },
+                {
+                    'name': 'floats',
+                    'type': 'esriFieldTypeInteger'
+                },
+            ]
+        }
+
+        with pytest.raises(
+            ValueError,
+            match=re.escape(
+                'Field type incompatibilities (field, live type, new type): [(\'ints\', \'esriFieldTypeDouble\', \'int64\'), (\'floats\', \'esriFieldTypeInteger\', \'float64\')]'
+            )
+        ):
+            checker = palletjack.utils.FieldChecker(properties, new_df)
+            checker.check_live_and_new_field_types_match(['ints', 'floats'])
 
     def test_check_live_and_new_field_types_match_raises_on_notimplemented_esri_type(self):
         new_df = pd.DataFrame({
@@ -1206,7 +1237,10 @@ class TestEmptyFieldWarnings:
         checker = palletjack.utils.FieldChecker(properties, new_df)
 
         with pytest.raises(
-            ValueError, match=re.escape('The following float/double column(s) are completely empty: [\'float\'] (suggestion: insert at least one bogus value)')
+            ValueError,
+            match=re.escape(
+                'The following float/double column(s) are completely empty: [\'float\'] (suggestion: insert at least one bogus value)'
+            )
         ):
             checker.check_for_empty_float_fields(['int', 'float'])
 
@@ -1218,7 +1252,9 @@ class TestEmptyFieldWarnings:
 
         with pytest.raises(
             ValueError,
-            match=re.escape('The following float/double column(s) are completely empty: [\'foo\', \'float\'] (suggestion: insert at least one bogus value)')
+            match=re.escape(
+                'The following float/double column(s) are completely empty: [\'foo\', \'float\'] (suggestion: insert at least one bogus value)'
+            )
         ):
             checker.check_for_empty_float_fields(['foo', 'float'])
 
