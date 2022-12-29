@@ -99,7 +99,7 @@ def replace_nan_series_with_bogus_value(dataframe):
             dataframe[column].fillna(value=-999.9, inplace=True)
     return dataframe
 
-
+#: Unused?
 def check_fields_match(featurelayer, new_dataframe):
     """Make sure new data doesn't have any extra fields, warn if it doesn't contain all live fields
 
@@ -129,7 +129,7 @@ def check_fields_match(featurelayer, new_dataframe):
             'New dataset does not contain the following fields that are present in the live dataset: %s', live_dif
         )
 
-
+#: Unused?
 def check_index_column_in_feature_layer(featurelayer, index_column):
     """Ensure index_column is present for any future operations
 
@@ -186,6 +186,7 @@ def build_sql_in_list(series):
         return f'({", ".join(quoted_values)})'
 
 
+#: Unused in v3, but keeping for "unique constraint" info.
 def check_field_set_to_unique(featurelayer, field_name):
     """Makes sure field_name has a "unique constraint" in AGOL, which allows it to be used for .append upserts
 
