@@ -41,7 +41,7 @@ class TestFeatureServiceUpdaterInit:
 
         updater = load.FeatureServiceUpdater(mocker.Mock(), 'itemid', new_dataframe, fields=fields)
 
-        assert updater.fields == ['Foo_field', 'Bar_field', 'baz']
+        assert set(updater.fields) == {'Foo_field', 'Bar_field', 'baz'}
 
     def test_init_renames_join_column(self, mocker):
 
