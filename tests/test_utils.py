@@ -1466,4 +1466,33 @@ class TestDataFrameChunking:
         dfs = palletjack.utils._chunk_dataframe(iris, chunks)
 
         assert len(dfs) == chunks
-        assert [len(df) for df in dfs] == [30] * 5
+        assert [len(df) for df in dfs] == [30] * chunks
+
+    def test_build_upload_json_gets_one_more_chunk_than_ceildiv(self, mocker):
+
+        mock_df = mocker.Mock()
+        mock_df.spatial.to_featureset.return_value.to_geojson = 1
+
+        mocker.patch('palletjack.utils.sys.getsizeof', return_value=10)
+
+        mocker.patch('palletjack.utils._chunk_dataframe', new=lambda _, chunks_needed: [mock_df] * chunks_needed)
+
+        json_list = palletjack.utils.build_upload_json(mock_df, max_bytes=3)
+
+        assert len(json_list) == 5
+        assert json_list == [1] * 5
+
+    def test_build_upload_json_returns_one_element_list_if_no_chunking_needed(self, mocker):
+
+        mock_df = mocker.Mock()
+        mock_df.spatial.to_featureset.return_value.to_geojson = 1
+
+        mocker.patch('palletjack.utils.sys.getsizeof', return_value=10)
+
+        chunk_method_mock = mocker.patch('palletjack.utils._chunk_dataframe')
+
+        json_list = palletjack.utils.build_upload_json(mock_df, max_bytes=100)
+
+        assert len(json_list) == 1
+        assert json_list == [1]
+        chunk_method_mock.assert_not_called()

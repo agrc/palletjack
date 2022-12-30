@@ -735,10 +735,34 @@ class DeleteUtils:
 
 
 def _ceildiv(num, denom):
+    """Perform ceiling division: 5/4 = 2
+
+    Args:
+        num (int or float): Numerator
+        denom (int or float): Denominator
+
+    Returns:
+        int: Ceiling divisor
+    """
+
     return -(num // -denom)
 
 
 def _chunk_dataframe(dataframe, chunks_needed):
+    """Divide up a dataframe into chunks_needed pieces
+
+    The DataFrames are returned in a list. Elements [:-1] are as large as possible for the number of chunks needed,
+    while the last gets however many rows of the dataframe are left over. eg, a 10-row dataframe broken into 3 chunks
+    would result in dataframes with 3, 3, and 1 rows.
+
+    Args:
+        dataframe (pd.DataFrame): Input DataFrame
+        chunks_needed (int): The number of resulting DataFrames desired
+
+    Returns:
+        list[pd.DataFrame]: A list of chunks_needed dataframes
+    """
+
     df_length = len(dataframe)
     chunk_size = _ceildiv(df_length, chunks_needed)
 
@@ -750,11 +774,24 @@ def _chunk_dataframe(dataframe, chunks_needed):
 
 
 def build_upload_json(dataframe, max_bytes=100000000):
+    """Create a list of  geojson strings of a spatially-enabled DataFrame, divided into chunks if it exceeds max_bytes
+
+    Returns a list of geojson strings. If the initial size in bytes is under the limit, it is just a single-element
+    list. Otherwise, it calculates the number of chunks needed by ceiling-dividing the size of the geojson and then
+    divides the dataframe into number of chunks + 1 smaller dataframes, where + 1 accounts for variations in size due
+    to geometries as well as the geojson overhead.
+
+    Args:
+        dataframe (pd.DataFrame.spatial): Spatially-enabled dataframe to be converted to geojson
+        max_bytes (int, optional): Maximum size in bytes any one geojson string can be. Defaults to 100000000 (AGOL
+        text uploads are limited to 100 MB)
+
+    Returns:
+        list[str]: A list of the dataframe chunks converted to geojson
+    """
     #: TODO: split this out using Scott's featurset fixer once its merged
     list_of_geojsons = [dataframe.spatial.to_featureset().to_geojson]
     geojson_size = sys.getsizeof(list_of_geojsons[0])
-
-    # agol_text_upload_max_bytes = 100000000  #: 100 MB
 
     chunks_needed = _ceildiv(geojson_size, max_bytes)
 
