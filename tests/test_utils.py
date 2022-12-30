@@ -11,6 +11,11 @@ from pandas import testing as tm
 import palletjack
 
 
+@pytest.fixture(scope='module')  #: only call this once per module
+def iris():
+    return pd.read_csv('https://raw.githubusercontent.com/mwaskom/seaborn-data/master/iris.csv')
+
+
 class TestRenameColumns:
 
     def test_rename_columns_for_agol_handles_special_and_space(self):
@@ -1437,3 +1442,28 @@ class TestSaveDataframeToJSON:
         out_path = palletjack.utils.save_spatially_enabled_dataframe_to_json(mock_sdf, 'foo')
 
         assert out_path == Path('foo/old_data_foo-date.json')
+
+
+class TestDataFrameChunking:
+
+    def test_ceildiv_always_returns_at_least_one(self):
+        assert palletjack.utils._ceildiv(1, 2) == 1
+
+    def test_ceildiv_returns_ceiling(self):
+        assert palletjack.utils._ceildiv(3, 2) == 2
+
+    def test_chunk_dataframe_properly_chunks(self, iris):
+
+        chunks = 4
+        dfs = palletjack.utils._chunk_dataframe(iris, chunks)
+
+        assert len(dfs) == chunks
+        assert [len(df) for df in dfs] == [38, 38, 38, 36]
+
+    def test_chunk_dataframe_properly_chunks_even_sized_chunks(self, iris):
+
+        chunks = 5
+        dfs = palletjack.utils._chunk_dataframe(iris, chunks)
+
+        assert len(dfs) == chunks
+        assert [len(df) for df in dfs] == [30] * 5

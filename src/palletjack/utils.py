@@ -2,6 +2,7 @@ import datetime
 import logging
 import random
 import re
+import sys
 import warnings
 from math import floor
 from pathlib import Path
@@ -731,3 +732,36 @@ class DeleteUtils:
             warnings.warn(f'OBJECTIDs {oids_not_in_layer} were not found in the live data')
 
         return len(oids_not_in_layer)
+
+
+def _ceildiv(num, denom):
+    return -(num // -denom)
+
+
+def _chunk_dataframe(dataframe, chunks_needed):
+    df_length = len(dataframe)
+    chunk_size = _ceildiv(df_length, chunks_needed)
+
+    starts = range(0, df_length, chunk_size)
+    ends = [start + chunk_size if start + chunk_size < df_length else df_length for start in starts]
+    list_of_dataframes = [dataframe.iloc[start:end] for start, end in zip(starts, ends)]
+
+    return list_of_dataframes
+
+
+def build_upload_json(dataframe, max_bytes=100000000):
+    #: TODO: split this out using Scott's featurset fixer once its merged
+    list_of_geojsons = [dataframe.spatial.to_featureset().to_geojson]
+    geojson_size = sys.getsizeof(list_of_geojsons[0])
+
+    # agol_text_upload_max_bytes = 100000000  #: 100 MB
+
+    chunks_needed = _ceildiv(geojson_size, max_bytes)
+
+    if chunks_needed > 1:
+        #: be conservative and add extra chunk for differing geometry sizes, geojson overhead
+        chunks_needed += 1
+        list_of_dataframes = _chunk_dataframe(dataframe, chunks_needed)
+        list_of_geojsons = [dataframe.spatial.to_featureset().to_geojson for dataframe in list_of_dataframes]
+
+    return list_of_geojsons

@@ -536,8 +536,9 @@ class FeatureServiceUpdater:
         Returns:
             pd.DataFrame: The feature layer's data as a spatially-enabled dataframe prior to truncating
         """
-
+        self._class_logger.debug('Loading existing data to dataframe...')
         old_data = self.feature_layer.query().sdf
+        self._class_logger.debug('Truncating...')
         truncate_result = utils.retry(self.feature_layer.manager.truncate, asynchronous=True, wait=True)
         self._class_logger.debug(truncate_result)
         if truncate_result['status'] != 'Completed':
