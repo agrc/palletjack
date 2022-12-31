@@ -1289,21 +1289,21 @@ class TestNullGeometryGenerators:
 
         nullo = palletjack.utils.get_null_geometries(properties)
 
-        assert nullo.JSON == '{"x": 0, "y": 0, "spatialReference": {"wkid": 4326}}'
+        assert nullo == '{"x": 0, "y": 0, "spatialReference": {"wkid": 4326}}'
 
     def test_get_null_geometries_polyline(self):
         properties = {'geometryType': 'esriGeometryPolyline'}
 
         nullo = palletjack.utils.get_null_geometries(properties)
 
-        assert nullo.JSON == '{"paths": [[[0, 0], [0.1, 0.1], [0.2, 0.2]]], "spatialReference": {"wkid": 4326}}'
+        assert nullo == '{"paths": [[[0, 0], [0.1, 0.1], [0.2, 0.2]]], "spatialReference": {"wkid": 4326}}'
 
     def test_get_null_geometries_polygon(self):
         properties = {'geometryType': 'esriGeometryPolygon'}
 
         nullo = palletjack.utils.get_null_geometries(properties)
 
-        assert nullo.JSON == '{"rings": [[[0, 0.1], [0.1, 0.1], [0.1, 0], [0, 0]]], "spatialReference": {"wkid": 4326}}'
+        assert nullo == '{"rings": [[[0, 0.1], [0.1, 0.1], [0.1, 0], [0, 0]]], "spatialReference": {"wkid": 4326}}'
 
     def test_get_null_geometries_raises_on_other(self):
         properties = {'geometryType': 'other'}

@@ -329,7 +329,7 @@ class TestTruncateAndLoadLayer:
 
         mocker.patch('palletjack.utils.FieldChecker')
 
-        updater_mock._upsert_data.return_value = {'recordCount': 42}
+        updater_mock._upsert_data.return_value = 42
 
         uploaded_features = load.FeatureServiceUpdater._truncate_and_load_data(updater_mock)
 
@@ -350,9 +350,7 @@ class TestTruncateAndLoadLayer:
         mocker.patch('palletjack.utils.sleep')
 
         updater_mock._upsert_data.side_effect = [
-            RuntimeError('Failed to append data. Append operation should have been rolled back.'), {
-                'recordCount': 42
-            }
+            RuntimeError('Failed to append data. Append operation should have been rolled back.'), 42
         ]
 
         with pytest.raises(RuntimeError, match='Failed to append data. Append operation should have been rolled back.'):
@@ -383,7 +381,7 @@ class TestTruncateAndLoadLayer:
         mocker.patch('palletjack.utils.sleep')
         field_checker_mock = mocker.patch('palletjack.utils.FieldChecker')
 
-        updater_mock._upsert_data.return_value = {'recordCount': 42}
+        updater_mock._upsert_data.return_value = 42
 
         uploaded_features = load.FeatureServiceUpdater._truncate_and_load_data(updater_mock)
 
@@ -988,7 +986,7 @@ class TestUpsertData:
 
     def test_upsert_data_calls_append_with_proper_args(self, mocker):
         mock_fl = mocker.Mock()
-        mock_fl.append.return_value = (True, {'message': 'foo'})
+        mock_fl.append.return_value = (True, {'recordCount': 42})
         mock_df = mocker.Mock()
         mock_df.spatial.to_featureset.return_value.to_geojson = 'json'
         mocker.patch('palletjack.utils.sleep')
@@ -999,9 +997,28 @@ class TestUpsertData:
             upload_format='geojson', edits='json', upsert=True, rollback=True, return_messages=True
         )
 
+    def test_upsert_data_calls_append_for_multiple_chunks(self, mocker):
+        mock_fl = mocker.Mock()
+        mock_fl.append.return_value = (True, {'recordCount': 42})
+        mock_df = mocker.Mock()
+        mock_df.spatial.to_featureset.return_value.to_geojson = 'json'
+        mocker.patch('palletjack.utils.sleep')
+        mocker.patch('palletjack.utils.build_upload_json', return_value=['json1', 'json2'])
+
+        load.FeatureServiceUpdater._upsert_data(mocker.Mock(), mock_fl, mock_df, upsert=True)
+
+        assert mock_fl.append.call_count == 2
+        assert mock_fl.append.call_args_list == [
+            mocker.call(upload_format='geojson', edits='json1', upsert=True, rollback=True, return_messages=True),
+            mocker.call(upload_format='geojson', edits='json2', upsert=True, rollback=True, return_messages=True),
+        ]
+        # mock_fl.append.assert_called_once_with(
+        #     upload_format='geojson', edits='json', upsert=True, rollback=True, return_messages=True
+        # )
+
     def test_upsert_data_retries_on_exception(self, mocker):
         mock_fl = mocker.Mock()
-        mock_fl.append.side_effect = [Exception, (True, {'message': 'foo'})]
+        mock_fl.append.side_effect = [Exception, (True, {'recordCount': 42})]
         mock_df = mocker.Mock()
         mock_df.spatial.to_featureset.return_value.to_geojson = 'json'
         mocker.patch('palletjack.utils.sleep')
@@ -1020,7 +1037,8 @@ class TestUpsertData:
         with pytest.raises(RuntimeError) as exc_info:
             load.FeatureServiceUpdater._upsert_data(mocker.Mock(), mock_fl, mock_df, upsert=True)
 
-        assert exc_info.value.args[0] == 'Failed to append data. Append operation should have been rolled back.'
+        assert exc_info.value.args[
+            0] == 'Failed to append data at chunk 1 of 1. Append operation should have been rolled back.'
 
     def test_upsert_data_raises_on_upsert_field_not_in_append_fields(self, mocker):
         append_kwargs = {'upsert_matching_field': 'foo', 'append_fields': ['bar', 'baz'], 'upsert': True}
