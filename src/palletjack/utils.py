@@ -629,10 +629,15 @@ def get_null_geometries(feature_layer_properties):
     live_geometry_type = feature_layer_properties['geometryType']
 
     if live_geometry_type == 'esriGeometryPoint':
-        return arcgis.geometry.Point({'x': 0, 'y': 0, 'spatialReference': {'wkid': 4326}})
+        return arcgis.geometry.Point({'x': 0, 'y': 0, 'spatialReference': {'wkid': 4326}}).JSON
 
     if live_geometry_type == 'esriGeometryPolyline':
-        return arcgis.geometry.Polyline({'paths': [[[0, 0], [.1, .1], [.2, .2]]], 'spatialReference': {'wkid': 4326}})
+        return arcgis.geometry.Polyline({
+            'paths': [[[0, 0], [.1, .1], [.2, .2]]],
+            'spatialReference': {
+                'wkid': 4326
+            }
+        }).JSON
 
     if live_geometry_type == 'esriGeometryPolygon':
         return arcgis.geometry.Polygon({
@@ -640,7 +645,7 @@ def get_null_geometries(feature_layer_properties):
             'spatialReference': {
                 'wkid': 4326
             }
-        })
+        }).JSON
 
     raise NotImplementedError(f'Null value generator for live geometry type {live_geometry_type} not yet implemented')
 

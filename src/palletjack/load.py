@@ -3,6 +3,7 @@
 
 import json
 import logging
+import sys
 import warnings
 from pathlib import Path
 
@@ -341,12 +342,12 @@ class FeatureServiceUpdater:
         field_checker.check_for_empty_float_fields(self.fields)
 
         #: Upsert
-        messages = self._upsert_data(
+        append_count = self._upsert_data(
             self.feature_layer,
             self.new_dataframe,
             upsert=False,
         )
-        return messages['recordCount']
+        return append_count
 
     def _delete_data_from_hosted_feature_layer(self, delete_string) -> int:
         """Deletes features from a hosted feature layer based on comma-separated string of OIDS
@@ -423,7 +424,7 @@ class FeatureServiceUpdater:
         field_checker.check_for_empty_float_fields(self.fields)
 
         #: Upsert
-        messages = self._upsert_data(
+        append_count = self._upsert_data(
             self.feature_layer,
             self.new_dataframe,
             upsert=True,
@@ -431,7 +432,7 @@ class FeatureServiceUpdater:
             append_fields=self.fields,  #: Apparently this works if append_fields is all the fields, but not a subset?
             update_geometry=update_geometry
         )
-        return messages['recordCount']
+        return append_count
 
     #: TODO: rename this method? not everything is an upsert
     def _upsert_data(self, target_featurelayer, dataframe, **append_kwargs):
@@ -465,21 +466,31 @@ class FeatureServiceUpdater:
         except KeyError:
             pass
 
-        geojson = dataframe.spatial.to_featureset().to_geojson
-        result, messages = utils.retry(
-            target_featurelayer.append,
-            upload_format='geojson',
-            edits=geojson,
-            return_messages=True,
-            rollback=True,
-            **append_kwargs
-        )
+        #: FIXME: With chunking, rollback could leave the data in an inconsistent state if a chunk fails midway through the process. All the chunks before that won't be rolled back, so some of the data will be new and some will be old. I suppose this will be ok for upserts, where the data will just get updated again. However, adds will probably just create duplicates of the chunks that aren't rolled back if we try to re-do the whole add op again. Do we create a list of dataframe row indices that were in the successful chunks?
 
-        self._class_logger.debug(messages)
-        if not result:
-            raise RuntimeError('Failed to append data. Append operation should have been rolled back.')
+        running_append_total = 0
+        geojsons = utils.build_upload_json(dataframe)
+        self._class_logger.info('Appending/upserting data in %s chunk(s)', len(geojsons))
+        for chunk, geojson in enumerate(geojsons, 1):
+            self._class_logger.debug('Uploading chunk %s of %s, %s bytes', chunk, len(geojsons), sys.getsizeof(geojson))
+            result, messages = utils.retry(
+                target_featurelayer.append,
+                upload_format='geojson',
+                edits=geojson,
+                return_messages=True,
+                rollback=True,
+                **append_kwargs
+            )
 
-        return messages
+            self._class_logger.debug(messages)
+            if not result:
+                raise RuntimeError(
+                    f'Failed to append data at chunk {chunk} of {len(geojsons)}. Append operation should have been rolled back.'
+                )
+
+            running_append_total += messages['recordCount']
+
+        return running_append_total
 
     def _truncate_and_load_data(self):
         """Overwrite a layer by truncating and loading new data
@@ -511,12 +522,12 @@ class FeatureServiceUpdater:
 
         try:
             self._class_logger.info('Loading new data...')
-            messages = self._upsert_data(self.feature_layer, self.new_dataframe, upsert=False)
+            append_count = self._upsert_data(self.feature_layer, self.new_dataframe, upsert=False)
         except Exception:
             try:
                 self._class_logger.info('Append failed; attempting to re-load truncated data...')
-                messages = self._upsert_data(self.feature_layer, old_dataframe, upsert=False)
-                self._class_logger.info('%s features reloaded', messages['recordCount'])
+                append_count = self._upsert_data(self.feature_layer, old_dataframe, upsert=False)
+                self._class_logger.info('%s features reloaded', append_count)
             except Exception as inner_error:
                 failsafe_path = utils.save_spatially_enabled_dataframe_to_json(old_dataframe, self.failsafe_dir)
                 raise RuntimeError(
@@ -525,7 +536,7 @@ class FeatureServiceUpdater:
             finally:
                 raise
 
-        return messages['recordCount']
+        return append_count
 
     def _truncate_existing_data(self):
         """Remove all existing features from the live dataset
