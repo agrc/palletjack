@@ -10,13 +10,15 @@ import palletjack
 class TestAPIGeocoder:
 
     def test_geocode_dataframe_calls_with_right_args(self, mocker):
-        mocker.patch.object(palletjack.transform, 'utils', autospec=True)
-        palletjack.transform.utils.rename_columns_for_agol.return_value = {}
-        palletjack.transform.utils.geocode_addr.side_effect = [
+
+        utils_mock = mocker.patch('palletjack.transform.utils', autospec=True)
+        utils_mock.validate_api_key.return_value = 'valid'
+        utils_mock.rename_columns_for_agol.return_value = {}
+        utils_mock.geocode_addr.side_effect = [
             (123, 456, 100., 'foo_addr'),
             (789, 101, 100., 'bar_addr'),
         ]
-        mocker.patch.object(pd.DataFrame.spatial, 'from_xy')
+        mocker.patch('palletjack.transform.pd.DataFrame.spatial')
 
         geocoder = palletjack.transform.APIGeocoder('foo')
 
@@ -27,19 +29,18 @@ class TestAPIGeocoder:
 
         geocoder.geocode_dataframe(test_df, 'street', 'zip', 3857)
 
-        assert palletjack.transform.utils.geocode_addr.call_args.args == (
-            '4501 S Constitution Blvd', '84129', 'foo', (0.015, 0.03)
-        )
-        assert palletjack.transform.utils.geocode_addr.call_args.kwargs == {'spatialReference': '3857'}
+        assert utils_mock.geocode_addr.call_args.args == ('4501 S Constitution Blvd', '84129', 'foo', (0.015, 0.03))
+        assert utils_mock.geocode_addr.call_args.kwargs == {'spatialReference': '3857'}
 
     def test_geocode_dataframe_passes_kwargs_through_to_util_method(self, mocker):
-        mocker.patch.object(palletjack.transform, 'utils', autospec=True)
-        palletjack.transform.utils.rename_columns_for_agol.return_value = {}
-        palletjack.transform.utils.geocode_addr.side_effect = [
+        utils_mock = mocker.patch('palletjack.transform.utils', autospec=True)
+        utils_mock.validate_api_key.return_value = 'valid'
+        utils_mock.rename_columns_for_agol.return_value = {}
+        utils_mock.geocode_addr.side_effect = [
             (123, 456, 100., 'foo_addr'),
             (789, 101, 100., 'bar_addr'),
         ]
-        mocker.patch.object(pd.DataFrame.spatial, 'from_xy')
+        mocker.patch('palletjack.transform.pd.DataFrame.spatial')
 
         geocoder = palletjack.transform.APIGeocoder('foo')
 
@@ -50,18 +51,14 @@ class TestAPIGeocoder:
 
         geocoder.geocode_dataframe(test_df, 'street', 'zip', 3857, acceptScore=80)
 
-        assert palletjack.transform.utils.geocode_addr.call_args.args == (
-            '4501 S Constitution Blvd', '84129', 'foo', (0.015, 0.03)
-        )
-        assert palletjack.transform.utils.geocode_addr.call_args.kwargs == {
-            'spatialReference': '3857',
-            'acceptScore': 80
-        }
+        assert utils_mock.geocode_addr.call_args.args == ('4501 S Constitution Blvd', '84129', 'foo', (0.015, 0.03))
+        assert utils_mock.geocode_addr.call_args.kwargs == {'spatialReference': '3857', 'acceptScore': 80}
 
     def test_geocode_dataframe_builds_output_dataframe(self, mocker, caplog):
         caplog.set_level(logging.DEBUG)
-        mocker.patch('palletjack.utils.requests', autospec=True)
+        requests_mock = mocker.patch('palletjack.utils.requests', autospec=True)
         mocker.patch('palletjack.utils.sleep')
+        mocker.patch('palletjack.utils.validate_api_key', return_value='valid')
 
         first_response = mocker.Mock()
         first_response.json.return_value = {
@@ -91,16 +88,9 @@ class TestAPIGeocoder:
         }
         second_response.status_code = 200
 
-        palletjack.utils.requests.get.side_effect = [first_response, second_response]
+        requests_mock.get.side_effect = [first_response, second_response]
 
-        #: Get patch from_xy to just return the dataframe it was passed so we don't have to create a spatial one for
-        #: testing
-        mocker.patch.object(pd.DataFrame.spatial, 'from_xy')
-
-        def _mock_from_xy(dataframe, x, y, sr=None):
-            return dataframe
-
-        pd.DataFrame.spatial.from_xy.side_effect = _mock_from_xy
+        mocker.patch('palletjack.transform.pd.DataFrame.spatial.from_xy', side_effect=lambda df, x, y, sr: df)
 
         geocoder = palletjack.transform.APIGeocoder('foo')
 
@@ -124,8 +114,9 @@ class TestAPIGeocoder:
 
     def test_geocode_dataframe_continues_after_failed_row(self, mocker, caplog):
         caplog.set_level(logging.DEBUG)
-        mocker.patch('palletjack.utils.requests', autospec=True)
+        requests_mock = mocker.patch('palletjack.utils.requests', autospec=True)
         mocker.patch('palletjack.utils.sleep')
+        mocker.patch('palletjack.utils.validate_api_key', return_value='valid')
 
         bad_response = mocker.Mock()
         bad_response.status_code = 500
@@ -144,18 +135,9 @@ class TestAPIGeocoder:
         }
         good_response.status_code = 200
 
-        palletjack.utils.requests.get.side_effect = [
-            bad_response, bad_response, bad_response, bad_response, good_response
-        ]
+        requests_mock.get.side_effect = [bad_response, bad_response, bad_response, bad_response, good_response]
 
-        #: Get patch from_xy to just return the dataframe it was passed so we don't have to create a spatial one for
-        #: testing
-        mocker.patch.object(pd.DataFrame.spatial, 'from_xy')
-
-        def _mock_from_xy(dataframe, x, y, sr=None):
-            return dataframe
-
-        pd.DataFrame.spatial.from_xy.side_effect = _mock_from_xy
+        mocker.patch('palletjack.transform.pd.DataFrame.spatial.from_xy', side_effect=lambda df, x, y, sr: df)
 
         geocoder = palletjack.transform.APIGeocoder('foo')
 
@@ -181,12 +163,9 @@ class TestAPIGeocoder:
         assert palletjack.utils.sleep.call_count == 5
 
     def test_geocode_dataframe_warns_on_empty_input(self, mocker):
-        mocker.patch.object(palletjack.transform, 'utils', autospec=True)
-        # palletjack.transform.utils.geocode_addr.side_effect = [
-        #     (123, 456, 100., 'foo_addr'),
-        #     (789, 101, 100., 'bar_addr'),
-        # ]
-        mocker.patch.object(pd.DataFrame.spatial, 'from_xy')
+        utils_mock = mocker.patch('palletjack.transform.utils', autospec=True)
+        utils_mock.validate_api_key.return_value = 'valid'
+        mocker.patch('palletjack.transform.pd.DataFrame.spatial.from_xy')
 
         geocoder = palletjack.transform.APIGeocoder('foo')
 
@@ -197,15 +176,15 @@ class TestAPIGeocoder:
         assert record[0].message.args[0] == 'No records to geocode (empty dataframe)'
 
     def test_geocode_dataframe_warns_on_empty_output(self, mocker):
-        mocker.patch.object(palletjack.transform, 'utils', autospec=True)
-        palletjack.transform.utils.rename_columns_for_agol.return_value = {}
-        palletjack.transform.utils.geocode_addr.side_effect = [
+        utils_mock = mocker.patch('palletjack.transform.utils', autospec=True)
+        utils_mock.validate_api_key.return_value = 'valid'
+        utils_mock.rename_columns_for_agol.return_value = {}
+        utils_mock.geocode_addr.side_effect = [
             (123, 456, 100., 'foo_addr'),
             (789, 101, 100., 'bar_addr'),
         ]
-        mocker.patch.object(
-            pd.DataFrame.spatial,
-            'from_xy',
+        mocker.patch(
+            'palletjack.transform.pd.DataFrame.spatial.from_xy',
             return_value=pd.DataFrame(columns=['street', 'zip', 'x', 'y', 'score', 'matchAddress'])
         )
 
@@ -221,7 +200,8 @@ class TestAPIGeocoder:
         assert record[0].message.args[0] == 'Empty spatial dataframe after geocoding'
 
     def test_geocode_dataframe_handles_weird_column_names(self, mocker):
-        mocker.patch('palletjack.utils.requests', autospec=True)
+        requests_mock = mocker.patch('palletjack.utils.requests', autospec=True)
+        mocker.patch('palletjack.utils.validate_api_key', return_value='valid')
         mocker.patch('palletjack.utils.sleep')
 
         good_response = mocker.Mock()
@@ -237,16 +217,10 @@ class TestAPIGeocoder:
             }
         }
         good_response.status_code = 200
-        palletjack.utils.requests.get.return_value = good_response
+        requests_mock.get.return_value = good_response
 
-        #: Get patch from_xy to just return the dataframe it was passed so we don't have to create a spatial one for
-        #: testing
-        mocker.patch.object(pd.DataFrame.spatial, 'from_xy')
+        mocker.patch('palletjack.transform.pd.DataFrame.spatial.from_xy', side_effect=lambda df, x, y, sr: df)
 
-        def _mock_from_xy(dataframe, x, y, sr=None):
-            return dataframe
-
-        pd.DataFrame.spatial.from_xy.side_effect = _mock_from_xy
         geocoder = palletjack.transform.APIGeocoder('foo')
         input_df = pd.DataFrame({
             'street': ['4315 S 2700 W'],
@@ -269,6 +243,17 @@ class TestAPIGeocoder:
         ]
 
         assert list(geocoded_df.columns) == out_cols
+
+    def test_geocode_dataframe_raises_on_invalid_key(self, mocker):
+        req_mock = mocker.patch('palletjack.utils.requests', autospec=True)
+        response_mock = mocker.Mock()
+        response_mock.json.return_value = {'status': 400, 'message': 'Invalid API key'}
+        req_mock.get.return_value = response_mock
+
+        with pytest.raises(ValueError):
+            palletjack.transform.APIGeocoder('foo')
+
+    # : TODO: test api validate responses in __init__
 
 
 class TestFeatureServiceMerging:
