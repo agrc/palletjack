@@ -210,84 +210,116 @@ def check_field_set_to_unique(featurelayer, field_name):
                 raise RuntimeError(f'{field_name} does not have a "unique constraint" set within the feature layer')
 
 
-def geocode_addr(street, zone, api_key, rate_limits, **api_args):
-    """Geocode an address through the UGRC Web API geocoder
+class Geocoding:
 
-    Invalid results are returned with an x,y of 0,0, a score of 0.0, and a match address of 'No Match'
+    @staticmethod
+    def geocode_addr(street, zone, api_key, rate_limits, **api_args):
+        """Geocode an address through the UGRC Web API geocoder
 
-    Args:
-        street (str): The street address
-        zone (str): The zip code or city
-        api_key (str): API key obtained from developer.mapserv.utah.gov
-        rate_limits(Tuple <float>): A lower and upper bound in seconds for pausing between API calls. Defaults to
-        (0.015, 0.03)
-        **api_args (dict): Keyword arguments to be passed as parameters in the API GET call. The API key will be added
-        to this dict.
+        Invalid results are returned with an x,y of 0,0, a score of 0.0, and a match address of 'No Match'
 
-    Returns:
-        tuple[int]: The match's x coordinate, y coordinate, score, and match address
-    """
+        Args:
+            street (str): The street address
+            zone (str): The zip code or city
+            api_key (str): API key obtained from developer.mapserv.utah.gov
+            rate_limits(Tuple <float>): A lower and upper bound in seconds for pausing between API calls. Defaults to
+            (0.015, 0.03)
+            **api_args (dict): Keyword arguments to be passed as parameters in the API GET call. The API key will be added
+            to this dict.
 
-    sleep(random.uniform(rate_limits[0], rate_limits[1]))
-    url = f'https://api.mapserv.utah.gov/api/v1/geocode/{street}/{zone}'
-    api_args['apiKey'] = api_key
+        Returns:
+            tuple[int]: The match's x coordinate, y coordinate, score, and match address
+        """
 
-    try:
-        geocode_result_dict = retry(_geocode_api_call, url, api_args)
-    except Exception as error:
-        module_logger.error(error)
-        return (0, 0, 0., 'No API response')
+        sleep(random.uniform(rate_limits[0], rate_limits[1]))
+        url = f'https://api.mapserv.utah.gov/api/v1/geocode/{street}/{zone}'
+        api_args['apiKey'] = api_key
 
-    return (
-        geocode_result_dict['location']['x'],
-        geocode_result_dict['location']['y'],
-        geocode_result_dict['score'],
-        geocode_result_dict['matchAddress'],
-    )
+        try:
+            geocode_result_dict = retry(Geocoding._geocode_api_call, url, api_args)
+        except Exception as error:
+            module_logger.error(error)
+            return (0, 0, 0., 'No API response')
 
+        return (
+            geocode_result_dict['location']['x'],
+            geocode_result_dict['location']['y'],
+            geocode_result_dict['score'],
+            geocode_result_dict['matchAddress'],
+        )
 
-def _geocode_api_call(url, api_args):
-    """Makes a requests.get call to the geocoding API.
+    @staticmethod
+    def _geocode_api_call(url, api_args):
+        """Makes a requests.get call to the geocoding API.
 
-    Meant to be called through a retry wrapper so that the RuntimeErrors get tried again a couple times before finally
-    raising the error.
+        Meant to be called through a retry wrapper so that the RuntimeErrors get tried again a couple times before finally
+        raising the error.
 
-    Args:
-        url (str): Base url for GET request
-        api_args (dict): Dictionary of URL parameters
+        Args:
+            url (str): Base url for GET request
+            api_args (dict): Dictionary of URL parameters
 
-    Raises:
-        RuntimeError: If the server does not return response and request.get returns a falsy object.
-        RuntimeError: If the server returns a status code other than 200 or 404
+        Raises:
+            RuntimeError: If the server does not return response and request.get returns a falsy object.
+            RuntimeError: If the server returns a status code other than 200 or 404
 
-    Returns:
-        dict: The 'results' dictionary of the response json (location, score, and matchAddress)
-    """
+        Returns:
+            dict: The 'results' dictionary of the response json (location, score, and matchAddress)
+        """
 
-    response = requests.get(url, params=api_args)
+        response = requests.get(url, params=api_args)
 
-    #: The server times out and doesn't respond
-    if response is None:
-        module_logger.debug('GET call did not return a response')
-        raise RuntimeError('No response from GET; request timeout?')
+        #: The server times out and doesn't respond
+        if response is None:
+            module_logger.debug('GET call did not return a response')
+            raise RuntimeError('No response from GET; request timeout?')
 
-    #: The point does geocode
-    if response.status_code == 200:
-        return response.json()['result']
+        #: The point does geocode
+        if response.status_code == 200:
+            return response.json()['result']
 
-    #: The point doesn't geocode
-    if response.status_code == 404:
-        return {
-            'location': {
-                'x': 0,
-                'y': 0
-            },
-            'score': 0.,
-            'matchAddress': 'No Match',
-        }
+        #: The point doesn't geocode
+        if response.status_code == 404:
+            return {
+                'location': {
+                    'x': 0,
+                    'y': 0
+                },
+                'score': 0.,
+                'matchAddress': 'No Match',
+            }
 
-    #: If we haven't returned, raise an error to trigger _retry
-    raise RuntimeError(f'Did not receive a valid geocoding response; status code: {response.status_code}')
+        #: If we haven't returned, raise an error to trigger _retry
+        raise RuntimeError(f'Did not receive a valid geocoding response; status code: {response.status_code}')
+
+    @staticmethod
+    def validate_api_key(api_key):
+        """Check to see if a Web API key is valid by geocoding a single, known address point
+
+        Args:
+            api_key (str): API Key
+
+        Raises:
+            RuntimeError: If there was a network or other error attempting to geocode the known point
+            ValueError: If the API responds with an invalid key message
+            UserWarning: If the API responds with some other abnormal result
+        """
+
+        url = 'https://api.mapserv.utah.gov/api/v1/geocode/326 east south temple street/slc'
+
+        try:
+            response = retry(requests.get, url=url, params={'apiKey': api_key})
+        except Exception as error:
+            raise RuntimeError(
+                'Could not determine key validity; check your API key and/or network connection'
+            ) from error
+        response_json = response.json()
+        if response_json['status'] == 200:
+            return
+        if response_json['status'] == 400 and 'Invalid API key' in response_json['message']:
+            raise ValueError(f'API key validation failed: {response_json["message"]}')
+
+        warnings.warn(f'Unhandled API key validation response {response_json["status"]}: {response_json["message"]}')
 
 
 def calc_modulus_for_reporting_interval(n, split_value=500):
@@ -308,33 +340,6 @@ def calc_modulus_for_reporting_interval(n, split_value=500):
         return floor(n / 10)
 
     return floor(n / 20)
-
-
-def validate_api_key(api_key):
-    """Check to see if a Web API key is valid by geocoding a single, known address point
-
-    Args:
-        api_key (str): API Key
-
-    Raises:
-        RuntimeError: If there was a network or other error attempting to geocode the known point
-        ValueError: If the API responds with an invalid key message
-        UserWarning: If the API responds with some other abnormal result
-    """
-
-    url = 'https://api.mapserv.utah.gov/api/v1/geocode/326 east south temple street/slc'
-
-    try:
-        response = retry(requests.get, url=url, params={'apiKey': api_key})
-    except Exception as error:
-        raise RuntimeError('Could not determine key validity; check your API key and/or network connection') from error
-    response_json = response.json()
-    if response_json['status'] == 200:
-        return
-    if response_json['status'] == 400 and 'Invalid API key' in response_json['message']:
-        raise ValueError(f'API key validation failed: {response_json["message"]}')
-
-    warnings.warn(f'Unhandled API key validation response {response_json["status"]}: {response_json["message"]}')
 
 
 def authorize_pygsheets(credentials):
