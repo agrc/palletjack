@@ -608,40 +608,46 @@ class TestReportingIntervalModulus:
 class TestValidateAPIKey:
 
     def test_validate_api_key_good_key(self, mocker):
-        mocker.patch('palletjack.utils.requests', autospec=True)
+        req_mock = mocker.patch('palletjack.utils.requests', autospec=True)
         response_mock = mocker.Mock()
         response_mock.json.return_value = {'status': 200, 'message': 'foo'}
-        palletjack.utils.requests.get.return_value = response_mock
+        req_mock.get.return_value = response_mock
 
-        check = palletjack.utils.validate_api_key('foo')
-
-        assert check == 'valid'
+        #: Should not raise
+        palletjack.utils.validate_api_key('foo')
 
     def test_validate_api_key_bad_key(self, mocker):
-        mocker.patch('palletjack.utils.requests', autospec=True)
+        req_mock = mocker.patch('palletjack.utils.requests', autospec=True)
         response_mock = mocker.Mock()
         response_mock.json.return_value = {'status': 400, 'message': 'Invalid API key'}
-        palletjack.utils.requests.get.return_value = response_mock
+        req_mock.get.return_value = response_mock
 
-        check = palletjack.utils.validate_api_key('foo')
+        with pytest.raises(ValueError, match=re.escape('API key validation failed: Invalid API key')):
+            palletjack.utils.validate_api_key('foo')
 
-        assert check == 'Invalid API key'
-
-    def test_validate_api_key_handles_exception(self, mocker, caplog):
-        mocker.patch('palletjack.utils.requests', autospec=True)
+    def test_validate_api_key_handles_network_exception(self, mocker, caplog):
+        req_mock = mocker.patch('palletjack.utils.requests', autospec=True)
         mocker.patch('palletjack.utils.sleep')
-        caplog.set_level(logging.DEBUG)
-        # response_mock = mocker.Mock()
-        # response_mock.json.return_value = {
-        #     'status': 400,
-        #     'message': 'foo'
-        # }
-        palletjack.utils.requests.get.side_effect = [Exception('Random Error')] * 4
+        # caplog.set_level(logging.DEBUG)
+        req_mock.get.side_effect = [IOError('Random Error')] * 4
 
-        check = palletjack.utils.validate_api_key('foo')
-        assert check == 'Could not determine key validity; check your API key and/or network connection'
-        assert palletjack.utils.requests.get.call_count == 4
-        assert 'Random Error' in caplog.messages
+        with pytest.raises(
+            RuntimeError,
+            match=re.escape('Could not determine key validity; check your API key and/or network connection')
+        ) as exc_info:
+            palletjack.utils.validate_api_key('foo')
+
+        assert req_mock.get.call_count == 4
+        assert 'Random Error' in str(exc_info.value.__cause__)
+
+    def test_validate_api_key_handles_other_response(self, mocker):
+        req_mock = mocker.patch('palletjack.utils.requests', autospec=True)
+        response_mock = mocker.Mock()
+        response_mock.json.return_value = {'status': 404, 'message': 'Weird Response'}
+        req_mock.get.return_value = response_mock
+
+        with pytest.warns(UserWarning, match=re.escape('Unhandled API key validation response 404: Weird Response')):
+            palletjack.utils.validate_api_key('foo')
 
 
 class TestFieldRenaming:

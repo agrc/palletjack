@@ -16,12 +16,17 @@ module_logger = logging.getLogger(__name__)
 class APIGeocoder:
     """Geocode using the UGRC Web API Geocoder.
 
-    Instantiate an APIGeocoder object with an api key from developer.mapserv.utah.gov
+    Instantiate an APIGeocoder object with an api key from developer.mapserv.utah.gov. It will attempt to validate the
+    API key. If it fails, it will raise one of the following:
+        RuntimeError: If there was a network or other error
+        ValueError: If the API responds with an invalid key message
+        UserWarning: If the API responds with some other abnormal result
     """
 
     def __init__(self, api_key):
         self.api_key = api_key
         self._class_logger = logging.getLogger(__name__).getChild(self.__class__.__name__)
+        utils.validate_api_key(self.api_key)
 
     def geocode_dataframe(self, dataframe, street_col, zone_col, wkid, rate_limits=(0.015, 0.03), **api_args):
         """Geocode a pandas dataframe into a spatially-enabled dataframe

@@ -316,27 +316,25 @@ def validate_api_key(api_key):
     Args:
         api_key (str): API Key
 
-    Returns:
-        str: One of three messages:
-                'valid': The key is valid
-                A string containing 'Invalid API key': Response from the server if the API key is invalid
-                'Could not determine key validity; check your API key and/or network connection': If there was some
-                network or response error.
+    Raises:
+        RuntimeError: If there was a network or other error attempting to geocode the known point
+        ValueError: If the API responds with an invalid key message
+        UserWarning: If the API responds with some other abnormal result
     """
 
     url = 'https://api.mapserv.utah.gov/api/v1/geocode/326 east south temple street/slc'
 
     try:
         response = retry(requests.get, url=url, params={'apiKey': api_key})
-        response_json = response.json()
-        if response_json['status'] == 200:
-            return 'valid'
-        if response_json['status'] == 400 and 'Invalid API key' in response_json['message']:
-            return response_json['message']
     except Exception as error:
-        module_logger.debug(error)
-        # return 'Could not determine key validity; check your API key and/or network connection'
-    return 'Could not determine key validity; check your API key and/or network connection'
+        raise RuntimeError('Could not determine key validity; check your API key and/or network connection') from error
+    response_json = response.json()
+    if response_json['status'] == 200:
+        return
+    if response_json['status'] == 400 and 'Invalid API key' in response_json['message']:
+        raise ValueError(f'API key validation failed: {response_json["message"]}')
+
+    warnings.warn(f'Unhandled API key validation response {response_json["status"]}: {response_json["message"]}')
 
 
 def authorize_pygsheets(credentials):
