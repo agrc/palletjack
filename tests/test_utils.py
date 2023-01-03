@@ -351,7 +351,7 @@ class TestGeocodeAddr:
 
         palletjack.utils.requests.get.return_value = response_mock
 
-        palletjack.utils.geocode_addr('foo', 'bar', 'foo_key', (0.015, 0.03))
+        palletjack.utils.Geocoding.geocode_addr('foo', 'bar', 'foo_key', (0.015, 0.03))
 
         palletjack.utils.requests.get.assert_called_with(
             'https://api.mapserv.utah.gov/api/v1/geocode/foo/bar', params={'apiKey': 'foo_key'}
@@ -377,7 +377,7 @@ class TestGeocodeAddr:
 
         palletjack.utils.requests.get.return_value = response_mock
 
-        palletjack.utils.geocode_addr('foo', 'bar', 'foo_key', (0.015, 0.03), spatialReference=3857)
+        palletjack.utils.Geocoding.geocode_addr('foo', 'bar', 'foo_key', (0.015, 0.03), spatialReference=3857)
 
         palletjack.utils.requests.get.assert_called_with(
             'https://api.mapserv.utah.gov/api/v1/geocode/foo/bar',
@@ -407,7 +407,7 @@ class TestGeocodeAddr:
 
         palletjack.utils.requests.get.return_value = response_mock
 
-        result = palletjack.utils.geocode_addr('foo', 'bar', 'foo_key', (0.015, 0.03))
+        result = palletjack.utils.Geocoding.geocode_addr('foo', 'bar', 'foo_key', (0.015, 0.03))
 
         assert result == (123, 456, 100., 'bar')
 
@@ -420,7 +420,7 @@ class TestGeocodeAddr:
 
         palletjack.utils.requests.get.return_value = response_mock
 
-        result = palletjack.utils.geocode_addr('foo', 'bar', 'foo_key', (0.015, 0.03))
+        result = palletjack.utils.Geocoding.geocode_addr('foo', 'bar', 'foo_key', (0.015, 0.03))
 
         assert result == (0, 0, 0., 'No Match')
 
@@ -440,7 +440,7 @@ class TestGeocodeAddr:
 
         palletjack.utils.requests.get.return_value = response_mock
 
-        result = palletjack.utils.geocode_addr('foo', 'bar', 'foo_key', (0.015, 0.03))
+        result = palletjack.utils.Geocoding.geocode_addr('foo', 'bar', 'foo_key', (0.015, 0.03))
 
         assert result == (0, 0, 0., 'No Match')
 
@@ -460,7 +460,7 @@ class TestGeocodeAddr:
 
         palletjack.utils.requests.get.return_value = response_mock
 
-        result = palletjack.utils.geocode_addr('foo', 'bar', 'foo_key', (0.015, 0.03))
+        result = palletjack.utils.Geocoding.geocode_addr('foo', 'bar', 'foo_key', (0.015, 0.03))
 
         assert 'No response from GET; request timeout?' not in caplog.text
 
@@ -484,7 +484,7 @@ class TestGeocodeAddr:
 
         palletjack.utils.requests.get.side_effect = [Exception, response_mock]
 
-        result = palletjack.utils.geocode_addr('foo', 'bar', 'foo_key', (0.015, 0.03))
+        result = palletjack.utils.Geocoding.geocode_addr('foo', 'bar', 'foo_key', (0.015, 0.03))
 
         assert palletjack.utils.requests.get.call_count == 2
         assert result == (123, 456, 100., 'bar')
@@ -510,7 +510,7 @@ class TestGeocodeAddr:
 
         palletjack.utils.requests.get.side_effect = [None, response_mock]
 
-        result = palletjack.utils.geocode_addr('foo', 'bar', 'foo_key', (0.015, 0.03))
+        result = palletjack.utils.Geocoding.geocode_addr('foo', 'bar', 'foo_key', (0.015, 0.03))
 
         assert 'No response from GET; request timeout?' in caplog.text
         assert palletjack.utils.requests.get.call_count == 2
@@ -540,7 +540,7 @@ class TestGeocodeAddr:
 
         palletjack.utils.requests.get.side_effect = [first_response_mock, second_response_mock]
 
-        result = palletjack.utils.geocode_addr('foo', 'bar', 'foo_key', (0.015, 0.03))
+        result = palletjack.utils.Geocoding.geocode_addr('foo', 'bar', 'foo_key', (0.015, 0.03))
 
         assert 'Did not receive a valid geocoding response; status code: 500' in caplog.text
         assert palletjack.utils.requests.get.call_count == 2
@@ -555,7 +555,7 @@ class TestGeocodeAddr:
         bad_response.status_code = 500
         palletjack.utils.requests.get.side_effect = [bad_response] * 4
 
-        result = palletjack.utils.geocode_addr('foo', 'bar', 'foo_key', (0.015, 0.03))
+        result = palletjack.utils.Geocoding.geocode_addr('foo', 'bar', 'foo_key', (0.015, 0.03))
 
         assert 'Did not receive a valid geocoding response; status code: 500' in caplog.messages
         assert palletjack.utils.requests.get.call_count == 4
@@ -581,7 +581,7 @@ class TestGeocodeAddr:
 
         palletjack.utils.requests.get.return_value = response_mock
 
-        palletjack.utils.geocode_addr('foo', 'bar', 'foo_key', (0.015, 0.03))
+        palletjack.utils.Geocoding.geocode_addr('foo', 'bar', 'foo_key', (0.015, 0.03))
 
         palletjack.utils.sleep.assert_called_once()
 
@@ -614,7 +614,7 @@ class TestValidateAPIKey:
         req_mock.get.return_value = response_mock
 
         #: Should not raise
-        palletjack.utils.validate_api_key('foo')
+        palletjack.utils.Geocoding.validate_api_key('foo')
 
     def test_validate_api_key_bad_key(self, mocker):
         req_mock = mocker.patch('palletjack.utils.requests', autospec=True)
@@ -623,7 +623,7 @@ class TestValidateAPIKey:
         req_mock.get.return_value = response_mock
 
         with pytest.raises(ValueError, match=re.escape('API key validation failed: Invalid API key')):
-            palletjack.utils.validate_api_key('foo')
+            palletjack.utils.Geocoding.validate_api_key('foo')
 
     def test_validate_api_key_handles_network_exception(self, mocker, caplog):
         req_mock = mocker.patch('palletjack.utils.requests', autospec=True)
@@ -635,7 +635,7 @@ class TestValidateAPIKey:
             RuntimeError,
             match=re.escape('Could not determine key validity; check your API key and/or network connection')
         ) as exc_info:
-            palletjack.utils.validate_api_key('foo')
+            palletjack.utils.Geocoding.validate_api_key('foo')
 
         assert req_mock.get.call_count == 4
         assert 'Random Error' in str(exc_info.value.__cause__)
@@ -647,7 +647,7 @@ class TestValidateAPIKey:
         req_mock.get.return_value = response_mock
 
         with pytest.warns(UserWarning, match=re.escape('Unhandled API key validation response 404: Weird Response')):
-            palletjack.utils.validate_api_key('foo')
+            palletjack.utils.Geocoding.validate_api_key('foo')
 
 
 class TestFieldRenaming:
