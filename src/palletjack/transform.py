@@ -26,7 +26,7 @@ class APIGeocoder:
     def __init__(self, api_key):
         self.api_key = api_key
         self._class_logger = logging.getLogger(__name__).getChild(self.__class__.__name__)
-        utils.validate_api_key(self.api_key)
+        utils.Geocoding.validate_api_key(self.api_key)
 
     def geocode_dataframe(self, dataframe, street_col, zone_col, wkid, rate_limits=(0.015, 0.03), **api_args):
         """Geocode a pandas dataframe into a spatially-enabled dataframe
@@ -64,7 +64,7 @@ class APIGeocoder:
             if i % reporting_interval == 0:
                 self._class_logger.info('Geocoding row %s of %s, %s%%', i, dataframe_length, i / dataframe_length * 100)
             row_dict = row._asdict()
-            results = utils.geocode_addr(
+            results = utils.Geocoding.geocode_addr(
                 row_dict[street_col],
                 row_dict[zone_col],
                 self.api_key,
