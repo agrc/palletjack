@@ -1,5 +1,6 @@
 import logging
 import re
+from collections import namedtuple
 from pathlib import Path
 
 import numpy as np
@@ -726,6 +727,35 @@ class TestAuthorization:
             mocker.call(service_file='credentials'),
             mocker.call(custom_credentials='credentials')
         ]
+
+
+class TestEmptyStringsAsNulls:
+
+    def test_converts_empty_strings_to_null(self):
+        FeatureSet = namedtuple('FeatureSet', ['features'])
+        Feature = namedtuple('Feature', ['attributes'])
+        feature_set = FeatureSet([Feature({
+            'a': 'foo',
+            'b': 'baz',
+        }), Feature({
+            'a': '',
+            'b': '',
+        })])
+        fields = [{
+            'name': 'a',
+            'type': 'esriFieldTypeInteger',
+            'nullable': False,
+        }, {
+            'name': 'b',
+            'type': 'esriFieldTypeInteger',
+            'nullable': True,
+        }]
+
+        fixed_feature_set = palletjack.utils.fix_numeric_empty_strings(feature_set, fields)
+        fixed_feature = fixed_feature_set.features[1]
+
+        assert fixed_feature.attributes['a'] == ''
+        assert fixed_feature.attributes['b'] is None
 
 
 class TestCheckFieldsMatch:

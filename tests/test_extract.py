@@ -599,7 +599,7 @@ class TestPostgresLoader:
             gpd, 'read_postgis', return_value=gpd.read_file(gpd.datasets.get_path('naturalearth_lowres'))
         )
 
-        loader = palletjack.PostgresLoader('host', 'app', 'user', 'password')
+        loader = extract.PostgresLoader('host', 'app', 'user', 'password')
         dataframe = loader.read_table_into_dataframe('table', 'name', '4326', 'geometry')
 
         assert dataframe.spatial.geometry_type == ['polygon']
