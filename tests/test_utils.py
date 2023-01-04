@@ -742,3 +742,67 @@ class TestEmptyStringsAsNulls:
 
         assert fixed_feature.attributes['a'] == ''
         assert fixed_feature.attributes['b'] is None
+
+    def test_fix_numeric_empty_strings_handles_both_missing_shape_info_fields(self):
+        FeatureSet = namedtuple('FeatureSet', ['features'])
+        Feature = namedtuple('Feature', ['attributes'])
+        feature_set = FeatureSet([Feature({
+            'a': 'foo',
+            'b': 'baz',
+        }), Feature({
+            'a': '',
+            'b': '',
+        })])
+        fields = [{
+            'name': 'a',
+            'type': 'esriFieldTypeInteger',
+            'nullable': False,
+        }, {
+            'name': 'b',
+            'type': 'esriFieldTypeInteger',
+            'nullable': True,
+        }, {
+            'name': 'Shape__Length',
+            'type': 'esriFieldTypeDouble',
+            'nullable': True,
+        }, {
+            'name': 'Shape__Area',
+            'type': 'esriFieldTypeDouble',
+            'nullable': True,
+        }]
+
+        fixed_feature_set = palletjack.utils.fix_numeric_empty_strings(feature_set, fields)
+        fixed_feature = fixed_feature_set.features[1]
+
+        assert fixed_feature.attributes['a'] == ''
+        assert fixed_feature.attributes['b'] is None
+
+    def test_fix_numeric_empty_strings_handles_single_missing_shape_info_field(self):
+        FeatureSet = namedtuple('FeatureSet', ['features'])
+        Feature = namedtuple('Feature', ['attributes'])
+        feature_set = FeatureSet([Feature({
+            'a': 'foo',
+            'b': 'baz',
+        }), Feature({
+            'a': '',
+            'b': '',
+        })])
+        fields = [{
+            'name': 'a',
+            'type': 'esriFieldTypeInteger',
+            'nullable': False,
+        }, {
+            'name': 'b',
+            'type': 'esriFieldTypeInteger',
+            'nullable': True,
+        }, {
+            'name': 'Shape__Length',
+            'type': 'esriFieldTypeDouble',
+            'nullable': True,
+        }]
+
+        fixed_feature_set = palletjack.utils.fix_numeric_empty_strings(feature_set, fields)
+        fixed_feature = fixed_feature_set.features[1]
+
+        assert fixed_feature.attributes['a'] == ''
+        assert fixed_feature.attributes['b'] is None
