@@ -1,6 +1,8 @@
 import logging
 from pathlib import Path
 
+import arcgis
+import geopandas as gpd
 import numpy as np
 import pandas as pd
 import pytest
@@ -587,3 +589,17 @@ class TestSFTPLoader:
         extract.SFTPLoader.read_csv_into_dataframe(sftploader_mock, 'baz')
 
         pd_mock.assert_called_with(Path('foo', 'baz'), names=None, dtype=None)
+
+
+class TestPostgresLoader:
+
+    def test_get_postgres_connection(self, mocker):
+
+        mocker.patch.object(
+            gpd, 'read_postgis', return_value=gpd.read_file(gpd.datasets.get_path('naturalearth_lowres'))
+        )
+
+        loader = extract.PostgresLoader('host', 'app', 'user', 'password')
+        dataframe = loader.read_table_into_dataframe('table', 'name', '4326', 'geometry')
+
+        assert dataframe.spatial.geometry_type == ['polygon']

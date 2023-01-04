@@ -1,4 +1,7 @@
 
+#: testing boilerplate
+boilerplate.py
+
 #: Secrets file
 secrets.py
 known_hosts
