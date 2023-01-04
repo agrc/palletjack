@@ -11,7 +11,7 @@ from setuptools import find_packages, setup
 
 setup(
     name='ugrc-palletjack',
-    version='2.6.2',
+    version='2.7.0',
     license='MIT',
     description='Updating AGOL feature services with data from SFTP shares.',
     author='Jake Adams, UGRC',
