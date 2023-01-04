@@ -470,7 +470,7 @@ class FeatureServiceUpdater:
         #: FIXME: With chunking, rollback could leave the data in an inconsistent state if a chunk fails midway through the process. All the chunks before that won't be rolled back, so some of the data will be new and some will be old. I suppose this will be ok for upserts, where the data will just get updated again. However, adds will probably just create duplicates of the chunks that aren't rolled back if we try to re-do the whole add op again. Do we create a list of dataframe row indices that were in the successful chunks?
 
         running_append_total = 0
-        geojsons = utils.build_upload_json(dataframe, 10000000)
+        geojsons = utils.build_upload_json(dataframe, target_featurelayer.properties.fields, 10_000_000)
         self._class_logger.info('Appending/upserting data in %s chunk(s)', len(geojsons))
         for chunk, geojson in enumerate(geojsons, 1):
             self._class_logger.debug('Uploading chunk %s of %s, %s bytes', chunk, len(geojsons), sys.getsizeof(geojson))
