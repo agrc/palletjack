@@ -49,6 +49,17 @@ Pallet jack: [forklift's](https://www.github.com/agrc/forklift) little brother.
 1. Install in dev mode
    - `pip install -e .[tests]`
 
+### Troubleshooting Weird Append Errors
+
+If a `FeatureLayer.append()` call (within a load.FeatureServiceUpdater method) fails with an "Unknown Error: 500" error or something like that, you can query the results to get more info. The debug log will include the HTTP GET call, something like the following:
+`https://services1.arcgis.com:443 POST /<unique string>/arcgis/rest/services/<feature layer name>/FeatureServer/<layer id>/append/jobs/<job guid>?f=json token=<crazy long token string>`
+
+You can use this and a token from an AGOL tab to build a new job status url. To get the token, log into AGOL in a browser and open a private hosted feature layer item. Click the layer, and then open the developer console. With the Network tab of the console open, click on the "View" link for the service URL. You should see a document in the list whose name includes "?token=<really long token string>". Copy the name and then copy out the token string.
+
+Now that you've got the token string, you can build the status query:
+`https://services1.arcgis.com/<unique string>/arcgis/rest/services/<feature layer name>/FeatureServer/<layer id>/append/jobs/<job guid>?f=json&<token from agol>`
+
+Calling this URL in a browser should return a message that will hopefully give you more info as to why it failed.
 ### Updating pypi
 
 1. Delete everything in dist/
