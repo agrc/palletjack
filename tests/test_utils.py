@@ -1322,45 +1322,22 @@ class TestNullGeometryGenerators:
 
 class TestDeleteUtils:
 
-    def test_check_delete_oids_are_comma_separated_returns_oid_list_no_spaces(self):
-        oid_string = '1,2,3'
-
-        oid_list = palletjack.utils.DeleteUtils.check_delete_oids_are_comma_separated(oid_string)
-
-        assert oid_list == ['1', '2', '3']
-
-    def test_check_delete_oids_are_comma_separated_returns_oid_list_with_spaces(self):
-        oid_string = ' 1, 2,3'
-
-        oid_list = palletjack.utils.DeleteUtils.check_delete_oids_are_comma_separated(oid_string)
-
-        assert oid_list == [' 1', ' 2', '3']
-
-    def test_check_delete_oids_are_comma_separated_raises_on_list_of_strings(self):
-        oid_string = ['1', '2', '3']
-
-        with pytest.raises(ValueError) as exc_info:
-            palletjack.utils.DeleteUtils.check_delete_oids_are_comma_separated(oid_string)
-
-        assert 'Can\'t split OBJECTID string `[\'1\', \'2\', \'3\']` into comma-separated values' in str(exc_info.value)
-
-    def test_check_delete_oids_are_comma_separated_raises_on_list_of_ints(self):
-        oid_string = [1, 2, 3]
-
-        with pytest.raises(ValueError) as exc_info:
-            palletjack.utils.DeleteUtils.check_delete_oids_are_comma_separated(oid_string)
-
-        assert 'Can\'t split OBJECTID string `[1, 2, 3]` into comma-separated values' in str(exc_info.value)
-
-    def test_check_delete_oids_are_ints_returns_int_list_with_spaces(self):
+    def test_check_delete_oids_are_ints_casts_string_list_with_spaces(self):
         oid_list = [' 1', ' 2', '3']
 
         numeric_oids = palletjack.utils.DeleteUtils.check_delete_oids_are_ints(oid_list)
 
         assert numeric_oids == [1, 2, 3]
 
-    def test_check_delete_oids_are_ints_returns_int_list_without_spaces(self):
+    def test_check_delete_oids_are_ints_casts_string_list_without_spaces(self):
         oid_list = ['1', '2', '3']
+
+        numeric_oids = palletjack.utils.DeleteUtils.check_delete_oids_are_ints(oid_list)
+
+        assert numeric_oids == [1, 2, 3]
+
+    def test_check_delete_oids_are_ints_passes_on_int_list(self):
+        oid_list = [1, 2, 3]
 
         numeric_oids = palletjack.utils.DeleteUtils.check_delete_oids_are_ints(oid_list)
 
@@ -1383,37 +1360,37 @@ class TestDeleteUtils:
         assert 'Couldn\'t convert OBJECTID(s) `[\'two\', \'three\']` to integer' in str(exc_info.value)
 
     def test_check_for_empty_oid_list_doesnt_raise_on_list(self):
-        oid_string = ['1, 2, 3']
+        oid_list = [1, 2, 3]
         numeric_oids = [1, 2, 3]
 
-        palletjack.utils.DeleteUtils.check_for_empty_oid_list(oid_string, numeric_oids)
+        palletjack.utils.DeleteUtils.check_for_empty_oid_list(oid_list, numeric_oids)
 
     def test_check_for_empty_oid_list_raises_on_empty_list(self):
-        oid_string = ''
+        oid_list = []
         numeric_oids = []
 
         with pytest.raises(ValueError) as exc_info:
-            palletjack.utils.DeleteUtils.check_for_empty_oid_list(oid_string, numeric_oids)
+            palletjack.utils.DeleteUtils.check_for_empty_oid_list(oid_list, numeric_oids)
 
-        assert 'No OBJECTIDs found in string ``' in str(exc_info.value)
+        assert 'No OBJECTIDs found in []' in str(exc_info.value)
 
     def test_check_delete_oids_are_in_live_data_doesnt_warn_on_good_oids(self, mocker):
         fl_mock = mocker.Mock()
         fl_mock.query.return_value = {'objectIdFieldName': 'OBJECTID', 'objectIds': [1, 2, 3]}
-        oid_string = '1,2,3'
+        oid_list = [1, 2, 3]
         oid_numeric = [1, 2, 3]
 
-        palletjack.utils.DeleteUtils.check_delete_oids_are_in_live_data(oid_string, oid_numeric, fl_mock)
+        palletjack.utils.DeleteUtils.check_delete_oids_are_in_live_data(oid_list, oid_numeric, fl_mock)
 
     def test_check_delete_oids_are_in_live_data_warns_on_missing_oid(self, mocker):
         fl_mock = mocker.Mock()
         fl_mock.query.return_value = {'objectIdFieldName': 'OBJECTID', 'objectIds': [1, 2]}
-        oid_string = '1,2,3'
+        oid_list = [1, 2, 3]
         oid_numeric = [1, 2, 3]
 
-        with pytest.warns(UserWarning, match='OBJECTIDs \{3\} were not found in the live data'):
+        with pytest.warns(UserWarning, match=re.escape('OBJECTIDs {3} were not found in the live data')):
             number_of_missing_oids = palletjack.utils.DeleteUtils.check_delete_oids_are_in_live_data(
-                oid_string, oid_numeric, fl_mock
+                oid_list, oid_numeric, fl_mock
             )
 
         assert number_of_missing_oids == 1

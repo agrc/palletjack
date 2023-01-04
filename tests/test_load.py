@@ -240,7 +240,7 @@ class TestDeleteFromLayer:
         delete_utils_mock = mocker.patch('palletjack.utils.DeleteUtils')
         delete_utils_mock.check_delete_oids_are_in_live_data.return_value = 0
 
-        deleted = load.FeatureServiceUpdater._delete_data_from_hosted_feature_layer(updater_mock, '11,17')
+        deleted = load.FeatureServiceUpdater._delete_data_from_hosted_feature_layer(updater_mock, [11, 17])
 
         assert deleted == 2
 
@@ -257,10 +257,8 @@ class TestDeleteFromLayer:
 
         mocker.patch('palletjack.utils.DeleteUtils')
 
-        with pytest.raises(RuntimeError, match='The following Object IDs failed to delete: \[17\]'):  # as exc_info:
-            deleted = load.FeatureServiceUpdater._delete_data_from_hosted_feature_layer(updater_mock, '11,17')
-
-        # assert  exc_info.value.args[0] == 'The following Object IDs failed to delete: 17' in str(exc_info.value)
+        with pytest.raises(RuntimeError, match=re.escape('The following Object IDs failed to delete: [17]')):
+            deleted = load.FeatureServiceUpdater._delete_data_from_hosted_feature_layer(updater_mock, [11, 17])
 
     def test_delete_data_from_hosted_feature_layer_runs_proper_check_sequence(self, mocker):
         updater_mock = mocker.Mock()
@@ -273,7 +271,7 @@ class TestDeleteFromLayer:
             ]
         }  # yapf: disable
 
-        deleted = load.FeatureServiceUpdater._delete_data_from_hosted_feature_layer(updater_mock, '11')
+        deleted = load.FeatureServiceUpdater._delete_data_from_hosted_feature_layer(updater_mock, [11])
 
         assert deleted == 1
 
