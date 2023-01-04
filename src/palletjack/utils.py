@@ -760,7 +760,7 @@ def _chunk_dataframe(dataframe, chunks_needed):
     return list_of_dataframes
 
 
-def build_upload_json(dataframe, max_bytes=100000000):
+def build_upload_json(dataframe, feature_layer_fields, max_bytes=100000000):
     """Create a list of  geojson strings of a spatially-enabled DataFrame, divided into chunks if it exceeds max_bytes
 
     Returns a list of geojson strings. If the initial size in bytes is under the limit, it is just a single-element
@@ -777,7 +777,7 @@ def build_upload_json(dataframe, max_bytes=100000000):
         list[str]: A list of the dataframe chunks converted to geojson
     """
     #: TODO: split this out using Scott's featureset fixer once its merged
-    list_of_geojsons = [dataframe.spatial.to_featureset().to_geojson]
+    list_of_geojsons = [fix_numeric_empty_strings(dataframe.spatial.to_featureset(), feature_layer_fields).to_geojson]
     geojson_size = sys.getsizeof(list_of_geojsons[0])
     module_logger.debug('Initial file size: %s', geojson_size)
 
@@ -787,7 +787,10 @@ def build_upload_json(dataframe, max_bytes=100000000):
         #: be conservative and add extra chunk for differing geometry sizes, geojson overhead
         chunks_needed += 1
         list_of_dataframes = _chunk_dataframe(dataframe, chunks_needed)
-        list_of_geojsons = [dataframe.spatial.to_featureset().to_geojson for dataframe in list_of_dataframes]
+        list_of_geojsons = [
+            fix_numeric_empty_strings(dataframe.spatial.to_featureset(), feature_layer_fields).to_geojson
+            for dataframe in list_of_dataframes
+        ]
 
     return list_of_geojsons
 
@@ -798,13 +801,16 @@ def fix_numeric_empty_strings(feature_set, feature_layer_fields):
         feature_set (arcgis.features.FeatureSet): Feature set to clean
         fields (Dict): fields from feature layer
     """
-    fix_field_names = []
-    for field in feature_layer_fields:
-        if field['type'] in ['esriFieldTypeDouble', 'esriFieldTypeInteger'] and field['nullable']:
-            fix_field_names.append(field['name'])
+
+    fields_to_fix = {
+        field['name']
+        for field in feature_layer_fields
+        if field['type'] in ['esriFieldTypeDouble', 'esriFieldTypeInteger'] and field['nullable']
+    }
+    fields_to_fix -= {'Shape__Length', 'Shape__Area'}
 
     for feature in feature_set.features:
-        for field_name in fix_field_names:
+        for field_name in fields_to_fix:
             if feature.attributes[field_name] == '':
                 feature.attributes[field_name] = None
 
