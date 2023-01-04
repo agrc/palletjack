@@ -53,7 +53,7 @@ class FeatureServiceUpdater:
         return updater._add_new_data_to_hosted_feature_layer()
 
     @classmethod
-    def remove_features(cls, gis, feature_service_itemid, delete_string, layer_index=0):
+    def remove_features(cls, gis, feature_service_itemid, delete_oids, layer_index=0):
         """Deletes features from a hosted feature layer based on comma-separated string of Object IDs
 
         This is a wrapper around the arcgis.FeatureLayer.delete_features method that adds some sanity checking. The
@@ -63,7 +63,7 @@ class FeatureServiceUpdater:
         The sanity checks will raise errors or warnings as appropriate if any of them fail.
 
         Args:
-            delete_string (str): comma-separated string of OIDs to delete (ie, "1,2,3")
+            delete_oids (list[int]): List of OIDs to delete
 
         Raises:
             ValueError: If delete_string can't be split on `,`
@@ -77,7 +77,7 @@ class FeatureServiceUpdater:
         """
 
         updater = cls(gis, feature_service_itemid, layer_index=layer_index)
-        return updater._delete_data_from_hosted_feature_layer(delete_string)
+        return updater._delete_data_from_hosted_feature_layer(delete_oids)
 
     @classmethod
     def update_features(cls, gis, feature_service_itemid, dataframe, layer_index=0, update_geometry=True):
@@ -349,11 +349,11 @@ class FeatureServiceUpdater:
         )
         return append_count
 
-    def _delete_data_from_hosted_feature_layer(self, delete_string) -> int:
+    def _delete_data_from_hosted_feature_layer(self, delete_oids) -> int:
         """Deletes features from a hosted feature layer based on comma-separated string of OIDS
 
         Args:
-            delete_string (str): comma-separated string of OIDs to delete
+            delete_oids (list[int]): List of OIDs to delete
 
         Raises:
             RuntimeError: If any of the OIDs fail to delete
@@ -365,12 +365,13 @@ class FeatureServiceUpdater:
         self._class_logger.info(
             'Deleting features from layer `%s` in itemid `%s`', self.layer_index, self.feature_service_itemid
         )
-        self._class_logger.debug('Delete string: %s', delete_string)
+        self._class_logger.debug('Delete string: %s', delete_oids)
 
         #: Verify delete list
-        oid_list = utils.DeleteUtils.check_delete_oids_are_comma_separated(delete_string)
-        oid_numeric = utils.DeleteUtils.check_delete_oids_are_ints(oid_list)
-        utils.DeleteUtils.check_for_empty_oid_list(oid_numeric, delete_string)
+        # oid_list = utils.DeleteUtils.check_delete_oids_are_comma_separated(delete_oids)
+        oid_numeric = utils.DeleteUtils.check_delete_oids_are_ints(delete_oids)
+        utils.DeleteUtils.check_for_empty_oid_list(oid_numeric, delete_oids)
+        delete_string = ','.join([str(oid) for oid in oid_numeric])
         num_missing_oids = utils.DeleteUtils.check_delete_oids_are_in_live_data(
             delete_string, oid_numeric, self.feature_layer
         )
@@ -378,7 +379,7 @@ class FeatureServiceUpdater:
         #: Note: apparently not all services support rollback: https://developers.arcgis.com/rest/services-reference/enterprise/delete-features.htm
         deletes = utils.retry(
             self.feature_layer.delete_features,
-            deletes=delete_string,
+            deletes=delete_oids,
             rollback_on_failure=True,
         )
 
@@ -469,7 +470,7 @@ class FeatureServiceUpdater:
         #: FIXME: With chunking, rollback could leave the data in an inconsistent state if a chunk fails midway through the process. All the chunks before that won't be rolled back, so some of the data will be new and some will be old. I suppose this will be ok for upserts, where the data will just get updated again. However, adds will probably just create duplicates of the chunks that aren't rolled back if we try to re-do the whole add op again. Do we create a list of dataframe row indices that were in the successful chunks?
 
         running_append_total = 0
-        geojsons = utils.build_upload_json(dataframe)
+        geojsons = utils.build_upload_json(dataframe, 10000000)
         self._class_logger.info('Appending/upserting data in %s chunk(s)', len(geojsons))
         for chunk, geojson in enumerate(geojsons, 1):
             self._class_logger.debug('Uploading chunk %s of %s, %s bytes', chunk, len(geojsons), sys.getsizeof(geojson))
