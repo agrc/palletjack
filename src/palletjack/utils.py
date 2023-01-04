@@ -790,3 +790,22 @@ def build_upload_json(dataframe, max_bytes=100000000):
         list_of_geojsons = [dataframe.spatial.to_featureset().to_geojson for dataframe in list_of_dataframes]
 
     return list_of_geojsons
+
+
+def fix_numeric_empty_strings(feature_set, feature_layer_fields):
+    """Replace empty strings with None for numeric fields that allow nulls
+    Args:
+        feature_set (arcgis.features.FeatureSet): Feature set to clean
+        fields (Dict): fields from feature layer
+    """
+    fix_field_names = []
+    for field in feature_layer_fields:
+        if field['type'] in ['esriFieldTypeDouble', 'esriFieldTypeInteger'] and field['nullable']:
+            fix_field_names.append(field['name'])
+
+    for feature in feature_set.features:
+        for field_name in fix_field_names:
+            if feature.attributes[field_name] == '':
+                feature.attributes[field_name] = None
+
+    return feature_set

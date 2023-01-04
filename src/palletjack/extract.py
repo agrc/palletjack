@@ -15,6 +15,7 @@ import pysftp
 import requests
 import sqlalchemy
 from googleapiclient.http import MediaIoBaseDownload
+from sqlalchemy import create_engine
 
 from . import utils
 
@@ -440,39 +441,16 @@ class PostgresLoader:
     def __init__(self, host, database, username, password, port=5432):
         self._class_logger = logging.getLogger(__name__).getChild(self.__class__.__name__)
 
-        if os.environ.get('FUNCTION_TARGET') is not None:  #: this is an env var specific to cloud functions
-            self._class_logger.info('running in GCF, using unix socket')
-            self.engine = sqlalchemy.create_engine(
-                sqlalchemy.engine.url.URL.create(
-                    drivername='postgresql+pg8000',
-                    username=username,
-                    password=password,
-                    database=database,
-                    query={'unix_sock': f'/cloudsql/{host}/.s.PGSQL.{port}'},  #: requires the pg8000 package
-                )
-            )
-        else:
-            self._class_logger.info('running locally, using traditional host connection')
-            self.engine = sqlalchemy.create_engine(
-                sqlalchemy.engine.url.URL.create(
-                    drivername='postgresql',
-                    username=username,
-                    password=password,
-                    database=database,
-                    host=host,
-                    port=port,
-                )
-            )
+        connection_string = f'postgresql://{username}:{password}@{host}:{port}/{database}'
+        self.engine = create_engine(connection_string)
 
     def read_table_into_dataframe(self, table_name, index_column, crs, spatial_column):
         """Read a table into a dataframe
-
         Args:
             table_name (str): Name of table or view to read in the following format: schema.table_name
             index_column (str): Name of column to use as the dataframe's index
             crs (str): Coordinate reference system of the table's geometry column
             spatial_column (str): Name of the table's geometry or geography column
-
         Returns:
             pd.DataFrame.spatial: Table as a spatially enabled dataframe
         """
@@ -482,9 +460,11 @@ class PostgresLoader:
         dataframe = gpd.read_postgis(
             f'select * from {table_name}', self.engine, index_col=index_column, crs=crs, geom_col=spatial_column
         )
-        dataframe = dataframe.to_crs(epsg=3857)
 
-        spatial_dataframe = pd.DataFrame.spatial.from_geodataframe(dataframe)
+        spatial_dataframe = pd.DataFrame.spatial.from_geodataframe(dataframe, column_name=spatial_column)
+        for column in spatial_dataframe.select_dtypes(include=['datetime64[ns, UTC]']):
+            self._class_logger.debug('Converting column `%s` to ISO string format', column)
+            spatial_dataframe[column] = spatial_dataframe[column].apply(pd.Timestamp.isoformat)
 
         self._class_logger.debug('Dataframe shape: %s', spatial_dataframe.shape)
         if len(spatial_dataframe.index) == 0:
