@@ -366,13 +366,16 @@ def fix_numeric_empty_strings(feature_set, feature_layer_fields):
         feature_set (arcgis.features.FeatureSet): Feature set to clean
         fields (Dict): fields from feature layer
     """
-    fix_field_names = []
-    for field in feature_layer_fields:
-        if field['type'] in ['esriFieldTypeDouble', 'esriFieldTypeInteger'] and field['nullable']:
-            fix_field_names.append(field['name'])
+
+    fields_to_fix = {
+        field['name']
+        for field in feature_layer_fields
+        if field['type'] in ['esriFieldTypeDouble', 'esriFieldTypeInteger'] and field['nullable']
+    }
+    fields_to_fix -= {'Shape__Length', 'Shape__Area'}
 
     for feature in feature_set.features:
-        for field_name in fix_field_names:
+        for field_name in fields_to_fix:
             if feature.attributes[field_name] == '':
                 feature.attributes[field_name] = None
 
