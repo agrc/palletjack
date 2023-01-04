@@ -1,5 +1,6 @@
 import logging
 import re
+from collections import namedtuple
 from pathlib import Path
 
 import numpy as np
@@ -72,32 +73,28 @@ class TestCheckFieldsMatch:
 
     def test_check_fields_match_normal(self, mocker):
         mock_fl = mocker.Mock()
-        mock_fl.properties = {
-            'fields': [
-                {
-                    'name': 'Foo'
-                },
-                {
-                    'name': 'Bar'
-                },
-            ]
-        }
+        mock_fl.properties.fields = [
+            {
+                'name': 'Foo'
+            },
+            {
+                'name': 'Bar'
+            },
+        ]
         df = pd.DataFrame(columns=['Foo', 'Bar'])
 
         palletjack.utils.check_fields_match(mock_fl, df)
 
     def test_check_fields_match_raises_error_on_extra_new_field(self, mocker):
         mock_fl = mocker.Mock()
-        mock_fl.properties = {
-            'fields': [
-                {
-                    'name': 'Foo'
-                },
-                {
-                    'name': 'Bar'
-                },
-            ]
-        }
+        mock_fl.properties.fields = [
+            {
+                'name': 'Foo'
+            },
+            {
+                'name': 'Bar'
+            },
+        ]
         df = pd.DataFrame(columns=['Foo', 'Bar', 'Baz'])
 
         with pytest.raises(RuntimeError) as exc_info:
@@ -108,35 +105,31 @@ class TestCheckFieldsMatch:
 
     def test_check_fields_match_ignores_new_shape_field(self, mocker):
         mock_fl = mocker.Mock()
-        mock_fl.properties = {
-            'fields': [
-                {
-                    'name': 'Foo'
-                },
-                {
-                    'name': 'Bar'
-                },
-            ]
-        }
+        mock_fl.properties.fields = [
+            {
+                'name': 'Foo'
+            },
+            {
+                'name': 'Bar'
+            },
+        ]
         df = pd.DataFrame(columns=['Foo', 'Bar', 'SHAPE'])
 
         palletjack.utils.check_fields_match(mock_fl, df)
 
     def test_check_fields_match_warns_on_missing_new_field(self, mocker, caplog):
         mock_fl = mocker.Mock()
-        mock_fl.properties = {
-            'fields': [
-                {
-                    'name': 'Foo'
-                },
-                {
-                    'name': 'Bar'
-                },
-                {
-                    'name': 'Baz'
-                },
-            ]
-        }
+        mock_fl.properties.fields = [
+            {
+                'name': 'Foo'
+            },
+            {
+                'name': 'Bar'
+            },
+            {
+                'name': 'Baz'
+            },
+        ]
         df = pd.DataFrame(columns=['Foo', 'Bar'])
 
         palletjack.utils.check_fields_match(mock_fl, df)
@@ -249,31 +242,27 @@ class TestCheckIndexColumnInFL:
 
     def test_check_index_column_in_feature_layer_doesnt_raise_on_normal(self, mocker):
         fl_mock = mocker.Mock()
-        fl_mock.properties = {
-            'fields': [
-                {
-                    'name': 'Foo'
-                },
-                {
-                    'name': 'Bar'
-                },
-            ]
-        }
+        fl_mock.properties.fields = [
+            {
+                'name': 'Foo'
+            },
+            {
+                'name': 'Bar'
+            },
+        ]
 
         palletjack.utils.check_index_column_in_feature_layer(fl_mock, 'Foo')
 
     def test_check_index_column_in_feature_layer_raises_on_missing(self, mocker):
         fl_mock = mocker.Mock()
-        fl_mock.properties = {
-            'fields': [
-                {
-                    'name': 'Foo'
-                },
-                {
-                    'name': 'Bar'
-                },
-            ]
-        }
+        fl_mock.properties.fields = [
+            {
+                'name': 'Foo'
+            },
+            {
+                'name': 'Bar'
+            },
+        ]
 
         with pytest.raises(RuntimeError) as exc_info:
             palletjack.utils.check_index_column_in_feature_layer(fl_mock, 'Baz')
@@ -285,27 +274,23 @@ class TestCheckFieldUnique:
 
     def test_check_field_set_to_unique_doesnt_raise_on_normal(self, mocker):
         mock_fl = mocker.Mock()
-        mock_fl.properties = {
-            'indexes': [
-                {
-                    'fields': 'foo_field',
-                    'isUnique': True
-                },
-            ]
-        }
+        mock_fl.properties.indexes = [
+            {
+                'fields': 'foo_field',
+                'isUnique': True
+            },
+        ]
 
         palletjack.utils.check_field_set_to_unique(mock_fl, 'foo_field')
 
     def test_check_field_set_to_unique_raises_on_non_indexed_field(self, mocker):
         mock_fl = mocker.Mock()
-        mock_fl.properties = {
-            'indexes': [
-                {
-                    'fields': 'bar_field',
-                    'isUnique': True
-                },
-            ]
-        }
+        mock_fl.properties.indexes = [
+            {
+                'fields': 'bar_field',
+                'isUnique': True
+            },
+        ]
 
         with pytest.raises(RuntimeError) as exc_info:
             palletjack.utils.check_field_set_to_unique(mock_fl, 'foo_field')
@@ -314,14 +299,12 @@ class TestCheckFieldUnique:
 
     def test_check_field_set_to_unique_raises_on_non_unique_field(self, mocker):
         mock_fl = mocker.Mock()
-        mock_fl.properties = {
-            'indexes': [
-                {
-                    'fields': 'foo_field',
-                    'isUnique': False
-                },
-            ]
-        }
+        mock_fl.properties.indexes = [
+            {
+                'fields': 'foo_field',
+                'isUnique': False
+            },
+        ]
 
         with pytest.raises(RuntimeError) as exc_info:
             palletjack.utils.check_field_set_to_unique(mock_fl, 'foo_field')
@@ -744,6 +727,35 @@ class TestAuthorization:
             mocker.call(service_file='credentials'),
             mocker.call(custom_credentials='credentials')
         ]
+
+
+class TestEmptyStringsAsNulls:
+
+    def test_converts_empty_strings_to_null(self):
+        FeatureSet = namedtuple('FeatureSet', ['features'])
+        Feature = namedtuple('Feature', ['attributes'])
+        feature_set = FeatureSet([Feature({
+            'a': 'foo',
+            'b': 'baz',
+        }), Feature({
+            'a': '',
+            'b': '',
+        })])
+        fields = [{
+            'name': 'a',
+            'type': 'esriFieldTypeInteger',
+            'nullable': False,
+        }, {
+            'name': 'b',
+            'type': 'esriFieldTypeInteger',
+            'nullable': True,
+        }]
+
+        fixed_feature_set = palletjack.utils.fix_numeric_empty_strings(feature_set, fields)
+        fixed_feature = fixed_feature_set.features[1]
+
+        assert fixed_feature.attributes['a'] == ''
+        assert fixed_feature.attributes['b'] is None
 
 
 class TestCheckFieldsMatch:
