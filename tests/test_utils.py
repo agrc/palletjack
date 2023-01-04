@@ -757,6 +757,70 @@ class TestEmptyStringsAsNulls:
         assert fixed_feature.attributes['a'] == ''
         assert fixed_feature.attributes['b'] is None
 
+    def test_fix_numeric_empty_strings_handles_both_missing_shape_info_fields(self):
+        FeatureSet = namedtuple('FeatureSet', ['features'])
+        Feature = namedtuple('Feature', ['attributes'])
+        feature_set = FeatureSet([Feature({
+            'a': 'foo',
+            'b': 'baz',
+        }), Feature({
+            'a': '',
+            'b': '',
+        })])
+        fields = [{
+            'name': 'a',
+            'type': 'esriFieldTypeInteger',
+            'nullable': False,
+        }, {
+            'name': 'b',
+            'type': 'esriFieldTypeInteger',
+            'nullable': True,
+        }, {
+            'name': 'Shape__Length',
+            'type': 'esriFieldTypeDouble',
+            'nullable': True,
+        }, {
+            'name': 'Shape__Area',
+            'type': 'esriFieldTypeDouble',
+            'nullable': True,
+        }]
+
+        fixed_feature_set = palletjack.utils.fix_numeric_empty_strings(feature_set, fields)
+        fixed_feature = fixed_feature_set.features[1]
+
+        assert fixed_feature.attributes['a'] == ''
+        assert fixed_feature.attributes['b'] is None
+
+    def test_fix_numeric_empty_strings_handles_single_missing_shape_info_field(self):
+        FeatureSet = namedtuple('FeatureSet', ['features'])
+        Feature = namedtuple('Feature', ['attributes'])
+        feature_set = FeatureSet([Feature({
+            'a': 'foo',
+            'b': 'baz',
+        }), Feature({
+            'a': '',
+            'b': '',
+        })])
+        fields = [{
+            'name': 'a',
+            'type': 'esriFieldTypeInteger',
+            'nullable': False,
+        }, {
+            'name': 'b',
+            'type': 'esriFieldTypeInteger',
+            'nullable': True,
+        }, {
+            'name': 'Shape__Length',
+            'type': 'esriFieldTypeDouble',
+            'nullable': True,
+        }]
+
+        fixed_feature_set = palletjack.utils.fix_numeric_empty_strings(feature_set, fields)
+        fixed_feature = fixed_feature_set.features[1]
+
+        assert fixed_feature.attributes['a'] == ''
+        assert fixed_feature.attributes['b'] is None
+
 
 class TestCheckFieldsMatch:
 
@@ -1484,13 +1548,14 @@ class TestDataFrameChunking:
     def test_build_upload_json_gets_one_more_chunk_than_ceildiv(self, mocker):
 
         mock_df = mocker.Mock()
-        mock_df.spatial.to_featureset.return_value.to_geojson = 1
+        mock_string_fixer = mocker.patch('palletjack.utils.fix_numeric_empty_strings')
+        mock_string_fixer.return_value.to_geojson = 1
 
         mocker.patch('palletjack.utils.sys.getsizeof', return_value=10)
 
         mocker.patch('palletjack.utils._chunk_dataframe', new=lambda _, chunks_needed: [mock_df] * chunks_needed)
 
-        json_list = palletjack.utils.build_upload_json(mock_df, max_bytes=3)
+        json_list = palletjack.utils.build_upload_json(mock_df, 'foo_dict', max_bytes=3)
 
         assert len(json_list) == 5
         assert json_list == [1] * 5
@@ -1498,13 +1563,14 @@ class TestDataFrameChunking:
     def test_build_upload_json_returns_one_element_list_if_no_chunking_needed(self, mocker):
 
         mock_df = mocker.Mock()
-        mock_df.spatial.to_featureset.return_value.to_geojson = 1
+        mock_string_fixer = mocker.patch('palletjack.utils.fix_numeric_empty_strings')
+        mock_string_fixer.return_value.to_geojson = 1
 
         mocker.patch('palletjack.utils.sys.getsizeof', return_value=10)
 
         chunk_method_mock = mocker.patch('palletjack.utils._chunk_dataframe')
 
-        json_list = palletjack.utils.build_upload_json(mock_df, max_bytes=100)
+        json_list = palletjack.utils.build_upload_json(mock_df, 'foo_dict', max_bytes=100)
 
         assert len(json_list) == 1
         assert json_list == [1]
