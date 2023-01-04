@@ -656,32 +656,11 @@ def get_null_geometries(feature_layer_properties):
 class DeleteUtils:
 
     @staticmethod
-    def check_delete_oids_are_comma_separated(oid_string):
-        """Raise an error if an Object ID string used for deletes isn't comma separated
-
-        Args:
-            oid_string (str): String to be passed to FeatureLayer.delete_features
-
-        Raises:
-            ValueError: If oid_string can't be split on `,`
-
-        Returns:
-            list[str]: The individual elements from the comma-separated oid_string
-        """
-
-        try:
-            oids = oid_string.split(',')
-        except AttributeError as error:
-            raise ValueError(f'Can\'t split OBJECTID string `{oid_string}` into comma-separated values') from error
-
-        return oids
-
-    @staticmethod
     def check_delete_oids_are_ints(oid_list):
         """Raise an error if a list of strings can't be parsed as ints
 
         Args:
-            oid_list (list[str]): List of strings coming from check_delete_oids_are_comma_separated
+            oid_list (list[int]): List of Object IDs to delete
 
         Raises:
             TypeError: If any of the items in oid_list can't be cast to ints
@@ -702,26 +681,26 @@ class DeleteUtils:
         return numeric_oids
 
     @staticmethod
-    def check_for_empty_oid_list(oid_string, numeric_oids):
+    def check_for_empty_oid_list(oid_list, numeric_oids):
         """Raise an error if the parsed Object ID list is empty
 
         Args:
-            oid_string (str): The original, comma-separated delete Object ID string
-            numeric_oids (list[int]): The parsed and cast-to-int Object IDs
+            oid_list (list[int]): The original list of Object IDs to delete
+            numeric_oids (list[int]): The cast-to-int Object IDs
 
         Raises:
             ValueError: If numeric_oids is empty
         """
 
         if not numeric_oids:
-            raise ValueError(f'No OBJECTIDs found in string `{oid_string}`')
+            raise ValueError(f'No OBJECTIDs found in {oid_list}')
 
     @staticmethod
     def check_delete_oids_are_in_live_data(oid_string, numeric_oids, feature_layer):
         """Warn if a delete Object ID doesn't exist in the live data, return number missing
 
         Args:
-            oid_string (str): Original, comma-separated delete Object ID string
+            oid_string (str): Comma-separated string of delete Object IDs
             numeric_oids (list[int]): The parsed and cast-to-int Object IDs
             feature_layer (arcgis.features.FeatureLayer): Live FeatureLayer item
 
@@ -797,9 +776,10 @@ def build_upload_json(dataframe, max_bytes=100000000):
     Returns:
         list[str]: A list of the dataframe chunks converted to geojson
     """
-    #: TODO: split this out using Scott's featurset fixer once its merged
+    #: TODO: split this out using Scott's featureset fixer once its merged
     list_of_geojsons = [dataframe.spatial.to_featureset().to_geojson]
     geojson_size = sys.getsizeof(list_of_geojsons[0])
+    module_logger.debug('Initial file size: %s', geojson_size)
 
     chunks_needed = _ceildiv(geojson_size, max_bytes)
 
