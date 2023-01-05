@@ -5,6 +5,7 @@ import json
 import logging
 import sys
 import warnings
+from datetime import datetime
 from pathlib import Path
 
 import arcgis
@@ -470,27 +471,37 @@ class FeatureServiceUpdater:
         #: FIXME: With chunking, rollback could leave the data in an inconsistent state if a chunk fails midway through the process. All the chunks before that won't be rolled back, so some of the data will be new and some will be old. I suppose this will be ok for upserts, where the data will just get updated again. However, adds will probably just create duplicates of the chunks that aren't rolled back if we try to re-do the whole add op again. Do we create a list of dataframe row indices that were in the successful chunks?
 
         running_append_total = 0
-        geojsons = utils.build_upload_json(dataframe, target_featurelayer.properties.fields, 10_000_000)
+        geojsons = utils.build_upload_json(dataframe, target_featurelayer.properties.fields, 20_000_000)
         self._class_logger.info('Appending/upserting data in %s chunk(s)', len(geojsons))
+        chunk_sizes = []
         for chunk, geojson in enumerate(geojsons, 1):
-            self._class_logger.debug('Uploading chunk %s of %s, %s bytes', chunk, len(geojsons), sys.getsizeof(geojson))
-            result, messages = utils.retry(
-                target_featurelayer.append,
-                upload_format='geojson',
-                edits=geojson,
-                return_messages=True,
-                rollback=True,
-                **append_kwargs
-            )
-
-            self._class_logger.debug(messages)
+            try:
+                chunk_start = datetime.now()
+                chunk_size = sys.getsizeof(geojson.encode('utf-16'))
+                chunk_sizes.append(chunk_size)
+                self._class_logger.debug('Uploading chunk %s of %s, %s bytes', chunk, len(geojsons), chunk_size)
+                result, messages = utils.retry(
+                    target_featurelayer.append,
+                    upload_format='geojson',
+                    edits=geojson,
+                    return_messages=True,
+                    rollback=True,
+                    **append_kwargs
+                )
+                self._class_logger.debug(messages)
+                self._class_logger.debug('Chunk time: %s', datetime.now() - chunk_start)
+            except Exception:
+                self._class_logger.debug(pd.Series(chunk_sizes).describe())
+                raise
             if not result:
+                self._class_logger.debug(pd.Series(chunk_sizes).describe())
                 raise RuntimeError(
                     f'Failed to append data at chunk {chunk} of {len(geojsons)}. Append operation should have been rolled back.'
                 )
 
             running_append_total += messages['recordCount']
 
+        self._class_logger.debug(pd.Series(chunk_sizes).describe())
         return running_append_total
 
     def _truncate_and_load_data(self):
@@ -506,6 +517,7 @@ class FeatureServiceUpdater:
         self._class_logger.info(
             'Truncating and loading layer `%s` in itemid `%s`', self.layer_index, self.feature_service_itemid
         )
+        start = datetime.now()
 
         #: Field checks to prevent Error: 400 errors from AGOL
         field_checker = utils.FieldChecker(self.feature_layer.properties, self.new_dataframe)
@@ -524,13 +536,16 @@ class FeatureServiceUpdater:
         try:
             self._class_logger.info('Loading new data...')
             append_count = self._upsert_data(self.feature_layer, self.new_dataframe, upsert=False)
+            self._class_logger.debug('Total truncate and load time: %s', datetime.now() - start)
         except Exception:
             try:
                 self._class_logger.info('Append failed; attempting to re-load truncated data...')
                 append_count = self._upsert_data(self.feature_layer, old_dataframe, upsert=False)
                 self._class_logger.info('%s features reloaded', append_count)
+                self._class_logger.debug('Total truncate and load time: %s', datetime.now() - start)
             except Exception as inner_error:
                 failsafe_path = utils.save_spatially_enabled_dataframe_to_json(old_dataframe, self.failsafe_dir)
+                self._class_logger.debug('Total truncate and load time: %s', datetime.now() - start)
                 raise RuntimeError(
                     f'Failed to re-add truncated data after failed append; data saved to {failsafe_path}'
                 ) from inner_error
