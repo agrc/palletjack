@@ -735,8 +735,8 @@ def _ceildiv(num, denom):
     return -(num // -denom)
 
 
-def _chunk_dataframe(dataframe, chunks_needed):
-    """Divide up a dataframe into chunks_needed pieces
+def _chunk_dataframe(dataframe, chunk_size):
+    """Divide up a dataframe into a list of dataframes of chunk_size rows
 
     The DataFrames are returned in a list. Elements [:-1] are as large as possible for the number of chunks needed,
     while the last gets however many rows of the dataframe are left over. eg, a 10-row dataframe broken into 3 chunks
@@ -744,14 +744,13 @@ def _chunk_dataframe(dataframe, chunks_needed):
 
     Args:
         dataframe (pd.DataFrame): Input DataFrame
-        chunks_needed (int): The number of resulting DataFrames desired
+        chunk_size (int): The max number of rows for each sub dataframe
 
     Returns:
-        list[pd.DataFrame]: A list of chunks_needed dataframes
+        list[pd.DataFrame]: A list of dataframes with at most chunk_size rows per dataframe
     """
 
     df_length = len(dataframe)
-    chunk_size = _ceildiv(df_length, chunks_needed)
 
     starts = range(0, df_length, chunk_size)
     ends = [start + chunk_size if start + chunk_size < df_length else df_length for start in starts]
@@ -760,39 +759,69 @@ def _chunk_dataframe(dataframe, chunks_needed):
     return list_of_dataframes
 
 
-def build_upload_json(dataframe, feature_layer_fields, max_bytes=100000000):
+def build_upload_json(dataframe, feature_layer_fields, max_bytes=100_000_000):
     """Create a list of  geojson strings of a spatially-enabled DataFrame, divided into chunks if it exceeds max_bytes
 
-    Returns a list of geojson strings. If the initial size in bytes is under the limit, it is just a single-element
-    list. Otherwise, it calculates the number of chunks needed by ceiling-dividing the size of the geojson and then
-    divides the dataframe into number of chunks + 1 smaller dataframes, where + 1 accounts for variations in size due
-    to geometries as well as the geojson overhead.
+    Recursively chunks dataframe to ensure no one chunk is larger than max_bytes. Converts all empty strings in
+    nullable numeric fields in feature sets created from individual chunks to None prior to converting to geojson to
+    ensure the field stays numeric.
 
     Args:
         dataframe (pd.DataFrame.spatial): Spatially-enabled dataframe to be converted to geojson
         max_bytes (int, optional): Maximum size in bytes any one geojson string can be. Defaults to 100000000 (AGOL
-        text uploads are limited to 100 MB)
+        text uploads are limited to 100 MB?)
 
     Returns:
         list[str]: A list of the dataframe chunks converted to geojson
     """
-    #: TODO: split this out using Scott's featureset fixer once its merged
-    list_of_geojsons = [fix_numeric_empty_strings(dataframe.spatial.to_featureset(), feature_layer_fields).to_geojson]
-    geojson_size = sys.getsizeof(list_of_geojsons[0])
+
+    geojson_size = sys.getsizeof(dataframe.spatial.to_featureset().to_geojson.encode('utf-16'))
     module_logger.debug('Initial file size: %s', geojson_size)
 
+    chunked_dataframes = _recursive_dataframe_chunking(dataframe, max_bytes)
+
+    chunked_geojsons = [
+        fix_numeric_empty_strings(chunk.spatial.to_featureset(), feature_layer_fields).to_geojson
+        for chunk in chunked_dataframes
+    ]
+
+    return chunked_geojsons
+
+
+def _recursive_dataframe_chunking(dataframe, max_bytes):
+    """Break a dataframe into chunks such that their utf-16 encoded geojson sizes don't exceed max_bytes
+
+    Divides the dataframe into chunks based on the geojson representation's utf-16-encoded size by calculating the
+    number of chunks of size > max_bytes needed for the entire file size. It uses this number of chunks to chunk the
+    dataframe based on rows. Because there can be variability in geojson file size due to attribute lengths (especially
+    line and polygon geometry sizes), it uses recursion to again chunk each smaller dataframe if needed.
+
+    The chunks should (but not definitely proven to) maintain the sequential order of the features of the original
+    dataframe. Suppose an initial 10 rows gives us chunks for rows [1, 2, 3], [4, 5, 6], [7, 8, 9], [10]. However, the
+    second chunk [4, 5, 6] turns out to be too large, so it gets divided into [4, 5] and [6]. The resulting list of
+    chunks should be [1, 2, 3], [4, 5], [6], [7, 8, 9], [10]
+
+    Args:
+        dataframe (pd.DataFrame.spatial): A spatially-enabled dataframe to divide
+        max_bytes (int): The max utf-16 encoded geojson size for any one chunk
+    """
+
+    #: Calculate number of chunks needed and the guesstimate max number of rows to achieve that size
+    geojson_size = sys.getsizeof(dataframe.spatial.to_featureset().to_geojson.encode('utf-16'))
     chunks_needed = _ceildiv(geojson_size, max_bytes)
+    max_rows = _ceildiv(len(dataframe), chunks_needed)
 
-    if chunks_needed > 1:
-        #: be conservative and add extra chunk for differing geometry sizes, geojson overhead
-        chunks_needed += 1
-        list_of_dataframes = _chunk_dataframe(dataframe, chunks_needed)
-        list_of_geojsons = [
-            fix_numeric_empty_strings(dataframe.spatial.to_featureset(), feature_layer_fields).to_geojson
-            for dataframe in list_of_dataframes
-        ]
+    #: Chunk the dataframe and then check if the resulting chunks are now within the proper size, calling again on the #: offending chunks if not
+    list_of_dataframes = _chunk_dataframe(dataframe, max_rows)
+    return_dataframes = []  #: Holds result of valid and recursive chunks
+    for chunk_dataframe in list_of_dataframes:
+        chunk_geojson_size = sys.getsizeof(chunk_dataframe.spatial.to_featureset().to_geojson.encode('utf-16'))
+        if chunk_geojson_size > max_bytes:
+            return_dataframes.extend(_recursive_dataframe_chunking(chunk_dataframe, max_bytes))
+        else:
+            return_dataframes.append(chunk_dataframe)
 
-    return list_of_geojsons
+    return return_dataframes
 
 
 def fix_numeric_empty_strings(feature_set, feature_layer_fields):
