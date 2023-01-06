@@ -599,7 +599,7 @@ def get_null_geometries(feature_layer_properties):
         feature_layer_properties (dict): .properties from a feature layer item, contains 'geometryType' key
 
     Raises:
-        NotImplementedError: If we get a geometryType we haven't implmented a null-geometry generator for
+        NotImplementedError: If we get a geometryType we haven't implemented a null-geometry generator for
 
     Returns:
         arcgis.geometry.Geometry: A geometry object of the corresponding type centered around null island.

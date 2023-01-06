@@ -123,7 +123,7 @@ class TestGSheetsLoader:
 
         df_dict = {'df1': df1, 'df2': df2}
 
-        with pytest.raises(ValueError, match='Columns do not match; cannot create mutli-index dataframe'):
+        with pytest.raises(ValueError, match='Columns do not match; cannot create multi-index dataframe'):
             combined_df = extract.GSheetLoader.combine_worksheets_into_single_dataframe(mocker.Mock(), df_dict)
 
 
