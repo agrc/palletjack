@@ -191,54 +191,6 @@ class TestRetry:
         assert mock.function.call_count == 4
 
 
-class TestReplaceNanSeries:
-
-    def test_replace_nan_series_with_bogus_value_one_empty_one_non_empty_float(self, mocker):
-        df = pd.DataFrame({
-            'normal': [1., 2., 3.],
-            'empty': [np.nan, np.nan, np.nan],
-        })
-
-        fixed_df = palletjack.utils.replace_nan_series_with_bogus_value(df)
-
-        test_df = pd.DataFrame({
-            'normal': [1., 2., 3.],
-            'empty': [-999.9, -999.9, -999.9],
-        })
-
-        tm.assert_frame_equal(fixed_df, test_df)
-
-    def test_replace_nan_series_with_bogus_value_other_series_has_nan(self, mocker):
-        df = pd.DataFrame({
-            'normal': [1., 2., np.nan],
-            'empty': [np.nan, np.nan, np.nan],
-        })
-
-        fixed_df = palletjack.utils.replace_nan_series_with_bogus_value(df)
-
-        test_df = pd.DataFrame({
-            'normal': [1., 2., np.nan],
-            'empty': [-999.9, -999.9, -999.9],
-        })
-
-        tm.assert_frame_equal(fixed_df, test_df)
-
-    def test_replace_nan_series_with_bogus_value_other_series_is_empty_str(self, mocker):
-        df = pd.DataFrame({
-            'normal': ['', '', ''],
-            'empty': [np.nan, np.nan, np.nan],
-        })
-
-        fixed_df = palletjack.utils.replace_nan_series_with_bogus_value(df)
-
-        test_df = pd.DataFrame({
-            'normal': ['', '', ''],
-            'empty': [-999.9, -999.9, -999.9],
-        })
-
-        tm.assert_frame_equal(fixed_df, test_df)
-
-
 class TestCheckIndexColumnInFL:
 
     def test_check_index_column_in_feature_layer_doesnt_raise_on_normal(self, mocker):

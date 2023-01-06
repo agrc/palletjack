@@ -81,26 +81,6 @@ def rename_columns_for_agol(columns):
     return rename_dict
 
 
-def replace_nan_series_with_bogus_value(dataframe):
-    """Fill all completely empty series with a bogus value of -999.9
-
-    As of arcgis 2.0.1. to_featureset() doesn't handle completely empty series properly (it relies on str;
-    https://github.com/Esri/arcgis-python-api/issues/1281), so we give a bogus value for the time being.
-
-    Args:
-        dataframe (pd.DataFrame): Data to clean/fix
-
-    Returns:
-        pd.DataFrame: The cleaned data
-    """
-
-    for column in dataframe:
-        if dataframe[column].isnull().all():
-            module_logger.debug('Column %s is empty; replacing np.nans with -999.9', column)
-            dataframe[column].fillna(value=-999.9, inplace=True)
-    return dataframe
-
-
 #: Unused?
 def check_fields_match(featurelayer, new_dataframe):
     """Make sure new data doesn't have any extra fields, warn if it doesn't contain all live fields
