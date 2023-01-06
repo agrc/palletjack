@@ -370,19 +370,23 @@ def authorize_pygsheets(credentials):
         raise RuntimeError('Could not authenticate to Google API') from err
 
 
-def save_spatially_enabled_dataframe_to_json(dataframe, directory):
-    """Save a dataframe to directory for safety as old_data_{todays date}.json
+def save_feature_layer_to_json(feature_layer, directory):
+    """Save a feature_layer to directory for safety as {layer name}_{todays date}.json
 
     Args:
-        dataframe (pd.DataFrame): A spatially-enabled dataframe.
+        feature_layer (arcgis.features.FeatureLayer): The FeatureLayer object to save to disk.
         directory (str or Path): The directory to save the data to.
 
     Returns:
-        Path: The full path to the output file, named with today's date.
+        Path: The full path to the output file, named with the layer name and today's date.
     """
+    module_logger.debug('Downloading existing data...')
+    dataframe = feature_layer.query().sdf
 
-    out_path = Path(directory, f'old_data_{datetime.date.today()}.json')
+    out_path = Path(directory, f'{feature_layer.properties.name}_{datetime.date.today()}.json')
+    module_logger.debug('Saving existing data to %s', out_path)
     out_path.write_text(dataframe.spatial.to_featureset().to_json, encoding='utf-8')
+
     return out_path
 
 
