@@ -120,7 +120,7 @@ class FeatureServiceUpdater:
         return updater._update_hosted_feature_layer(update_geometry)
 
     @classmethod
-    def truncate_and_load_features(cls, gis, feature_service_itemid, dataframe, failsafe_dir, layer_index=0):
+    def truncate_and_load_features(cls, gis, feature_service_itemid, dataframe, failsafe_dir='', layer_index=0):
         """Overwrite a hosted feature layer by truncating and loading the new data
 
         When the existing dataset is truncated, a copy is kept in memory as a spatially-enabled dataframe. If the new
@@ -138,7 +138,7 @@ class FeatureServiceUpdater:
             gis (arcgis.gis.GIS): GIS item for AGOL org
             feature_service_itemid (str): itemid for service to update
             dataframe (pd.DataFrame.spatial): Spatially enabled dataframe of new data to be loaded
-            failsafe_dir (str): Directory to save original data in case of complete failure
+            failsafe_dir (str, optional): Directory to save original data in case of complete failure. If left blank, existing data won't be saved. Defaults to ''
             layer_index (int, optional): Index of layer within service to update. Defaults to 0.
 
         Returns:
@@ -177,7 +177,8 @@ class FeatureServiceUpdater:
             self.fields = list(renamed_fields - {'Shape_Area', 'Shape_Length'})  #: We don't use these auto-gen fields
         if join_column:
             self.join_column = utils.rename_columns_for_agol([join_column])[join_column]
-        self.failsafe_dir = failsafe_dir
+        if failsafe_dir:
+            self.failsafe_dir = failsafe_dir
         self.layer_index = layer_index
 
     #: NOTE: Saving all this for potential reuse in transform.py
@@ -492,6 +493,7 @@ class FeatureServiceUpdater:
                 self._class_logger.debug('Chunk time: %s', datetime.now() - chunk_start)
             except Exception:
                 self._class_logger.debug(pd.Series(chunk_sizes).describe())
+                self._class_logger.error('Append failed, feature service may be dirty due to append chunking.')
                 raise
             if not result:
                 self._class_logger.debug(pd.Series(chunk_sizes).describe())
@@ -519,6 +521,12 @@ class FeatureServiceUpdater:
         )
         start = datetime.now()
 
+        #: Save the data to disk if failsafe dir provided
+        #: TODO: return path programmatically so client can catch exception and try to reload automatically?
+        if self.failsafe_dir:
+            self._class_logger.info('Saving existing data to %s', self.failsafe_dir)
+            saved_layer_path = utils.save_feature_layer_to_json(self.feature_layer, self.failsafe_dir)
+
         #: Field checks to prevent Error: 400 errors from AGOL
         field_checker = utils.FieldChecker(self.feature_layer.properties, self.new_dataframe)
         field_checker.check_live_and_new_field_types_match(self.fields)
@@ -529,28 +537,23 @@ class FeatureServiceUpdater:
         field_checker.check_for_empty_float_fields(self.fields)
 
         self._class_logger.info('Truncating existing features...')
-        #: NOTE: Should this call and method save the old data to disk on truncate failure in case it fails halfway
-        #: through and leaves a bad dataset?
-        old_dataframe = self._truncate_existing_data()
+        self._truncate_existing_data()
 
         try:
             self._class_logger.info('Loading new data...')
             append_count = self._upsert_data(self.feature_layer, self.new_dataframe, upsert=False)
             self._class_logger.debug('Total truncate and load time: %s', datetime.now() - start)
         except Exception:
-            try:
-                self._class_logger.info('Append failed; attempting to re-load truncated data...')
-                append_count = self._upsert_data(self.feature_layer, old_dataframe, upsert=False)
-                self._class_logger.info('%s features reloaded', append_count)
-                self._class_logger.debug('Total truncate and load time: %s', datetime.now() - start)
-            except Exception as inner_error:
-                failsafe_path = utils.save_spatially_enabled_dataframe_to_json(old_dataframe, self.failsafe_dir)
-                self._class_logger.debug('Total truncate and load time: %s', datetime.now() - start)
-                raise RuntimeError(
-                    f'Failed to re-add truncated data after failed append; data saved to {failsafe_path}'
-                ) from inner_error
-            finally:
+            if self.failsafe_dir:
+                self._class_logger.error(
+                    'Append failed, feature service may be dirty due to append chunking. Data saved to %s',
+                    saved_layer_path
+                )
                 raise
+            self._class_logger.error(
+                'Append failed, feature service may be dirty due to append chunking. Old data not saved (no failsafe dir set)'
+            )
+            raise
 
         return append_count
 
@@ -563,8 +566,7 @@ class FeatureServiceUpdater:
         Returns:
             pd.DataFrame: The feature layer's data as a spatially-enabled dataframe prior to truncating
         """
-        self._class_logger.debug('Loading existing data to dataframe...')
-        old_data = self.feature_layer.query().sdf
+
         self._class_logger.debug('Truncating...')
         truncate_result = utils.retry(self.feature_layer.manager.truncate, asynchronous=True, wait=True)
         self._class_logger.debug(truncate_result)
@@ -572,7 +574,6 @@ class FeatureServiceUpdater:
             raise RuntimeError(
                 f'Failed to truncate existing data from layer id {self.layer_index} in itemid {self.feature_service_itemid}'
             )
-        return old_data
 
 
 class FeatureServiceAttachmentsUpdater:
