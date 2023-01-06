@@ -1,3 +1,4 @@
+import datetime
 import json
 import logging
 import re
@@ -322,6 +323,7 @@ class TestTruncateAndLoadLayer:
         updater_mock = mocker.Mock()
         updater_mock.feature_service_itemid = 'foo123'
         updater_mock.layer_index = 0
+        updater_mock.failsafe_dir = ''
 
         updater_mock.new_dataframe = pd.DataFrame(columns=['Foo', 'Bar'])
 
@@ -333,7 +335,7 @@ class TestTruncateAndLoadLayer:
 
         assert uploaded_features == 42
 
-    def test_truncate_and_load_append_fails_reload_works(self, mocker, caplog):
+    def test_truncate_and_load_append_fails_failsafe_dir_present(self, mocker, caplog):
         caplog.set_level(logging.DEBUG)
 
         updater_mock = mocker.Mock()
@@ -341,15 +343,16 @@ class TestTruncateAndLoadLayer:
         updater_mock.feature_service_itemid = 'foo123'
         updater_mock.layer_index = 0
         updater_mock.new_dataframe = pd.DataFrame(columns=['Foo', 'Bar'])
-        updater_mock._truncate_existing_data.return_value = 'old_data'
+        updater_mock.failsafe_dir = 'foo'
+        updater_mock.feature_layer.feature_layer.properties.name = 'foolayer'
 
-        # mocker.patch('palletjack.utils.replace_nan_series_with_bogus_value', return_value='new_data')
         mocker.patch('palletjack.utils.FieldChecker')
         mocker.patch('palletjack.utils.sleep')
+        mocker.patch('palletjack.utils.save_feature_layer_to_json', return_value='bar_path')
 
-        updater_mock._upsert_data.side_effect = [
-            RuntimeError('Failed to append data. Append operation should have been rolled back.'), 42
-        ]
+        updater_mock._upsert_data.side_effect = RuntimeError(
+            'Failed to append data. Append operation should have been rolled back.'
+        )
 
         with pytest.raises(RuntimeError, match='Failed to append data. Append operation should have been rolled back.'):
             uploaded_features = load.FeatureServiceUpdater._truncate_and_load_data(updater_mock)
@@ -359,11 +362,35 @@ class TestTruncateAndLoadLayer:
         )
         assert updater_mock._upsert_data.call_args_list[0].kwargs == {'upsert': False}
 
-        assert updater_mock._upsert_data.call_args_list[1].args == (updater_mock.feature_layer, 'old_data')
-        assert updater_mock._upsert_data.call_args_list[1].kwargs == {'upsert': False}
+        assert f'Append failed, feature service may be dirty due to append chunking. Data saved to bar_path' in caplog.text
 
-        assert 'Append failed; attempting to re-load truncated data...' in caplog.text
-        assert '42 features reloaded' in caplog.text
+    def test_truncate_and_load_append_fails_failsafe_dir_absent(self, mocker, caplog):
+        caplog.set_level(logging.DEBUG)
+
+        updater_mock = mocker.Mock()
+        updater_mock._class_logger = logging.getLogger('mock logger')
+        updater_mock.feature_service_itemid = 'foo123'
+        updater_mock.layer_index = 0
+        updater_mock.new_dataframe = pd.DataFrame(columns=['Foo', 'Bar'])
+        updater_mock.failsafe_dir = ''
+
+        mocker.patch('palletjack.utils.FieldChecker')
+        mocker.patch('palletjack.utils.sleep')
+        mocker.patch('palletjack.utils.save_feature_layer_to_json', return_value='bar_path')
+
+        updater_mock._upsert_data.side_effect = RuntimeError(
+            'Failed to append data. Append operation should have been rolled back.'
+        )
+
+        with pytest.raises(RuntimeError, match='Failed to append data. Append operation should have been rolled back.'):
+            uploaded_features = load.FeatureServiceUpdater._truncate_and_load_data(updater_mock)
+
+        assert updater_mock._upsert_data.call_args_list[0].args == (
+            updater_mock.feature_layer, updater_mock.new_dataframe
+        )
+        assert updater_mock._upsert_data.call_args_list[0].kwargs == {'upsert': False}
+
+        assert f'Append failed, feature service may be dirty due to append chunking. Old data not saved (no failsafe dir set)' in caplog.text
 
     def test_truncate_and_load_calls_field_checkers(self, mocker, caplog):
 
@@ -374,7 +401,7 @@ class TestTruncateAndLoadLayer:
         updater_mock.feature_service_itemid = 'foo123'
         updater_mock.layer_index = 0
         updater_mock.fields = ['Foo', 'Bar']
-        updater_mock._truncate_existing_data.return_value = 'old_data'
+        updater_mock.failsafe_dir = ''
 
         mocker.patch('palletjack.utils.sleep')
         field_checker_mock = mocker.patch('palletjack.utils.FieldChecker')
@@ -388,47 +415,6 @@ class TestTruncateAndLoadLayer:
         field_checker_mock.return_value.check_field_length.assert_called_once_with(['Foo', 'Bar'])
         field_checker_mock.return_value.check_fields_present.assert_called_once_with(['Foo', 'Bar'], add_oid=False)
         assert uploaded_features == 42
-
-    def test_truncate_and_load_saves_to_json_after_append_and_reload_fail(self, mocker, caplog):
-        caplog.set_level(logging.DEBUG)
-
-        updater_mock = mocker.Mock()
-        updater_mock._class_logger = logging.getLogger('mock logger')
-        updater_mock.feature_service_itemid = 'foo123'
-        updater_mock.layer_index = 0
-        updater_mock.new_dataframe = pd.DataFrame(columns=['Foo', 'Bar'])
-        updater_mock.failsafe_dir = '/foo'
-        updater_mock._truncate_existing_data.return_value = 'old_data'
-
-        mocker.patch('palletjack.utils.FieldChecker')
-        save_mock = mocker.patch(
-            'palletjack.utils.save_spatially_enabled_dataframe_to_json', return_value='/foo/bar.json'
-        )
-        mocker.patch('palletjack.utils.sleep')
-
-        updater_mock._upsert_data.side_effect = [
-            RuntimeError('Failed to append data. Append operation should have been rolled back.'),
-            RuntimeError('Failed to append data. Append operation should have been rolled back.')
-        ]
-
-        with pytest.raises(
-            RuntimeError,
-            match=re.escape('Failed to re-add truncated data after failed append; data saved to /foo/bar.json')
-        ):
-            uploaded_features = load.FeatureServiceUpdater._truncate_and_load_data(updater_mock)
-
-        assert updater_mock._upsert_data.call_args_list[0].args == (
-            updater_mock.feature_layer, updater_mock.new_dataframe
-        )
-        assert updater_mock._upsert_data.call_args_list[0].kwargs == {'upsert': False}
-
-        assert updater_mock._upsert_data.call_args_list[1].args == (updater_mock.feature_layer, 'old_data')
-        assert updater_mock._upsert_data.call_args_list[1].kwargs == {'upsert': False}
-
-        save_mock.assert_called_once_with('old_data', '/foo')
-
-        assert 'Append failed; attempting to re-load truncated data...' in caplog.text
-        assert 'features reloaded' not in caplog.text
 
     def test_truncate_and_load_raises_on_empty_column(self, mocker, caplog):
 
@@ -448,7 +434,7 @@ class TestTruncateAndLoadLayer:
         updater_mock.feature_service_itemid = 'foo123'
         updater_mock.layer_index = 0
         updater_mock.fields = ['id', 'floats', 'x', 'y']
-        updater_mock._truncate_existing_data.return_value = 'old_data'
+        updater_mock.failsafe_dir = ''
 
         updater_mock.feature_layer.properties = {
             'fields': [
@@ -480,9 +466,7 @@ class TestTruncateAndLoadLayer:
             'geometryType': 'esriGeometryPoint'
         }
 
-        # mocker.patch('palletjack.utils.replace_nan_series_with_bogus_value', return_value='new_data')
         mocker.patch('palletjack.utils.sleep')
-        # field_checker_mock = mocker.patch('palletjack.utils.FieldChecker')
 
         updater_mock._upsert_data.return_value = {'recordCount': 42}
 
@@ -493,8 +477,6 @@ class TestTruncateAndLoadLayer:
             )
         ):
             uploaded_features = load.FeatureServiceUpdater._truncate_and_load_data(updater_mock)
-
-        # assert uploaded_features == 42
 
 
 class TestAttachments:
