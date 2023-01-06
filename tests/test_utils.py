@@ -1317,34 +1317,80 @@ class TestEmptyFieldWarnings:
             checker.check_for_empty_float_fields(['foo', 'float'])
 
 
+class TestSRSCheck:
+
+    def test_check_srs_match_good_match(self, mocker):
+        checker_mock = mocker.Mock()
+        checker_mock.live_data_properties.extent.spatialReference.latestWkid = 42
+        checker_mock.new_dataframe.spatial.sr = 42
+
+        #: Should not raise
+        palletjack.utils.FieldChecker.check_srs_match(checker_mock)
+
+    def test_check_srs_match_raises_on_mismatch(self, mocker):
+        checker_mock = mocker.Mock()
+        checker_mock.live_data_properties.extent.spatialReference.latestWkid = 42
+        checker_mock.new_dataframe.spatial.sr = 8
+
+        with pytest.raises(ValueError, match=re.escape('New dataframe SRS 8 does not match live SRS 42')):
+            palletjack.utils.FieldChecker.check_srs_match(checker_mock)
+
+    def test_check_srs_match_handles_string_and_int(self, mocker):
+        checker_mock = mocker.Mock()
+        checker_mock.live_data_properties.extent.spatialReference.latestWkid = 42
+        checker_mock.new_dataframe.spatial.sr = '42'
+
+        #: should not raise
+        palletjack.utils.FieldChecker.check_srs_match(checker_mock)
+
+    def test_check_srs_match_reports_uncastable_string(self, mocker):
+        checker_mock = mocker.Mock()
+        checker_mock.live_data_properties.extent.spatialReference.latestWkid = 42
+        checker_mock.new_dataframe.spatial.sr = 'forty two'
+
+        with pytest.raises(ValueError, match=re.escape('Could not cast either new or existing SRS to int')) as exc_info:
+            palletjack.utils.FieldChecker.check_srs_match(checker_mock)
+
+        assert hasattr(exc_info.value, '__cause__')
+        assert isinstance(exc_info.value.__cause__, ValueError)
+        assert 'invalid literal for int() with base 10:' in str(exc_info.value.__cause__)
+
+
 class TestNullGeometryGenerators:
 
-    def test_get_null_geometries_point(self):
-        properties = {'geometryType': 'esriGeometryPoint'}
+    def test_get_null_geometries_point(self, mocker):
+        properties_mock = mocker.Mock()
+        properties_mock.geometryType = 'esriGeometryPoint'
+        properties_mock.extent.spatialReference.latestWkid = 4326
 
-        nullo = palletjack.utils.get_null_geometries(properties)
+        nullo = palletjack.utils.get_null_geometries(properties_mock)
 
         assert nullo == '{"x": 0, "y": 0, "spatialReference": {"wkid": 4326}}'
 
-    def test_get_null_geometries_polyline(self):
-        properties = {'geometryType': 'esriGeometryPolyline'}
+    def test_get_null_geometries_polyline(self, mocker):
+        properties_mock = mocker.Mock()
+        properties_mock.geometryType = 'esriGeometryPolyline'
+        properties_mock.extent.spatialReference.latestWkid = 4326
 
-        nullo = palletjack.utils.get_null_geometries(properties)
+        nullo = palletjack.utils.get_null_geometries(properties_mock)
 
         assert nullo == '{"paths": [[[0, 0], [0.1, 0.1], [0.2, 0.2]]], "spatialReference": {"wkid": 4326}}'
 
-    def test_get_null_geometries_polygon(self):
-        properties = {'geometryType': 'esriGeometryPolygon'}
+    def test_get_null_geometries_polygon(self, mocker):
+        properties_mock = mocker.Mock()
+        properties_mock.geometryType = 'esriGeometryPolygon'
+        properties_mock.extent.spatialReference.latestWkid = 4326
 
-        nullo = palletjack.utils.get_null_geometries(properties)
+        nullo = palletjack.utils.get_null_geometries(properties_mock)
 
         assert nullo == '{"rings": [[[0, 0.1], [0.1, 0.1], [0.1, 0], [0, 0]]], "spatialReference": {"wkid": 4326}}'
 
-    def test_get_null_geometries_raises_on_other(self):
-        properties = {'geometryType': 'other'}
+    def test_get_null_geometries_raises_on_other(self, mocker):
+        properties_mock = mocker.Mock()
+        properties_mock.geometryType = 'other'
 
         with pytest.raises(NotImplementedError) as exc_info:
-            nullo = palletjack.utils.get_null_geometries(properties)
+            nullo = palletjack.utils.get_null_geometries(properties_mock)
 
         assert 'Null value generator for live geometry type other not yet implemented' in str(exc_info.value)
 

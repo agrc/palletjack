@@ -597,6 +597,22 @@ class FieldChecker:
                 f'The following float/double column(s) are completely empty: {empty_fields} (suggestion: insert at least one bogus value)'
             )
 
+    def check_srs_match(self):
+        """Raise an error if the new and live spatial reference systems don't match.
+
+        Raises:
+            ValueError: If the new or existing SRS values can't be cast to an int (please log an issue if this occurs)
+            ValueError: If the new and live SRS values don't match.
+        """
+
+        try:
+            live_srs = int(self.live_data_properties.extent.spatialReference.latestWkid)
+            new_srs = int(self.new_dataframe.spatial.sr)
+        except ValueError as error:
+            raise ValueError('Could not cast either new or existing SRS to int') from error
+        if live_srs != new_srs:
+            raise ValueError(f'New dataframe SRS {new_srs} does not match live SRS {live_srs}')
+
 
 def get_null_geometries(feature_layer_properties):
     """Generate placeholder geometries near 0, 0 with type based on provided feature layer properties dictionary.
@@ -619,16 +635,17 @@ def get_null_geometries(feature_layer_properties):
     #     'esriGeometryEnvelope': 'envelope',
     # }
 
-    live_geometry_type = feature_layer_properties['geometryType']
+    live_geometry_type = feature_layer_properties.geometryType
+    live_srs = feature_layer_properties.extent.spatialReference.latestWkid
 
     if live_geometry_type == 'esriGeometryPoint':
-        return arcgis.geometry.Point({'x': 0, 'y': 0, 'spatialReference': {'wkid': 4326}}).JSON
+        return arcgis.geometry.Point({'x': 0, 'y': 0, 'spatialReference': {'wkid': live_srs}}).JSON
 
     if live_geometry_type == 'esriGeometryPolyline':
         return arcgis.geometry.Polyline({
             'paths': [[[0, 0], [.1, .1], [.2, .2]]],
             'spatialReference': {
-                'wkid': 4326
+                'wkid': live_srs
             }
         }).JSON
 
@@ -636,7 +653,7 @@ def get_null_geometries(feature_layer_properties):
         return arcgis.geometry.Polygon({
             'rings': [[[0, .1], [.1, .1], [.1, 0], [0, 0]]],
             'spatialReference': {
-                'wkid': 4326
+                'wkid': live_srs
             }
         }).JSON
 
@@ -714,7 +731,7 @@ class DeleteUtils:
 
 
 class Chunking:
-    """Container class for dividing a dataframe into chunks to satisify size requirements for append operation
+    """Container class for dividing a dataframe into chunks to satisfy size requirements for append operation
     """
 
     @staticmethod
