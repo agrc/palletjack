@@ -86,7 +86,7 @@ class GSheetLoader:
 
         #: Make sure all the dataframes have the same columns
         if not all([set(dataframes[0].columns) == set(df.columns) for df in dataframes]):
-            raise ValueError('Columns do not match; cannot create mutli-index dataframe')
+            raise ValueError('Columns do not match; cannot create multi-index dataframe')
 
         self._class_logger.debug('Concatting worksheet dataframes %s into a single dataframe', worksheet_dfs.keys())
         concatted_df = pd.concat(dataframes, keys=worksheet_dfs.keys(), names=['worksheet', 'row'])
@@ -228,7 +228,7 @@ class GoogleDriveDownloader:
         """Get the request object and filename from a Google drive file_id. Will try to determine extension if missing.
 
         Args:
-            client (pygsheets.Client): Authenticated client object from pyghseets
+            client (pygsheets.Client): Authenticated client object from pygsheets
             file_id (str): The Google fileId to be downloaded
 
         Returns:
