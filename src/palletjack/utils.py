@@ -380,7 +380,7 @@ class FieldChecker:
 
     def __init__(self, live_data_properties, new_dataframe):
         self.live_data_properties = live_data_properties
-        self.fields_dataframe = pd.DataFrame(live_data_properties['fields'])
+        self.fields_dataframe = pd.DataFrame(live_data_properties.fields)
         self.new_dataframe = new_dataframe
 
     def check_live_and_new_field_types_match(self, fields):
@@ -467,7 +467,7 @@ class FieldChecker:
         if 'SHAPE' not in self.new_dataframe.columns:
             raise ValueError('New dataframe does not have a SHAPE column')
 
-        live_geometry_type = self.live_data_properties['geometryType']
+        live_geometry_type = self.live_data_properties.geometryType
         new_geometry_types = self.new_dataframe.spatial.geometry_type
         if len(new_geometry_types) > 1:
             raise ValueError('New dataframe has multiple geometry types')
@@ -607,7 +607,7 @@ class FieldChecker:
 
         try:
             live_srs = int(self.live_data_properties.extent.spatialReference.latestWkid)
-            new_srs = int(self.new_dataframe.spatial.sr)
+            new_srs = int(self.new_dataframe.spatial.sr.wkid)
         except ValueError as error:
             raise ValueError('Could not cast either new or existing SRS to int') from error
         if live_srs != new_srs:

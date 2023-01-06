@@ -777,7 +777,7 @@ class TestEmptyStringsAsNulls:
 
 class TestCheckFieldsMatch:
 
-    def test_check_live_and_new_field_types_match_normal(self):
+    def test_check_live_and_new_field_types_match_normal(self, mocker):
         new_df = pd.DataFrame({
             'ints': [1, 2, 3],
             'floats': [4., 5., 6.],
@@ -787,39 +787,36 @@ class TestCheckFieldsMatch:
                 'cc1cd617-1e55-4153-914d-8abb6ef22f24', '0f45d56f-249e-494a-863e-6b3999619bae',
                 'd3a64873-8a09-4351-9ea0-802e450329ea'
             ],
-            # 'SHAPE': [geometry.Geometry([0, 0])] * 3
         })
-
-        properties = {
-            'fields': [
-                {
-                    'name': 'OBJECTID',
-                    'type': 'esriFieldTypeOID'
-                },
-                {
-                    'name': 'strings',
-                    'type': 'esriFieldTypeString'
-                },
-                {
-                    'name': 'ints',
-                    'type': 'esriFieldTypeInteger'
-                },
-                {
-                    'name': 'floats',
-                    'type': 'esriFieldTypeDouble'
-                },
-                {
-                    'name': 'GlobalID',
-                    'type': 'esriFieldTypeGlobalID'
-                },
-            ]
-        }
+        properties_mock = mocker.Mock()
+        properties_mock.fields = [
+            {
+                'name': 'OBJECTID',
+                'type': 'esriFieldTypeOID'
+            },
+            {
+                'name': 'strings',
+                'type': 'esriFieldTypeString'
+            },
+            {
+                'name': 'ints',
+                'type': 'esriFieldTypeInteger'
+            },
+            {
+                'name': 'floats',
+                'type': 'esriFieldTypeDouble'
+            },
+            {
+                'name': 'GlobalID',
+                'type': 'esriFieldTypeGlobalID'
+            },
+        ]
 
         #: If it raises an error, it failed.
-        checker = palletjack.utils.FieldChecker(properties, new_df)
+        checker = palletjack.utils.FieldChecker(properties_mock, new_df)
         checker.check_live_and_new_field_types_match(['ints', 'floats', 'strings', 'OBJECTID', 'GlobalID'])
 
-    def test_check_live_and_new_field_types_match_converted(self):
+    def test_check_live_and_new_field_types_match_converted(self, mocker):
         new_df = pd.DataFrame({
             'ints': [1, 2, 3],
             'floats': [4.1, 5.1, 6.1],
@@ -832,41 +829,41 @@ class TestCheckFieldsMatch:
             # 'SHAPE': [geometry.Geometry([0, 0])] * 3
         }).convert_dtypes()
 
-        properties = {
-            'fields': [
-                {
-                    'name': 'OBJECTID',
-                    'type': 'esriFieldTypeOID',
-                },
-                {
-                    'name': 'strings',
-                    'type': 'esriFieldTypeString',
-                },
-                {
-                    'name': 'ints',
-                    'type': 'esriFieldTypeInteger',
-                },
-                {
-                    'name': 'floats',
-                    'type': 'esriFieldTypeDouble',
-                },
-                {
-                    'name': 'GlobalID',
-                    'type': 'esriFieldTypeGlobalID',
-                },
-            ]
-        }
+        properties_mock = mocker.Mock()
+        properties_mock.fields = [
+            {
+                'name': 'OBJECTID',
+                'type': 'esriFieldTypeOID'
+            },
+            {
+                'name': 'strings',
+                'type': 'esriFieldTypeString'
+            },
+            {
+                'name': 'ints',
+                'type': 'esriFieldTypeInteger'
+            },
+            {
+                'name': 'floats',
+                'type': 'esriFieldTypeDouble'
+            },
+            {
+                'name': 'GlobalID',
+                'type': 'esriFieldTypeGlobalID'
+            },
+        ]
 
         #: If it raises an error, it failed.
-        checker = palletjack.utils.FieldChecker(properties, new_df)
+        checker = palletjack.utils.FieldChecker(properties_mock, new_df)
         checker.check_live_and_new_field_types_match(['ints', 'floats', 'strings', 'OBJECTID', 'GlobalID'])
 
-    def test_check_live_and_new_field_types_match_raises_on_incompatible(self):
+    def test_check_live_and_new_field_types_match_raises_on_incompatible(self, mocker):
         new_df = pd.DataFrame({
             'ints': [1, 2, 3],
         })
 
-        properties = {'fields': [{'name': 'ints', 'type': 'esriFieldTypeDouble'}]}
+        properties_mock = mocker.Mock()
+        properties_mock.fields = [{'name': 'ints', 'type': 'esriFieldTypeDouble'}]
 
         with pytest.raises(
             ValueError,
@@ -874,27 +871,25 @@ class TestCheckFieldsMatch:
                 'Field type incompatibilities (field, live type, new type): [(\'ints\', \'esriFieldTypeDouble\', \'int64\')]'
             )
         ):
-            checker = palletjack.utils.FieldChecker(properties, new_df)
+            checker = palletjack.utils.FieldChecker(properties_mock, new_df)
             checker.check_live_and_new_field_types_match(['ints'])
 
-    def test_check_live_and_new_field_types_match_raises_on_multiple_incompatible(self):
+    def test_check_live_and_new_field_types_match_raises_on_multiple_incompatible(self, mocker):
         new_df = pd.DataFrame({
             'ints': [1, 2, 3],
             'floats': [1.1, 1.2, 1.3],
         })
-
-        properties = {
-            'fields': [
-                {
-                    'name': 'ints',
-                    'type': 'esriFieldTypeDouble'
-                },
-                {
-                    'name': 'floats',
-                    'type': 'esriFieldTypeInteger'
-                },
-            ]
-        }
+        properties_mock = mocker.Mock()
+        properties_mock.fields = [
+            {
+                'name': 'ints',
+                'type': 'esriFieldTypeDouble'
+            },
+            {
+                'name': 'floats',
+                'type': 'esriFieldTypeInteger'
+            },
+        ]
 
         with pytest.raises(
             ValueError,
@@ -902,18 +897,19 @@ class TestCheckFieldsMatch:
                 'Field type incompatibilities (field, live type, new type): [(\'ints\', \'esriFieldTypeDouble\', \'int64\'), (\'floats\', \'esriFieldTypeInteger\', \'float64\')]'
             )
         ):
-            checker = palletjack.utils.FieldChecker(properties, new_df)
+            checker = palletjack.utils.FieldChecker(properties_mock, new_df)
             checker.check_live_and_new_field_types_match(['ints', 'floats'])
 
-    def test_check_live_and_new_field_types_match_raises_on_notimplemented_esri_type(self):
+    def test_check_live_and_new_field_types_match_raises_on_notimplemented_esri_type(self, mocker):
         new_df = pd.DataFrame({
             'ints': [1, 2, 3],
         })
 
-        properties = {'fields': [{'name': 'ints', 'type': 'esriFieldTypeDate'}]}
+        properties_mock = mocker.Mock()
+        properties_mock.fields = [{'name': 'ints', 'type': 'esriFieldTypeDate'}]
 
         with pytest.raises(NotImplementedError) as exc_info:
-            checker = palletjack.utils.FieldChecker(properties, new_df)
+            checker = palletjack.utils.FieldChecker(properties_mock, new_df)
             checker.check_live_and_new_field_types_match(['ints'])
 
         assert 'Live field "ints" type "esriFieldTypeDate" not yet mapped to a pandas dtype' in str(exc_info.value)
@@ -925,14 +921,15 @@ class TestCheckFieldsMatch:
             'SHAPE': [geometry.Geometry([0, 0])] * 3,
         }).convert_dtypes()
 
-        properties = {'fields': [{'name': 'ints', 'type': 'esriFieldTypeInteger'}]}
+        properties_mock = mocker.Mock()
+        properties_mock.fields = [{'name': 'ints', 'type': 'esriFieldTypeInteger'}]
 
         #: If it raises an error, it failed.
-        checker = palletjack.utils.FieldChecker(properties, new_df)
+        checker = palletjack.utils.FieldChecker(properties_mock, new_df)
         checker.check_live_and_new_field_types_match(['ints', 'SHAPE'])
         geocheck_mock.assert_called_once()
 
-    def test_check_geometry_types_normal(self):
+    def test_check_geometry_types_normal(self, mocker):
         new_df = pd.DataFrame.spatial.from_xy(
             pd.DataFrame({
                 'OBJECTID': [11, 12, 13],
@@ -941,10 +938,12 @@ class TestCheckFieldsMatch:
             }), x_column='x', y_column='y'
         )
 
-        properties = {'geometryType': 'esriGeometryPoint', 'fields': {'a': ['b']}}
+        properties_mock = mocker.Mock()
+        properties_mock.geometryType = 'esriGeometryPoint'
+        properties_mock.fields = {'a': ['b']}
 
         #: If it raises an error, it failed.
-        checker = palletjack.utils.FieldChecker(properties, new_df)
+        checker = palletjack.utils.FieldChecker(properties_mock, new_df)
         checker._check_geometry_types()
 
     def test_check_geometry_types_raises_on_multiple_types(self, mocker):
@@ -952,10 +951,12 @@ class TestCheckFieldsMatch:
         new_df.columns = ['SHAPE']
         new_df.spatial.geometry_type = [1, 2]
 
-        properties = {'geometryType': 'esriGeometryPoint', 'fields': {'a': ['b']}}
+        properties_mock = mocker.Mock()
+        properties_mock.geometryType = 'esriGeometryPoint'
+        properties_mock.fields = {'a': ['b']}
 
         with pytest.raises(ValueError) as exc_info:
-            checker = palletjack.utils.FieldChecker(properties, new_df)
+            checker = palletjack.utils.FieldChecker(properties_mock, new_df)
             checker._check_geometry_types()
 
         assert 'New dataframe has multiple geometry types' in str(exc_info.value)
@@ -965,10 +966,12 @@ class TestCheckFieldsMatch:
         new_df.columns = ['SHAPE']
         new_df.spatial.geometry_type = ['Polygon']
 
-        properties = {'geometryType': 'esriGeometryPoint', 'fields': {'a': ['b']}}
+        properties_mock = mocker.Mock()
+        properties_mock.geometryType = 'esriGeometryPoint'
+        properties_mock.fields = {'a': ['b']}
 
         with pytest.raises(ValueError) as exc_info:
-            checker = palletjack.utils.FieldChecker(properties, new_df)
+            checker = palletjack.utils.FieldChecker(properties_mock, new_df)
             checker._check_geometry_types()
 
         assert 'New dataframe geometry type "Polygon" incompatible with live geometry type "esriGeometryPoint"' in str(
@@ -990,27 +993,27 @@ class TestCheckFieldsMatch:
 
 class TestFieldNullChecker:
 
-    def test_check_for_non_null_fields_raises_on_null_data_in_nonnullable_field(self):
-        properties = {
-            'fields': [
-                {
-                    'name': 'regular',
-                    'nullable': True,
-                    'defaultValue': None,
-                },
-                {
-                    'name': 'non-nullable',
-                    'nullable': False,
-                    'defaultValue': None,
-                },
-            ]
-        }
+    def test_check_for_non_null_fields_raises_on_null_data_in_nonnullable_field(self, mocker):
+        properties_mock = mocker.Mock()
+        properties_mock.fields = [
+            {
+                'name': 'regular',
+                'nullable': True,
+                'defaultValue': None,
+            },
+            {
+                'name': 'non-nullable',
+                'nullable': False,
+                'defaultValue': None,
+            },
+        ]
+
         new_df = pd.DataFrame({
             'regular': ['a', 'b'],
             'non-nullable': ['c', None],
         })
 
-        checker = palletjack.utils.FieldChecker(properties, new_df)
+        checker = palletjack.utils.FieldChecker(properties_mock, new_df)
 
         with pytest.raises(ValueError) as exc_info:
             checker.check_for_non_null_fields(['regular', 'non-nullable'])
@@ -1019,65 +1022,65 @@ class TestFieldNullChecker:
             exc_info.value
         )
 
-    def test_check_for_non_null_fields_doesnt_raise_on_null_in_nullable_field(self):
-        properties = {
-            'fields': [
-                {
-                    'name': 'regular',
-                    'nullable': True,
-                    'defaultValue': None,
-                },
-            ]
-        }
+    def test_check_for_non_null_fields_doesnt_raise_on_null_in_nullable_field(self, mocker):
+        properties_mock = mocker.Mock()
+        properties_mock.fields = [
+            {
+                'name': 'regular',
+                'nullable': True,
+                'defaultValue': None,
+            },
+        ]
+
         new_df = pd.DataFrame({
             'regular': ['a', None],
         })
 
-        checker = palletjack.utils.FieldChecker(properties, new_df)
+        checker = palletjack.utils.FieldChecker(properties_mock, new_df)
 
         #: Should not raise an error
         checker.check_for_non_null_fields(['regular'])
 
-    def test_check_for_non_null_fields_doesnt_raise_on_null_in_nonnullable_with_default(self):
-        properties = {
-            'fields': [
-                {
-                    'name': 'regular',
-                    'nullable': True,
-                    'defaultValue': 'foo',
-                },
-            ]
-        }
+    def test_check_for_non_null_fields_doesnt_raise_on_null_in_nonnullable_with_default(self, mocker):
+        properties_mock = mocker.Mock()
+        properties_mock.fields = [
+            {
+                'name': 'regular',
+                'nullable': True,
+                'defaultValue': 'foo',
+            },
+        ]
+
         new_df = pd.DataFrame({
             'regular': ['a', None],
         })
 
-        checker = palletjack.utils.FieldChecker(properties, new_df)
+        checker = palletjack.utils.FieldChecker(properties_mock, new_df)
 
         #: Should not raise an error
         checker.check_for_non_null_fields(['regular'])
 
-    def test_check_for_non_null_fields_skips_field(self):
-        properties = {
-            'fields': [
-                {
-                    'name': 'regular',
-                    'nullable': True,
-                    'defaultValue': None,
-                },
-                {
-                    'name': 'non-nullable',
-                    'nullable': False,
-                    'defaultValue': None,
-                },
-            ]
-        }
+    def test_check_for_non_null_fields_skips_field(self, mocker):
+        properties_mock = mocker.Mock()
+        properties_mock.fields = [
+            {
+                'name': 'regular',
+                'nullable': True,
+                'defaultValue': None,
+            },
+            {
+                'name': 'non-nullable',
+                'nullable': False,
+                'defaultValue': None,
+            },
+        ]
+
         new_df = pd.DataFrame({
             'regular': ['a', 'b'],
             'non-nullable': ['c', None],
         })
 
-        checker = palletjack.utils.FieldChecker(properties, new_df)
+        checker = palletjack.utils.FieldChecker(properties_mock, new_df)
 
         #: Should not raise
         checker.check_for_non_null_fields(['regular'])
@@ -1085,135 +1088,131 @@ class TestFieldNullChecker:
 
 class TestFieldLength:
 
-    def test_check_field_length_normal_string(self):
-        properties = {
-            'fields': [
-                {
-                    'name': 'foo',
-                    'type': 'esriFieldTypeString',
-                    'length': 10,
-                },
-            ]
-        }
+    def test_check_field_length_normal_string(self, mocker):
+        properties_mock = mocker.Mock()
+        properties_mock.fields = [
+            {
+                'name': 'foo',
+                'type': 'esriFieldTypeString',
+                'length': 10,
+            },
+        ]
+
         new_df = pd.DataFrame({
             'foo': ['aaa', 'bbbb'],
         })
 
-        checker = palletjack.utils.FieldChecker(properties, new_df)
+        checker = palletjack.utils.FieldChecker(properties_mock, new_df)
 
         #: Should not raise
         checker.check_field_length(['foo'])
 
-    def test_check_field_length_raises_on_long_string(self):
-        properties = {
-            'fields': [
-                {
-                    'name': 'foo',
-                    'type': 'esriFieldTypeString',
-                    'length': 10,
-                },
-            ]
-        }
+    def test_check_field_length_raises_on_long_string(self, mocker):
+        properties_mock = mocker.Mock()
+        properties_mock.fields = [
+            {
+                'name': 'foo',
+                'type': 'esriFieldTypeString',
+                'length': 10,
+            },
+        ]
+
         new_df = pd.DataFrame({
             'foo': ['aaa', 'bbbb', 'this string is far too long'],
         })
 
-        checker = palletjack.utils.FieldChecker(properties, new_df)
+        checker = palletjack.utils.FieldChecker(properties_mock, new_df)
 
         with pytest.raises(ValueError) as exc_info:
             checker.check_field_length(['foo'])
 
         assert 'Row 2, column foo in new data exceeds the live data max length of 10' in str(exc_info.value)
 
-    def test_check_field_length_uses_fields_arg(self):
-        properties = {
-            'fields': [
-                {
-                    'name': 'foo',
-                    'type': 'esriFieldTypeString',
-                    'length': 10,
-                },
-                {
-                    'name': 'bar',
-                    'type': 'esriFieldTypeString',
-                    'length': 10,
-                },
-            ]
-        }
+    def test_check_field_length_uses_fields_arg(self, mocker):
+        properties_mock = mocker.Mock()
+        properties_mock.fields = [
+            {
+                'name': 'foo',
+                'type': 'esriFieldTypeString',
+                'length': 10,
+            },
+            {
+                'name': 'bar',
+                'type': 'esriFieldTypeString',
+                'length': 10,
+            },
+        ]
         new_df = pd.DataFrame({
             'foo': ['aaa', 'bbbb'],
             'bar': ['a', 'way too long field'],
         })
 
-        checker = palletjack.utils.FieldChecker(properties, new_df)
+        checker = palletjack.utils.FieldChecker(properties_mock, new_df)
 
         #: bar shouldn't trigger an exception
         checker.check_field_length(['foo'])
 
-    def test_check_field_length_uses_ignores_new_field_not_in_live_data(self):
-        properties = {
-            'fields': [
-                {
-                    'name': 'foo',
-                    'type': 'esriFieldTypeString',
-                    'length': 10,
-                },
-            ]
-        }
+    def test_check_field_length_uses_ignores_new_field_not_in_live_data(self, mocker):
+        properties_mock = mocker.Mock()
+        properties_mock.fields = [
+            {
+                'name': 'foo',
+                'type': 'esriFieldTypeString',
+                'length': 10,
+            },
+        ]
         new_df = pd.DataFrame({
             'foo': ['aaa', 'bbbb'],
             'bar': ['a', 'way too long field'],
         })
 
-        checker = palletjack.utils.FieldChecker(properties, new_df)
+        checker = palletjack.utils.FieldChecker(properties_mock, new_df)
 
         #: bar shouldn't trigger an exception
         checker.check_field_length(['foo'])
 
-    def test_check_field_length_works_with_int_field(self):
-        properties = {
-            'fields': [
-                {
-                    'name': 'foo',
-                    'type': 'esriFieldTypeString',
-                    'length': 10,
-                },
-                {
-                    'name': 'int',
-                    'type': 'esriFieldTypeInteger',
-                },
-            ]
-        }
+    def test_check_field_length_works_with_int_field(self, mocker):
+        properties_mock = mocker.Mock()
+        properties_mock.fields = [
+            {
+                'name': 'foo',
+                'type': 'esriFieldTypeString',
+                'length': 10,
+            },
+            {
+                'name': 'int',
+                'type': 'esriFieldTypeInteger',
+            },
+        ]
         new_df = pd.DataFrame({
             'foo': ['aaa', 'bbbb'],
             'int': [1, 2],
         })
 
-        checker = palletjack.utils.FieldChecker(properties, new_df)
+        checker = palletjack.utils.FieldChecker(properties_mock, new_df)
 
         #: Should not raise
         checker.check_field_length(['foo', 'int'])
 
-    def test_check_field_length_passes_with_only_int_fields(self, caplog):
+    def test_check_field_length_passes_with_only_int_fields(self, mocker, caplog):
         caplog.set_level(logging.DEBUG)
-        properties = {
-            'fields': [
-                {
-                    'name': 'foo',
-                    'type': 'esriFieldTypeInteger',
-                },
-                {
-                    'name': 'int',
-                    'type': 'esriFieldTypeInteger',
-                },
-            ]
-        }
+        properties_mock = mocker.Mock()
+        properties_mock.fields = [
+            {
+                'name': 'foo',
+                'type': 'esriFieldTypeInteger',
+            },
+            {
+                'name': 'int',
+                'type': 'esriFieldTypeInteger',
+            },
+        ]
         new_df = pd.DataFrame({
             'foo': ['aaa', 'bbbb'],
             'int': [1, 2],
         })
 
-        checker = palletjack.utils.FieldChecker(properties, new_df)
+        checker = palletjack.utils.FieldChecker(properties_mock, new_df)
 
         #: Should not raise
         checker.check_field_length(['foo'])
@@ -1223,55 +1222,60 @@ class TestFieldLength:
 
 class TestFieldsPresent:
 
-    def test_check_fields_present_normal_in_both(self):
-        properties = {'fields': [{'name': 'foo'}, {'name': 'bar'}]}
+    def test_check_fields_present_normal_in_both(self, mocker):
+        properties_mock = mocker.Mock()
+        properties_mock.fields = [{'name': 'foo'}, {'name': 'bar'}]
 
         new_df = pd.DataFrame(columns=['foo', 'bar'])
 
-        checker = palletjack.utils.FieldChecker(properties, new_df)
+        checker = palletjack.utils.FieldChecker(properties_mock, new_df)
 
         #: Should not raise
         checker.check_fields_present(['foo', 'bar'], False)
 
-    def test_check_fields_present_raises_missing_live(self):
-        properties = {'fields': [{'name': 'foo'}]}
+    def test_check_fields_present_raises_missing_live(self, mocker):
+        properties_mock = mocker.Mock()
+        properties_mock.fields = [{'name': 'foo'}]
 
         new_df = pd.DataFrame(columns=['foo', 'bar'])
 
-        checker = palletjack.utils.FieldChecker(properties, new_df)
+        checker = palletjack.utils.FieldChecker(properties_mock, new_df)
 
         with pytest.raises(RuntimeError) as exc_info:
             checker.check_fields_present(['foo', 'bar'], False)
         assert 'Fields missing in live data: bar' in str(exc_info.value)
 
-    def test_check_fields_present_raises_missing_new(self):
-        properties = {'fields': [{'name': 'foo'}, {'name': 'bar'}]}
+    def test_check_fields_present_raises_missing_new(self, mocker):
+        properties_mock = mocker.Mock()
+        properties_mock.fields = [{'name': 'foo'}, {'name': 'bar'}]
 
         new_df = pd.DataFrame(columns=['foo'])
 
-        checker = palletjack.utils.FieldChecker(properties, new_df)
+        checker = palletjack.utils.FieldChecker(properties_mock, new_df)
 
         with pytest.raises(RuntimeError) as exc_info:
             checker.check_fields_present(['foo', 'bar'], False)
         assert 'Fields missing in new data: bar' in str(exc_info.value)
 
-    def test_check_fields_present_raises_missing_both(self):
-        properties = {'fields': [{'name': 'foo'}]}
+    def test_check_fields_present_raises_missing_both(self, mocker):
+        properties_mock = mocker.Mock()
+        properties_mock.fields = [{'name': 'foo'}]
 
         new_df = pd.DataFrame(columns=['bar'])
 
-        checker = palletjack.utils.FieldChecker(properties, new_df)
+        checker = palletjack.utils.FieldChecker(properties_mock, new_df)
 
         with pytest.raises(RuntimeError) as exc_info:
             checker.check_fields_present(['foo', 'bar'], False)
         assert 'Fields missing in live data: bar. Fields missing in new data: foo' in str(exc_info.value)
 
-    def test_check_fields_present_adds_oid_to_list_of_fields_to_check(self):
-        properties = {'fields': [{'name': 'foo'}, {'name': 'bar'}, {'name': 'OBJECTID'}]}
+    def test_check_fields_present_adds_oid_to_list_of_fields_to_check(self, mocker):
+        properties_mock = mocker.Mock()
+        properties_mock.fields = [{'name': 'foo'}, {'name': 'bar'}, {'name': 'OBJECTID'}]
 
         new_df = pd.DataFrame(columns=['foo', 'bar', 'OBJECTID'])
 
-        checker = palletjack.utils.FieldChecker(properties, new_df)
+        checker = palletjack.utils.FieldChecker(properties_mock, new_df)
 
         #: Should not raise
         checker.check_fields_present(['foo', 'bar'], True)
@@ -1280,19 +1284,21 @@ class TestFieldsPresent:
 class TestEmptyFieldWarnings:
 
     def test_check_for_empty_float_fields_doesnt_raise_on_no_empty_fields(self, mocker):
-        properties = {'fields': ['int, float']}
+        properties_mock = mocker.Mock()
+        properties_mock.fields = ['int, float']
         new_df = pd.DataFrame({'int': [1, 2, 3], 'float': [1.1, 1.2, 1.3]})
 
-        checker = palletjack.utils.FieldChecker(properties, new_df)
+        checker = palletjack.utils.FieldChecker(properties_mock, new_df)
 
         #: Should not raise
         checker.check_for_empty_float_fields(['int', 'float'])
 
     def test_check_for_empty_float_fields_raises_on_single_field(self, mocker):
-        properties = {'fields': ['int, float']}
+        properties_mock = mocker.Mock()
+        properties_mock.fields = ['int, float']
         new_df = pd.DataFrame({'int': [1, 2, 3], 'float': [np.nan] * 3})
 
-        checker = palletjack.utils.FieldChecker(properties, new_df)
+        checker = palletjack.utils.FieldChecker(properties_mock, new_df)
 
         with pytest.raises(
             ValueError,
@@ -1303,10 +1309,11 @@ class TestEmptyFieldWarnings:
             checker.check_for_empty_float_fields(['int', 'float'])
 
     def test_check_for_empty_float_fields_raises_on_multiple_fields(self, mocker):
-        properties = {'fields': ['foo, float']}
+        properties_mock = mocker.Mock()
+        properties_mock.fields = ['foo, float']
         new_df = pd.DataFrame({'foo': [np.nan] * 3, 'float': [np.nan] * 3})
 
-        checker = palletjack.utils.FieldChecker(properties, new_df)
+        checker = palletjack.utils.FieldChecker(properties_mock, new_df)
 
         with pytest.raises(
             ValueError,
@@ -1322,7 +1329,7 @@ class TestSRSCheck:
     def test_check_srs_match_good_match(self, mocker):
         checker_mock = mocker.Mock()
         checker_mock.live_data_properties.extent.spatialReference.latestWkid = 42
-        checker_mock.new_dataframe.spatial.sr = 42
+        checker_mock.new_dataframe.spatial.sr.wkid = 42
 
         #: Should not raise
         palletjack.utils.FieldChecker.check_srs_match(checker_mock)
@@ -1330,7 +1337,7 @@ class TestSRSCheck:
     def test_check_srs_match_raises_on_mismatch(self, mocker):
         checker_mock = mocker.Mock()
         checker_mock.live_data_properties.extent.spatialReference.latestWkid = 42
-        checker_mock.new_dataframe.spatial.sr = 8
+        checker_mock.new_dataframe.spatial.sr.wkid = 8
 
         with pytest.raises(ValueError, match=re.escape('New dataframe SRS 8 does not match live SRS 42')):
             palletjack.utils.FieldChecker.check_srs_match(checker_mock)
@@ -1338,7 +1345,7 @@ class TestSRSCheck:
     def test_check_srs_match_handles_string_and_int(self, mocker):
         checker_mock = mocker.Mock()
         checker_mock.live_data_properties.extent.spatialReference.latestWkid = 42
-        checker_mock.new_dataframe.spatial.sr = '42'
+        checker_mock.new_dataframe.spatial.sr.wkid = '42'
 
         #: should not raise
         palletjack.utils.FieldChecker.check_srs_match(checker_mock)
@@ -1346,7 +1353,7 @@ class TestSRSCheck:
     def test_check_srs_match_reports_uncastable_string(self, mocker):
         checker_mock = mocker.Mock()
         checker_mock.live_data_properties.extent.spatialReference.latestWkid = 42
-        checker_mock.new_dataframe.spatial.sr = 'forty two'
+        checker_mock.new_dataframe.spatial.sr.wkid = 'forty two'
 
         with pytest.raises(ValueError, match=re.escape('Could not cast either new or existing SRS to int')) as exc_info:
             palletjack.utils.FieldChecker.check_srs_match(checker_mock)
