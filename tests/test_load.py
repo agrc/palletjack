@@ -439,40 +439,34 @@ class TestTruncateAndLoadLayer:
         updater_mock.fields = ['id', 'floats', 'x', 'y']
         updater_mock.failsafe_dir = ''
 
-        updater_mock.feature_layer.properties = {
-            'fields': [
-                {
-                    'name': 'id',
-                    'type': 'esriFieldTypeInteger',
-                    'nullable': True,
-                    'defaultValue': None,
-                },
-                {
-                    'name': 'floats',
-                    'type': 'esriFieldTypeDouble',
-                    'nullable': True,
-                    'defaultValue': None,
-                },
-                {
-                    'name': 'x',
-                    'type': 'esriFieldTypeInteger',
-                    'nullable': True,
-                    'defaultValue': None,
-                },
-                {
-                    'name': 'y',
-                    'type': 'esriFieldTypeInteger',
-                    'nullable': True,
-                    'defaultValue': None,
-                },
-            ],
-            'geometryType': 'esriGeometryPoint',
-            'extent': {
-                'spatialReference': {
-                    'latestWkid': 42
-                }
+        updater_mock.feature_layer.properties.fields = [
+            {
+                'name': 'id',
+                'type': 'esriFieldTypeInteger',
+                'nullable': True,
+                'defaultValue': None,
             },
-        }
+            {
+                'name': 'floats',
+                'type': 'esriFieldTypeDouble',
+                'nullable': True,
+                'defaultValue': None,
+            },
+            {
+                'name': 'x',
+                'type': 'esriFieldTypeInteger',
+                'nullable': True,
+                'defaultValue': None,
+            },
+            {
+                'name': 'y',
+                'type': 'esriFieldTypeInteger',
+                'nullable': True,
+                'defaultValue': None,
+            },
+        ]
+        updater_mock.feature_layer.properties.geometryType = 'esriGeometryPoint'
+        updater_mock.feature_layer.properties.extent.spatialReference.latestWkid = 4326
 
         mocker.patch('palletjack.utils.sleep')
 
