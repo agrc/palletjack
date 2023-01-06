@@ -192,6 +192,8 @@ def check_field_set_to_unique(featurelayer, field_name):
 
 
 class Geocoding:
+    """Container class for methods to geocode an address
+    """
 
     @staticmethod
     def geocode_addr(street, zone, api_key, rate_limits, **api_args):
@@ -373,6 +375,8 @@ def save_feature_layer_to_json(feature_layer, directory):
 
 
 class FieldChecker:
+    """Check the fields of a new dataframe against live data. Each method will raise errors if its checks fail.
+    """
 
     def __init__(self, live_data_properties, new_dataframe):
         self.live_data_properties = live_data_properties
@@ -640,6 +644,8 @@ def get_null_geometries(feature_layer_properties):
 
 
 class DeleteUtils:
+    """Container class for verifying Object IDs used for delete operations
+    """
 
     @staticmethod
     def check_delete_oids_are_ints(oid_list):
@@ -708,6 +714,8 @@ class DeleteUtils:
 
 
 class Chunking:
+    """Container class for dividing a dataframe into chunks to satisify size requirements for append operation
+    """
 
     @staticmethod
     def _ceildiv(num, denom):
@@ -728,8 +736,8 @@ class Chunking:
         """Divide up a dataframe into a list of dataframes of chunk_size rows
 
         The DataFrames are returned in a list. Elements [:-1] are as large as possible for the number of chunks needed,
-        while the last gets however many rows of the dataframe are left over. eg, a 10-row dataframe broken into 3 chunks
-        would result in dataframes with 3, 3, and 1 rows.
+        while the last gets however many rows of the dataframe are left over. eg, a 10-row dataframe broken into 3
+        chunks would result in dataframes with 3, 3, and 1 rows.
 
         Args:
             dataframe (pd.DataFrame): Input DataFrame
@@ -749,7 +757,7 @@ class Chunking:
 
     @staticmethod
     def build_upload_json(dataframe, feature_layer_fields, max_bytes=100_000_000):
-        """Create a list of  geojson strings of a spatially-enabled DataFrame, divided into chunks if it exceeds max_bytes
+        """Create list of geojson strings of spatially-enabled DataFrame, divided into chunks if it exceeds max_bytes
 
         Recursively chunks dataframe to ensure no one chunk is larger than max_bytes. Converts all empty strings in
         nullable numeric fields in feature sets created from individual chunks to None prior to converting to geojson to
@@ -782,13 +790,13 @@ class Chunking:
 
         Divides the dataframe into chunks based on the geojson representation's utf-16-encoded size by calculating the
         number of chunks of size > max_bytes needed for the entire file size. It uses this number of chunks to chunk the
-        dataframe based on rows. Because there can be variability in geojson file size due to attribute lengths (especially
-        line and polygon geometry sizes), it uses recursion to again chunk each smaller dataframe if needed.
+        dataframe based on rows. Because there can be variability in geojson file size due to attribute lengths
+        (especially line and polygon geometry sizes), it uses recursion to again chunk each smaller dataframe if needed.
 
         The chunks should (but not definitely proven to) maintain the sequential order of the features of the original
-        dataframe. Suppose an initial 10 rows gives us chunks for rows [1, 2, 3], [4, 5, 6], [7, 8, 9], [10]. However, the
-        second chunk [4, 5, 6] turns out to be too large, so it gets divided into [4, 5] and [6]. The resulting list of
-        chunks should be [1, 2, 3], [4, 5], [6], [7, 8, 9], [10]
+        dataframe. Suppose an initial 10 rows gives us chunks for rows [1, 2, 3], [4, 5, 6], [7, 8, 9], [10]. However,
+        the second chunk [4, 5, 6] turns out to be too large, so it gets divided into [4, 5] and [6]. The resulting
+        list of chunks should be [1, 2, 3], [4, 5], [6], [7, 8, 9], [10]
 
         Args:
             dataframe (pd.DataFrame.spatial): A spatially-enabled dataframe to divide
@@ -800,8 +808,8 @@ class Chunking:
         chunks_needed = Chunking._ceildiv(geojson_size, max_bytes)
         max_rows = Chunking._ceildiv(len(dataframe), chunks_needed)
 
-        #: Chunk the dataframe and then check if the resulting chunks are now within the proper size, calling again on the
-        #: offending chunks if not
+        #: Chunk the dataframe and then check if the resulting chunks are now within the proper size, calling again on
+        #: the offending chunks if not
         list_of_dataframes = Chunking._chunk_dataframe(dataframe, max_rows)
         return_dataframes = []  #: Holds result of valid and recursive chunks
         for chunk_dataframe in list_of_dataframes:
