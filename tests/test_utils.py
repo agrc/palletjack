@@ -1456,16 +1456,16 @@ class TestSaveDataframeToJSON:
 class TestDataFrameChunking:
 
     def test_ceildiv_always_returns_at_least_one(self):
-        assert palletjack.utils._ceildiv(1, 2) == 1
+        assert palletjack.utils.Chunking._ceildiv(1, 2) == 1
 
     def test_ceildiv_returns_ceiling(self):
-        assert palletjack.utils._ceildiv(3, 2) == 2
+        assert palletjack.utils.Chunking._ceildiv(3, 2) == 2
 
     def test_chunk_dataframe_properly_chunks(self, iris):
 
         chunks = 4
-        chunk_size = palletjack.utils._ceildiv(len(iris), chunks)
-        dfs = palletjack.utils._chunk_dataframe(iris, chunk_size)
+        chunk_size = palletjack.utils.Chunking._ceildiv(len(iris), chunks)
+        dfs = palletjack.utils.Chunking._chunk_dataframe(iris, chunk_size)
 
         assert len(dfs) == chunks
         assert [len(df) for df in dfs] == [38, 38, 38, 36]
@@ -1473,8 +1473,8 @@ class TestDataFrameChunking:
     def test_chunk_dataframe_properly_chunks_even_sized_chunks(self, iris):
 
         chunks = 5
-        chunk_size = palletjack.utils._ceildiv(len(iris), chunks)
-        dfs = palletjack.utils._chunk_dataframe(iris, chunk_size)
+        chunk_size = palletjack.utils.Chunking._ceildiv(len(iris), chunks)
+        dfs = palletjack.utils.Chunking._chunk_dataframe(iris, chunk_size)
 
         assert len(dfs) == chunks
         assert [len(df) for df in dfs] == [30] * chunks
@@ -1484,16 +1484,16 @@ class TestDataFrameChunking:
         #: two total calls: once for 5 elements, once for 4. first call chunks to 4 and 1, next chunks 4 into 3 and 1
         df = pd.DataFrame(['a', 'b', 'c', 'd', 'e'], columns=['foo'])
         mocker.patch('palletjack.utils.pd.DataFrame.spatial.to_featureset', return_value=mocker.Mock())
-        mocker.patch('palletjack.utils._ceildiv')
+        mocker.patch('palletjack.utils.Chunking._ceildiv')
         sys_mock = mocker.patch('palletjack.utils.sys.getsizeof', side_effect=['foo', 4, 'foo', 2, 2, 1])
         mocker.patch(
-            'palletjack.utils._chunk_dataframe',
+            'palletjack.utils.Chunking._chunk_dataframe',
             side_effect=[
                 [df.iloc[:4], df.iloc[4:]],  #: first chunking gives 4 and 1
                 [df.iloc[:3], df.iloc[3:4]],  #: second chunking gives 3 and 1 (3 being the max size)
             ]
         )
-        df_list = palletjack.utils._recursive_dataframe_chunking(df, 3)
+        df_list = palletjack.utils.Chunking._recursive_dataframe_chunking(df, 3)
 
         tm.assert_frame_equal(df_list[0], df.iloc[:3])
         tm.assert_frame_equal(df_list[1], df.iloc[3:4])
@@ -1505,17 +1505,17 @@ class TestDataFrameChunking:
         #: two total calls: once for 5 elements, once for 4. first call chunks to 1 and 4, next chunks 4 into 3 and 1
         df = pd.DataFrame(['a', 'b', 'c', 'd', 'e'], columns=['foo'])
         mocker.patch('palletjack.utils.pd.DataFrame.spatial.to_featureset', return_value=mocker.Mock())
-        mocker.patch('palletjack.utils._ceildiv')
+        mocker.patch('palletjack.utils.Chunking._ceildiv')
         sys_mock = mocker.patch('palletjack.utils.sys.getsizeof', side_effect=['foo', 1, 4, 'foo', 2, 2])
         mocker.patch(
-            'palletjack.utils._chunk_dataframe',
+            'palletjack.utils.Chunking._chunk_dataframe',
             side_effect=[
                 [df.iloc[:1], df.iloc[1:]],  #: first chunking gives 1 and 4
                 [df.iloc[1:4], df.iloc[4:]],  #: second chunking gives 3 and 1 (3 being the max size)
             ]
         )
 
-        df_list = palletjack.utils._recursive_dataframe_chunking(df, 3)
+        df_list = palletjack.utils.Chunking._recursive_dataframe_chunking(df, 3)
 
         tm.assert_frame_equal(df_list[0], df.iloc[:1])
         tm.assert_frame_equal(df_list[1], df.iloc[1:4])
@@ -1527,17 +1527,17 @@ class TestDataFrameChunking:
         #: two total calls: once for 5 elements, once for 3.
         df = pd.DataFrame(['a', 'b', 'c', 'd', 'e'], columns=['foo'])
         mocker.patch('palletjack.utils.pd.DataFrame.spatial.to_featureset', return_value=mocker.Mock())
-        mocker.patch('palletjack.utils._ceildiv')
+        mocker.patch('palletjack.utils.Chunking._ceildiv')
         sys_mock = mocker.patch('palletjack.utils.sys.getsizeof', side_effect=['foo', 1, 3, 'foo', 2, 1, 1])
         mocker.patch(
-            'palletjack.utils._chunk_dataframe',
+            'palletjack.utils.Chunking._chunk_dataframe',
             side_effect=[
                 [df.iloc[:1], df.iloc[1:4], df.iloc[4:]],  #: first chunking gives 1, 3, 1
                 [df.iloc[1:3], df.iloc[3:4]],  #: second chunking gives 2 and 1 (2 being the max size)
             ]
         )
 
-        df_list = palletjack.utils._recursive_dataframe_chunking(df, 2)
+        df_list = palletjack.utils.Chunking._recursive_dataframe_chunking(df, 2)
 
         tm.assert_frame_equal(df_list[0], df.iloc[:1])
         tm.assert_frame_equal(df_list[1], df.iloc[1:3])
@@ -1550,16 +1550,16 @@ class TestDataFrameChunking:
         #: only one call: first breaks into 3 and 2
         df = pd.DataFrame(['a', 'b', 'c', 'd', 'e'], columns=['foo'])
         mocker.patch('palletjack.utils.pd.DataFrame.spatial.to_featureset', return_value=mocker.Mock())
-        mocker.patch('palletjack.utils._ceildiv')
+        mocker.patch('palletjack.utils.Chunking._ceildiv')
         sys_mock = mocker.patch('palletjack.utils.sys.getsizeof', side_effect=['foo', 3, 2])
         mocker.patch(
-            'palletjack.utils._chunk_dataframe',
+            'palletjack.utils.Chunking._chunk_dataframe',
             side_effect=[
                 [df.iloc[:3], df.iloc[3:]],  #: first chunking gives 3, 2
             ]
         )
 
-        df_list = palletjack.utils._recursive_dataframe_chunking(df, 3)
+        df_list = palletjack.utils.Chunking._recursive_dataframe_chunking(df, 3)
 
         tm.assert_frame_equal(df_list[0], df.iloc[:3])
         tm.assert_frame_equal(df_list[1], df.iloc[3:])
@@ -1570,16 +1570,16 @@ class TestDataFrameChunking:
         #: only one call: first breaks into 3 and 2
         df = pd.DataFrame(['a', 'b', 'c', 'd', 'e'], columns=['foo'])
         mocker.patch('palletjack.utils.pd.DataFrame.spatial.to_featureset', return_value=mocker.Mock())
-        mocker.patch('palletjack.utils._ceildiv')
+        mocker.patch('palletjack.utils.Chunking._ceildiv')
         sys_mock = mocker.patch('palletjack.utils.sys.getsizeof', side_effect=['foo', 5])
         chunking_mock = mocker.patch(
-            'palletjack.utils._chunk_dataframe',
+            'palletjack.utils.Chunking._chunk_dataframe',
             side_effect=[
                 [df],  #: no chunk needed
             ]
         )
 
-        df_list = palletjack.utils._recursive_dataframe_chunking(df, 5)
+        df_list = palletjack.utils.Chunking._recursive_dataframe_chunking(df, 5)
 
         tm.assert_frame_equal(df_list[0], df)
         chunking_mock.assert_called_once()
@@ -1591,9 +1591,9 @@ class TestDataFrameChunking:
         mock_string_fixer = mocker.patch('palletjack.utils.fix_numeric_empty_strings')
         mock_string_fixer.return_value.to_geojson = 'new_json'
         mocker.patch('palletjack.utils.sys.getsizeof')
-        mocker.patch('palletjack.utils._recursive_dataframe_chunking', return_value=[mocker.Mock()] * 5)
+        mocker.patch('palletjack.utils.Chunking._recursive_dataframe_chunking', return_value=[mocker.Mock()] * 5)
 
-        json_list = palletjack.utils.build_upload_json(mock_df, 'foo_dict')
+        json_list = palletjack.utils.Chunking.build_upload_json(mock_df, 'foo_dict')
 
         assert len(json_list) == 5
         assert json_list == ['new_json'] * 5
