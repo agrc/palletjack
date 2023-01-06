@@ -968,7 +968,7 @@ class TestUpsertData:
         mock_fl = mocker.Mock()
         mock_fl.append.return_value = (True, {'recordCount': 42})
         mocker.patch('palletjack.utils.sleep')
-        mocker.patch('palletjack.utils.build_upload_json', autospec=True, return_value=['json'])
+        mocker.patch('palletjack.utils.Chunking.build_upload_json', autospec=True, return_value=['json'])
 
         load.FeatureServiceUpdater._upsert_data(mocker.Mock(), mock_fl, mocker.Mock(), upsert=True)
 
@@ -980,7 +980,7 @@ class TestUpsertData:
         mock_fl = mocker.Mock()
         mock_fl.append.return_value = (True, {'recordCount': 42})
         mocker.patch('palletjack.utils.sleep')
-        mocker.patch('palletjack.utils.build_upload_json', autospec=True, return_value=['json1', 'json2'])
+        mocker.patch('palletjack.utils.Chunking.build_upload_json', autospec=True, return_value=['json1', 'json2'])
 
         load.FeatureServiceUpdater._upsert_data(mocker.Mock(), mock_fl, mocker.Mock(), upsert=True)
 
@@ -993,7 +993,7 @@ class TestUpsertData:
     def test_upsert_data_retries_on_exception(self, mocker):
         mock_fl = mocker.Mock()
         mock_fl.append.side_effect = [Exception, (True, {'recordCount': 42})]
-        mocker.patch('palletjack.utils.build_upload_json', autospec=True, return_value=['json'])
+        mocker.patch('palletjack.utils.Chunking.build_upload_json', autospec=True, return_value=['json'])
         mocker.patch('palletjack.utils.sleep')
 
         load.FeatureServiceUpdater._upsert_data(mocker.Mock(), mock_fl, mocker.Mock(), upsert=True)
@@ -1003,7 +1003,7 @@ class TestUpsertData:
     def test_upsert_data_raises_on_False_result(self, mocker):
         mock_fl = mocker.Mock()
         mock_fl.append.return_value = (False, {'message': 'foo'})
-        mocker.patch('palletjack.utils.build_upload_json', autospec=True, return_value=['json'])
+        mocker.patch('palletjack.utils.Chunking.build_upload_json', autospec=True, return_value=['json'])
         mocker.patch('palletjack.utils.sleep')
 
         with pytest.raises(RuntimeError) as exc_info:
