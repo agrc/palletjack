@@ -13,7 +13,7 @@ import numpy as np
 import pandas as pd
 from arcgis.features import GeoAccessor, GeoSeriesAccessor
 
-from . import utils
+from palletjack import utils
 
 logger = logging.getLogger(__name__)
 
