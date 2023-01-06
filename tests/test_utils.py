@@ -1,3 +1,4 @@
+import datetime
 import logging
 import re
 from collections import namedtuple
@@ -1474,7 +1475,8 @@ class TestDeleteUtils:
 
 class TestSaveDataframeToJSON:
 
-    def test_save_spatially_enabled_dataframe_to_json_calls_write_with_json(self, mocker):
+    def test_save_feature_layer_to_json_calls_write_with_json_and_returns_right_path(self, mocker):
+
         mock_df = pd.DataFrame({
             'foo': [1],
             'x': [11],
@@ -1482,43 +1484,21 @@ class TestSaveDataframeToJSON:
         })
 
         mock_sdf = pd.DataFrame.spatial.from_xy(mock_df, 'x', 'y')
+        mock_fl = mocker.Mock()
+        mock_fl.query.return_value.sdf = mock_sdf
+        mock_fl.properties.name = 'flayer'
 
         open_mock = mocker.MagicMock()
         context_manager_mock = mocker.MagicMock()
         context_manager_mock.return_value.__enter__.return_value = open_mock
         mocker.patch('palletjack.utils.Path.open', new=context_manager_mock)
 
-        palletjack.utils.save_spatially_enabled_dataframe_to_json(mock_sdf, 'foo')
+        out_path = palletjack.utils.save_feature_layer_to_json(mock_fl, 'foo')
 
-        test_json_string = '{"features": [{"geometry": {"spatialReference": {"wkid": 4326}, "x": 11, "y": 14}, "attributes": {"foo": 1, "x": 11, "y": 14, "OBJECTID": 1}}], "objectIdFieldName": "OBJECTID", "displayFieldName": "OBJECTID", "spatialReference": {"wkid": 4326}, "geometryType": "esriGeometryPoint", "fields": [{"name": "OBJECTID", "type": "esriFieldTypeOID", "alias": "OBJECTID"}, {"name": "foo", "type": "esriFieldTypeInteger", "alias": "foo"}, {"name": "x", "type": "esriFieldTypeInteger", "alias": "x"}, {"name": "y", "type": "esriFieldTypeInteger", "alias": "y"}]}'
+        test_json_string = '{"features": [{"geometry": {"spatialReference": {"wkid": 4326}, "x": 11, "y": 14}, "attributes": {"foo": 1, "x": 11, "y": 14, "OBJECTID": 1}}], "objectIdFieldName": "OBJECTID", "displayFieldName": "OBJECTID", "spatialReference": {"wkid": 4326}, "geometryType": "esriGeometryPoint", "fields": [{"name": "OBJECTID", "type": "esriFieldTypeOID", "alias": "OBJECTID"}, {"name": "foo", "type": "esriFieldTypeDouble", "alias": "foo"}, {"name": "x", "type": "esriFieldTypeDouble", "alias": "x"}, {"name": "y", "type": "esriFieldTypeDouble", "alias": "y"}]}'
 
-        assert open_mock.write.called_with(test_json_string)
-
-    def test_save_spatially_enabled_dataframe_to_json_opens_file_with_right_name(self, mocker):
-        mock_df = pd.DataFrame({
-            'foo': [1],
-            'x': [11],
-            'y': [14],
-        })
-
-        mock_sdf = pd.DataFrame.spatial.from_xy(mock_df, 'x', 'y')
-
-        open_mock = mocker.MagicMock()
-        context_manager_mock = mocker.MagicMock()
-        context_manager_mock.return_value.__enter__.return_value = open_mock
-
-        datetime_mock = mocker.Mock()
-        datetime_mock.date.today.return_value = 'foo-date'
-        mocker.patch('palletjack.utils.datetime', new=datetime_mock)
-
-        open_mock = mocker.MagicMock()
-        context_manager_mock = mocker.MagicMock()
-        context_manager_mock.return_value.__enter__.return_value = open_mock
-        mocker.patch('palletjack.utils.Path.open', new=context_manager_mock)
-
-        out_path = palletjack.utils.save_spatially_enabled_dataframe_to_json(mock_sdf, 'foo')
-
-        assert out_path == Path('foo/old_data_foo-date.json')
+        open_mock.write.assert_called_with(test_json_string)
+        assert out_path == Path('foo', f'flayer_{datetime.date.today()}.json')
 
 
 class TestDataFrameChunking:
