@@ -887,18 +887,44 @@ class TestCheckFieldsMatch:
             },
             {
                 'name': 'floats',
-                'type': 'esriFieldTypeInteger'
+                'type': 'esriFieldTypeString'
             },
         ]
 
         with pytest.raises(
             ValueError,
             match=re.escape(
-                'Field type incompatibilities (field, live type, new type): [(\'ints\', \'esriFieldTypeDouble\', \'int64\'), (\'floats\', \'esriFieldTypeInteger\', \'float64\')]'
+                'Field type incompatibilities (field, live type, new type): [(\'ints\', \'esriFieldTypeDouble\', \'int64\'), (\'floats\', \'esriFieldTypeString\', \'float64\')]'
             )
         ):
             checker = palletjack.utils.FieldChecker(properties_mock, new_df)
             checker.check_live_and_new_field_types_match(['ints', 'floats'])
+
+    def test_check_live_and_new_field_types_match_raises_on_incoming_int_as_float(self, mocker):
+        new_df = pd.DataFrame({
+            'a': [1, 2, 3],
+            'b': [1.1, 1.2, np.nan],
+        })
+        properties_mock = mocker.Mock()
+        properties_mock.fields = [
+            {
+                'name': 'a',
+                'type': 'esriFieldTypeDouble'
+            },
+            {
+                'name': 'b',
+                'type': 'esriFieldTypeInteger'
+            },
+        ]
+
+        with pytest.raises(
+            palletjack.IntFieldAsFloatError,
+            match=re.escape(
+                'Field type incompatibilities (field, live type, new type): [(\'a\', \'esriFieldTypeDouble\', \'int64\'), (\'b\', \'esriFieldTypeInteger\', \'float64\')]\nCheck the following int fields for null/np.nan values and convert to panda\'s nullable int dtype: b'
+            )
+        ):
+            checker = palletjack.utils.FieldChecker(properties_mock, new_df)
+            checker.check_live_and_new_field_types_match(['a', 'b'])
 
     def test_check_live_and_new_field_types_match_raises_on_notimplemented_esri_type(self, mocker):
         new_df = pd.DataFrame({
