@@ -8,7 +8,7 @@ import arcgis
 import pandas as pd
 from arcgis import GeoAccessor, GeoSeriesAccessor
 
-from . import utils
+from palletjack import utils
 
 module_logger = logging.getLogger(__name__)
 
@@ -123,3 +123,17 @@ class FeatureServiceMerging:
             raise RuntimeError('Failed to load live dataframe') from error
 
         return live_dataframe
+
+
+class DataCleaning:
+
+    @staticmethod
+    def switch_to_nullable_int(dataframe, fields_that_should_be_ints):
+        int_dict = {field: 'Int64' for field in fields_that_should_be_ints}
+        try:
+            retyped = dataframe.astype(int_dict)
+        except TypeError as error:
+            raise TypeError(
+                'Cannot convert one or more fields to nullable ints. Check for non-int/np.nan values.'
+            ) from error
+        return retyped
