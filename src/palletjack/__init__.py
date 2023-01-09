@@ -2,3 +2,4 @@
 """
 
 from . import extract, load, transform, utils
+from .errors import IntFieldAsFloatError

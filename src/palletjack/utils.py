@@ -13,6 +13,8 @@ import pandas as pd
 import pygsheets
 import requests
 
+from palletjack.errors import IntFieldAsFloatError
+
 module_logger = logging.getLogger(__name__)
 
 
@@ -428,6 +430,7 @@ class FieldChecker:
         fields_to_check = self.fields_dataframe[self.fields_dataframe['name'].isin(fields)].set_index('name')
 
         invalid_fields = []
+        int_fields_as_floats = []
         for field in fields:
             #: check against the str.lower to catch normal dtypes (int64) and the new, pd.NA-aware dtypes (Int64)
             new_dtype = str(self.new_dataframe[field].dtype).lower()
@@ -436,12 +439,20 @@ class FieldChecker:
             try:
                 if new_dtype not in esri_to_pandas_types_mapping[live_type]:
                     invalid_fields.append((field, live_type, new_dtype))
-                    # raise ValueError(f'{field} types incompatible. Live type: {live_type}. New type: {new_dtype}.')
+                if new_dtype in ['float', 'float32', 'float64'
+                                ] and live_type in ['esriFieldTypeInteger', 'esriFieldTypeSmallInteger']:
+                    int_fields_as_floats.append(field)
             except KeyError:
                 # pylint: disable-next=raise-missing-from
                 raise NotImplementedError(f'Live field "{field}" type "{live_type}" not yet mapped to a pandas dtype')
 
         if invalid_fields:
+            if int_fields_as_floats:
+                raise IntFieldAsFloatError(
+                    f'Field type incompatibilities (field, live type, new type): {invalid_fields}\n' \
+                    'Check the following int fields for null/np.nan values and convert to panda\'s nullable int '\
+                    f'dtype: {", ".join(int_fields_as_floats)}'
+                )
             raise ValueError(f'Field type incompatibilities (field, live type, new type): {invalid_fields}')
 
     def _check_geometry_types(self):
