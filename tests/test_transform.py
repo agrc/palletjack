@@ -1,5 +1,7 @@
 import logging
+import re
 
+import numpy as np
 import pandas as pd
 import pytest
 from pandas import testing as tm
@@ -385,3 +387,44 @@ class TestFeatureServiceMerging:
         assert 'Failed to load live dataframe' in str(error.value)
         assert isinstance(error.value.__cause__, ValueError)
         assert error.value.__cause__.args[0] == 'query error'
+
+
+class TestNullableIntFixing:
+
+    def test_switch_to_nullable_int_casts_float_field_with_nan(self):
+        df = pd.DataFrame({
+            'a': [1, 2, np.nan],
+        })
+
+        retyped_df = palletjack.transform.DataCleaning.switch_to_nullable_int(df, ['a'])
+
+        test_df = pd.DataFrame([1, 2, pd.NA], columns=['a'], dtype='Int64')
+
+        tm.assert_frame_equal(retyped_df, test_df)
+
+    def test_switch_to_nullable_int_doesnt_change_other_float_field(self):
+        df = pd.DataFrame({
+            'a': [1, 2, np.nan],
+            'b': [1.1, 1.2, 1.3],
+        })
+
+        retyped_df = palletjack.transform.DataCleaning.switch_to_nullable_int(df, ['a'])
+
+        test_df = pd.DataFrame({
+            'a': pd.Series([1, 2, pd.NA], dtype='Int64'),
+            'b': pd.Series([1.1, 1.2, 1.3], dtype='float64')
+        })
+
+        tm.assert_frame_equal(retyped_df, test_df)
+
+    def test_switch_to_nullable_int_raises_on_true_float_field(self):
+        df = pd.DataFrame({
+            'a': [1, 2, np.nan],
+            'b': [1.1, 1.2, 1.3],
+        })
+
+        with pytest.raises(
+            TypeError,
+            match=re.escape('Cannot convert one or more fields to nullable ints. Check for non-int/np.nan values.')
+        ):
+            retyped_df = palletjack.transform.DataCleaning.switch_to_nullable_int(df, ['a', 'b'])
