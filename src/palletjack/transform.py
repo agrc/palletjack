@@ -52,28 +52,30 @@ class APIGeocoder:
         if dataframe.empty:
             warnings.warn('No records to geocode (empty dataframe)', RuntimeWarning)
 
-        self._class_logger.debug('Renaming columns to conform to ArcGIS limitations, if necessary...')
-        dataframe.rename(columns=utils.rename_columns_for_agol(dataframe.columns), inplace=True)
+        # self._class_logger.debug('Renaming columns to conform to ArcGIS limitations, if necessary...')
+        # dataframe.rename(columns=utils.rename_columns_for_agol(dataframe.columns), inplace=True)
 
         dataframe_length = len(dataframe.index)
         reporting_interval = utils.calc_modulus_for_reporting_interval(dataframe_length)
         self._class_logger.info('Geocoding %s rows...', dataframe_length)
 
+        street_col_index = dataframe.columns.get_loc(street_col)
+        zone_col_index = dataframe.columns.get_loc(zone_col)
         new_rows = []
         for i, row in enumerate(dataframe.itertuples(index=False)):
             if i % reporting_interval == 0:
                 self._class_logger.info('Geocoding row %s of %s, %s%%', i, dataframe_length, i / dataframe_length * 100)
             row_dict = row._asdict()
             results = utils.Geocoding.geocode_addr(
-                row_dict[street_col],
-                row_dict[zone_col],
+                row[street_col_index],
+                row[zone_col_index],
                 self.api_key,
                 rate_limits,
                 spatialReference=str(wkid),
                 **api_args
             )
             self._class_logger.debug(
-                '%s of %s: %s, %s = %s', i, dataframe_length, row_dict[street_col], row_dict[zone_col], results
+                '%s of %s: %s, %s = %s', i, dataframe_length, row[street_col_index], row[zone_col_index], results
             )
             row_dict['x'], row_dict['y'], row_dict['score'], row_dict['matchAddress'] = results
             new_rows.append(row_dict)
