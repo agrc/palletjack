@@ -36,6 +36,31 @@ class TestAPIGeocoder:
         )
         assert utils_mock.Geocoding.geocode_addr.call_args.kwargs == {'spatialReference': '3857'}
 
+    def test_geocode_dataframe_handles_street_zone_fields_with_invalid_python_names(self, mocker):
+
+        utils_mock = mocker.patch('palletjack.transform.utils', autospec=True)
+        utils_mock.Geocoding.validate_api_key.return_value = 'valid'
+        utils_mock.rename_columns_for_agol.return_value = {}
+        utils_mock.Geocoding.geocode_addr.side_effect = [
+            (123, 456, 100., 'foo_addr'),
+            (789, 101, 100., 'bar_addr'),
+        ]
+        mocker.patch('palletjack.transform.pd.DataFrame.spatial')
+
+        geocoder = palletjack.transform.APIGeocoder('foo')
+
+        test_df = pd.DataFrame({
+            'Physical Address Street': ['4315 S 2700 W', '4501 S Constitution Blvd'],
+            'Physical Address Zip Code': ['84129', '84129'],
+        })
+
+        geocoder.geocode_dataframe(test_df, 'Physical Address Street', 'Physical Address Zip Code', 3857)
+
+        assert utils_mock.Geocoding.geocode_addr.call_args.args == (
+            '4501 S Constitution Blvd', '84129', 'foo', (0.015, 0.03)
+        )
+        assert utils_mock.Geocoding.geocode_addr.call_args.kwargs == {'spatialReference': '3857'}
+
     def test_geocode_dataframe_passes_kwargs_through_to_util_method(self, mocker):
         utils_mock = mocker.patch('palletjack.transform.utils', autospec=True)
         utils_mock.Geocoding.validate_api_key.return_value = 'valid'
@@ -205,50 +230,51 @@ class TestAPIGeocoder:
             geocoder.geocode_dataframe(test_df, 'street', 'zip', 3857)
         assert record[0].message.args[0] == 'Empty spatial dataframe after geocoding'
 
-    def test_geocode_dataframe_handles_weird_column_names(self, mocker):
-        requests_mock = mocker.patch('palletjack.utils.requests', autospec=True)
-        mocker.patch('palletjack.utils.Geocoding.validate_api_key', return_value='valid')
-        mocker.patch('palletjack.utils.sleep')
+    #: This is really just a test of the agol renaming method
+    # def test_geocode_dataframe_handles_weird_column_names(self, mocker):
+    #     requests_mock = mocker.patch('palletjack.utils.requests', autospec=True)
+    #     mocker.patch('palletjack.utils.Geocoding.validate_api_key', return_value='valid')
+    #     mocker.patch('palletjack.utils.sleep')
 
-        good_response = mocker.Mock()
-        good_response.json.return_value = {
-            'status': 200,
-            'result': {
-                'location': {
-                    'x': 123,
-                    'y': 456
-                },
-                'score': 100.,
-                'matchAddress': 'bar'
-            }
-        }
-        good_response.status_code = 200
-        requests_mock.get.return_value = good_response
+    #     good_response = mocker.Mock()
+    #     good_response.json.return_value = {
+    #         'status': 200,
+    #         'result': {
+    #             'location': {
+    #                 'x': 123,
+    #                 'y': 456
+    #             },
+    #             'score': 100.,
+    #             'matchAddress': 'bar'
+    #         }
+    #     }
+    #     good_response.status_code = 200
+    #     requests_mock.get.return_value = good_response
 
-        mocker.patch('palletjack.transform.pd.DataFrame.spatial.from_xy', side_effect=lambda df, x, y, sr: df)
+    #     mocker.patch('palletjack.transform.pd.DataFrame.spatial.from_xy', side_effect=lambda df, x, y, sr: df)
 
-        geocoder = palletjack.transform.APIGeocoder('foo')
-        input_df = pd.DataFrame({
-            'street': ['4315 S 2700 W'],
-            'zip': ['84129'],
-            'col_with_underscores': ['foo'],
-            'Col With Spaces': ['bar'],
-            '_starts_with_underscore': ['baz'],
-            '1starts_with_number': ['eggs'],
-            '1_starts_with_number_and_underscore': ['fried'],
-            'includes_1_number': ['ham'],
-            'includes!mark': ['brie'],
-        })
+    #     geocoder = palletjack.transform.APIGeocoder('foo')
+    #     input_df = pd.DataFrame({
+    #         'street': ['4315 S 2700 W'],
+    #         'zip': ['84129'],
+    #         'col_with_underscores': ['foo'],
+    #         'Col With Spaces': ['bar'],
+    #         '_starts_with_underscore': ['baz'],
+    #         '1starts_with_number': ['eggs'],
+    #         '1_starts_with_number_and_underscore': ['fried'],
+    #         'includes_1_number': ['ham'],
+    #         'includes!mark': ['brie'],
+    #     })
 
-        geocoded_df = geocoder.geocode_dataframe(input_df, 'street', 'zip', 26912)
+    #     geocoded_df = geocoder.geocode_dataframe(input_df, 'street', 'zip', 26912)
 
-        out_cols = [
-            'street', 'zip', 'col_with_underscores', 'Col_With_Spaces', 'starts_with_underscore_',
-            'starts_with_number1', 'starts_with_number_and_underscore1_', 'includes_1_number', 'includes_mark', 'x',
-            'y', 'score', 'matchAddress'
-        ]
+    #     out_cols = [
+    #         'street', 'zip', 'col_with_underscores', 'Col_With_Spaces', 'starts_with_underscore_',
+    #         'starts_with_number1', 'starts_with_number_and_underscore1_', 'includes_1_number', 'includes_mark', 'x',
+    #         'y', 'score', 'matchAddress'
+    #     ]
 
-        assert list(geocoded_df.columns) == out_cols
+    #     assert list(geocoded_df.columns) == out_cols
 
     def test_geocode_dataframe_raises_on_invalid_key(self, mocker):
         req_mock = mocker.patch('palletjack.utils.requests', autospec=True)
