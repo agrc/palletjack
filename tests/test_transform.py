@@ -454,3 +454,35 @@ class TestNullableIntFixing:
             match=re.escape('Cannot convert one or more fields to nullable ints. Check for non-int/np.nan values.')
         ):
             retyped_df = palletjack.transform.DataCleaning.switch_to_nullable_int(df, ['a', 'b'])
+
+
+class TestDataFrameColumnRenaming:
+
+    def test_rename_dataframe_columns_for_agol(self, mocker):
+        df = pd.DataFrame({
+            'street': ['4315 S 2700 W'],
+            'zip': ['84129'],
+            'col_with_underscores': ['foo'],
+            'Col With Spaces': ['bar'],
+            '_starts_with_underscore': ['baz'],
+            '1starts_with_number': ['eggs'],
+            '1_starts_with_number_and_underscore': ['fried'],
+            'includes_1_number': ['ham'],
+            'includes!mark': ['brie'],
+        })
+
+        renamed_df = palletjack.transform.DataCleaning.rename_dataframe_columns_for_agol(df)
+
+        test_df = pd.DataFrame({
+            'street': ['4315 S 2700 W'],
+            'zip': ['84129'],
+            'col_with_underscores': ['foo'],
+            'Col_With_Spaces': ['bar'],
+            'starts_with_underscore_': ['baz'],
+            'starts_with_number1': ['eggs'],
+            'starts_with_number_and_underscore1_': ['fried'],
+            'includes_1_number': ['ham'],
+            'includes_mark': ['brie'],
+        })
+
+        tm.assert_frame_equal(renamed_df, test_df)

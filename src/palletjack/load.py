@@ -155,28 +155,16 @@ class FeatureServiceUpdater:
         )
         return updater._truncate_and_load_data()
 
-    def __init__(
-        self,
-        gis,
-        feature_service_itemid,
-        dataframe=None,
-        fields=None,
-        join_column=None,
-        failsafe_dir=None,
-        layer_index=0
-    ):
+    def __init__(self, gis, feature_service_itemid, dataframe=None, fields=None, failsafe_dir=None, layer_index=0):
         self._class_logger = logging.getLogger(__name__).getChild(self.__class__.__name__)
         self.feature_service_itemid = feature_service_itemid
         self.feature_layer = arcgis.features.FeatureLayer.fromitem(gis.content.get(feature_service_itemid))
         if dataframe is not None:
-            self.new_dataframe = dataframe.rename(columns=utils.rename_columns_for_agol(dataframe.columns))
+            self.new_dataframe = dataframe
             if 'SHAPE' in self.new_dataframe.columns:
                 self.new_dataframe.spatial.set_geometry('SHAPE')
-        if fields:
-            renamed_fields = set(utils.rename_columns_for_agol(fields).values())
-            self.fields = list(renamed_fields - {'Shape_Area', 'Shape_Length'})  #: We don't use these auto-gen fields
-        if join_column:
-            self.join_column = utils.rename_columns_for_agol([join_column])[join_column]
+        if fields is not None:
+            self.fields = list(set(fields) - {'Shape_Area', 'Shape_Length'})  #: We don't use these auto-gen fields
         if failsafe_dir:
             self.failsafe_dir = failsafe_dir
         self.layer_index = layer_index

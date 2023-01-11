@@ -136,6 +136,12 @@ class DataCleaning:
             retyped = dataframe.astype(int_dict)
         except TypeError as error:
             raise TypeError(
-                'Cannot convert one or more fields to nullable ints. Check for non-int/np.nan values.'
+                'Cannot convert one or more fields to nullable ints. Check for non-int/non-np.nan values.'
             ) from error
         return retyped
+
+    @staticmethod
+    def rename_dataframe_columns_for_agol(dataframe):
+        rename_dict = utils.rename_columns_for_agol(dataframe.columns)
+        renamed_dataframe = dataframe.rename(columns=rename_dict)
+        return renamed_dataframe
