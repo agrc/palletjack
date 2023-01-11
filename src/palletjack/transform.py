@@ -131,6 +131,19 @@ class DataCleaning:
 
     @staticmethod
     def switch_to_nullable_int(dataframe, fields_that_should_be_ints):
+        """Convert specified fields to panda's nullable Int64 type to preserve int to EsriFieldTypeInteger mapping
+
+        Args:
+            dataframe (pd.DataFrame): Input dataframe with colums to be converted
+            fields_that_should_be_ints (list[str]): List of column names to be converted
+
+        Raises:
+            TypeError: If any of the conversions fail. Often caused by values that aren't int-castable floats (ie. x.0) or np.nans.
+
+        Returns:
+            pd.DataFrame: Input dataframe with columns converted to nullable Int64
+        """
+
         int_dict = {field: 'Int64' for field in fields_that_should_be_ints}
         try:
             retyped = dataframe.astype(int_dict)
@@ -142,6 +155,15 @@ class DataCleaning:
 
     @staticmethod
     def rename_dataframe_columns_for_agol(dataframe):
+        """Rename all the columns in a dataframe to valid AGOL column names
+
+        Args:
+            dataframe (pd.DataFrame): Dataframe to be renamed
+
+        Returns:
+            pd.DataFrame: Input dataframe with renamed columns
+        """
+
         rename_dict = utils.rename_columns_for_agol(dataframe.columns)
         renamed_dataframe = dataframe.rename(columns=rename_dict)
         return renamed_dataframe

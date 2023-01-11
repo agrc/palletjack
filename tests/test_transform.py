@@ -451,7 +451,7 @@ class TestNullableIntFixing:
 
         with pytest.raises(
             TypeError,
-            match=re.escape('Cannot convert one or more fields to nullable ints. Check for non-int/np.nan values.')
+            match=re.escape('Cannot convert one or more fields to nullable ints. Check for non-int/non-np.nan values.')
         ):
             retyped_df = palletjack.transform.DataCleaning.switch_to_nullable_int(df, ['a', 'b'])
 
