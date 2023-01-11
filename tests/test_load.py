@@ -25,33 +25,24 @@ class TestFeatureServiceUpdaterInit:
 
         arcgis_mock.features.FeatureLayer.fromitem.assert_called_once()
 
-    def test_init_renames_dataframe_columns(self, mocker):
-
-        new_dataframe = pd.DataFrame(columns=['Foo field', 'Bar'])
+    #: WIP: removing column name for agol renamer (#36), more __init__ tests
+    def test_init_removes_shape_fields(self, mocker):
+        new_dataframe = pd.DataFrame(columns=['Foo field', 'Bar', 'Shape_Length', 'Shape_Area'])
         mocker.patch('palletjack.load.arcgis')
 
-        updater = load.FeatureServiceUpdater(mocker.Mock(), 'itemid', new_dataframe, join_column='Bar')
+        updater = load.FeatureServiceUpdater(mocker.Mock(), 'itemid', new_dataframe, fields=new_dataframe.columns)
 
-        assert list(updater.new_dataframe.columns) == ['Foo_field', 'Bar']
+        assert set(updater.fields) == {'Foo field', 'Bar'}
 
-    def test_init_renames_fields(self, mocker):
-
-        new_dataframe = pd.DataFrame(columns=['Foo', 'Bar'])
+    def test_init_resets_geometry_and_sets_failsafe_dir(self, mocker):
         mocker.patch('palletjack.load.arcgis')
-        fields = ['Foo field', 'Bar!field', 'baz']
+        df_mock = mocker.Mock()
+        df_mock.columns = ['Foo field', 'Bar', 'SHAPE']
 
-        updater = load.FeatureServiceUpdater(mocker.Mock(), 'itemid', new_dataframe, fields=fields)
+        updater = load.FeatureServiceUpdater(mocker.Mock(), 'itemid', df_mock, failsafe_dir=r'c:\foo')
 
-        assert set(updater.fields) == {'Foo_field', 'Bar_field', 'baz'}
-
-    def test_init_renames_join_column(self, mocker):
-
-        new_dataframe = pd.DataFrame(columns=['Foo', 'Bar'])
-        mocker.patch('palletjack.load.arcgis')
-
-        updater = load.FeatureServiceUpdater(mocker.Mock(), 'itemid', new_dataframe, join_column='Foo field')
-
-        assert updater.join_column == 'Foo_field'
+        df_mock.spatial.set_geometry.assert_called_once_with('SHAPE')
+        assert updater.failsafe_dir == r'c:\foo'
 
 
 class TestUpdateLayer:
