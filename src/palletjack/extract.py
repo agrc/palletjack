@@ -3,6 +3,7 @@
 
 import logging
 import mimetypes
+import os
 import re
 from io import BytesIO
 from pathlib import Path
@@ -12,8 +13,8 @@ import geopandas as gpd
 import pandas as pd
 import pysftp
 import requests
+import sqlalchemy
 from googleapiclient.http import MediaIoBaseDownload
-from sqlalchemy import create_engine
 
 from . import utils
 
@@ -438,9 +439,29 @@ class PostgresLoader:
 
     def __init__(self, host, database, username, password, port=5432):
         self._class_logger = logging.getLogger(__name__).getChild(self.__class__.__name__)
-
-        connection_string = f'postgresql://{username}:{password}@{host}:{port}/{database}'
-        self.engine = create_engine(connection_string)
+        if os.environ.get('FUNCTION_TARGET') is not None:  #: this is an env var specific to cloud functions
+            self._class_logger.info('running in GCF, using unix socket')
+            self.engine = sqlalchemy.create_engine(
+                sqlalchemy.engine.url.URL.create(
+                    drivername='postgresql+pg8000',
+                    username=username,
+                    password=password,
+                    database=database,
+                    query={'unix_sock': f'/cloudsql/{host}/.s.PGSQL.{port}'},  #: requires the pg8000 package
+                )
+            )
+        else:
+            self._class_logger.info('running locally, using traditional host connection')
+            self.engine = sqlalchemy.create_engine(
+                sqlalchemy.engine.url.URL.create(
+                    drivername='postgresql',
+                    username=username,
+                    password=password,
+                    database=database,
+                    host=host,
+                    port=port,
+                )
+            )
 
     def read_table_into_dataframe(self, table_name, index_column, crs, spatial_column):
         """Read a table into a dataframe
