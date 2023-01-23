@@ -482,11 +482,9 @@ class PostgresLoader:
         dataframe = gpd.read_postgis(
             f'select * from {table_name}', self.engine, index_col=index_column, crs=crs, geom_col=spatial_column
         )
+        dataframe = dataframe.to_crs(epsg=3857)
 
-        spatial_dataframe = pd.DataFrame.spatial.from_geodataframe(dataframe, column_name=spatial_column)
-        for column in spatial_dataframe.select_dtypes(include=['datetime64[ns, UTC]']):
-            self._class_logger.debug('Converting column `%s` to ISO string format', column)
-            spatial_dataframe[column] = spatial_dataframe[column].apply(pd.Timestamp.isoformat)
+        spatial_dataframe = pd.DataFrame.spatial.from_geodataframe(dataframe)
 
         self._class_logger.debug('Dataframe shape: %s', spatial_dataframe.shape)
         if len(spatial_dataframe.index) == 0:
