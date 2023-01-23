@@ -616,9 +616,16 @@ class FieldChecker:
             ValueError: If the new and live SRS values don't match.
         """
 
+        #: If we project a spatial data frame, sometimes the .sr.wkid property/dictionary becomes {0:number} instead
+        #: of {'wkid': number}
+        try:
+            new_srs = self.new_dataframe.spatial.sr.wkid
+        except AttributeError:
+            new_srs = self.new_dataframe.spatial.sr[0]
+
         try:
             live_srs = int(self.live_data_properties.extent.spatialReference.latestWkid)
-            new_srs = int(self.new_dataframe.spatial.sr.wkid)
+            new_srs = int(new_srs)
         except ValueError as error:
             raise ValueError('Could not cast either new or existing SRS to int') from error
         if live_srs != new_srs:
