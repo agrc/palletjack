@@ -412,13 +412,13 @@ class FieldChecker:
             'esriFieldTypeDouble': ['float', 'float32', 'float64'],
             'esriFieldTypeSingle': ['float32'],
             'esriFieldTypeString': ['str', 'object', 'string'],
-            #  'esriFieldTypeDate': [],
+            'esriFieldTypeDate': ['str', 'object', 'string', 'datetime64[ns, utc]'],
             'esriFieldTypeGeometry': ['geometry'],
             'esriFieldTypeOID': ['int'] + short_ints + long_ints,
             #  'esriFieldTypeBlob': [],
             'esriFieldTypeGlobalID': ['str', 'object', 'string'],
             #  'esriFieldTypeRaster': [],
-            #  'esriFieldTypeGUID': [],
+            'esriFieldTypeGUID': ['str', 'object', 'string'],
             #  'esriFieldTypeXML': [],
         }
 
@@ -860,7 +860,7 @@ def fix_numeric_empty_strings(feature_set, feature_layer_fields):
     fields_to_fix = {
         field['name']
         for field in feature_layer_fields
-        if field['type'] in ['esriFieldTypeDouble', 'esriFieldTypeInteger'] and field['nullable']
+        if field['type'] in ['esriFieldTypeDouble', 'esriFieldTypeInteger', 'esriFieldTypeDate'] and field['nullable']
     }
     fields_to_fix -= {'Shape__Length', 'Shape__Area'}
 
