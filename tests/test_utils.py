@@ -1412,6 +1412,14 @@ class TestSRSCheck:
         assert isinstance(exc_info.value.__cause__, ValueError)
         assert 'invalid literal for int() with base 10:' in str(exc_info.value.__cause__)
 
+    def test_check_srs_match_handles_srs_with_key_of_0(self, mocker):
+        checker_mock = mocker.Mock()
+        checker_mock.live_data_properties.extent.spatialReference.latestWkid = 42
+        checker_mock.new_dataframe.spatial.sr = {0: 42}
+
+        #: Should not raise
+        palletjack.utils.FieldChecker.check_srs_match(checker_mock)
+
 
 class TestNullGeometryGenerators:
 
