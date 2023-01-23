@@ -787,7 +787,9 @@ class TestCheckFieldsMatch:
                 'cc1cd617-1e55-4153-914d-8abb6ef22f24', '0f45d56f-249e-494a-863e-6b3999619bae',
                 'd3a64873-8a09-4351-9ea0-802e450329ea'
             ],
+            'dates': ['2015-09-02T23:08:12+00:00', '2015-09-02T23:08:13+00:00', '2015-09-02T23:08:14+00:00']
         })
+        new_df['datetimes'] = pd.to_datetime(new_df['dates'])
         properties_mock = mocker.Mock()
         properties_mock.fields = [
             {
@@ -810,11 +812,21 @@ class TestCheckFieldsMatch:
                 'name': 'GlobalID',
                 'type': 'esriFieldTypeGlobalID'
             },
+            {
+                'name': 'dates',
+                'type': 'esriFieldTypeDate'
+            },
+            {
+                'name': 'datetimes',
+                'type': 'esriFieldTypeDate'
+            },
         ]
 
         #: If it raises an error, it failed.
         checker = palletjack.utils.FieldChecker(properties_mock, new_df)
-        checker.check_live_and_new_field_types_match(['ints', 'floats', 'strings', 'OBJECTID', 'GlobalID'])
+        checker.check_live_and_new_field_types_match([
+            'ints', 'floats', 'strings', 'OBJECTID', 'GlobalID', 'dates', 'datetimes'
+        ])
 
     def test_check_live_and_new_field_types_match_converted(self, mocker):
         new_df = pd.DataFrame({
@@ -826,8 +838,10 @@ class TestCheckFieldsMatch:
                 'cc1cd617-1e55-4153-914d-8abb6ef22f24', '0f45d56f-249e-494a-863e-6b3999619bae',
                 'd3a64873-8a09-4351-9ea0-802e450329ea'
             ],
-            # 'SHAPE': [geometry.Geometry([0, 0])] * 3
+            'dates': ['2015-09-02T23:08:12+00:00', '2015-09-02T23:08:13+00:00', '2015-09-02T23:08:14+00:00']
         }).convert_dtypes()
+
+        new_df['datetimes'] = pd.to_datetime(new_df['dates'])
 
         properties_mock = mocker.Mock()
         properties_mock.fields = [
@@ -851,11 +865,21 @@ class TestCheckFieldsMatch:
                 'name': 'GlobalID',
                 'type': 'esriFieldTypeGlobalID'
             },
+            {
+                'name': 'dates',
+                'type': 'esriFieldTypeDate'
+            },
+            {
+                'name': 'datetimes',
+                'type': 'esriFieldTypeDate'
+            },
         ]
 
         #: If it raises an error, it failed.
         checker = palletjack.utils.FieldChecker(properties_mock, new_df)
-        checker.check_live_and_new_field_types_match(['ints', 'floats', 'strings', 'OBJECTID', 'GlobalID'])
+        checker.check_live_and_new_field_types_match([
+            'ints', 'floats', 'strings', 'OBJECTID', 'GlobalID', 'dates', 'datetimes'
+        ])
 
     def test_check_live_and_new_field_types_match_raises_on_incompatible(self, mocker):
         new_df = pd.DataFrame({
@@ -932,13 +956,13 @@ class TestCheckFieldsMatch:
         })
 
         properties_mock = mocker.Mock()
-        properties_mock.fields = [{'name': 'ints', 'type': 'esriFieldTypeDate'}]
+        properties_mock.fields = [{'name': 'ints', 'type': 'esriFieldTypeXML'}]
 
         with pytest.raises(NotImplementedError) as exc_info:
             checker = palletjack.utils.FieldChecker(properties_mock, new_df)
             checker.check_live_and_new_field_types_match(['ints'])
 
-        assert 'Live field "ints" type "esriFieldTypeDate" not yet mapped to a pandas dtype' in str(exc_info.value)
+        assert 'Live field "ints" type "esriFieldTypeXML" not yet mapped to a pandas dtype' in str(exc_info.value)
 
     def test_check_live_and_new_field_types_removes_SHAPE(self, mocker):
         geocheck_mock = mocker.patch('palletjack.utils.FieldChecker._check_geometry_types')
