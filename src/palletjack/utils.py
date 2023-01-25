@@ -609,11 +609,11 @@ class FieldChecker:
             )
 
     def check_srs_wgs84(self):
-        """Raise an error if the new and live spatial reference systems don't match.
+        """Raise an error if the new spatial reference system isn't WGS84 as required by geojson.
 
         Raises:
-            ValueError: If the new or existing SRS values can't be cast to an int (please log an issue if this occurs)
-            ValueError: If the new and live SRS values don't match.
+            ValueError: If the new SRS value can't be cast to an int (please log an issue if this occurs)
+            ValueError: If the new SRS value isn't 4326.
         """
 
         #: If we modify a spatial data frame, sometimes the .sr.wkid property/dictionary becomes {0:number} instead
@@ -655,16 +655,15 @@ def get_null_geometries(feature_layer_properties):
     # }
 
     live_geometry_type = feature_layer_properties.geometryType
-    live_srs = feature_layer_properties.extent.spatialReference.latestWkid
 
     if live_geometry_type == 'esriGeometryPoint':
-        return arcgis.geometry.Point({'x': 0, 'y': 0, 'spatialReference': {'wkid': live_srs}}).JSON
+        return arcgis.geometry.Point({'x': 0, 'y': 0, 'spatialReference': {'wkid': 4326}}).JSON
 
     if live_geometry_type == 'esriGeometryPolyline':
         return arcgis.geometry.Polyline({
             'paths': [[[0, 0], [.1, .1], [.2, .2]]],
             'spatialReference': {
-                'wkid': live_srs
+                'wkid': 4326
             }
         }).JSON
 
@@ -672,7 +671,7 @@ def get_null_geometries(feature_layer_properties):
         return arcgis.geometry.Polygon({
             'rings': [[[0, .1], [.1, .1], [.1, 0], [0, 0]]],
             'spatialReference': {
-                'wkid': live_srs
+                'wkid': 4326
             }
         }).JSON
 

@@ -1429,7 +1429,6 @@ class TestNullGeometryGenerators:
     def test_get_null_geometries_point(self, mocker):
         properties_mock = mocker.Mock()
         properties_mock.geometryType = 'esriGeometryPoint'
-        properties_mock.extent.spatialReference.latestWkid = 4326
 
         nullo = palletjack.utils.get_null_geometries(properties_mock)
 
@@ -1438,7 +1437,6 @@ class TestNullGeometryGenerators:
     def test_get_null_geometries_polyline(self, mocker):
         properties_mock = mocker.Mock()
         properties_mock.geometryType = 'esriGeometryPolyline'
-        properties_mock.extent.spatialReference.latestWkid = 4326
 
         nullo = palletjack.utils.get_null_geometries(properties_mock)
 
@@ -1447,7 +1445,6 @@ class TestNullGeometryGenerators:
     def test_get_null_geometries_polygon(self, mocker):
         properties_mock = mocker.Mock()
         properties_mock.geometryType = 'esriGeometryPolygon'
-        properties_mock.extent.spatialReference.latestWkid = 4326
 
         nullo = palletjack.utils.get_null_geometries(properties_mock)
 
