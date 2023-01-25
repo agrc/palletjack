@@ -40,7 +40,7 @@ setup(
         'SQLAlchemy==1.4.*',
         'pg8000==1.29.*',
         'psycopg2-binary==2.9.*',
-        'numpy==1.24.*',  #: May need to pin to 1.23.* to fix "module 'numpy' has no attribute 'str'" error
+        'numpy==1.23.*',  #: May need to pin to 1.23.* to fix "module 'numpy' has no attribute 'str'" error
     ],
     extras_require={
         'tests': [
