@@ -370,7 +370,7 @@ class FeatureServiceUpdater:
         #: Note: apparently not all services support rollback: https://developers.arcgis.com/rest/services-reference/enterprise/delete-features.htm
         deletes = utils.retry(
             self.feature_layer.delete_features,
-            deletes=delete_oids,
+            deletes=delete_string,
             rollback_on_failure=True,
         )
 
