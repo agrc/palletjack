@@ -608,7 +608,7 @@ class FieldChecker:
                 f'The following float/double column(s) are completely empty: {empty_fields} (suggestion: insert at least one bogus value)'
             )
 
-    def check_srs_match(self):
+    def check_srs_wgs84(self):
         """Raise an error if the new and live spatial reference systems don't match.
 
         Raises:
@@ -616,7 +616,7 @@ class FieldChecker:
             ValueError: If the new and live SRS values don't match.
         """
 
-        #: If we project a spatial data frame, sometimes the .sr.wkid property/dictionary becomes {0:number} instead
+        #: If we modify a spatial data frame, sometimes the .sr.wkid property/dictionary becomes {0:number} instead
         #: of {'wkid': number}
         try:
             new_srs = self.new_dataframe.spatial.sr.wkid
@@ -624,12 +624,13 @@ class FieldChecker:
             new_srs = self.new_dataframe.spatial.sr[0]
 
         try:
-            live_srs = int(self.live_data_properties.extent.spatialReference.latestWkid)
             new_srs = int(new_srs)
         except ValueError as error:
-            raise ValueError('Could not cast either new or existing SRS to int') from error
-        if live_srs != new_srs:
-            raise ValueError(f'New dataframe SRS {new_srs} does not match live SRS {live_srs}')
+            raise ValueError('Could not cast new SRS to int') from error
+        if new_srs != 4326:
+            raise ValueError(
+                f'New dataframe SRS {new_srs} is not wkid 4326. Reproject with appropriate transformation.'
+            )
 
 
 def get_null_geometries(feature_layer_properties):

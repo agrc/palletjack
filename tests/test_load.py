@@ -105,7 +105,7 @@ class TestUpdateLayer:
         field_checker_mock.return_value.check_field_length.assert_called_once_with(['foo', 'bar', 'OBJECTID'])
         field_checker_mock.return_value.check_fields_present.assert_called_once_with(['foo', 'bar', 'OBJECTID'],
                                                                                      add_oid=True)
-        field_checker_mock.return_value.check_srs_match.assert_called_once()
+        field_checker_mock.return_value.check_srs_wgs84.assert_called_once()
 
     def test_update_hosted_feature_layer_no_geometry_calls_null_geometry_generator(self, mocker):
         new_dataframe = pd.DataFrame({
@@ -215,7 +215,7 @@ class TestAddToLayer:
         field_checker_mock.return_value.check_for_non_null_fields.assert_called_once_with(['foo', 'bar'])
         field_checker_mock.return_value.check_field_length.assert_called_once_with(['foo', 'bar'])
         field_checker_mock.return_value.check_fields_present.assert_called_once_with(['foo', 'bar'], add_oid=False)
-        field_checker_mock.return_value.check_srs_match.assert_called_once()
+        field_checker_mock.return_value.check_srs_wgs84.assert_called_once()
 
 
 class TestDeleteFromLayer:
@@ -407,7 +407,7 @@ class TestTruncateAndLoadLayer:
         field_checker_mock.return_value.check_for_non_null_fields.assert_called_once_with(['Foo', 'Bar'])
         field_checker_mock.return_value.check_field_length.assert_called_once_with(['Foo', 'Bar'])
         field_checker_mock.return_value.check_fields_present.assert_called_once_with(['Foo', 'Bar'], add_oid=False)
-        field_checker_mock.return_value.check_srs_match.assert_called_once()
+        field_checker_mock.return_value.check_srs_wgs84.assert_called_once()
         assert uploaded_features == 42
 
     def test_truncate_and_load_raises_on_empty_column(self, mocker, caplog):
