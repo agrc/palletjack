@@ -34,26 +34,26 @@ setup(
     keywords=['gis'],
     install_requires=[
         'pysftp==0.2.9',
-        'arcgis',#==2.0.*',
+        'arcgis==2.0.*',
         'pygsheets==2.0.*',
         'geopandas==0.12.*',
-        'SQLAlchemy',#==1.4.*',
+        'SQLAlchemy==1.4.*',
         'pg8000==1.29.*',
         'psycopg2-binary==2.9.*',
-        'numpy',#==1.23.*',  #: Pinned to fix "module 'numpy' has no attribute 'str'" error
+        'numpy==1.24.*',  #: May need to pin to 1.23.* to fix "module 'numpy' has no attribute 'str'" error
     ],
     extras_require={
         'tests': [
             'pylint-quotes==0.2.*',
-            'pylint==2.14.*',
-            'pytest-cov==3.0.*',
+            'pylint==2.15.*',
+            'pytest-cov==4.0.*',
             'pytest-instafail==0.4.*',
-            'pytest-isort==3.0.*',
-            'pytest-pylint==0.18.*',
+            'pytest-isort==3.1.*',
+            'pytest-pylint==0.19.*',
             'pytest-watch==4.2.*',
             'pytest==7.*',
             'yapf==0.32.*',
-            'pytest-mock==3.8.*',
+            'pytest-mock==3.10.*',
         ]
     },
     setup_requires=[
