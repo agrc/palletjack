@@ -1376,49 +1376,52 @@ class TestEmptyFieldWarnings:
 
 class TestSRSCheck:
 
-    def test_check_srs_match_good_match(self, mocker):
+    def test_check_srs_wgs84_good_match(self, mocker):
         checker_mock = mocker.Mock()
-        checker_mock.live_data_properties.extent.spatialReference.latestWkid = 42
-        checker_mock.new_dataframe.spatial.sr.wkid = 42
+        # checker_mock.live_data_properties.extent.spatialReference.latestWkid = 42
+        checker_mock.new_dataframe.spatial.sr.wkid = 4326
 
         #: Should not raise
-        palletjack.utils.FieldChecker.check_srs_match(checker_mock)
+        palletjack.utils.FieldChecker.check_srs_wgs84(checker_mock)
 
-    def test_check_srs_match_raises_on_mismatch(self, mocker):
+    def test_check_srs_wgs84_raises_on_mismatch(self, mocker):
         checker_mock = mocker.Mock()
-        checker_mock.live_data_properties.extent.spatialReference.latestWkid = 42
-        checker_mock.new_dataframe.spatial.sr.wkid = 8
+        # checker_mock.live_data_properties.extent.spatialReference.latestWkid = 42
+        checker_mock.new_dataframe.spatial.sr.wkid = 42
 
-        with pytest.raises(ValueError, match=re.escape('New dataframe SRS 8 does not match live SRS 42')):
-            palletjack.utils.FieldChecker.check_srs_match(checker_mock)
+        with pytest.raises(
+            ValueError,
+            match=re.escape('New dataframe SRS 42 is not wkid 4326. Reproject with appropriate transformation')
+        ):
+            palletjack.utils.FieldChecker.check_srs_wgs84(checker_mock)
 
-    def test_check_srs_match_handles_string_and_int(self, mocker):
+    def test_check_srs_wgs84_handles_string_and_int(self, mocker):
         checker_mock = mocker.Mock()
-        checker_mock.live_data_properties.extent.spatialReference.latestWkid = 42
-        checker_mock.new_dataframe.spatial.sr.wkid = '42'
+        # checker_mock.live_data_properties.extent.spatialReference.latestWkid = 42
+        checker_mock.new_dataframe.spatial.sr.wkid = '4326'
 
         #: should not raise
-        palletjack.utils.FieldChecker.check_srs_match(checker_mock)
+        palletjack.utils.FieldChecker.check_srs_wgs84(checker_mock)
 
-    def test_check_srs_match_reports_uncastable_string(self, mocker):
+    def test_check_srs_wgs84_reports_uncastable_string(self, mocker):
         checker_mock = mocker.Mock()
-        checker_mock.live_data_properties.extent.spatialReference.latestWkid = 42
+        # checker_mock.live_data_properties.extent.spatialReference.latestWkid = 42
         checker_mock.new_dataframe.spatial.sr.wkid = 'forty two'
 
-        with pytest.raises(ValueError, match=re.escape('Could not cast either new or existing SRS to int')) as exc_info:
-            palletjack.utils.FieldChecker.check_srs_match(checker_mock)
+        with pytest.raises(ValueError, match=re.escape('Could not cast new SRS to int')) as exc_info:
+            palletjack.utils.FieldChecker.check_srs_wgs84(checker_mock)
 
         assert hasattr(exc_info.value, '__cause__')
         assert isinstance(exc_info.value.__cause__, ValueError)
         assert 'invalid literal for int() with base 10:' in str(exc_info.value.__cause__)
 
-    def test_check_srs_match_handles_srs_with_key_of_0(self, mocker):
+    def test_check_srs_wgs84_handles_srs_with_key_of_0(self, mocker):
         checker_mock = mocker.Mock()
-        checker_mock.live_data_properties.extent.spatialReference.latestWkid = 42
-        checker_mock.new_dataframe.spatial.sr = {0: 42}
+        # checker_mock.live_data_properties.extent.spatialReference.latestWkid = 42
+        checker_mock.new_dataframe.spatial.sr = {0: 4326}
 
         #: Should not raise
-        palletjack.utils.FieldChecker.check_srs_match(checker_mock)
+        palletjack.utils.FieldChecker.check_srs_wgs84(checker_mock)
 
 
 class TestNullGeometryGenerators:
