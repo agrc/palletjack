@@ -1558,7 +1558,7 @@ class TestSaveDataframeToJSON:
 
         out_path = palletjack.utils.save_feature_layer_to_json(mock_fl, 'foo')
 
-        test_json_string = '{"features": [{"geometry": {"spatialReference": {"wkid": 4326}, "x": 11, "y": 14}, "attributes": {"foo": 1, "x": 11, "y": 14, "OBJECTID": 1}}], "objectIdFieldName": "OBJECTID", "displayFieldName": "OBJECTID", "spatialReference": {"wkid": 4326}, "geometryType": "esriGeometryPoint", "fields": [{"name": "OBJECTID", "type": "esriFieldTypeOID", "alias": "OBJECTID"}, {"name": "foo", "type": "esriFieldTypeDouble", "alias": "foo"}, {"name": "x", "type": "esriFieldTypeDouble", "alias": "x"}, {"name": "y", "type": "esriFieldTypeDouble", "alias": "y"}]}'
+        test_json_string = '{"features": [{"geometry": {"spatialReference": {"wkid": 4326}, "x": 11, "y": 14}, "attributes": {"foo": 1, "x": 11, "y": 14, "OBJECTID": 1}}], "objectIdFieldName": "OBJECTID", "displayFieldName": "OBJECTID", "spatialReference": {"wkid": 4326}, "geometryType": "esriGeometryPoint", "fields": [{"name": "foo", "type": "esriFieldTypeInteger", "alias": "foo"}, {"name": "x", "type": "esriFieldTypeInteger", "alias": "x"}, {"name": "y", "type": "esriFieldTypeInteger", "alias": "y"}]}'
 
         open_mock.write.assert_called_with(test_json_string)
         assert out_path == Path('foo', f'flayer_{datetime.date.today()}.json')
