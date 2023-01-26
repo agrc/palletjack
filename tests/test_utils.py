@@ -898,6 +898,19 @@ class TestCheckFieldsMatch:
             checker = palletjack.utils.FieldChecker(properties_mock, new_df)
             checker.check_live_and_new_field_types_match(['ints'])
 
+    def test_check_live_and_new_field_types_match_handles_nullable_int_with_nans(self, mocker):
+        new_df = pd.DataFrame({
+            'ints': [1, 2, None],
+        }).convert_dtypes()
+
+        properties_mock = mocker.Mock()
+        properties_mock.fields = [{'name': 'ints', 'type': 'esriFieldTypeInteger'}]
+
+        checker = palletjack.utils.FieldChecker(properties_mock, new_df)
+
+        #: should not raise
+        checker.check_live_and_new_field_types_match(['ints'])
+
     def test_check_live_and_new_field_types_match_raises_on_multiple_incompatible(self, mocker):
         new_df = pd.DataFrame({
             'ints': [1, 2, 3],
@@ -1062,6 +1075,11 @@ class TestCheckFieldsMatch:
 
         assert 'New dataframe does not have a SHAPE column' in str(exc_info.value)
 
+
+class TestNullableIntWarning:
+
+    def test_check_nullable_ints_shapely(self, mocker):
+        pass
 
 class TestFieldNullChecker:
 
