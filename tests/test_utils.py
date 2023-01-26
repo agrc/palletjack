@@ -1078,8 +1078,60 @@ class TestCheckFieldsMatch:
 
 class TestNullableIntWarning:
 
-    def test_check_nullable_ints_shapely(self, mocker):
-        pass
+    def test_check_nullable_ints_shapely_warns_with_na(self, mocker):
+        new_df = pd.DataFrame({
+            'normal': [1, 2, 3],
+            'nulls': [4, 5, None],
+            'floats': [6.1, 7.1, 8.1],
+        }).convert_dtypes()
+
+        mocker.patch.object(new_df.spatial, '_HASARCPY', new=False)
+
+        checker_mock = mocker.Mock()
+        checker_mock.new_dataframe = new_df
+
+        with pytest.warns(
+            UserWarning,
+            match=re.escape(
+                'The following columns have null values that will be replaced by 0 due to shapely conventions: nulls'
+            )
+        ):
+            palletjack.utils.FieldChecker.check_nullable_ints_shapely(checker_mock)
+
+    def test_check_nullable_ints_shapely_doesnt_warn_on_float_nan(self, mocker):
+        new_df = pd.DataFrame({
+            'normal': [1, 2, 3],
+            'nulls': [4, 5, 6],
+            'floats': [None, 7.1, 8.1],
+        }).convert_dtypes()
+
+        mocker.patch.object(new_df.spatial, '_HASARCPY', new=False)
+
+        checker_mock = mocker.Mock()
+        checker_mock.new_dataframe = new_df
+        warning_mock = mocker.patch('palletjack.utils.warnings')
+
+        palletjack.utils.FieldChecker.check_nullable_ints_shapely(checker_mock)
+
+        assert warning_mock.warns.call_count == 0
+
+    def test_check_nullable_ints_shapely_doesnt_warn_when_using_arcpy(self, mocker):
+        new_df = pd.DataFrame({
+            'normal': [1, 2, 3],
+            'nulls': [4, 5, None],
+            'floats': [6.1, 7.1, 8.1],
+        }).convert_dtypes()
+
+        mocker.patch.object(new_df.spatial, '_HASARCPY', new=True)
+
+        checker_mock = mocker.Mock()
+        checker_mock.new_dataframe = new_df
+        warning_mock = mocker.patch('palletjack.utils.warnings')
+
+        palletjack.utils.FieldChecker.check_nullable_ints_shapely(checker_mock)
+
+        assert warning_mock.warns.call_count == 0
+
 
 class TestFieldNullChecker:
 
