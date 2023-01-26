@@ -789,7 +789,7 @@ class TestCheckFieldsMatch:
             ],
             'dates': ['2015-09-02T23:08:12+00:00', '2015-09-02T23:08:13+00:00', '2015-09-02T23:08:14+00:00']
         })
-        new_df['datetimes'] = pd.to_datetime(new_df['dates'])
+        new_df['datetimes'] = pd.to_datetime(new_df['dates']).dt.tz_localize(None)
         properties_mock = mocker.Mock()
         properties_mock.fields = [
             {
@@ -841,7 +841,7 @@ class TestCheckFieldsMatch:
             'dates': ['2015-09-02T23:08:12+00:00', '2015-09-02T23:08:13+00:00', '2015-09-02T23:08:14+00:00']
         }).convert_dtypes()
 
-        new_df['datetimes'] = pd.to_datetime(new_df['dates'])
+        new_df['datetimes'] = pd.to_datetime(new_df['dates']).dt.tz_localize(None)
 
         properties_mock = mocker.Mock()
         properties_mock.fields = [
@@ -949,6 +949,28 @@ class TestCheckFieldsMatch:
         ):
             checker = palletjack.utils.FieldChecker(properties_mock, new_df)
             checker.check_live_and_new_field_types_match(['a', 'b'])
+
+    def test_check_live_and_new_field_types_match_raises_on_timezone_aware_datetime(self, mocker):
+        new_df = pd.DataFrame({
+            'a': ['2020-04-29T01:09:29+00:00'],
+        })
+        new_df['a'] = pd.to_datetime(new_df['a'])
+        properties_mock = mocker.Mock()
+        properties_mock.fields = [
+            {
+                'name': 'a',
+                'type': 'esriFieldTypeDate'
+            },
+        ]
+
+        with pytest.raises(
+            palletjack.TimezoneAwareDatetimeError,
+            match=re.escape(
+                'Field type incompatibilities (field, live type, new type): [(\'a\', \'esriFieldTypeDate\', \'datetime64[ns, UTC]\')]\nCheck the following datetime fields for timezone aware dtypes values and convert to timezone-naive dtypes using pd.to_datetime(df[\'field\']).dt.tz_localize(None): a'
+            )
+        ):
+            checker = palletjack.utils.FieldChecker(properties_mock, new_df)
+            checker.check_live_and_new_field_types_match(['a'])
 
     def test_check_live_and_new_field_types_match_raises_on_notimplemented_esri_type(self, mocker):
         new_df = pd.DataFrame({
@@ -1329,7 +1351,6 @@ class TestFieldsPresent:
 
         #: Should not raise
         checker.check_fields_present(['foo', 'bar'], True)
-
 
 
 class TestSRSCheck:

@@ -13,7 +13,7 @@ import pandas as pd
 import pygsheets
 import requests
 
-from palletjack.errors import IntFieldAsFloatError
+from palletjack.errors import IntFieldAsFloatError, TimezoneAwareDatetimeError
 
 module_logger = logging.getLogger(__name__)
 
@@ -412,7 +412,7 @@ class FieldChecker:
             'esriFieldTypeDouble': ['float', 'float32', 'float64'],
             'esriFieldTypeSingle': ['float32'],
             'esriFieldTypeString': ['str', 'object', 'string'],
-            'esriFieldTypeDate': ['str', 'object', 'string', 'datetime64[ns, utc]'],
+            'esriFieldTypeDate': ['str', 'object', 'string', 'datetime64[ns]'],
             'esriFieldTypeGeometry': ['geometry'],
             'esriFieldTypeOID': ['int'] + short_ints + long_ints,
             #  'esriFieldTypeBlob': [],
@@ -431,6 +431,7 @@ class FieldChecker:
 
         invalid_fields = []
         int_fields_as_floats = []
+        datetime_fields_with_timezone = []
         for field in fields:
             #: check against the str.lower to catch normal dtypes (int64) and the new, pd.NA-aware dtypes (Int64)
             new_dtype = str(self.new_dataframe[field].dtype).lower()
@@ -438,10 +439,12 @@ class FieldChecker:
 
             try:
                 if new_dtype not in esri_to_pandas_types_mapping[live_type]:
-                    invalid_fields.append((field, live_type, new_dtype))
+                    invalid_fields.append((field, live_type, str(self.new_dataframe[field].dtype)))
                 if new_dtype in ['float', 'float32', 'float64'
                                 ] and live_type in ['esriFieldTypeInteger', 'esriFieldTypeSmallInteger']:
                     int_fields_as_floats.append(field)
+                if 'datetime64' in new_dtype and new_dtype != 'datetime64[ns]' and live_type == 'esriFieldTypeDate':
+                    datetime_fields_with_timezone.append(field)
             except KeyError:
                 # pylint: disable-next=raise-missing-from
                 raise NotImplementedError(f'Live field "{field}" type "{live_type}" not yet mapped to a pandas dtype')
@@ -452,6 +455,13 @@ class FieldChecker:
                     f'Field type incompatibilities (field, live type, new type): {invalid_fields}\n' \
                     'Check the following int fields for null/np.nan values and convert to panda\'s nullable int '\
                     f'dtype: {", ".join(int_fields_as_floats)}'
+                )
+            if datetime_fields_with_timezone:
+                raise TimezoneAwareDatetimeError(
+                    f'Field type incompatibilities (field, live type, new type): {invalid_fields}\n' \
+                    'Check the following datetime fields for timezone aware dtypes values and convert to '\
+                    'timezone-naive dtypes using pd.to_datetime(df[\'field\']).dt.tz_localize(None): '\
+                    f'{", ".join(datetime_fields_with_timezone)}'
                 )
             raise ValueError(f'Field type incompatibilities (field, live type, new type): {invalid_fields}')
 
