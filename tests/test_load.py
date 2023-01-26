@@ -410,7 +410,7 @@ class TestTruncateAndLoadLayer:
         field_checker_mock.return_value.check_srs_wgs84.assert_called_once()
         assert uploaded_features == 42
 
-    def test_truncate_and_load_raises_on_empty_column(self, mocker, caplog):
+    def test_truncate_and_load_doesnt_raise_on_empty_column(self, mocker, caplog):
 
         caplog.set_level(logging.DEBUG)
 
@@ -463,13 +463,8 @@ class TestTruncateAndLoadLayer:
 
         updater_mock._upsert_data.return_value = {'recordCount': 42}
 
-        with pytest.raises(
-            ValueError,
-            match=re.escape(
-                'The following float/double column(s) are completely empty: [\'floats\'] (suggestion: insert at least one bogus value)'
-            )
-        ):
-            uploaded_features = load.FeatureServiceUpdater._truncate_and_load_data(updater_mock)
+        #: Should not raise
+        uploaded_features = load.FeatureServiceUpdater._truncate_and_load_data(updater_mock)
 
 
 class TestAttachments:
