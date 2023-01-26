@@ -616,6 +616,24 @@ class FieldChecker:
                 f'New dataframe SRS {new_srs} is not wkid 4326. Reproject with appropriate transformation.'
             )
 
+    def check_nullable_ints_shapely(self):
+
+        #: Only occurs if client is using shapely instead of arcpy
+        if self.new_dataframe.spatial._HASARCPY:  # pylint:disable=protected-access
+            return
+
+        nullable_ints = {'Int8', 'Int16', 'Int32', 'Int64', 'UInt8', 'UInt16', 'UInt32', 'UInt64'}
+        nullable_int_columns = [
+            column for column in self.new_dataframe.columns if str(self.new_dataframe[column].dtype) in nullable_ints
+        ]
+        columns_with_nulls = [column for column in nullable_int_columns if self.new_dataframe[column].isnull().any()]
+
+        if columns_with_nulls:
+            warnings.warn(
+                'The following columns have null values that will be replaced by 0 due to shapely conventions: '\
+                    f'{", ".join(columns_with_nulls)}'
+            )
+
 
 def get_null_geometries(feature_layer_properties):
     """Generate placeholder geometries near 0, 0 with type based on provided feature layer properties dictionary.
