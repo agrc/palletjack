@@ -1331,48 +1331,6 @@ class TestFieldsPresent:
         checker.check_fields_present(['foo', 'bar'], True)
 
 
-class TestEmptyFieldWarnings:
-
-    def test_check_for_empty_float_fields_doesnt_raise_on_no_empty_fields(self, mocker):
-        properties_mock = mocker.Mock()
-        properties_mock.fields = ['int, float']
-        new_df = pd.DataFrame({'int': [1, 2, 3], 'float': [1.1, 1.2, 1.3]})
-
-        checker = palletjack.utils.FieldChecker(properties_mock, new_df)
-
-        #: Should not raise
-        checker.check_for_empty_float_fields(['int', 'float'])
-
-    def test_check_for_empty_float_fields_raises_on_single_field(self, mocker):
-        properties_mock = mocker.Mock()
-        properties_mock.fields = ['int, float']
-        new_df = pd.DataFrame({'int': [1, 2, 3], 'float': [np.nan] * 3})
-
-        checker = palletjack.utils.FieldChecker(properties_mock, new_df)
-
-        with pytest.raises(
-            ValueError,
-            match=re.escape(
-                'The following float/double column(s) are completely empty: [\'float\'] (suggestion: insert at least one bogus value)'
-            )
-        ):
-            checker.check_for_empty_float_fields(['int', 'float'])
-
-    def test_check_for_empty_float_fields_raises_on_multiple_fields(self, mocker):
-        properties_mock = mocker.Mock()
-        properties_mock.fields = ['foo, float']
-        new_df = pd.DataFrame({'foo': [np.nan] * 3, 'float': [np.nan] * 3})
-
-        checker = palletjack.utils.FieldChecker(properties_mock, new_df)
-
-        with pytest.raises(
-            ValueError,
-            match=re.escape(
-                'The following float/double column(s) are completely empty: [\'foo\', \'float\'] (suggestion: insert at least one bogus value)'
-            )
-        ):
-            checker.check_for_empty_float_fields(['foo', 'float'])
-
 
 class TestSRSCheck:
 

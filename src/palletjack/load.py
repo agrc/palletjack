@@ -329,8 +329,6 @@ class FeatureServiceUpdater:
         field_checker.check_field_length(self.fields)
         field_checker.check_fields_present(self.fields, add_oid=False)
         field_checker.check_srs_wgs84()
-        #: FIXME: remove once Esri fixes https://github.com/Esri/arcgis-python-api/issues/1281
-        field_checker.check_for_empty_float_fields(self.fields)
 
         #: Upsert
         append_count = self._upsert_data(
@@ -413,8 +411,6 @@ class FeatureServiceUpdater:
         field_checker.check_field_length(self.fields)
         field_checker.check_fields_present(self.fields, add_oid=True)
         field_checker.check_srs_wgs84()
-        #: FIXME: remove once Esri fixes https://github.com/Esri/arcgis-python-api/issues/1281
-        field_checker.check_for_empty_float_fields(self.fields)
 
         #: Upsert
         append_count = self._upsert_data(
@@ -524,8 +520,6 @@ class FeatureServiceUpdater:
         field_checker.check_field_length(self.fields)
         field_checker.check_fields_present(self.fields, add_oid=False)
         field_checker.check_srs_wgs84()
-        #: FIXME: remove once Esri fixes https://github.com/Esri/arcgis-python-api/issues/1281
-        field_checker.check_for_empty_float_fields(self.fields)
 
         self._class_logger.info('Truncating existing features...')
         self._truncate_existing_data()
