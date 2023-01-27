@@ -322,13 +322,8 @@ class FeatureServiceUpdater:
         )
         self._class_logger.debug('Using fields %s', self.fields)
 
-        #: Field checks to prevent Error: 400 errors from AGOL
-        field_checker = utils.FieldChecker(self.feature_layer.properties, self.new_dataframe)
-        field_checker.check_live_and_new_field_types_match(self.fields)
-        field_checker.check_for_non_null_fields(self.fields)
-        field_checker.check_field_length(self.fields)
-        field_checker.check_fields_present(self.fields, add_oid=False)
-        field_checker.check_srs_wgs84()
+        #: Field checks to prevent various AGOL errors
+        utils.FieldChecker.check_fields(self.feature_layer.properties, self.new_dataframe, self.fields, add_oid=False)
 
         #: Upsert
         append_count = self._upsert_data(
@@ -404,13 +399,8 @@ class FeatureServiceUpdater:
             self._class_logger.debug('Attribute-only update; inserting null geometries')
             self.new_dataframe['SHAPE'] = utils.get_null_geometries(self.feature_layer.properties)
 
-        #: Field checks to prevent Error: 400 errors from AGOL
-        field_checker = utils.FieldChecker(self.feature_layer.properties, self.new_dataframe)
-        field_checker.check_live_and_new_field_types_match(self.fields)
-        field_checker.check_for_non_null_fields(self.fields)
-        field_checker.check_field_length(self.fields)
-        field_checker.check_fields_present(self.fields, add_oid=True)
-        field_checker.check_srs_wgs84()
+        #: Field checks to prevent various AGOL errors
+        utils.FieldChecker.check_fields(self.feature_layer.properties, self.new_dataframe, self.fields, add_oid=True)
 
         #: Upsert
         append_count = self._upsert_data(
@@ -513,13 +503,8 @@ class FeatureServiceUpdater:
             self._class_logger.info('Saving existing data to %s', self.failsafe_dir)
             saved_layer_path = utils.save_feature_layer_to_json(self.feature_layer, self.failsafe_dir)
 
-        #: Field checks to prevent Error: 400 errors from AGOL
-        field_checker = utils.FieldChecker(self.feature_layer.properties, self.new_dataframe)
-        field_checker.check_live_and_new_field_types_match(self.fields)
-        field_checker.check_for_non_null_fields(self.fields)
-        field_checker.check_field_length(self.fields)
-        field_checker.check_fields_present(self.fields, add_oid=False)
-        field_checker.check_srs_wgs84()
+        #: Field checks to prevent various AGOL errors
+        utils.FieldChecker.check_fields(self.feature_layer.properties, self.new_dataframe, self.fields, add_oid=False)
 
         self._class_logger.info('Truncating existing features...')
         self._truncate_existing_data()
