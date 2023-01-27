@@ -21,6 +21,7 @@
     "geojsons",
     "geopandas",
     "gsheet",
+    "HASARCPY",
     "instafail",
     "isort",
     "knownhosts",

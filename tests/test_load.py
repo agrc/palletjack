@@ -86,7 +86,7 @@ class TestUpdateLayer:
         })
         updater_mock = mocker.Mock()
         updater_mock.feature_service_itemid = 'foo123'
-        updater_mock.feature_layer = mocker.Mock()
+        updater_mock.feature_layer.properties.fields = {'a': [1], 'b': [2]}
         updater_mock.new_dataframe = new_dataframe
         updater_mock.fields = list(new_dataframe.columns)
         updater_mock.join_column = 'OBJECTID'
@@ -94,18 +94,24 @@ class TestUpdateLayer:
 
         updater_mock._upsert_data.return_value = {'recordCount': 1}
 
-        field_checker_mock = mocker.patch('palletjack.utils.FieldChecker')
+        mocker.patch.multiple(
+            'palletjack.utils.FieldChecker',
+            check_live_and_new_field_types_match=mocker.DEFAULT,
+            check_for_non_null_fields=mocker.DEFAULT,
+            check_field_length=mocker.DEFAULT,
+            check_fields_present=mocker.DEFAULT,
+            check_srs_wgs84=mocker.DEFAULT,
+            check_nullable_ints_shapely=mocker.DEFAULT,
+        )
 
         load.FeatureServiceUpdater._update_hosted_feature_layer(updater_mock, update_geometry=True)
 
-        field_checker_mock.return_value.check_live_and_new_field_types_match.assert_called_once_with([
-            'foo', 'bar', 'OBJECTID'
-        ])
-        field_checker_mock.return_value.check_for_non_null_fields.assert_called_once_with(['foo', 'bar', 'OBJECTID'])
-        field_checker_mock.return_value.check_field_length.assert_called_once_with(['foo', 'bar', 'OBJECTID'])
-        field_checker_mock.return_value.check_fields_present.assert_called_once_with(['foo', 'bar', 'OBJECTID'],
-                                                                                     add_oid=True)
-        field_checker_mock.return_value.check_srs_wgs84.assert_called_once()
+        load.utils.FieldChecker.check_live_and_new_field_types_match.assert_called_once_with(['foo', 'bar', 'OBJECTID'])
+        load.utils.FieldChecker.check_for_non_null_fields.assert_called_once_with(['foo', 'bar', 'OBJECTID'])
+        load.utils.FieldChecker.check_field_length.assert_called_once_with(['foo', 'bar', 'OBJECTID'])
+        load.utils.FieldChecker.check_fields_present.assert_called_once_with(['foo', 'bar', 'OBJECTID'], add_oid=True)
+        load.utils.FieldChecker.check_srs_wgs84.assert_called_once()
+        load.utils.FieldChecker.check_nullable_ints_shapely.assert_called_once()
 
     def test_update_hosted_feature_layer_no_geometry_calls_null_geometry_generator(self, mocker):
         new_dataframe = pd.DataFrame({
@@ -199,23 +205,30 @@ class TestAddToLayer:
         })
         updater_mock = mocker.Mock()
         updater_mock.feature_service_itemid = 'foo123'
-        updater_mock.feature_layer = mocker.Mock()
+        updater_mock.feature_layer.properties.fields = {'a': [1], 'b': [2]}
         updater_mock.new_dataframe = new_dataframe
         updater_mock.fields = list(new_dataframe.columns)
-        # updater_mock.join_column = 'OBJECTID'
         updater_mock.layer_index = 0
 
         updater_mock._upsert_data.return_value = {'recordCount': 1}
 
-        field_checker_mock = mocker.patch('palletjack.utils.FieldChecker')
-
+        mocker.patch.multiple(
+            'palletjack.utils.FieldChecker',
+            check_live_and_new_field_types_match=mocker.DEFAULT,
+            check_for_non_null_fields=mocker.DEFAULT,
+            check_field_length=mocker.DEFAULT,
+            check_fields_present=mocker.DEFAULT,
+            check_srs_wgs84=mocker.DEFAULT,
+            check_nullable_ints_shapely=mocker.DEFAULT,
+        )
         load.FeatureServiceUpdater._add_new_data_to_hosted_feature_layer(updater_mock)
 
-        field_checker_mock.return_value.check_live_and_new_field_types_match.assert_called_once_with(['foo', 'bar'])
-        field_checker_mock.return_value.check_for_non_null_fields.assert_called_once_with(['foo', 'bar'])
-        field_checker_mock.return_value.check_field_length.assert_called_once_with(['foo', 'bar'])
-        field_checker_mock.return_value.check_fields_present.assert_called_once_with(['foo', 'bar'], add_oid=False)
-        field_checker_mock.return_value.check_srs_wgs84.assert_called_once()
+        load.utils.FieldChecker.check_live_and_new_field_types_match.assert_called_once_with(['foo', 'bar'])
+        load.utils.FieldChecker.check_for_non_null_fields.assert_called_once_with(['foo', 'bar'])
+        load.utils.FieldChecker.check_field_length.assert_called_once_with(['foo', 'bar'])
+        load.utils.FieldChecker.check_fields_present.assert_called_once_with(['foo', 'bar'], add_oid=False)
+        load.utils.FieldChecker.check_srs_wgs84.assert_called_once()
+        load.utils.FieldChecker.check_nullable_ints_shapely.assert_called_once()
 
 
 class TestDeleteFromLayer:
@@ -392,22 +405,33 @@ class TestTruncateAndLoadLayer:
         updater_mock = mocker.Mock()
         updater_mock._class_logger = logging.getLogger('mock logger')
         updater_mock.feature_service_itemid = 'foo123'
+        updater_mock.feature_layer.properties.fields = {'a': [1], 'b': [2]}
         updater_mock.layer_index = 0
         updater_mock.fields = ['Foo', 'Bar']
         updater_mock.failsafe_dir = ''
 
         mocker.patch('palletjack.utils.sleep')
-        field_checker_mock = mocker.patch('palletjack.utils.FieldChecker')
+        mocker.patch.multiple(
+            'palletjack.utils.FieldChecker',
+            check_live_and_new_field_types_match=mocker.DEFAULT,
+            check_for_non_null_fields=mocker.DEFAULT,
+            check_field_length=mocker.DEFAULT,
+            check_fields_present=mocker.DEFAULT,
+            check_srs_wgs84=mocker.DEFAULT,
+            check_nullable_ints_shapely=mocker.DEFAULT,
+        )
 
         updater_mock._upsert_data.return_value = 42
 
         uploaded_features = load.FeatureServiceUpdater._truncate_and_load_data(updater_mock)
 
-        field_checker_mock.return_value.check_live_and_new_field_types_match.assert_called_once_with(['Foo', 'Bar'])
-        field_checker_mock.return_value.check_for_non_null_fields.assert_called_once_with(['Foo', 'Bar'])
-        field_checker_mock.return_value.check_field_length.assert_called_once_with(['Foo', 'Bar'])
-        field_checker_mock.return_value.check_fields_present.assert_called_once_with(['Foo', 'Bar'], add_oid=False)
-        field_checker_mock.return_value.check_srs_wgs84.assert_called_once()
+        load.utils.FieldChecker.check_live_and_new_field_types_match.assert_called_once_with(['Foo', 'Bar'])
+        load.utils.FieldChecker.check_for_non_null_fields.assert_called_once_with(['Foo', 'Bar'])
+        load.utils.FieldChecker.check_field_length.assert_called_once_with(['Foo', 'Bar'])
+        load.utils.FieldChecker.check_fields_present.assert_called_once_with(['Foo', 'Bar'], add_oid=False)
+        load.utils.FieldChecker.check_srs_wgs84.assert_called_once()
+        load.utils.FieldChecker.check_nullable_ints_shapely.assert_called_once()
+
         assert uploaded_features == 42
 
     def test_truncate_and_load_doesnt_raise_on_empty_column(self, mocker, caplog):

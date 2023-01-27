@@ -380,6 +380,28 @@ class FieldChecker:
     """Check the fields of a new dataframe against live data. Each method will raise errors if its checks fail.
     """
 
+    @classmethod
+    def check_fields(cls, live_data_properties, new_dataframe, fields, add_oid):
+        """Run all the field checks, raising errors and warnings where they fail.
+
+        Check individual method docstrings for details and specific errors raised.
+
+        Args:
+            live_data_properties (dict): FeatureLayer.properties of live data
+            new_dataframe (pd.DataFrame): New data to be checked
+            fields (List[str]): Fields to check
+            add_oid (bool): Add OBJECTID to fields if its not already present (for operations that are dependent on
+                            OBJECTID, such as upsert)
+        """
+
+        field_checker = cls(live_data_properties, new_dataframe)
+        field_checker.check_live_and_new_field_types_match(fields)
+        field_checker.check_for_non_null_fields(fields)
+        field_checker.check_field_length(fields)
+        field_checker.check_fields_present(fields, add_oid=add_oid)
+        field_checker.check_srs_wgs84()
+        field_checker.check_nullable_ints_shapely()
+
     def __init__(self, live_data_properties, new_dataframe):
         self.live_data_properties = live_data_properties
         self.fields_dataframe = pd.DataFrame(live_data_properties.fields)
@@ -617,6 +639,14 @@ class FieldChecker:
             )
 
     def check_nullable_ints_shapely(self):
+        """Raise a warning if null values occur within nullable integer fields of the dataframe
+
+        Apparently due to a convention within shapely, any null values in an integer field are converted to 0.
+
+        Raises:
+            UserWarning: If we're using shapely instead of arcpy, the new dataframe uses nullable int dtypes, and there
+            is one or more pd.NA values within a nullable int column.
+        """
 
         #: Only occurs if client is using shapely instead of arcpy
         if self.new_dataframe.spatial._HASARCPY:  # pylint:disable=protected-access
