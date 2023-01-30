@@ -52,9 +52,6 @@ class APIGeocoder:
         if dataframe.empty:
             warnings.warn('No records to geocode (empty dataframe)', RuntimeWarning)
 
-        # self._class_logger.debug('Renaming columns to conform to ArcGIS limitations, if necessary...')
-        # dataframe.rename(columns=utils.rename_columns_for_agol(dataframe.columns), inplace=True)
-
         dataframe_length = len(dataframe.index)
         reporting_interval = utils.calc_modulus_for_reporting_interval(dataframe_length)
         self._class_logger.info('Geocoding %s rows...', dataframe_length)
