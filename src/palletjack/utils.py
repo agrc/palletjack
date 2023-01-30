@@ -1,4 +1,5 @@
 import datetime
+import importlib
 import logging
 import random
 import re
@@ -649,7 +650,7 @@ class FieldChecker:
         """
 
         #: Only occurs if client is using shapely instead of arcpy
-        if self.new_dataframe.spatial._HASARCPY:  # pylint:disable=protected-access
+        if importlib.util.find_spec('arcpy'):
             return
 
         nullable_ints = {'Int8', 'Int16', 'Int32', 'Int64', 'UInt8', 'UInt16', 'UInt32', 'UInt64'}

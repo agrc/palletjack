@@ -1085,7 +1085,7 @@ class TestNullableIntWarning:
             'floats': [6.1, 7.1, 8.1],
         }).convert_dtypes()
 
-        mocker.patch.object(new_df.spatial, '_HASARCPY', new=False)
+        mocker.patch('palletjack.utils.importlib.util.find_spec', return_value=None)
 
         checker_mock = mocker.Mock()
         checker_mock.new_dataframe = new_df
@@ -1105,7 +1105,7 @@ class TestNullableIntWarning:
             'floats': [None, 7.1, 8.1],
         }).convert_dtypes()
 
-        mocker.patch.object(new_df.spatial, '_HASARCPY', new=False)
+        mocker.patch('palletjack.utils.importlib.util.find_spec', return_value=None)
 
         checker_mock = mocker.Mock()
         checker_mock.new_dataframe = new_df
@@ -1122,7 +1122,7 @@ class TestNullableIntWarning:
             'floats': [6.1, 7.1, 8.1],
         }).convert_dtypes()
 
-        mocker.patch.object(new_df.spatial, '_HASARCPY', new=True)
+        mocker.patch('palletjack.utils.importlib.util.find_spec', return_value='__spec__')
 
         checker_mock = mocker.Mock()
         checker_mock.new_dataframe = new_df
@@ -1427,7 +1427,6 @@ class TestSRSCheck:
 
     def test_check_srs_wgs84_good_match(self, mocker):
         checker_mock = mocker.Mock()
-        # checker_mock.live_data_properties.extent.spatialReference.latestWkid = 42
         checker_mock.new_dataframe.spatial.sr.wkid = 4326
 
         #: Should not raise
@@ -1435,7 +1434,6 @@ class TestSRSCheck:
 
     def test_check_srs_wgs84_raises_on_mismatch(self, mocker):
         checker_mock = mocker.Mock()
-        # checker_mock.live_data_properties.extent.spatialReference.latestWkid = 42
         checker_mock.new_dataframe.spatial.sr.wkid = 42
 
         with pytest.raises(
@@ -1446,7 +1444,6 @@ class TestSRSCheck:
 
     def test_check_srs_wgs84_handles_string_and_int(self, mocker):
         checker_mock = mocker.Mock()
-        # checker_mock.live_data_properties.extent.spatialReference.latestWkid = 42
         checker_mock.new_dataframe.spatial.sr.wkid = '4326'
 
         #: should not raise
@@ -1454,7 +1451,6 @@ class TestSRSCheck:
 
     def test_check_srs_wgs84_reports_uncastable_string(self, mocker):
         checker_mock = mocker.Mock()
-        # checker_mock.live_data_properties.extent.spatialReference.latestWkid = 42
         checker_mock.new_dataframe.spatial.sr.wkid = 'forty two'
 
         with pytest.raises(ValueError, match=re.escape('Could not cast new SRS to int')) as exc_info:
@@ -1466,7 +1462,6 @@ class TestSRSCheck:
 
     def test_check_srs_wgs84_handles_srs_with_key_of_0(self, mocker):
         checker_mock = mocker.Mock()
-        # checker_mock.live_data_properties.extent.spatialReference.latestWkid = 42
         checker_mock.new_dataframe.spatial.sr = {0: 4326}
 
         #: Should not raise
