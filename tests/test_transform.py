@@ -410,6 +410,61 @@ class TestNullableIntFixing:
             retyped_df = palletjack.transform.DataCleaning.switch_to_nullable_int(df, ['a', 'b'])
 
 
+class TestDatetimeSwitching:
+
+    def test_switch_to_datetime_handles_multiple_fields(self):
+        df = pd.DataFrame({
+            'a': ['2020-04-29T01:09:29+00:00', '2020-04-29T01:09:29+00:00'],
+            'b': ['2015-09-02T23:08:12+00:00', '2015-09-02T23:08:12+00:00']
+        })
+
+        retyped_df = palletjack.transform.DataCleaning.switch_to_datetime(df, ['a', 'b'])
+
+        test_df = pd.DataFrame({
+            'a': [pd.Timestamp('2020-04-29 01:09:29')] * 2,
+            'b': [pd.Timestamp('2015-09-02 23:08:12')] * 2
+        })
+
+        tm.assert_frame_equal(retyped_df, test_df)
+        assert retyped_df['a'].dtype == np.dtype('datetime64[ns]')
+        assert retyped_df['b'].dtype == np.dtype('datetime64[ns]')
+
+    def test_switch_to_datetime_handles_both_empty_string_and_None(self):
+        df = pd.DataFrame({
+            'a': ['', '2020-04-29T01:09:29+00:00'],
+            'b': [None, '2015-09-02T23:08:12+00:00'],
+        })
+
+        retyped_df = palletjack.transform.DataCleaning.switch_to_datetime(df, ['a', 'b'])
+
+        test_df = pd.DataFrame({
+            'a': [pd.Timestamp(None), pd.Timestamp('2020-04-29 01:09:29')],
+            'b': [pd.Timestamp(None), pd.Timestamp('2015-09-02 23:08:12')]
+        })
+
+        tm.assert_frame_equal(retyped_df, test_df)
+        assert retyped_df['a'].dtype == np.dtype('datetime64[ns]')
+        assert retyped_df['b'].dtype == np.dtype('datetime64[ns]')
+
+    def test_switch_to_datetime_handles_empty_column(self):
+        df = pd.DataFrame({
+            'a': [None, None],
+            'b': ['2015-09-02T23:08:12+00:00', '2015-09-02T23:08:12+00:00'],
+        })
+
+        retyped_df = palletjack.transform.DataCleaning.switch_to_datetime(df, ['a', 'b'])
+
+        test_df = pd.DataFrame({
+            'a': [pd.Timestamp(None), pd.Timestamp(None)],
+            'b': [pd.Timestamp('2015-09-02 23:08:12'),
+                  pd.Timestamp('2015-09-02 23:08:12')]
+        })
+
+        tm.assert_frame_equal(retyped_df, test_df)
+        assert retyped_df['a'].dtype == np.dtype('datetime64[ns]')
+        assert retyped_df['b'].dtype == np.dtype('datetime64[ns]')
+
+
 class TestDataFrameColumnRenaming:
 
     def test_rename_dataframe_columns_for_agol(self, mocker):
