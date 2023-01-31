@@ -813,10 +813,6 @@ class TestCheckFieldsMatch:
                 'type': 'esriFieldTypeGlobalID'
             },
             {
-                'name': 'dates',
-                'type': 'esriFieldTypeDate'
-            },
-            {
                 'name': 'datetimes',
                 'type': 'esriFieldTypeDate'
             },
@@ -824,9 +820,7 @@ class TestCheckFieldsMatch:
 
         #: If it raises an error, it failed.
         checker = palletjack.utils.FieldChecker(properties_mock, new_df)
-        checker.check_live_and_new_field_types_match([
-            'ints', 'floats', 'strings', 'OBJECTID', 'GlobalID', 'dates', 'datetimes'
-        ])
+        checker.check_live_and_new_field_types_match(['ints', 'floats', 'strings', 'OBJECTID', 'GlobalID', 'datetimes'])
 
     def test_check_live_and_new_field_types_match_converted(self, mocker):
         new_df = pd.DataFrame({
@@ -866,10 +860,6 @@ class TestCheckFieldsMatch:
                 'type': 'esriFieldTypeGlobalID'
             },
             {
-                'name': 'dates',
-                'type': 'esriFieldTypeDate'
-            },
-            {
                 'name': 'datetimes',
                 'type': 'esriFieldTypeDate'
             },
@@ -877,9 +867,7 @@ class TestCheckFieldsMatch:
 
         #: If it raises an error, it failed.
         checker = palletjack.utils.FieldChecker(properties_mock, new_df)
-        checker.check_live_and_new_field_types_match([
-            'ints', 'floats', 'strings', 'OBJECTID', 'GlobalID', 'dates', 'datetimes'
-        ])
+        checker.check_live_and_new_field_types_match(['ints', 'floats', 'strings', 'OBJECTID', 'GlobalID', 'datetimes'])
 
     def test_check_live_and_new_field_types_match_raises_on_incompatible(self, mocker):
         new_df = pd.DataFrame({

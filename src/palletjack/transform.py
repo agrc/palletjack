@@ -131,7 +131,7 @@ class DataCleaning:
         """Convert specified fields to panda's nullable Int64 type to preserve int to EsriFieldTypeInteger mapping
 
         Args:
-            dataframe (pd.DataFrame): Input dataframe with colums to be converted
+            dataframe (pd.DataFrame): Input dataframe with columns to be converted
             fields_that_should_be_ints (list[str]): List of column names to be converted
 
         Raises:
@@ -149,6 +149,24 @@ class DataCleaning:
                 'Cannot convert one or more fields to nullable ints. Check for non-int/non-np.nan values.'
             ) from error
         return retyped
+
+    @staticmethod
+    def switch_to_datetime(dataframe, date_fields, **to_datetime_kwargs):
+        """Convert specified fields to datetime dtypes to ensure proper date formatting for AGOL
+
+        Args:
+            dataframe (pd.DataFrame): The source dataframe
+            date_fields (List[int]): The fields to convert to datetime
+            **to_datetime_kwargs (keyword arguments, optional): Arguments to pass through to pd.to_datetime
+
+        Returns:
+            pd.DataFrame: The source dataframe with converted fields.
+        """
+
+        for field in date_fields:
+            dataframe[field] = pd.to_datetime(dataframe[field], **to_datetime_kwargs).dt.tz_localize(None)
+
+        return dataframe
 
     @staticmethod
     def rename_dataframe_columns_for_agol(dataframe):
