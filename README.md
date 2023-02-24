@@ -60,11 +60,3 @@ Now that you've got the token string, you can build the status query:
 `https://services1.arcgis.com/<unique string>/arcgis/rest/services/<feature layer name>/FeatureServer/<layer id>/append/jobs/<job guid>?f=json&<token from agol>`
 
 Calling this URL in a browser should return a message that will hopefully give you more info as to why it failed.
-### Updating pypi
-
-1. Delete everything in dist/
-1. Make sure you've updated the version number in setup.py
-1. Recreate the wheels:
-   - python setup.py sdist bdist_wheel
-1. Re-upload the new files
-   - twine upload dist/*
