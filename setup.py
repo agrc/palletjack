@@ -8,9 +8,13 @@ from pathlib import Path
 
 from setuptools import find_packages, setup
 
+version = {}
+with open('src/supervisor/version.py', encoding='utf-8') as fp:
+    exec(fp.read(), version)
+
 setup(
     name='ugrc-palletjack',
-    version='3.0.0.beta2',
+    version=version['__version__'],
     description='Updating AGOL feature services with data from SFTP shares.',
     long_description=(Path(__file__).parent / 'README.md').read_text(),
     long_description_content_type='text/markdown',

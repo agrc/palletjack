@@ -1,0 +1,38 @@
+name: Release Events
+on:
+  release:
+    types: [published]
+
+env:
+  GH_TOKEN: ${{ github.token }}
+
+jobs:
+  publish:
+    name: Build and Publish
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: ⬇️ Set up code
+        uses: actions/checkout@v3
+
+      - name: 🐍 Set up Python
+        uses: actions/setup-python@v3
+        with:
+          python-version: 3.9
+
+      - name: 👊 Bump version
+        run: |
+          TAG=$(gh release view --json tagName --jq ".tagName")
+          sed -i "s/__version__ = .*$/__version__ = '$TAG'/" src/palletjack/version.py
+
+      - name: Install wheel
+        run: pip install wheel
+
+      - name: 📦 Build package
+        run: python setup.py sdist bdist_wheel
+
+      - name: 🚀 Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          user: __token__
+          password: ${{ secrets.PYPI_API_TOKEN }}
