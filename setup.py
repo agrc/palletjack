@@ -9,7 +9,7 @@ from pathlib import Path
 from setuptools import find_packages, setup
 
 version = {}
-with open('src/supervisor/version.py', encoding='utf-8') as fp:
+with open('src/palletjack/version.py', encoding='utf-8') as fp:
     exec(fp.read(), version)
 
 setup(
