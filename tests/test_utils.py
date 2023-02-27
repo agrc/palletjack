@@ -1595,6 +1595,27 @@ class TestSaveDataframeToJSON:
         open_mock.write.assert_called_with(test_json_string)
         assert out_path == Path('foo', f'flayer_{datetime.date.today()}.json')
 
+    def test_save_feature_layer_to_json_doesnt_save_empty_data(self, mocker):
+
+        mock_df = pd.DataFrame()
+
+        mock_fl = mocker.Mock()
+        mock_fl.query.return_value.sdf = mock_df
+        mock_fl.properties.name = 'flayer'
+        spatial_mock = mocker.patch.object(mock_df, 'spatial')
+
+        # open_mock = mocker.MagicMock()
+        # context_manager_mock = mocker.MagicMock()
+        # context_manager_mock.return_value.__enter__.return_value = open_mock
+        write_mock = mocker.patch('palletjack.utils.Path.write_text')
+
+        out_path = palletjack.utils.save_feature_layer_to_json(mock_fl, 'foo')
+
+        write_mock.write.assert_not_called()
+        spatial_mock.to_featureset.assert_not_called()
+
+        assert out_path == 'No data to save in feature layer flayer'
+
 
 class TestDataFrameChunking:
 

@@ -370,6 +370,9 @@ def save_feature_layer_to_json(feature_layer, directory):
     module_logger.debug('Downloading existing data...')
     dataframe = feature_layer.query().sdf
 
+    if dataframe.empty:
+        return f'No data to save in feature layer {feature_layer.properties.name}'
+
     out_path = Path(directory, f'{feature_layer.properties.name}_{datetime.date.today()}.json')
     module_logger.debug('Saving existing data to %s', out_path)
     out_path.write_text(dataframe.spatial.to_featureset().to_json, encoding='utf-8')
@@ -833,6 +836,7 @@ class Chunking:
 
         Args:
             dataframe (pd.DataFrame.spatial): Spatially-enabled dataframe to be converted to geojson
+            feature_layer_fields: All the fields from the feature layer (feature_layer.properties.fields)
             max_bytes (int, optional): Maximum size in bytes any one geojson string can be. Defaults to 100000000 (AGOL
             text uploads are limited to 100 MB?)
 
