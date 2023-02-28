@@ -125,6 +125,8 @@ class FeatureServiceMerging:
 
 
 class DataCleaning:
+    """Static methods for cleaning dataframes prior to uploading to AGOL
+    """
 
     @staticmethod
     def switch_to_nullable_int(dataframe, fields_that_should_be_ints):
@@ -135,7 +137,8 @@ class DataCleaning:
             fields_that_should_be_ints (list[str]): List of column names to be converted
 
         Raises:
-            TypeError: If any of the conversions fail. Often caused by values that aren't int-castable floats (ie. x.0) or np.nans.
+            TypeError: If any of the conversions fail. Often caused by values that aren't int-castable floats (ie. x.0)
+            or np.nans.
 
         Returns:
             pd.DataFrame: Input dataframe with columns converted to nullable Int64
@@ -147,6 +150,33 @@ class DataCleaning:
         except TypeError as error:
             raise TypeError(
                 'Cannot convert one or more fields to nullable ints. Check for non-int/non-np.nan values.'
+            ) from error
+        return retyped
+
+    @staticmethod
+    def switch_to_float(dataframe, fields_that_should_be_floats):
+        """Convert specified fields to float, converting empty strings to None first as required
+
+        Args:
+            dataframe (pd.DataFrame): Input dataframe with columns to be converted
+            fields_that_should_be_floats (list[str]): List of column names to be converted
+
+        Raises:
+            TypeError: If any of the conversions fail. Often caused by values that aren't castable to floats
+            (non-empty, non-numeric strings, etc)
+
+        Returns:
+            pd.DataFrame: Input dataframe with columns converted to float
+        """
+
+        float_dict = {field: 'float' for field in fields_that_should_be_floats}
+        empty_string_dict = {field: {'': None} for field in fields_that_should_be_floats}
+        try:
+            no_empty_strings = dataframe.replace(empty_string_dict)
+            retyped = no_empty_strings.astype(float_dict)
+        except TypeError as error:
+            raise TypeError(
+                'Cannot convert one or more fields to floats. Check for non-float/non-null values.'
             ) from error
         return retyped
 
