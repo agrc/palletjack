@@ -166,8 +166,7 @@ class FeatureServiceUpdater:
                 self.new_dataframe.spatial.set_geometry('SHAPE')
         if fields is not None:
             self.fields = list(set(fields) - {'Shape_Area', 'Shape_Length'})  #: We don't use these auto-gen fields
-        if failsafe_dir:
-            self.failsafe_dir = failsafe_dir
+        self.failsafe_dir = failsafe_dir if failsafe_dir else None
         self.layer_index = layer_index
 
     #: NOTE: Saving all this for potential reuse in transform.py
