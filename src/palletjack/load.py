@@ -138,7 +138,8 @@ class FeatureServiceUpdater:
             gis (arcgis.gis.GIS): GIS item for AGOL org
             feature_service_itemid (str): itemid for service to update
             dataframe (pd.DataFrame.spatial): Spatially enabled dataframe of new data to be loaded
-            failsafe_dir (str, optional): Directory to save original data in case of complete failure. If left blank, existing data won't be saved. Defaults to ''
+            failsafe_dir (str, optional): Directory to save original data in case of complete failure. If left blank,
+            existing data won't be saved. Defaults to ''
             layer_index (int, optional): Index of layer within service to update. Defaults to 0.
 
         Returns:
@@ -414,6 +415,7 @@ class FeatureServiceUpdater:
         return append_count
 
     #: TODO: rename this method? not everything is an upsert
+    #: FIXME: Note: in this docstring
     def _upsert_data(self, target_featurelayer, dataframe, **append_kwargs):
         """UPdate and inSERT data into live dataset with featurelayer.append()
 

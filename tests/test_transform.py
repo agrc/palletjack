@@ -410,6 +410,42 @@ class TestNullableIntFixing:
             retyped_df = palletjack.transform.DataCleaning.switch_to_nullable_int(df, ['a', 'b'])
 
 
+class TestFloatFixing:
+
+    def test_switch_to_float_all_string_values(self):
+        df = pd.DataFrame({
+            'a': ['1', '2', '3'],
+        })
+
+        retyped_df = palletjack.transform.DataCleaning.switch_to_float(df, ['a'])
+
+        test_df = pd.DataFrame([1., 2., 3.], columns=['a'], dtype='float')
+
+        tm.assert_frame_equal(retyped_df, test_df)
+
+    def test_switch_to_float_string_values_with_nan(self):
+        df = pd.DataFrame({
+            'a': ['1', '2', np.nan],
+        })
+
+        retyped_df = palletjack.transform.DataCleaning.switch_to_float(df, ['a'])
+
+        test_df = pd.DataFrame([1., 2., np.nan], columns=['a'], dtype='float')
+
+        tm.assert_frame_equal(retyped_df, test_df)
+
+    def test_switch_to_float_string_values_with_empty_string(self):
+        df = pd.DataFrame({
+            'a': ['1', '2', ''],
+        })
+
+        retyped_df = palletjack.transform.DataCleaning.switch_to_float(df, ['a'])
+
+        test_df = pd.DataFrame([1., 2., np.nan], columns=['a'], dtype='float')
+
+        tm.assert_frame_equal(retyped_df, test_df)
+
+
 class TestDatetimeSwitching:
 
     def test_switch_to_datetime_handles_multiple_fields(self):
