@@ -348,7 +348,7 @@ def authorize_pygsheets(credentials):
 
     try:
         return pygsheets.authorize(service_file=credentials)
-    except FileNotFoundError as err:
+    except (FileNotFoundError, TypeError) as err:
         module_logger.debug(err)
         module_logger.debug('Credentials file not found, trying as environment variable')
     try:
