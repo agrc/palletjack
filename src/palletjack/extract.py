@@ -76,11 +76,11 @@ class GSheetLoader:
 
         Raises:
             ValueError: If all the worksheets in worksheets_dfs don't have the same column index, it raises an error
-            and bombs out.
+                and bombs out.
 
         Returns:
             pd.DataFrame: A single combined data frame with a new 'worksheet' column identifying the worksheet the row
-            came from. The row index is the original row numbers and is probably not unique.
+                came from. The row index is the original row numbers and is probably not unique.
         """
 
         dataframes = list(worksheet_dfs.values())
@@ -128,11 +128,11 @@ class GoogleDriveDownloader:
         Args:
             file_id (str): The Google-created unique id for the file
             base_url (str, optional): The base URL for the GET call. Defaults to 'https://docs.google.com/uc?
-                                      export=download'.
+                export=download'.
 
         Raises:
             RuntimeError: If Content-Type is text/html, we can't get the file, either because it doesn't exist or isn't
-                          publicly shared.
+                publicly shared.
 
         Returns:
             request.response: The requests response object.
@@ -304,7 +304,7 @@ class GoogleDriveDownloader:
             sharing_link_column (str): Column holding the Google sharing link
             join_id_column (str): Column holding a unique key (for reporting purposes)
             output_path_column (str): Column for the resulting path; will be added if it doesn't existing in the
-            dataframe
+                dataframe
 
         Returns:
             pd.DataFrame: Input dataframe with output path info
@@ -328,7 +328,7 @@ class GoogleDriveDownloader:
             sharing_link_column (str): Column holding the Google sharing link
             join_id_column (str): Column holding a unique key (for reporting purposes)
             output_path_column (str): Column for the resulting path; will be added if it doesn't existing in the
-            dataframe
+                dataframe
 
         Returns:
             pd.DataFrame: Input dataframe with output path info
@@ -465,11 +465,13 @@ class PostgresLoader:
 
     def read_table_into_dataframe(self, table_name, index_column, crs, spatial_column):
         """Read a table into a dataframe
+
         Args:
             table_name (str): Name of table or view to read in the following format: schema.table_name
             index_column (str): Name of column to use as the dataframe's index
             crs (str): Coordinate reference system of the table's geometry column
             spatial_column (str): Name of the table's geometry or geography column
+
         Returns:
             pd.DataFrame.spatial: Table as a spatially enabled dataframe
         """

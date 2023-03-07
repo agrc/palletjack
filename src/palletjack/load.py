@@ -44,8 +44,8 @@ class FeatureServiceUpdater:
 
         Raises:
             ValueError: If the new field and existing fields don't match, the SHAPE field is missing or has an
-                        incompatible type, the new data contains null fields, the new data exceeds the existing field
-                        lengths, or a specified field is missing from either new or live data.
+                incompatible type, the new data contains null fields, the new data exceeds the existing field
+                lengths, or a specified field is missing from either new or live data.
 
         Returns:
             int: Number of features added
@@ -99,12 +99,12 @@ class FeatureServiceUpdater:
             dataframe (pd.DataFrame.spatial): Spatially enabled dataframe of data to be updated
             layer_index (int): Index of layer within service to update. Defaults to 0.
             update_geometry (bool): Whether to update attributes and geometry (True) or just attributes (False).
-            Defaults to False.
+                Defaults to False.
 
         Raises:
             ValueError: If the new field and existing fields don't match, the SHAPE field is missing or has an
-                        incompatible type, the new data contains null fields, the new data exceeds the existing field
-                        lengths, or a specified field is missing from either new or live data.
+                incompatible type, the new data contains null fields, the new data exceeds the existing field
+                lengths, or a specified field is missing from either new or live data.
 
         Returns:
             int: Number of features updated
@@ -169,149 +169,13 @@ class FeatureServiceUpdater:
         self.failsafe_dir = failsafe_dir if failsafe_dir else None
         self.layer_index = layer_index
 
-    #: NOTE: Saving all this for potential reuse in transform.py
-
-    # def __init__(self, gis, dataframe, index_column, field_mapping=None):
-    #     self._class_logger = logging.getLogger(__name__).getChild(self.__class__.__name__)
-    #     self.gis = gis
-    #     self.index_column = utils.rename_columns_for_agol([index_column])[index_column]
-
-    #     if field_mapping:
-    #         dataframe = utils.rename_fields(dataframe, field_mapping)
-
-    #     self.new_dataframe = dataframe.rename(columns=utils.rename_columns_for_agol(dataframe.columns))
-    #     try:
-    #         self.new_data_as_dict = self.new_dataframe.set_index(self.index_column).to_dict('index')
-    #     except KeyError as error:
-    #         raise KeyError(f'Index column {index_column} not found in dataframe columns') from error
-
-    # def _get_common_rows(self, live_dataframe) -> pd.DataFrame:
-    #     """Create a dataframe containing only the rows common to both the existing live dataset and the new updates
-
-    #     Args:
-    #         live_dataframe (pd.Dataframe): The existing, live dataframe created from an AGOL hosted feature layer.
-
-    #     Returns:
-    #         pd.DataFrame: A new dataframe containing the common rows created by .merge()ing.
-    #     """
-
-    #     subset_dataframe = live_dataframe[live_dataframe[self.index_column] \
-    #         .isin(self.new_dataframe[self.index_column])] \
-    #         .set_index(self.index_column)
-    #     subset_dataframe.update(self.new_dataframe.set_index(self.index_column))
-
-    #     not_found_dataframe = self.new_dataframe[~self.new_dataframe[self.index_column]
-    #                                              .isin(live_dataframe[self.index_column])]
-    #     if not not_found_dataframe.empty:
-    #         keys_not_found = list(not_found_dataframe[self.index_column])
-    #         self._class_logger.warning(
-    #             'The following keys from the new data were not found in the existing dataset: %s', keys_not_found
-    #         )
-
-    #     return subset_dataframe.reset_index()
-
-    # def _clean_dataframe_columns(self, dataframe, fields) -> pd.DataFrame:
-    #     """Delete superfluous fields from dataframe that will be used for the .edit() operation
-
-    #     Removes or renames the '_x', '_y' fields that are created by dataframe.merge() as appropriate based on the
-    #     fields provided.
-
-    #     Args:
-    #         dataframe (pd.Dataframe): Dataframe to be cleaned
-    #         fields (list[str]): The fields to keep; all others will be deleted
-
-    #     Returns:
-    #         pd.DataFrame: A dataframe with only our desired columns.
-    #     """
-
-    #     #: rename specified fields, delete any other _x/_y fields (in effect, just keep the specified fields...)
-    #     #: TODO: There may be a simpler way to do this- maybe .reindex(fields)?
-    #     rename_dict = {f'{f}_y': f for f in fields}
-    #     renamed_dataframe = dataframe.rename(columns=rename_dict).copy()
-    #     fields_to_delete = [f for f in renamed_dataframe.columns if f.endswith(('_x', '_y'))]
-    #     fields_to_delete.append('_merge')
-    #     self._class_logger.debug('Deleting joined dataframe fields: %s', fields_to_delete)
-    #     return renamed_dataframe.drop(labels=fields_to_delete, axis='columns', errors='ignore').copy()
-
-    # def _get_old_and_new_values(self, live_dict, object_ids):
-    #     """Create a dictionary of the old (existing, live) and new values based on a list of object ids
-
-    #     Args:
-    #         live_dict (dict): The old (existing, live) data, key is an arbitrary index, content is another dict keyed
-    #         by the field names.
-    #         object_ids (list[int]): The object ids to include in the new dictionary
-
-    #     Returns:
-    #         dict: {object_id:
-    #                 {'old_values': {data as dict from live_dict},
-    #                  'new_values': {data as dict from self.new_dataframe}
-    #                 },
-    #               ...,
-    #               }
-    #     """
-    #     oid_and_key_lookup = {
-    #         row['OBJECTID']: row[self.index_column] for _, row in live_dict.items() if row['OBJECTID'] in object_ids
-    #     }
-    #     old_values_by_oid = {row['OBJECTID']: row for _, row in live_dict.items() if row['OBJECTID'] in object_ids}
-    #     new_data_as_dict_preserve_key = self.new_dataframe.set_index(self.index_column, drop=False).to_dict('index')
-    #     new_values_by_oid = {
-    #         object_id: new_data_as_dict_preserve_key[key] for object_id, key in oid_and_key_lookup.items()
-    #     }
-
-    #     combined_values_by_oid = {
-    #         object_id: {
-    #             'old_values': old_values_by_oid[object_id],
-    #             'new_values': new_values_by_oid[object_id]
-    #         } for object_id in oid_and_key_lookup
-    #     }
-
-    #     return combined_values_by_oid
-
-    # def _parse_results(self, results_dict, live_dataframe) -> int:
-    #     """Integrate .edit() results with data for reporting purposes. Relies on _get_old_and_new_values().
-
-    #     Args:
-    #         results_dict (dict): AGOL response as a python dict (raw output from .edit_features(). Defined in
-    #         https://developers.arcgis.com/rest/services-reference/enterprise/apply-edits-feature-service-layer-.htm,
-    #         where `true`/`false` are python True/False.
-    #         live_dataframe (pd.DataFrame): Existing/live dataframe created from hosted feature layer.
-
-    #     Returns:
-    #         int: Number of edits successfully applied. If any failed, rollback will cause this to be set to 0.
-    #     """
-
-    #     live_dataframe_as_dict = live_dataframe.to_dict('index')
-    #     update_results = results_dict['updateResults']
-    #     if not update_results:
-    #         self._class_logger.info('No update results returned; no updates attempted')
-    #         return 0
-    #     update_successes = [result['objectId'] for result in update_results if result['success']]
-    #     update_failures = [result['objectId'] for result in update_results if not result['success']]
-    #     rows_updated = len(update_successes)
-    #     if update_successes:
-    #         self._class_logger.info('%s rows successfully updated:', len(update_successes))
-    #         for _, data in self._get_old_and_new_values(live_dataframe_as_dict, update_successes).items():
-    #             self._class_logger.debug('Existing data: %s', data['old_values'])
-    #             self._class_logger.debug('New data: %s', data['new_values'])
-    #     if update_failures:
-    #         self._class_logger.warning(
-    #             'The following %s updates failed. As a result, all successful updates should have been rolled back.',
-    #             len(update_failures)
-    #         )
-    #         for _, data in self._get_old_and_new_values(live_dataframe_as_dict, update_failures).items():
-    #             self._class_logger.warning('Existing data: %s', data['old_values'])
-    #             self._class_logger.warning('New data: %s', data['new_values'])
-    #         rows_updated = 0
-
-    #     return rows_updated
-
     def _add_new_data_to_hosted_feature_layer(self) -> int:
         """Adds new features to existing hosted feature layer. Uses fields from new dataframe.
 
         Raises:
             ValueError: If the new field and existing fields don't match, the new data contains null fields,
-                        the new data exceeds the existing field lengths, or a specified field is missing from either
-                        new or live data.
+                the new data exceeds the existing field lengths, or a specified field is missing from either
+                new or live data.
 
         Returns:
             int: Number of features added
@@ -381,8 +245,8 @@ class FeatureServiceUpdater:
 
         Raises:
             ValueError: If the new field and existing fields don't match, the new data contains null fields,
-                        the new data exceeds the existing field lengths, or a specified field is missing from either
-                        new or live data.
+                the new data exceeds the existing field lengths, or a specified field is missing from either
+                new or live data.
 
         Returns:
             int: Number of features updated
@@ -414,16 +278,15 @@ class FeatureServiceUpdater:
         return append_count
 
     #: TODO: rename this method? not everything is an upsert
-    #: FIXME: Note: in this docstring
     def _upsert_data(self, target_featurelayer, dataframe, **append_kwargs):
         """UPdate and inSERT data into live dataset with featurelayer.append()
 
-        Note: The call to to_featureset() in this method will add new OBJECTIDs to the new data if they aren't already present. If
+        Note: The call to to_featureset() in this method will add new OBJECTIDs to the new data if they aren't already present.
 
         Args:
             target_featurelayer (arcgis.features.FeatureLayer): Live dataset
             dataframe (pd.DataFrame): Spatially-enabled dataframe containing new data. Column names must match live
-            data. New data must have a valid shape column
+                data. New data must have a valid shape column
             append_kwargs (keyword arguments): Arguments to be passed to .append()
 
         Raises:
@@ -564,7 +427,7 @@ class FeatureServiceAttachmentsUpdater:
             live_features_as_df (pd.DataFrame): Spatial dataframe of all the feature layer's live data from AGOL
             attachment_join_field (str): Column in attachments_df to use as a join key with live data
             attachments_df (pd.DataFrame): New attachment data, including the join key and a path to the "new"
-                                           attachment
+                attachment
 
         Returns:
             pd.DataFrame: Attachments dataframe with corresponding live OIDs and GUIDs.
@@ -605,7 +468,7 @@ class FeatureServiceAttachmentsUpdater:
 
         Args:
             attachment_eval_df (pd.DataFrame): DataFrame of live attachment data, subsetted to features that matched
-                                               the join key in the new attachments
+                the join key in the new attachments
             attachment_path_field (str): The column that holds the attachment path
 
         Returns:
@@ -639,7 +502,7 @@ class FeatureServiceAttachmentsUpdater:
 
         Args:
             attachment_action_df (pd.DataFrame): A dataframe containing 'operation', 'OBJECTID', and
-                                                 attachment_path_field columns
+                attachment_path_field columns
             attachment_path_field (str): The column that holds the attachment path
 
         Returns:
@@ -676,7 +539,7 @@ class FeatureServiceAttachmentsUpdater:
 
         Args:
             attachment_action_df (pd.DataFrame): A dataframe containing 'operation', 'OBJECTID', 'ID', 'NAME', and
-                                                 attachment_path_field columns
+                attachment_path_field columns
             attachment_path_field (str): The column that holds the attachment path
 
         Returns:
@@ -740,10 +603,10 @@ class FeatureServiceAttachmentsUpdater:
         Args:
             feature_layer_itemid (str): The AGOL Item ID of the feature layer to update
             attachment_join_field (str): The field containing the join key between the attachments dataframe and the
-                                         live data
+                live data
             attachment_path_field (str): The field containing the desired attachment file path
             attachments_df (pd.DataFrame): A dataframe of desired attachments, including a join key and the local path
-                                           to the attachment
+                to the attachment
             layer_number (int, optional): The layer within the Item ID to update. Defaults to 0.
 
         Returns:
