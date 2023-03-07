@@ -209,9 +209,9 @@ class Geocoding:
             zone (str): The zip code or city
             api_key (str): API key obtained from developer.mapserv.utah.gov
             rate_limits(Tuple <float>): A lower and upper bound in seconds for pausing between API calls. Defaults to
-            (0.015, 0.03)
-            **api_args (dict): Keyword arguments to be passed as parameters in the API GET call. The API key will be added
-            to this dict.
+                (0.015, 0.03)
+            **api_args (dict): Keyword arguments to be passed as parameters in the API GET call. The API key will be
+                added to this dict.
 
         Returns:
             tuple[int]: The match's x coordinate, y coordinate, score, and match address
@@ -238,8 +238,8 @@ class Geocoding:
     def _geocode_api_call(url, api_args):
         """Makes a requests.get call to the geocoding API.
 
-        Meant to be called through a retry wrapper so that the RuntimeErrors get tried again a couple times before finally
-        raising the error.
+        Meant to be called through a retry wrapper so that the RuntimeErrors get tried again a couple times before
+            finally raising the error.
 
         Args:
             url (str): Base url for GET request
@@ -395,7 +395,7 @@ class FieldChecker:
             new_dataframe (pd.DataFrame): New data to be checked
             fields (List[str]): Fields to check
             add_oid (bool): Add OBJECTID to fields if its not already present (for operations that are dependent on
-                            OBJECTID, such as upsert)
+                OBJECTID, such as upsert)
         """
 
         field_checker = cls(live_data_properties, new_dataframe)
@@ -422,7 +422,7 @@ class FieldChecker:
 
         Raises:
             ValueError: If the field types or spatial types are incompatible, the new data has multiple geometry types,
-            or the new data is not a valid spatially-enabled dataframe.
+                or the new data is not a valid spatially-enabled dataframe.
             NotImplementedError: If the live data has a field that has not yet been mapped to a pandas dtype.
         """
 
@@ -500,7 +500,7 @@ class FieldChecker:
 
         Raises:
             ValueError: If the new data is not a valid spatially-enabled dataframe, has multiple geometry types, or has
-            a geometry type that doesn't match the live data.
+                a geometry type that doesn't match the live data.
         """
 
         esri_to_sedf_geometry_mapping = {
@@ -534,7 +534,7 @@ class FieldChecker:
 
         Raises:
             ValueError: If the new data contains nulls in a field that the live data says is not nullable and doesn't
-            have a default value.
+                have a default value.
         """
 
         columns_with_nulls = self.new_dataframe.columns[self.new_dataframe.isna().any()].tolist()
@@ -567,7 +567,7 @@ class FieldChecker:
 
         Raises:
             ValueError: If the string fields in the new data contain a value longer than the corresponding field in the
-            live data allows.
+                live data allows.
         """
 
         if 'length' not in self.fields_dataframe.columns:
@@ -594,7 +594,7 @@ class FieldChecker:
         Args:
             fields (List[str]): The fields to be operated on.
             add_oid (bool): Add OBJECTID to fields if its not already present (for operations that are dependent on
-                            OBJECTID, such as upsert)
+                OBJECTID, such as upsert)
 
         Raises:
             RuntimeError: If any of fields are not in live or new data.
@@ -649,7 +649,7 @@ class FieldChecker:
 
         Raises:
             UserWarning: If we're using shapely instead of arcpy, the new dataframe uses nullable int dtypes, and there
-            is one or more pd.NA values within a nullable int column.
+                is one or more pd.NA values within a nullable int column.
         """
 
         #: Only occurs if client is using shapely instead of arcpy
@@ -838,7 +838,7 @@ class Chunking:
             dataframe (pd.DataFrame.spatial): Spatially-enabled dataframe to be converted to geojson
             feature_layer_fields: All the fields from the feature layer (feature_layer.properties.fields)
             max_bytes (int, optional): Maximum size in bytes any one geojson string can be. Defaults to 100000000 (AGOL
-            text uploads are limited to 100 MB?)
+                text uploads are limited to 100 MB?)
 
         Returns:
             list[str]: A list of the dataframe chunks converted to geojson

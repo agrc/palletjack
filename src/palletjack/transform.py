@@ -39,7 +39,7 @@ class APIGeocoder:
             zone_col (str): The column containing either the zip code or the city name
             wkid (int): The projection to return the x/y points in
             rate_limits(Tuple <float>): A lower and upper bound in seconds for pausing between API calls. Defaults to
-            (0.015, 0.03)
+                (0.015, 0.03)
             **api_args (dict): Keyword arguments to be passed as parameters in the API GET call.
 
         Returns:
@@ -138,7 +138,7 @@ class DataCleaning:
 
         Raises:
             TypeError: If any of the conversions fail. Often caused by values that aren't int-castable floats (ie. x.0)
-            or np.nans.
+                or np.nans.
 
         Returns:
             pd.DataFrame: Input dataframe with columns converted to nullable Int64
@@ -163,7 +163,7 @@ class DataCleaning:
 
         Raises:
             TypeError: If any of the conversions fail. Often caused by values that aren't castable to floats
-            (non-empty, non-numeric strings, etc)
+                (non-empty, non-numeric strings, etc)
 
         Returns:
             pd.DataFrame: Input dataframe with columns converted to float
