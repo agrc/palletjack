@@ -1,4 +1,4 @@
-"""transform.py: Processes in the Transformation step of ETL
+"""Transform pandas dataframes in preparation for loading to AGOL.
 """
 import logging
 import warnings
@@ -14,16 +14,24 @@ module_logger = logging.getLogger(__name__)
 
 
 class APIGeocoder:
-    """Geocode using the UGRC Web API Geocoder.
+    """Geocode a dataframe using the UGRC Web API Geocoder.
 
     Instantiate an APIGeocoder object with an api key from developer.mapserv.utah.gov. It will attempt to validate the
-    API key. If it fails, it will raise one of the following:
-        RuntimeError: If there was a network or other error
-        ValueError: If the API responds with an invalid key message
-        UserWarning: If the API responds with some other abnormal result
+    API key. If validation fails, it will raise one of the following errors:
+
+    - RuntimeError: If there was a network or other error
+    - ValueError: If the key is invalid
+    - UserWarning: If the API responds with some other abnormal result
+
+    The individual geocoding steps are exposed in the `palletjack.utils.Geocoding` class in the utils module for use in
+    other settings.
     """
 
     def __init__(self, api_key):
+        """
+        Args:
+            api_key (str): API key obtained from developer.mapserv.utah.gov
+        """
         self.api_key = api_key
         self._class_logger = logging.getLogger(__name__).getChild(self.__class__.__name__)
         utils.Geocoding.validate_api_key(self.api_key)
@@ -89,9 +97,26 @@ class APIGeocoder:
 
 
 class FeatureServiceMerging:
+    """Get the live dataframe from a feature service and update it from another dataframe
+    """
 
     @staticmethod
     def update_live_data_with_new_data(live_dataframe, new_dataframe, join_column):
+        """Update a dataframe with data from another
+
+        Args:
+            live_dataframe (pd.DataFrame): The dataframe containing info to be updated
+            new_dataframe (pd.DataFrame): Dataframe containing source info to use in the update
+            join_column (str): The column with unique IDs to be used as a key between the two dataframes
+
+        Raises:
+            ValueError: If the join_column is missing from either live or new data
+            RuntimeWarning: If there are rows in the new data that are not found in the live data; these will not be
+                added to the live dataframe.
+
+        Returns:
+            pd.DataFrame: The updated dataframe, with data types converted via .convert_dtypes()
+        """
 
         try:
             live_dataframe.set_index(join_column, inplace=True)
@@ -113,6 +138,20 @@ class FeatureServiceMerging:
 
     @staticmethod
     def get_live_dataframe(gis, feature_service_itemid, layer_index=0):
+        """Get a spatially-enabled dataframe representation of a hosted feature layer
+
+        Args:
+            gis (arcgis.gis.GIS): GIS object of the desired organization
+            feature_service_itemid (str): itemid in the gis of the desired hosted feature service
+            layer_index (int, optional): Index of the desired layer within the hosted feature service. Defaults to 0.
+
+        Raises:
+            RuntimeError: If it fails to load the data
+
+        Returns:
+            pd.DataFrame.spatial: Spatially-enabled dataframe representation of the hosted feature layer
+        """
+
         try:
             feature_layer = arcgis.features.FeatureLayer.fromitem(
                 gis.content.get(feature_service_itemid), layer_id=layer_index
