@@ -1,3 +1,6 @@
+"""Utility classes and methods that are used internally throughout palletjack. Many are exposed publicly in case they are useful elsewhere in a client's code.
+"""
+
 import datetime
 import importlib
 import logging
@@ -30,7 +33,7 @@ def retry(worker_method, *args, **kwargs):
         worker_method (callable): The name of the method to be retried (minus the calling parens)
 
     Raises:
-        error: The final error the causes worker_method to fail after 3 retries
+        error: The final error that causes worker_method to fail after 3 retries
 
     Returns:
         various: The value(s) returned by worked_method
@@ -195,7 +198,7 @@ def check_field_set_to_unique(featurelayer, field_name):
 
 
 class Geocoding:
-    """Container class for methods to geocode an address
+    """Methods for geocoding an address
     """
 
     @staticmethod
@@ -208,7 +211,7 @@ class Geocoding:
             street (str): The street address
             zone (str): The zip code or city
             api_key (str): API key obtained from developer.mapserv.utah.gov
-            rate_limits(Tuple <float>): A lower and upper bound in seconds for pausing between API calls. Defaults to
+            rate_limits (Tuple <float>): A lower and upper bound in seconds for pausing between API calls. Defaults to
                 (0.015, 0.03)
             **api_args (dict): Keyword arguments to be passed as parameters in the API GET call. The API key will be
                 added to this dict.
@@ -367,6 +370,7 @@ def save_feature_layer_to_json(feature_layer, directory):
     Returns:
         Path: The full path to the output file, named with the layer name and today's date.
     """
+
     module_logger.debug('Downloading existing data...')
     dataframe = feature_layer.query().sdf
 
@@ -382,6 +386,7 @@ def save_feature_layer_to_json(feature_layer, directory):
 
 class FieldChecker:
     """Check the fields of a new dataframe against live data. Each method will raise errors if its checks fail.
+    Provides the check_fields class method to run all the checks in one call with having to create an object.
     """
 
     @classmethod
@@ -407,6 +412,12 @@ class FieldChecker:
         field_checker.check_nullable_ints_shapely()
 
     def __init__(self, live_data_properties, new_dataframe):
+        """
+        Args:
+            live_data_properties (dict): FeatureLayer.properties of live data
+            new_dataframe (pd.DataFrame): New data to be checked
+        """
+
         self.live_data_properties = live_data_properties
         self.fields_dataframe = pd.DataFrame(live_data_properties.fields)
         self.new_dataframe = new_dataframe
@@ -715,7 +726,7 @@ def get_null_geometries(feature_layer_properties):
 
 
 class DeleteUtils:
-    """Container class for verifying Object IDs used for delete operations
+    """Verify Object IDs used for delete operations
     """
 
     @staticmethod
@@ -785,7 +796,7 @@ class DeleteUtils:
 
 
 class Chunking:
-    """Container class for dividing a dataframe into chunks to satisfy size requirements for append operation
+    """Divide a dataframe into chunks to satisfy upload size requirements for append operation.
     """
 
     @staticmethod

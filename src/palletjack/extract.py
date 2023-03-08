@@ -1,4 +1,7 @@
-"""Classes for loading data from various sources into a pandas dataframe
+"""Extract tabular/spatial data from various sources into a pandas dataframe.
+
+Each different type of source has its own class. Each class may have multiple methods available for different loading
+operations or techniques.
 """
 
 import logging
@@ -25,6 +28,11 @@ class GSheetLoader:
     """Loads data from a Google Sheets spreadsheet into a pandas data frame"""
 
     def __init__(self, credentials):
+        """
+        Args:
+            credentials (str or google.auth.credentials.Credentials): Path to the service file OR credentials object
+                obtained from google.auth.default() within a cloud function.
+        """
         self._class_logger = logging.getLogger(__name__).getChild(self.__class__.__name__)
         self.gsheets_client = utils.authorize_pygsheets(credentials)
 
@@ -99,6 +107,10 @@ class GoogleDriveDownloader:
     """
 
     def __init__(self, out_dir):
+        """
+        Args:
+            out_dir (str or Path): Directory to save downloaded files.
+        """
         self._class_logger = logging.getLogger(__name__).getChild(self.__class__.__name__)
         self._class_logger.debug('Initializing GoogleDriveDownloader')
         self._class_logger.debug('Output directory: %s', out_dir)
@@ -348,6 +360,15 @@ class SFTPLoader:
     """
 
     def __init__(self, host, username, password, knownhosts_file, download_dir):
+        """
+        Args:
+            host (str): The SFTP host to connect to
+            username (str): SFTP username
+            password (str): SFTP password
+            knownhosts_file (str): Path to a known_hosts file for pysftp.CnOpts. Can be generated via ssh-keyscan.
+            download_dir (str or Path): Directory to save downloaded files
+        """
+
         self.host = host
         self.username = username
         self.password = password
@@ -438,6 +459,15 @@ class PostgresLoader:
     """Loads data from a Postgres/PostGIS database into a pandas data frame"""
 
     def __init__(self, host, database, username, password, port=5432):
+        """
+        Args:
+            host (str): Postgres server host name
+            database (str): Database to connect to
+            username (str): Database user
+            password (str): Database password
+            port (int, optional): Database port. Defaults to 5432.
+        """
+
         self._class_logger = logging.getLogger(__name__).getChild(self.__class__.__name__)
         if os.environ.get('FUNCTION_TARGET') is not None:  #: this is an env var specific to cloud functions
             self._class_logger.info('running in GCF, using unix socket')

@@ -1,4 +1,4 @@
-"""Classes for loading data from spatially-enabled pandas DataFrames into AGOL Feature Services
+"""Modify existing ArcGIS Online content (mostly hosted feature services). Contains classes for updating hosted feature service data, modifying the attachments on a hosted feature service, or modifying map symbology.
 """
 
 import json
@@ -21,7 +21,7 @@ logger = logging.getLogger(__name__)
 class FeatureServiceUpdater:
     """Update an AGOL Feature Service with data from a pandas DataFrame.
 
-    Contains four class methods that should be called directly without need to instantiate an instance: add_features,
+    Contains four class methods that can be called directly without needing to instantiate an object: add_features,
     remove_features, update_features, and truncate_and_load_features.
     """
 
@@ -416,6 +416,11 @@ class FeatureServiceAttachmentsUpdater:
     """
 
     def __init__(self, gis):
+        """
+        Args:
+            gis (arcgis.gis.GIS): The AGOL organization's gis object
+        """
+
         self.gis = gis
         self._class_logger = logging.getLogger(__name__).getChild(self.__class__.__name__)
         self.failed_dict = {}
@@ -663,10 +668,16 @@ class FeatureServiceAttachmentsUpdater:
 
 
 class ColorRampReclassifier:
-    """Updates the interval ranges on a layer's classification renderer based on the layer's current data.
+    """Updates the interval ranges on a webmap's layer's classification renderer based on the layer's current data.
     """
 
     def __init__(self, webmap_item, gis):
+        """
+        Args:
+            webmap_item (arcgis.mapping.WebMap): The webmap item in the AGOL organization
+            gis (arcgis.gis.GIS): The AGOL organization as a gis object
+        """
+
         self.webmap_item = webmap_item
         self.gis = gis
         self._class_logger = logging.getLogger(__name__).getChild(self.__class__.__name__)
