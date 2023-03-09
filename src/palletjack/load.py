@@ -1,4 +1,5 @@
-"""Modify existing ArcGIS Online content (mostly hosted feature services). Contains classes for updating hosted feature service data, modifying the attachments on a hosted feature service, or modifying map symbology.
+"""Modify existing ArcGIS Online content (mostly hosted feature services). Contains classes for updating hosted feature
+service data, modifying the attachments on a hosted feature service, or modifying map symbology.
 """
 
 import json
@@ -23,14 +24,18 @@ class FeatureServiceUpdater:
 
     Contains four class methods that can be called directly without needing to instantiate an object: add_features,
     remove_features, update_features, and truncate_and_load_features.
+
+    Because the update process uploads the data as geojson, all input geometries must be in WGS84 (wkid 4326). Input
+    dataframes can be projected using dataframe.spatial.project(4326). ArcGIS Online will then project the uploaded
+    data to match the hosted feature service's projection.
     """
 
     @classmethod
     def add_features(cls, gis, feature_service_itemid, dataframe, layer_index=0):
         """Adds new features to existing hosted feature layer from new dataframe.
 
-        The new dataframe must have a 'SHAPE' column containing geometries of the same type as the live data. New
-        OBJECTIDs will be automatically generated.
+        The new dataframe must have a 'SHAPE' column containing geometries of the same type as the live data. The
+        dataframe must have a WGS84 (wkid 4326) projection. New OBJECTIDs will be automatically generated.
 
         The new dataframe's columns and data must match the existing data's fields (with the exception of generated
         fields like shape area and length) in name, type, and allowable length. Live fields that are not nullable and
@@ -86,8 +91,8 @@ class FeatureServiceUpdater:
 
         The new data can have either attributes and geometries or only attributes based on the update_geometry flag. A
         combination of updates from a source with both attributes & geometries and a source with attributes-only must
-        be done with two separate calls. The geometries must be provided in a SHAPE column and be the same type as the
-        live data.
+        be done with two separate calls. The geometries must be provided in a SHAPE column, be the same type as the
+        live data, and have a WGS84 (wkid 4326) projection.
 
         The new dataframe's columns and data must match the existing data's fields (with the exception of generated
         fields like shape area and length) in name, type, and allowable length. Live fields that are not nullable and
@@ -127,8 +132,8 @@ class FeatureServiceUpdater:
         data fail to load, this copy is reloaded. If the reload fails, the copy is written to failsafe_dir with the
         filename {todays_date}.json (2022-12-31.json).
 
-        The new dataframe must have a 'SHAPE' column containing geometries of the same type as the live data. New
-        OBJECTIDs will be automatically generated.
+        The new dataframe must have a 'SHAPE' column containing geometries of the same type as the live data. The
+        dataframe must have a WGS84 (wkid 4326) projection. New OBJECTIDs will be automatically generated.
 
         The new dataframe's columns and data must match the existing data's fields (with the exception of generated
         fields like shape area and length) in name, type, and allowable length. Live fields that are not nullable and
@@ -411,8 +416,15 @@ class FeatureServiceUpdater:
 
 
 class FeatureServiceAttachmentsUpdater:
-    """Add or overwrite attachments in a feature service using a dataframe of the desired "new" attachments. Uses a
-    join field present in both live data and the attachments dataframe to match attachments with live data.
+    """Add or overwrite attachments in a feature service using a dataframe of the desired "new" attachments.
+
+    Updates the attachments based on a dataframe containing two columns: a join key present in the live data (the
+    dataframe column name must match the feature service field name) and the path of the file to attach to the feature.
+    While AGOL supports multiple attachments, this only accepts a single file as input.
+
+    If a matching feature in AGOl doesn't have an attachment, the file referred to by the dataframe will be uploaded.
+    If it does have an attachment, it checks the existing filename with the referenced file. If they are different, the
+    file from the dataframe will be updated. If they are the same, nothing happens.
     """
 
     def __init__(self, gis):
@@ -669,6 +681,10 @@ class FeatureServiceAttachmentsUpdater:
 
 class ColorRampReclassifier:
     """Updates the interval ranges on a webmap's layer's classification renderer based on the layer's current data.
+
+    Manually edits the JSON definition to change a layer's color ramp values based on a simple unclassed scheme similar
+    to AGOL's unclassed ramp. The minimum value is the dataset minimum, the max is the mean value plus one standard
+    deviation.
     """
 
     def __init__(self, webmap_item, gis):

@@ -19,13 +19,19 @@ import requests
 import sqlalchemy
 from googleapiclient.http import MediaIoBaseDownload
 
-from . import utils
+from palletjack import utils
 
 logger = logging.getLogger(__name__)
 
 
 class GSheetLoader:
-    """Loads data from a Google Sheets spreadsheet into a pandas data frame"""
+    """Loads data from a Google Sheets spreadsheet into a pandas data frame
+
+    Requires either the path to a service account .json file that has access to the sheet in question or a
+    `google.auth.credentials.Credentials` object. Calling `google.auth.default()` in a Google Cloud Function will give
+    you a tuple of a `Credentials` object and the project id. You can use this `Credentials` object to authorize
+    pygsheets as the same account the Cloud Function is running under.
+    """
 
     def __init__(self, credentials):
         """
@@ -103,13 +109,18 @@ class GSheetLoader:
 
 
 class GoogleDriveDownloader:
-    """Downloads images from publicly-shared Google Drive links (https://drive.google.com/file/d/big_long_id/etc)
+    """Provides methods to download any non-html file (ie, Content-Type != text/html) Google Drive file from it's
+    sharing link (of the form `https://drive.google.com/file/d/big_long_id/etc`). The files may be publicly shared or shared with a service account.
+
+    This class has two similar sets of methods. The `*_using_api` methods authenticate to the Google API using either a
+    service account file or a `google.auth.credentials.Credentials` object and downloads using the API. The
+    `*_using_api` methods are the most robust and should be used whenever possible.
     """
 
     def __init__(self, out_dir):
         """
         Args:
-            out_dir (str or Path): Directory to save downloaded files.
+            out_dir (str or Path): Directory to save downloaded files. Can be reassigned later to change the directory.
         """
         self._class_logger = logging.getLogger(__name__).getChild(self.__class__.__name__)
         self._class_logger.debug('Initializing GoogleDriveDownloader')
@@ -207,6 +218,13 @@ class GoogleDriveDownloader:
     def download_file_from_google_drive(self, sharing_link, join_id, pause=0.):
         """Download a publicly-shared image from Google Drive using it's sharing link
 
+        Uses an anonymous HTTP request with support for sleeping between downloads to try to get around Google's
+        blocking (I haven't found a good value yet).
+
+        Logs a warning if the URL doesn't match the proper pattern or it can't extract the unique id from the sharing
+        URL. Will also log a warning if the header's Content-Type is text/html, which usually indicates the HTTP
+        response was an error message instead of the file.
+
         Args:
             sharing_link (str): The publicly-shared link to the image.
             join_id (str or int): The unique key for the row (used for reporting)
@@ -279,7 +297,13 @@ class GoogleDriveDownloader:
         out_file_path.write_bytes(in_memory.getbuffer())
 
     def download_file_from_google_drive_using_api(self, gsheets_client, sharing_link, join_id):
-        """Download a file from Google Drive using an authenticated client and the Google API via pygsheets
+        """ Download a file using the Google API via pygsheets authentication.
+
+        Requires a pygsheets client object that handles authentication.
+
+        Logs a warning if the URL doesn't match the proper pattern or it can't extract the unique id from the sharing
+        URL. Will also log a warning if the header's Content-Type is text/html, which usually indicates the HTTP
+        response was an error message instead of the file.
 
         Args:
             gsheets_client (pygsheets.Client): The authenticated client object from pygsheets
@@ -315,7 +339,7 @@ class GoogleDriveDownloader:
             dataframe (pd.DataFrame): Input dataframe with required columns
             sharing_link_column (str): Column holding the Google sharing link
             join_id_column (str): Column holding a unique key (for reporting purposes)
-            output_path_column (str): Column for the resulting path; will be added if it doesn't existing in the
+            output_path_column (str): Column for the resulting path; will be added if it doesn't exist in the
                 dataframe
 
         Returns:
