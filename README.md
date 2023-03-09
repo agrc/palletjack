@@ -7,7 +7,7 @@ A library of classes and methods for automatically updating AGOL feature service
 
 `palletjack` works with pandas DataFrames (either regular for tabular data or Esri's spatially-enabled dataframes for spatial data). The extract and transform methods return dataframes and the load methods consume dataframes as their source data.
 
-The [documentation](https://agrc.github.io/palletjack) includes a user guide along with an API description of the available classes and methods.
+The [documentation](./docs/api.md) includes a user guide along with an API description of the available classes and methods.
 
 Pallet jack: [forklift's](https://www.github.com/agrc/forklift) little brother.
 
