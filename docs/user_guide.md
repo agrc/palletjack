@@ -6,6 +6,8 @@ As a library, `palletjack` is not meant to be used by itself. Rather, its classe
 
 pandas dataframes are the main unifying data structure between the different steps. The client loads data from an external source into a dataframe and then modifies the dataframe according to their business needs. Once the dataframe is ready to go, it is used to update the hosted feature service in AGOL.
 
+The API reference can be found [here](./api.md).
+
 ## Organization
 
 The individual modules within `palletjack` each handle their own step of the ETL process. Each module contains classes for accomplishing its task organized by source, operation, or destination. There may be multiple, similar methods in a class depending on exactly how you want to perform a given step—you probably won't use all the available classes and methods in every application. The publicly-exposed methods usually call several private methods to keep functions small and testable.
