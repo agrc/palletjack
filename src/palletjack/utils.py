@@ -335,8 +335,12 @@ def calc_modulus_for_reporting_interval(n, split_value=500):
 def authorize_pygsheets(credentials):
     """Authenticate pygsheets using either a service file or google.auth.credentials.Credentials object.
 
-    Tries first to load credentials as a service account file; if this fails with a FileNotFoundError, tries to pass
-    credentials directly as a custom_credential.
+    Requires either the path to a service account .json file that has access to the files in question or  a `google.
+    auth.credentials.Credentials` object. Calling `google.auth.default()` in a Google Cloud Function will give you a
+    tuple of a `Credentials` object and the project id. You can use this `Credentials` object to authorize pygsheets as
+    the same account the Cloud Function is running under.
+
+    Tries first to load credentials from file; if this fails tries credentials directly as a custom_credential.
 
     Args:
         credentials (str or google.auth.credentials.Credentials): Path to the service file OR credentials object

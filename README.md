@@ -3,50 +3,58 @@
 ![Build Status](https://github.com/agrc/palletjack/workflows/Build%20and%20Test/badge.svg)
 [![codecov](https://codecov.io/gh/agrc/palletjack/branch/main/graph/badge.svg)](https://codecov.io/gh/agrc/palletjack)
 
-A library of classes for automatically updating AGOL feature services with data from external sources. Client apps (often called 'skids') can reuse these classes for common use cases. These classes handle different parts of the Extract and Load steps in the ETL process.
+A library of classes and methods for automatically updating AGOL feature services with data from several different types of external sources. Client apps (sometimes called 'skids') can reuse these classes for common use cases. The code modules are oriented around each step in the extract, transform, and load process.
 
-`palletjack` works with pandas DataFrames (either regular for tabular data or Esri's spatially-enabled dataframes for spatial data). Most methods either return a dataframe or use a dataframe for their source data.
+`palletjack` works with pandas DataFrames (either regular for tabular data or Esri's spatially-enabled dataframes for spatial data). The extract and transform methods return dataframes and the load methods consume dataframes as their source data.
 
-See `docs/api.md` for documentation on the available classes and methods, logging, and errors.
-
-See `docs/examples.py` for (bare-bones) example code implementing the various classes/methods. You can also search our GitHub organization for "skid" repositories that use palletjack.
+The [documentation](https://agrc.github.io/palletjack) includes a user guide along with an API description of the available classes and methods.
 
 Pallet jack: [forklift's](https://www.github.com/agrc/forklift) little brother.
+
+## Dependencies
+
+`palletjack` relies on the dependencies listed in `setup.py`. These are all available on PyPI and can be installed in most environments, including Google Cloud Functions.
+
+The `arcgis` library does all the heavy lifting for spatial data. If the `arcpy` library is not available (such as in a cloud function), it relies on `shapely` for its geometry engine.
 
 ## Installation
 
 1. Activate your application's environment
 1. `pip install ugrc-palletjack`
 
-## Dependencies
+## Quick start
 
-`palletjack` relies on `setup.py` to install `pandas`, `numpy`, `pysftp`, and `arcgis`. `FeatureServiceInlineUpdater.update_existing_features_in_feature_service_with_arcpy()` also relies on having arcpy installed through either ArcGIS Pro or ArcGIS Enterprise.
-
-## Usage
-
-1. `import palletjack`
-1. Instantiate one or more of the classes as needed.
-1. Call the methods on your instantiated objects to perform the specific action desired.
+1. Import the desired modules
+1. Use a class in `extract` to load a dataframe from an external source
+1. Transform your dataframe as desired with helper methods from `transform`
+1. Use the dataframe to update a hosted feature service using the methods in `load`
 
    ```python
-   loader = palletjack.SFTPLoader(secrets, download_dir)
-   files_downloaded = loader.download_sftp_files(sftp_folder=secrets.SFTP_FOLDER)
-   dataframe = loader.read_csv_into_dataframe('data.csv', secrets.DATA_TYPES)
+   from palletjack import extract, transform, load
 
-   updater = FeatureServiceInlineUpdater(gis, dataframe, secrets.KEY_COLUMN)
-   rows_updated = updater.update_existing_features_in_hosted_feature_layer(
-      secrets.FEATURE_LAYER_ITEMID, list(secrets.DATA_TYPES.keys())
-    )
+   #: Load the data from a Google Sheet
+   gsheet_extractor = extract.GSheetLoader(path_to_service_account_json)
+   sheet_df = gsheet_extractor.load_specific_worksheet_into_dataframe(sheet_id, 'title of desired sheet', by_title=True)
+
+   #: Convert the data to points using lat/long fields, clean for uploading
+   spatial_df = pd.DataFrame.spatial.from_xy(input_df, x_column='longitude', y_column='latitude')
+   renamed_df = transform.DataCleaning.rename_dataframe_columns_for_agol(spatial_df)
+   cleaned_df = transform.DataCleaning.switch_to_nullable_int(renamed_df, ['an_int_field_with_null_values'])
+
+   #: Truncate the existing feature service data and load the new data
+   gis = arcgis.gis.GIS('my_agol_org_url', 'username', 'super-duper-secure-password')
+   updates = palletjack.load.FeatureServiceUpdater.truncate_and_load_features(
+      gis, 'feature_service_item_id', cleaned_df, r'c:\directory\to\save\truncated\data\in\case\of\error'
+   )
    ```
 
 ## Development
 
-1. Create a conda environment with arcpy, arcgis
-   - `conda create -n palletjack`
+1. Create a conda environment with Python 3.9
+   - `conda create -n palletjack python=3.9`
    - `activate palletjack`
-   - `conda install arcgis arcpy -c esri`
 1. Clone the repo
-1. Install in dev mode
+1. Install in dev mode with development dependencies
    - `pip install -e .[tests]`
 
 ### Troubleshooting Weird Append Errors
