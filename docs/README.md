@@ -52,7 +52,7 @@ The client is responsible for handling errors and warnings that arise during the
 
 ## Logging
 
-palletjack takes full advantage of python's built-in [`logging`](https://docs.python.org/3/howto/logging.html#advanced-logging-tutorial) library to perform its feedback and reporting. It creates a main palletjack logger, and then each module and each class create their own child logger under this, becoming `palletjack.extract.SFTPLoader`, etc.
+palletjack takes full advantage of python's built-in [`logging`](https://docs.python.org/3/howto/logging.html#advanced-logging-tutorial) library to perform its feedback and reporting. It employs a [hierarchical structure](https://stackoverflow.com/a/50751987), creating module-level loggers for each module and then each class in a module creates their own child logger. This allows rapid identification of where log events are occuring.
 
 ### Accessing palletjack logs
 
