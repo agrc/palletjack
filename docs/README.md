@@ -2,7 +2,7 @@
 
 `palletjack` is a library of modules for updating data in ArcGIS Online (AGOL) based on information from external data. It handles the repetitive parts of the extract, transform, and load stages of the ETL process, allowing the user to focus on the custom transform steps unique to every project.
 
-As a library, `palletjack` is not meant to be used by itself. Rather, its classes and methods should be used by other apps written for specific use cases. These other apps are referred to as the "client" apps, and internally we often refer to them as "skids".
+As a library, palletjack is not meant to be used by itself. Rather, its classes and methods should be used by other apps written for specific use cases. These other apps are referred to as the "client" apps, and internally we often refer to them as "skids".
 
 pandas dataframes are the main unifying data structure between the different steps. The client loads data from an external source into a dataframe and then modifies the dataframe according to their business needs. Once the dataframe is ready to go, it is used to update the hosted feature service in AGOL.
 
@@ -10,7 +10,7 @@ The API reference can be found [here](./api.md).
 
 ## Organization
 
-The individual modules within `palletjack` each handle their own step of the ETL process. Each module contains classes for accomplishing its task organized by source, operation, or destination. There may be multiple, similar methods in a class depending on exactly how you want to perform a given step—you probably won't use all the available classes and methods in every application. The publicly-exposed methods usually call several private methods to keep functions small and testable.
+The individual modules within palletjack each handle their own step of the ETL process. Each module contains classes for accomplishing its task organized by source, operation, or destination. There may be multiple, similar methods in a class depending on exactly how you want to perform a given step—you probably won't use all the available classes and methods in every application. The publicly-exposed methods usually call several private methods to keep functions small and testable.
 
 Classes in `extract` handle the extract stage, pulling data in from external sources. Tabular data (csvs, Google Sheets) are loaded into dataframes, while non-tabular data for attachments are just downloaded to the specified locations. You'll instantiate the desired class with the basic connection info and then call the appropriate method on the resulting object to extract the data.
 
@@ -22,7 +22,7 @@ While many parts of the classes' functionality are hidden in private methods, co
 
 ## Data Considerations
 
-Under the hood, `palletjack` uses the `arcgis.features.FeatureLayer.append()` method to upload data. To eliminate the dependency on `arcpy` (and thus ArcGIS Pro/Enterprise), it converts and uploads the data as a geojson. This conversion process introduces several constraints and gotchas on the format of the data. `palletjack` tests for all the known gotchas and raises an error if the data needs extra work before uploading. In addition, AGOL imposes its own set of constraints.
+Under the hood, palletjack uses the `arcgis.features.FeatureLayer.append()` method to upload data. To eliminate the dependency on `arcpy` (and thus ArcGIS Pro/Enterprise), it converts and uploads the data as a geojson. This conversion process introduces several constraints and gotchas on the format of the data. palletjack tests for all the known gotchas and raises an error if the data needs extra work before uploading. In addition, AGOL imposes its own set of constraints.
 
 ### Field Names
 
@@ -36,7 +36,7 @@ The upload process is very particular about data types and missing data. `utils.
 
 ### Geometries
 
-`palletjack` uses Esri's spatially-enabled dataframes for handling geometries. However, there's no reason you couldn't use geodataframes for other parts of the process and convert them to spatially-enabled dataframes for use in the `load` methods.
+palletjack uses Esri's spatially-enabled dataframes for handling geometries. However, there's no reason you couldn't use geodataframes for other parts of the process and convert them to spatially-enabled dataframes for use in the `load` methods.
 
 Because the upload process uses geojsons, you **MUST** project your dataframe to WGS84 (wkid 4326) (the upload stage will error out if it isn't). If your hosted feature service is in a different projection, AGOL will automatically project it back as part of the upload process.
 
@@ -48,15 +48,15 @@ If you want to update existing data without truncating and loading, you will nee
 
 ## Error handling
 
-The client is responsible for handling errors and warnings that arise during the process. `palletjack` will raise its own errors when something occurs that would keep the procces from continuing or when one of its internal data checks fails. It will also captured and [chain](https://docs.python.org/3/tutorial/errors.html#exception-chaining) errors from the underlying libraries to include additional, context-specific messages for the user. It will raise warnings when something happens that the client should be aware of but will not keep the process from completing.
+The client is responsible for handling errors and warnings that arise during the process. palletjack will raise its own errors when something occurs that would keep the procces from continuing or when one of its internal data checks fails. It will also captured and [chain](https://docs.python.org/3/tutorial/errors.html#exception-chaining) errors from the underlying libraries to include additional, context-specific messages for the user. It will raise warnings when something happens that the client should be aware of but will not keep the process from completing.
 
 ## Logging
 
-`palletjack` takes full advantage of python's built-in [`logging` library](https://docs.python.org/3/howto/logging.html#advanced-logging-tutorial) to perform its feedback and reporting. It creates a main `palletjack` logger, and then each module and each class create their own child logger under this, becoming `palletjack.extract.SFTPLoader`, etc.
+palletjack takes full advantage of python's built-in [`logging`](https://docs.python.org/3/howto/logging.html#advanced-logging-tutorial) library to perform its feedback and reporting. It creates a main palletjack logger, and then each module and each class create their own child logger under this, becoming `palletjack.extract.SFTPLoader`, etc.
 
-### Accessing `palletjack` logs
+### Accessing palletjack logs
 
-The client can get a reference to the `palletjack` logger and add their handlers, formatters, etc to it alongside its own logger:
+The client can get a reference to the palletjack logger and add their handlers, formatters, etc to it alongside its own logger:
 
 ```python
 myapp_logger = logging.getLogger('my_app')
