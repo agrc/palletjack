@@ -1,4 +1,6 @@
 """A library for extracting tabular/spatial data from many different sources, transforming it to meet ArcGIS Online hosted feature service requirements, and loading it into existing feature services.
+
+.. include:: ../../docs/user_guide.md
 """
 
 from . import extract, load, transform, utils
