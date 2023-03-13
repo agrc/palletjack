@@ -63,13 +63,13 @@ class TestUpdateLayer:
         updater_mock.join_column = 'OBJECTID'
         updater_mock.layer_index = 0
 
-        updater_mock._upsert_data.return_value = {'recordCount': 1}
+        updater_mock._upload_data.return_value = {'recordCount': 1}
 
         field_checker_mock = mocker.patch('palletjack.utils.FieldChecker')
 
         load.FeatureServiceUpdater._update_hosted_feature_layer(updater_mock, update_geometry=True)
 
-        updater_mock._upsert_data.assert_called_once_with(
+        updater_mock._upload_data.assert_called_once_with(
             fl_mock,
             new_dataframe,
             upsert=True,
@@ -92,7 +92,7 @@ class TestUpdateLayer:
         updater_mock.join_column = 'OBJECTID'
         updater_mock.layer_index = 0
 
-        updater_mock._upsert_data.return_value = {'recordCount': 1}
+        updater_mock._upload_data.return_value = {'recordCount': 1}
 
         mocker.patch.multiple(
             'palletjack.utils.FieldChecker',
@@ -128,7 +128,7 @@ class TestUpdateLayer:
         updater_mock.join_column = 'OBJECTID'
         updater_mock.layer_index = 0
 
-        updater_mock._upsert_data.return_value = {'recordCount': 1}
+        updater_mock._upload_data.return_value = {'recordCount': 1}
 
         field_checker_mock = mocker.patch('palletjack.utils.FieldChecker')
         null_generator_mock = mocker.patch('palletjack.utils.get_null_geometries', return_value='Nullo')
@@ -152,14 +152,14 @@ class TestUpdateLayer:
         updater_mock.join_column = 'OBJECTID'
         updater_mock.layer_index = 0
 
-        updater_mock._upsert_data.return_value = {'recordCount': 1}
+        updater_mock._upload_data.return_value = {'recordCount': 1}
 
         field_checker_mock = mocker.patch('palletjack.utils.FieldChecker')
         null_generator_mock = mocker.patch('palletjack.utils.get_null_geometries', return_value='Nullo')
 
         load.FeatureServiceUpdater._update_hosted_feature_layer(updater_mock, update_geometry=False)
 
-        updater_mock._upsert_data.assert_called_once_with(
+        updater_mock._upload_data.assert_called_once_with(
             updater_mock.feature_layer,
             new_dataframe,
             upsert=True,
@@ -185,13 +185,13 @@ class TestAddToLayer:
         # updater_mock.join_column = 'OBJECTID'
         updater_mock.layer_index = 0
 
-        updater_mock._upsert_data.return_value = {'recordCount': 1}
+        updater_mock._upload_data.return_value = {'recordCount': 1}
 
         field_checker_mock = mocker.patch('palletjack.utils.FieldChecker')
 
         load.FeatureServiceUpdater._add_new_data_to_hosted_feature_layer(updater_mock)
 
-        updater_mock._upsert_data.assert_called_once_with(
+        updater_mock._upload_data.assert_called_once_with(
             updater_mock.feature_layer,
             new_dataframe,
             upsert=False,
@@ -210,7 +210,7 @@ class TestAddToLayer:
         updater_mock.fields = list(new_dataframe.columns)
         updater_mock.layer_index = 0
 
-        updater_mock._upsert_data.return_value = {'recordCount': 1}
+        updater_mock._upload_data.return_value = {'recordCount': 1}
 
         mocker.patch.multiple(
             'palletjack.utils.FieldChecker',
@@ -335,7 +335,7 @@ class TestTruncateAndLoadLayer:
 
         mocker.patch('palletjack.utils.FieldChecker')
 
-        updater_mock._upsert_data.return_value = 42
+        updater_mock._upload_data.return_value = 42
 
         uploaded_features = load.FeatureServiceUpdater._truncate_and_load_data(updater_mock)
 
@@ -356,17 +356,17 @@ class TestTruncateAndLoadLayer:
         mocker.patch('palletjack.utils.sleep')
         mocker.patch('palletjack.utils.save_feature_layer_to_json', return_value='bar_path')
 
-        updater_mock._upsert_data.side_effect = RuntimeError(
+        updater_mock._upload_data.side_effect = RuntimeError(
             'Failed to append data. Append operation should have been rolled back.'
         )
 
         with pytest.raises(RuntimeError, match='Failed to append data. Append operation should have been rolled back.'):
             uploaded_features = load.FeatureServiceUpdater._truncate_and_load_data(updater_mock)
 
-        assert updater_mock._upsert_data.call_args_list[0].args == (
+        assert updater_mock._upload_data.call_args_list[0].args == (
             updater_mock.feature_layer, updater_mock.new_dataframe
         )
-        assert updater_mock._upsert_data.call_args_list[0].kwargs == {'upsert': False}
+        assert updater_mock._upload_data.call_args_list[0].kwargs == {'upsert': False}
 
         assert f'Append failed, feature service may be dirty due to append chunking. Data saved to bar_path' in caplog.text
 
@@ -384,17 +384,17 @@ class TestTruncateAndLoadLayer:
         mocker.patch('palletjack.utils.sleep')
         mocker.patch('palletjack.utils.save_feature_layer_to_json', return_value='bar_path')
 
-        updater_mock._upsert_data.side_effect = RuntimeError(
+        updater_mock._upload_data.side_effect = RuntimeError(
             'Failed to append data. Append operation should have been rolled back.'
         )
 
         with pytest.raises(RuntimeError, match='Failed to append data. Append operation should have been rolled back.'):
             uploaded_features = load.FeatureServiceUpdater._truncate_and_load_data(updater_mock)
 
-        assert updater_mock._upsert_data.call_args_list[0].args == (
+        assert updater_mock._upload_data.call_args_list[0].args == (
             updater_mock.feature_layer, updater_mock.new_dataframe
         )
-        assert updater_mock._upsert_data.call_args_list[0].kwargs == {'upsert': False}
+        assert updater_mock._upload_data.call_args_list[0].kwargs == {'upsert': False}
 
         assert f'Append failed, feature service may be dirty due to append chunking. Old data not saved (no failsafe dir set)' in caplog.text
 
@@ -421,7 +421,7 @@ class TestTruncateAndLoadLayer:
             check_nullable_ints_shapely=mocker.DEFAULT,
         )
 
-        updater_mock._upsert_data.return_value = 42
+        updater_mock._upload_data.return_value = 42
 
         uploaded_features = load.FeatureServiceUpdater._truncate_and_load_data(updater_mock)
 
@@ -485,7 +485,7 @@ class TestTruncateAndLoadLayer:
 
         mocker.patch('palletjack.utils.sleep')
 
-        updater_mock._upsert_data.return_value = {'recordCount': 42}
+        updater_mock._upload_data.return_value = {'recordCount': 42}
 
         #: Should not raise
         uploaded_features = load.FeatureServiceUpdater._truncate_and_load_data(updater_mock)
@@ -974,27 +974,27 @@ class TestAttachments:
                ] == [str(path) for path in test_df['full_file_path']]
 
 
-class TestUpsertData:
+class TestUploadData:
 
-    def test_upsert_data_calls_append_with_proper_args(self, mocker):
+    def test_upload_data_calls_append_with_proper_args(self, mocker):
         mock_fl = mocker.Mock()
         mock_fl.append.return_value = (True, {'recordCount': 42})
         mocker.patch('palletjack.utils.sleep')
         mocker.patch('palletjack.utils.Chunking.build_upload_json', autospec=True, return_value=['json'])
 
-        load.FeatureServiceUpdater._upsert_data(mocker.Mock(), mock_fl, mocker.Mock(), upsert=True)
+        load.FeatureServiceUpdater._upload_data(mocker.Mock(), mock_fl, mocker.Mock(), upsert=True)
 
         mock_fl.append.assert_called_once_with(
             upload_format='geojson', edits='json', upsert=True, rollback=True, return_messages=True
         )
 
-    def test_upsert_data_calls_append_for_multiple_chunks(self, mocker):
+    def test_upload_data_calls_append_for_multiple_chunks(self, mocker):
         mock_fl = mocker.Mock()
         mock_fl.append.return_value = (True, {'recordCount': 42})
         mocker.patch('palletjack.utils.sleep')
         mocker.patch('palletjack.utils.Chunking.build_upload_json', autospec=True, return_value=['json1', 'json2'])
 
-        load.FeatureServiceUpdater._upsert_data(mocker.Mock(), mock_fl, mocker.Mock(), upsert=True)
+        load.FeatureServiceUpdater._upload_data(mocker.Mock(), mock_fl, mocker.Mock(), upsert=True)
 
         assert mock_fl.append.call_count == 2
         assert mock_fl.append.call_args_list == [
@@ -1002,50 +1002,50 @@ class TestUpsertData:
             mocker.call(upload_format='geojson', edits='json2', upsert=True, rollback=True, return_messages=True),
         ]
 
-    def test_upsert_data_retries_on_exception(self, mocker):
+    def test_upload_data_retries_on_exception(self, mocker):
         mock_fl = mocker.Mock()
         mock_fl.append.side_effect = [Exception, (True, {'recordCount': 42})]
         mocker.patch('palletjack.utils.Chunking.build_upload_json', autospec=True, return_value=['json'])
         mocker.patch('palletjack.utils.sleep')
 
-        load.FeatureServiceUpdater._upsert_data(mocker.Mock(), mock_fl, mocker.Mock(), upsert=True)
+        load.FeatureServiceUpdater._upload_data(mocker.Mock(), mock_fl, mocker.Mock(), upsert=True)
 
         assert mock_fl.append.call_count == 2
 
-    def test_upsert_data_raises_on_False_result(self, mocker):
+    def test_upload_data_raises_on_False_result(self, mocker):
         mock_fl = mocker.Mock()
         mock_fl.append.return_value = (False, {'message': 'foo'})
         mocker.patch('palletjack.utils.Chunking.build_upload_json', autospec=True, return_value=['json'])
         mocker.patch('palletjack.utils.sleep')
 
         with pytest.raises(RuntimeError) as exc_info:
-            load.FeatureServiceUpdater._upsert_data(mocker.Mock(), mock_fl, mocker.Mock(), upsert=True)
+            load.FeatureServiceUpdater._upload_data(mocker.Mock(), mock_fl, mocker.Mock(), upsert=True)
 
         assert exc_info.value.args[
             0] == 'Failed to append data at chunk 1 of 1. Append operation should have been rolled back.'
 
-    def test_upsert_data_raises_on_upsert_field_not_in_append_fields(self, mocker):
+    def test_upload_data_raises_on_upsert_field_not_in_append_fields(self, mocker):
         append_kwargs = {'upsert_matching_field': 'foo', 'append_fields': ['bar', 'baz'], 'upsert': True}
         with pytest.raises(ValueError) as exc_info:
-            load.FeatureServiceUpdater._upsert_data(mocker.Mock(), mocker.Mock(), mocker.Mock(), **append_kwargs)
+            load.FeatureServiceUpdater._upload_data(mocker.Mock(), mocker.Mock(), mocker.Mock(), **append_kwargs)
 
         assert exc_info.value.args[0
                                   ] == 'Upsert matching field foo not found in either append fields or existing fields.'
 
-    def test_upsert_data_raises_on_upsert_field_not_in_dataframe_columns(self, mocker):
+    def test_upload_data_raises_on_upsert_field_not_in_dataframe_columns(self, mocker):
         append_kwargs = {'upsert_matching_field': 'foo', 'append_fields': ['foo', 'bar'], 'upsert': True}
         df = pd.DataFrame(columns=['bar', 'baz'])
         with pytest.raises(ValueError) as exc_info:
-            load.FeatureServiceUpdater._upsert_data(mocker.Mock(), mocker.Mock(), df, **append_kwargs)
+            load.FeatureServiceUpdater._upload_data(mocker.Mock(), mocker.Mock(), df, **append_kwargs)
 
         assert exc_info.value.args[0
                                   ] == 'Upsert matching field foo not found in either append fields or existing fields.'
 
-    def test_upsert_data_raises_on_upsert_field_not_in_dataframe_columns_and_append_fields(self, mocker):
+    def test_upload_data_raises_on_upsert_field_not_in_dataframe_columns_and_append_fields(self, mocker):
         append_kwargs = {'upsert_matching_field': 'foo', 'append_fields': ['bar', 'baz'], 'upsert': True}
         df = pd.DataFrame(columns=['bar', 'baz'])
         with pytest.raises(ValueError) as exc_info:
-            load.FeatureServiceUpdater._upsert_data(mocker.Mock(), mocker.Mock(), df, **append_kwargs)
+            load.FeatureServiceUpdater._upload_data(mocker.Mock(), mocker.Mock(), df, **append_kwargs)
 
         assert exc_info.value.args[0
                                   ] == 'Upsert matching field foo not found in either append fields or existing fields.'
