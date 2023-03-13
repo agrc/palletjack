@@ -408,10 +408,10 @@ class FieldChecker:
         """
 
         field_checker = cls(live_data_properties, new_dataframe)
+        field_checker.check_fields_present(fields, add_oid=add_oid)
         field_checker.check_live_and_new_field_types_match(fields)
         field_checker.check_for_non_null_fields(fields)
         field_checker.check_field_length(fields)
-        field_checker.check_fields_present(fields, add_oid=add_oid)
         field_checker.check_srs_wgs84()
         field_checker.check_nullable_ints_shapely()
 
@@ -618,6 +618,7 @@ class FieldChecker:
         live_fields = set(self.fields_dataframe['name'])
         new_fields = set(self.new_dataframe.columns)
         working_fields = set(fields)
+        working_fields.discard('SHAPE')  #: The fields from the feature layer properties don't include the SHAPE field.
         if add_oid:
             working_fields.add('OBJECTID')
 
