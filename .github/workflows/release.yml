@@ -25,7 +25,7 @@ jobs:
           TAG=$(gh release view --json tagName --jq ".tagName")
           sed -i "s/__version__ = .*$/__version__ = '$TAG'/" src/palletjack/version.py
 
-      - name: Install wheel
+      - name: 🛞️ Install wheel
         run: pip install wheel
 
       - name: 📦 Build package
