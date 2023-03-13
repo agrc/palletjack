@@ -25,6 +25,10 @@ class FeatureServiceUpdater:
     Contains four class methods that can be called directly without needing to instantiate an object: add_features,
     remove_features, update_features, and truncate_and_load_features.
 
+    It is the client's responsibility to separate out the new data into these different steps. If the extract/transform
+    stages result in seperate groups of records that need to be added, deleted, and updated, the client must call the
+    three different methods with dataframes containing only the respective records for each operation.
+
     Because the update process uploads the data as geojson, all input geometries must be in WGS84 (wkid 4326). Input
     dataframes can be projected using dataframe.spatial.project(4326). ArcGIS Online will then project the uploaded
     data to match the hosted feature service's projection.
@@ -89,14 +93,18 @@ class FeatureServiceUpdater:
     def update_features(cls, gis, feature_service_itemid, dataframe, layer_index=0, update_geometry=True):
         """Updates existing features within a hosted feature layer using OBJECTID as the join field.
 
+        The new dataframe's columns and data must match the existing data's fields (with the exception of generated
+        fields like shape area and length) in name, type, and allowable length. Live fields that are not nullable and
+        don't have a default value must have a value in the new data; missing data in these fields will raise an error.
+
+        Uses the OBJECTID field to determine which features should be updated by the underlying FeatureLayer.append()
+        method. The most robust way to do this is to load the live data as a dataframe, subset it down to the desired
+        rows, make your edits based on a separate join id, and then pass that dataframe to this method.
+
         The new data can have either attributes and geometries or only attributes based on the update_geometry flag. A
         combination of updates from a source with both attributes & geometries and a source with attributes-only must
         be done with two separate calls. The geometries must be provided in a SHAPE column, be the same type as the
         live data, and have a WGS84 (wkid 4326) projection.
-
-        The new dataframe's columns and data must match the existing data's fields (with the exception of generated
-        fields like shape area and length) in name, type, and allowable length. Live fields that are not nullable and
-        don't have a default value must have a value in the new data; missing data in these fields will raise an error.
 
         Args:
             gis (arcgis.gis.GIS): GIS item for AGOL org

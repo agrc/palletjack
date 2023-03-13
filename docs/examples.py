@@ -2,11 +2,10 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 
 import arcgis
+import pandas as pd
+from arcgis.features import GeoAccessor, GeoSeriesAccessor
 
-from palletjack import (
-    ColorRampReclassifier, FeatureServiceAttachmentsUpdater, FeatureServiceInlineUpdater, GoogleDriveDownloader,
-    GSheetLoader, SFTPLoader
-)
+from palletjack import extract, load, transform, utils
 
 
 def load_google_sheet_then_download_and_update_attachments():
@@ -26,12 +25,12 @@ def load_google_sheet_then_download_and_update_attachments():
     feature_layer_itemid = 'agol_item_id'
 
     #: Use a GSheetLoader to load a google sheet into a dictionary of dataframes
-    gsheetloader = GSheetLoader(service_account_json)
+    gsheetloader = extract.GSheetLoader(service_account_json)
     worksheets = gsheetloader.load_all_worksheets_into_dataframes(sheet_id)
 
     #: Use a GoogleDriveDownloader to download all the pictures from a single worksheet dataframe
     uorg_2021_dataframe = worksheets['2021']
-    downloader = GoogleDriveDownloader(out_dir)
+    downloader = extract.GoogleDriveDownloader(out_dir)
     downloader.download_attachments_from_dataframe(
         uorg_2021_dataframe, attachment_column, attachments_join_field, 'full_file_path'
     )
@@ -50,7 +49,7 @@ def load_google_sheet_then_download_and_update_attachments():
     gis = arcgis.gis.GIS(agol_org, agol_user, agol_password)
 
     #: Create our attachment updater and update attachments using the attachments dataframe
-    attachment_updater = FeatureServiceAttachmentsUpdater(gis)
+    attachment_updater = load.FeatureServiceAttachmentsUpdater(gis)
     attachment_updater.update_attachments(
         feature_layer_itemid, attachments_join_field, 'full_file_path', attachments_dataframe
     )
@@ -94,20 +93,25 @@ def download_from_sftp_update_agol_reclassify_map():
     gis = arcgis.gis.GIS(agol_org, agol_user, agol_password)
     webmap_item = gis.content.get(map_item_id)  # pylint:disable=no-member
 
-    #: Load the latest data from FTP
-    sftp_loader = SFTPLoader(sftp_host, sftp_username, sftp_password, local_knownhosts_path, tempdir_path)
+    #:Extract the latest data from FTP
+    sftp_loader = extract.SFTPLoader(sftp_host, sftp_username, sftp_password, local_knownhosts_path, tempdir_path)
     number_of_files_downloaded = sftp_loader.download_sftp_folder_contents(sftp_folder=sftp_folder)
     dataframe = sftp_loader.read_csv_into_dataframe(sftp_filename, csv_datatypes)
 
+    #: Load the live data and merge the updates
+    live_df = pd.DataFrame.spatial.from_featurelayer(
+        arcgis.Features.FeatureLayer.fromitem(gis.content.get(feature_layer_itemid))
+    )
+    update_df = transform.FeatureServiceMerging.update_live_data_with_new_data(live_df, dataframe, join_key_column)
+
     #: Update the AGOL data
-    erap_updater = FeatureServiceInlineUpdater(gis, dataframe, join_key_column)
-    number_of_rows_updated = erap_updater.update_existing_features_in_hosted_feature_layer(
-        feature_layer_itemid, list(csv_datatypes.keys())
+    number_of_rows_updated = load.FeatureServiceUpdater.update_features(
+        gis, feature_layer_itemid, update_df, update_geometry=False
     )
 
     #: Reclassify the break values on the webmap's color ramp
-    erap_reclassifier = ColorRampReclassifier(webmap_item, gis)
-    success = erap_reclassifier.update_color_ramp_values(map_layer_name, classification_field)
+    reclassifier = load.ColorRampReclassifier(webmap_item, gis)
+    success = reclassifier.update_color_ramp_values(map_layer_name, classification_field)
 
     #: update returns either True or False to denote success or failure
     reclassifier_result = 'Success'
