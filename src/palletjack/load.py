@@ -203,7 +203,7 @@ class FeatureServiceUpdater:
         utils.FieldChecker.check_fields(self.feature_layer.properties, self.new_dataframe, self.fields, add_oid=False)
 
         #: Upsert
-        append_count = self._upsert_data(
+        append_count = self._upload_data(
             self.feature_layer,
             self.new_dataframe,
             upsert=False,
@@ -280,7 +280,7 @@ class FeatureServiceUpdater:
         utils.FieldChecker.check_fields(self.feature_layer.properties, self.new_dataframe, self.fields, add_oid=True)
 
         #: Upsert
-        append_count = self._upsert_data(
+        append_count = self._upload_data(
             self.feature_layer,
             self.new_dataframe,
             upsert=True,
@@ -291,7 +291,7 @@ class FeatureServiceUpdater:
         return append_count
 
     #: TODO: rename this method? not everything is an upsert
-    def _upsert_data(self, target_featurelayer, dataframe, **append_kwargs):
+    def _upload_data(self, target_featurelayer, dataframe, **append_kwargs):
         """UPdate and inSERT data into live dataset with featurelayer.append()
 
         Note: The call to to_featureset() in this method will add new OBJECTIDs to the new data if they aren't already present.
@@ -388,7 +388,7 @@ class FeatureServiceUpdater:
 
         try:
             self._class_logger.info('Loading new data...')
-            append_count = self._upsert_data(self.feature_layer, self.new_dataframe, upsert=False)
+            append_count = self._upload_data(self.feature_layer, self.new_dataframe, upsert=False)
             self._class_logger.debug('Total truncate and load time: %s', datetime.now() - start)
         except Exception:
             if self.failsafe_dir:
