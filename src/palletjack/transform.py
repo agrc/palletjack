@@ -188,7 +188,7 @@ class DataCleaning:
         try:
             for field in fields_that_should_be_ints:
                 retyped[field] = DataCleaning._switch_series_to_numeric_dtype(retyped[field], 'Int64')
-        except ValueError as error:
+        except (TypeError, ValueError) as error:
             raise TypeError(
                 'Cannot convert one or more fields to nullable ints. Check for non-int/non-np.nan values.'
             ) from error
@@ -214,7 +214,7 @@ class DataCleaning:
         try:
             for field in fields_that_should_be_floats:
                 retyped[field] = DataCleaning._switch_series_to_numeric_dtype(retyped[field], 'float')
-        except ValueError as error:
+        except (TypeError, ValueError) as error:
             raise TypeError(
                 'Cannot convert one or more fields to floats. Check for non-float/non-null values.'
             ) from error
