@@ -1,5 +1,6 @@
 """Transform pandas dataframes in preparation for loading to AGOL.
 """
+import locale
 import logging
 import warnings
 from datetime import datetime
@@ -186,10 +187,8 @@ class DataCleaning:
         retyped = dataframe.copy()
         try:
             for field in fields_that_should_be_ints:
-                retyped[field] = retyped[field].astype(str).str.replace(',', '')
-                retyped[field].replace('', None, inplace=True)
-                retyped[field] = retyped[field].astype('Int64')
-        except TypeError as error:
+                retyped[field] = DataCleaning._switch_series_to_numeric_dtype(retyped[field], 'Int64')
+        except ValueError as error:
             raise TypeError(
                 'Cannot convert one or more fields to nullable ints. Check for non-int/non-np.nan values.'
             ) from error
@@ -214,14 +213,32 @@ class DataCleaning:
         retyped = dataframe.copy()
         try:
             for field in fields_that_should_be_floats:
-                retyped[field] = retyped[field].astype(str).str.replace(',', '')
-                retyped[field].replace('', None, inplace=True)
-                retyped[field] = retyped[field].astype(float)
-        except TypeError as error:
+                retyped[field] = DataCleaning._switch_series_to_numeric_dtype(retyped[field], 'float')
+        except ValueError as error:
             raise TypeError(
                 'Cannot convert one or more fields to floats. Check for non-float/non-null values.'
             ) from error
         return retyped
+
+    @staticmethod
+    def _switch_series_to_numeric_dtype(series, dtype):
+        """Switch the dtype of a series to the specified dtype
+
+        Series of dtype 'object' (ie, series of strings or mixed strings and numbers) are converted to str so that they
+        can be de-localized to remove comma thousands separators
+
+        Args:
+            series (pd.Series): The series to be converted
+            dtype (str): The dtype to convert to
+
+        Returns:
+            pd.Series: The converted series
+        """
+
+        if series.dtype == 'object':
+            series = series.astype(str).apply(locale.delocalize)
+            series.replace('', None, inplace=True)
+        return series.astype(dtype)
 
     @staticmethod
     def switch_to_datetime(dataframe, date_fields, **to_datetime_kwargs):

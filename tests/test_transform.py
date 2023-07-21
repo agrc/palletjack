@@ -416,7 +416,7 @@ class TestNullableIntFixing:
 
         retyped_df = palletjack.transform.DataCleaning.switch_to_nullable_int(df, ['a'])
 
-        test_df = pd.DataFrame([1., 2., 3000.], columns=['a'], dtype='float')
+        test_df = pd.DataFrame([1, 2, 3000], columns=['a'], dtype='Int64')
 
         tm.assert_frame_equal(retyped_df, test_df)
 
@@ -427,7 +427,7 @@ class TestNullableIntFixing:
 
         retyped_df = palletjack.transform.DataCleaning.switch_to_nullable_int(df, ['a'])
 
-        test_df = pd.DataFrame([1., 2., 3000.], columns=['a'], dtype='float')
+        test_df = pd.DataFrame([1, 2, 3000], columns=['a'], dtype='Int64')
 
         tm.assert_frame_equal(retyped_df, test_df)
 
@@ -499,6 +499,39 @@ class TestFloatFixing:
         test_df = pd.DataFrame([1., 2., 3000.], columns=['a'], dtype='float')
 
         tm.assert_frame_equal(retyped_df, test_df)
+
+
+class TestSwitchSeriesToNumericDtype:
+
+    def test_switch_series_to_numeric_dtype_ints_to_Int64(self):
+        series1 = pd.Series([1, 2, 3, 4, 5])
+        test_series = pd.Series([1, 2, 3, 4, 5], dtype='Int64')
+        assert palletjack.transform.DataCleaning._switch_series_to_numeric_dtype(series1, 'Int64').equals(test_series)
+
+    def test_switch_series_to_numeric_dtype_str_to_float_with_thousands(self):
+        series2 = pd.Series(['1,000', '2,000', '3,000', '4,000', '5,000'])
+        test_series = pd.Series([1000.0, 2000.0, 3000.0, 4000.0, 5000.0])
+        assert palletjack.transform.DataCleaning._switch_series_to_numeric_dtype(series2, 'float').equals(test_series)
+
+    def test_switch_series_to_numeric_dtype_mixed_strings_ints_to_Int64(self):
+        series3 = pd.Series(['1,000', 2, '3,000', 4, '5,000'])
+        test_series = pd.Series([1000, 2, 3000, 4, 5000], dtype='Int64')
+        assert palletjack.transform.DataCleaning._switch_series_to_numeric_dtype(series3, 'Int64').equals(test_series)
+
+    def test_switch_series_to_numeric_dtype_mixed_strings_ints_to_float(self):
+        series3 = pd.Series(['1,000', 2, '3,000', 4, '5,000'])
+        test_series = pd.Series([1000.0, 2.0, 3000.0, 4.0, 5000.0])
+        assert palletjack.transform.DataCleaning._switch_series_to_numeric_dtype(series3, 'float').equals(test_series)
+
+    def test_switch_series_to_numeric_dtype_ints_with_nan_to_Int64(self):
+        series4 = pd.Series([1, 2, np.nan])
+        test_series = pd.Series([1, 2, pd.NA], dtype='Int64')
+        assert palletjack.transform.DataCleaning._switch_series_to_numeric_dtype(series4, 'Int64').equals(test_series)
+
+    def test_switch_series_to_numeric_dtype_raises_on_non_numeric(self):
+        series5 = pd.Series(['a', 'b', 'c', 'd', 'e'])
+        with pytest.raises(ValueError):
+            palletjack.transform.DataCleaning._switch_series_to_numeric_dtype(series5, 'float')
 
 
 class TestDatetimeSwitching:
