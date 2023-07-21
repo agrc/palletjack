@@ -183,9 +183,12 @@ class DataCleaning:
             pd.DataFrame: Input dataframe with columns converted to nullable Int64
         """
 
-        int_dict = {field: 'Int64' for field in fields_that_should_be_ints}
+        retyped = dataframe.copy()
         try:
-            retyped = dataframe.astype(int_dict)
+            for field in fields_that_should_be_ints:
+                retyped[field] = retyped[field].astype(str).str.replace(',', '')
+                retyped[field].replace('', None, inplace=True)
+                retyped[field] = retyped[field].astype('Int64')
         except TypeError as error:
             raise TypeError(
                 'Cannot convert one or more fields to nullable ints. Check for non-int/non-np.nan values.'
@@ -208,11 +211,12 @@ class DataCleaning:
             pd.DataFrame: Input dataframe with columns converted to float
         """
 
-        float_dict = {field: 'float' for field in fields_that_should_be_floats}
-        empty_string_dict = {field: {'': None} for field in fields_that_should_be_floats}
+        retyped = dataframe.copy()
         try:
-            no_empty_strings = dataframe.replace(empty_string_dict)
-            retyped = no_empty_strings.astype(float_dict)
+            for field in fields_that_should_be_floats:
+                retyped[field] = retyped[field].astype(str).str.replace(',', '')
+                retyped[field].replace('', None, inplace=True)
+                retyped[field] = retyped[field].astype(float)
         except TypeError as error:
             raise TypeError(
                 'Cannot convert one or more fields to floats. Check for non-float/non-null values.'
