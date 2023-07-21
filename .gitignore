@@ -1,6 +1,7 @@
 
 #: testing boilerplate
 _boilerplate.py
+_rest_testing.py
 
 #: Secrets file
 secrets.py

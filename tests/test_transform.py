@@ -409,6 +409,39 @@ class TestNullableIntFixing:
         ):
             retyped_df = palletjack.transform.DataCleaning.switch_to_nullable_int(df, ['a', 'b'])
 
+    def test_switch_to_nullable_int_comma_thousands_separator(self):
+        df = pd.DataFrame({
+            'a': ['1', '2', '3,000'],
+        })
+
+        retyped_df = palletjack.transform.DataCleaning.switch_to_nullable_int(df, ['a'])
+
+        test_df = pd.DataFrame([1., 2., 3000.], columns=['a'], dtype='float')
+
+        tm.assert_frame_equal(retyped_df, test_df)
+
+    def test_switch_to_nullable_int_comma_thousands_separator_mixed_input_types(self):
+        df = pd.DataFrame({
+            'a': [1, '2', '3,000'],
+        })
+
+        retyped_df = palletjack.transform.DataCleaning.switch_to_nullable_int(df, ['a'])
+
+        test_df = pd.DataFrame([1., 2., 3000.], columns=['a'], dtype='float')
+
+        tm.assert_frame_equal(retyped_df, test_df)
+
+    def test_switch_to_nullable_int_casts_string_field_with_empty_string(self):
+        df = pd.DataFrame({
+            'a': ['1', '2', ''],
+        })
+
+        retyped_df = palletjack.transform.DataCleaning.switch_to_nullable_int(df, ['a'])
+
+        test_df = pd.DataFrame([1, 2, pd.NA], columns=['a'], dtype='Int64')
+
+        tm.assert_frame_equal(retyped_df, test_df)
+
 
 class TestFloatFixing:
 
@@ -442,6 +475,28 @@ class TestFloatFixing:
         retyped_df = palletjack.transform.DataCleaning.switch_to_float(df, ['a'])
 
         test_df = pd.DataFrame([1., 2., np.nan], columns=['a'], dtype='float')
+
+        tm.assert_frame_equal(retyped_df, test_df)
+
+    def test_switch_to_float_comma_thousands_separator(self):
+        df = pd.DataFrame({
+            'a': ['1', '2', '3,000'],
+        })
+
+        retyped_df = palletjack.transform.DataCleaning.switch_to_float(df, ['a'])
+
+        test_df = pd.DataFrame([1., 2., 3000.], columns=['a'], dtype='float')
+
+        tm.assert_frame_equal(retyped_df, test_df)
+
+    def test_switch_to_float_comma_thousands_separator_mixed_input_types(self):
+        df = pd.DataFrame({
+            'a': [1, 2., '3,000'],
+        })
+
+        retyped_df = palletjack.transform.DataCleaning.switch_to_float(df, ['a'])
+
+        test_df = pd.DataFrame([1., 2., 3000.], columns=['a'], dtype='float')
 
         tm.assert_frame_equal(retyped_df, test_df)
 
