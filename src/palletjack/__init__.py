@@ -2,6 +2,11 @@
 
 .. include:: ../../docs/README.md
 """
+import locale
 
 from . import extract, load, transform, utils
 from .errors import IntFieldAsFloatError, TimezoneAwareDatetimeError
+
+#: If the locale is not set explicitly, set it to the system default for text to number conversions
+if not locale.getlocale(locale.LC_NUMERIC)[0]:
+    locale.setlocale(locale.LC_NUMERIC, locale.getlocale())
