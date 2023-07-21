@@ -442,6 +442,18 @@ class TestNullableIntFixing:
 
         tm.assert_frame_equal(retyped_df, test_df)
 
+    def test_switch_to_nullable_int_raises_on_uncastable_text(self):
+        df = pd.DataFrame({
+            'a': [1, 2, np.nan],
+            'b': [1.1, 1.2, 'foo'],
+        })
+
+        with pytest.raises(
+            TypeError,
+            match=re.escape('Cannot convert one or more fields to nullable ints. Check for non-int/non-np.nan values.')
+        ):
+            retyped_df = palletjack.transform.DataCleaning.switch_to_nullable_int(df, ['a', 'b'])
+
 
 class TestFloatFixing:
 
