@@ -884,11 +884,16 @@ class Chunking:
         The chunks should (but not definitely proven to) maintain the sequential order of the features of the original
         dataframe. Suppose an initial 10 rows gives us chunks for rows [1, 2, 3], [4, 5, 6], [7, 8, 9], [10]. However,
         the second chunk [4, 5, 6] turns out to be too large, so it gets divided into [4, 5] and [6]. The resulting
-        list of chunks should be [1, 2, 3], [4, 5], [6], [7, 8, 9], [10]
+        list of chunks should be [1, 2, 3], [4, 5], [6], [7, 8, 9], [10].
+
+        Will raise an error if a single row is still larger than max_bytes.
 
         Args:
             dataframe (pd.DataFrame.spatial): A spatially-enabled dataframe to divide
             max_bytes (int): The max utf-16 encoded geojson size for any one chunk
+
+        Raises:
+            ValueError: If a single row is larger than max_bytes and therefore cannot be chunked smaller
         """
 
         #: Calculate number of chunks needed and the guesstimate max number of rows to achieve that size
@@ -903,6 +908,10 @@ class Chunking:
         for chunk_dataframe in list_of_dataframes:
             chunk_geojson_size = sys.getsizeof(chunk_dataframe.spatial.to_featureset().to_geojson.encode('utf-16'))
             if chunk_geojson_size > max_bytes:
+                if len(chunk_dataframe) == 1:
+                    raise ValueError(
+                        f'Dataframe row {chunk_dataframe.index[0]} is larger than {max_bytes} bytes, further chunking impossible'
+                    )
                 return_dataframes.extend(Chunking._recursive_dataframe_chunking(chunk_dataframe, max_bytes))
             else:
                 return_dataframes.append(chunk_dataframe)
