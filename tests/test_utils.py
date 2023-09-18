@@ -1661,6 +1661,14 @@ class TestDataFrameChunking:
         assert len(dfs) == chunks
         assert [len(df) for df in dfs] == [30] * chunks
 
+    def test_chunk_dataframe_raises_on_single_row_chunk(self, mocker):
+        df = pd.DataFrame(['a'], columns=['foo'])
+
+        with pytest.raises(ValueError) as exc_info:
+            palletjack.utils.Chunking._chunk_dataframe(df, 2)
+
+        assert 'Dataframe chunk is only one row (index 0), further chunking impossible' in str(exc_info.value)
+
     def test_recursive_dataframe_chunking_recurses_on_first_chunk_too_large(self, mocker):
         #: 5 rows, 2 chunks, first chunk gets 4 instead of three.
         #: two total calls: once for 5 elements, once for 4. first call chunks to 4 and 1, next chunks 4 into 3 and 1
@@ -1769,22 +1777,25 @@ class TestDataFrameChunking:
 
     def test_recursive_dataframe_chunking_raises_when_single_row_is_too_big(self, mocker):
         #: First chunk triggers a recursive call, which returns a single row and should error out
+
+        max_bytes = 4
+
         df = pd.DataFrame(['a', 'b', 'c', 'd', 'e'], columns=['foo'])
         mocker.patch('palletjack.utils.pd.DataFrame.spatial.to_featureset', return_value=mocker.Mock())
         mocker.patch('palletjack.utils.Chunking._ceildiv')
-        sys_mock = mocker.patch('palletjack.utils.sys.getsizeof', side_effect=['foo', 10, 'foo', 5])
+        sys_mock = mocker.patch('palletjack.utils.sys.getsizeof', side_effect=['foo', 5, 'foo', 5])
         chunking_mock = mocker.patch(
             'palletjack.utils.Chunking._chunk_dataframe',
             side_effect=[
                 [df.iloc[:3], df.iloc[3:]],
-                [df.iloc[2:3]]  #: Second chunking returns a single row
+                ValueError('Dataframe chunk is only one row (index 2), further chunking impossible'),
             ]
         )
 
         with pytest.raises(ValueError) as exc_info:
-            df_list = palletjack.utils.Chunking._recursive_dataframe_chunking(df, 4)
+            df_list = palletjack.utils.Chunking._recursive_dataframe_chunking(df, max_bytes)
 
-        assert 'Dataframe row 2 is larger than 4 bytes, further chunking impossible' in str(exc_info.value)
+        assert 'Dataframe chunk is only one row (index 2), further chunking impossible' in str(exc_info.value)
 
     def test_build_upload_json_calls_null_string_fixer_appropriate_number_of_times(self, mocker):
 

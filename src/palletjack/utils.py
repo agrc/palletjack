@@ -836,6 +836,11 @@ class Chunking:
 
         df_length = len(dataframe)
 
+        if df_length == 1:
+            raise ValueError(
+                f'Dataframe chunk is only one row (index {dataframe.index[0]}), further chunking impossible'
+            )
+
         starts = range(0, df_length, chunk_size)
         ends = [start + chunk_size if start + chunk_size < df_length else df_length for start in starts]
         list_of_dataframes = [dataframe.iloc[start:end] for start, end in zip(starts, ends)]
@@ -908,10 +913,6 @@ class Chunking:
         for chunk_dataframe in list_of_dataframes:
             chunk_geojson_size = sys.getsizeof(chunk_dataframe.spatial.to_featureset().to_geojson.encode('utf-16'))
             if chunk_geojson_size > max_bytes:
-                if len(chunk_dataframe) == 1:
-                    raise ValueError(
-                        f'Dataframe row {chunk_dataframe.index[0]} is larger than {max_bytes} bytes, further chunking impossible'
-                    )
                 return_dataframes.extend(Chunking._recursive_dataframe_chunking(chunk_dataframe, max_bytes))
             else:
                 return_dataframes.append(chunk_dataframe)
