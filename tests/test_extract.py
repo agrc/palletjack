@@ -1098,3 +1098,41 @@ class TestRESTServiceLoader:
         response_json = {}
 
         assert extract.RESTServiceLoader._get_object_id_field(mocker.Mock(), response_json) == 'OBJECTID'
+
+    def test_get_feature_layers_info_from_service_only_returns_feature_layers(self, mocker):
+        response_json = {'layers': [{'id': 0, 'type': 'Feature Layer'}, {'id': 1, 'type': 'Group Layer'}]}
+
+        mocker.patch('palletjack.extract.requests.get', return_value=mocker.Mock(json=lambda: response_json))
+
+        test_layer = [{'id': 0, 'type': 'Feature Layer'}]
+
+        assert extract.RESTServiceLoader._get_feature_layers_info_from_service(mocker.Mock()) == test_layer
+
+    def test_get_feature_layers_info_from_service_returns_empty_list_if_no_feature_layers(self, mocker):
+        response_json = {'layers': [{'id': 0, 'type': 'Group Layer'}]}
+
+        mocker.patch('palletjack.extract.requests.get', return_value=mocker.Mock(json=lambda: response_json))
+
+        assert extract.RESTServiceLoader._get_feature_layers_info_from_service(mocker.Mock()) == []
+
+    def test_get_feature_layers_info_from_service_raises_on_json_parse_error(self, mocker):
+        response_mock = mocker.Mock()
+        response_mock.json.side_effect = json.JSONDecodeError('foo', 'bar', 42)
+
+        mocker.patch('palletjack.extract.requests.get', return_value=response_mock)
+
+        with pytest.raises(RuntimeError, match=re.escape('Could not parse response from foo.bar')):
+            extract.RESTServiceLoader._get_feature_layers_info_from_service(mocker.Mock(base_url='foo.bar'))
+
+    def test_get_feature_layers_info_from_service_raises_on_missing_layers_key(self, mocker):
+        mocker.patch('palletjack.extract.requests.get', return_value=mocker.Mock(json=lambda: {'foo': 'bar'}))
+
+        with pytest.raises(RuntimeError, match=re.escape('Response from foo.bar does not contain layer information')):
+            extract.RESTServiceLoader._get_feature_layers_info_from_service(mocker.Mock(base_url='foo.bar'))
+
+    def test_get_feature_layers_info_from_service_raises_on_missing_layer_type(self, mocker):
+
+        mocker.patch('palletjack.extract.requests.get', return_value=mocker.Mock(json=lambda: {'layers': [{'id': 0}]}))
+
+        with pytest.raises(RuntimeError, match=re.escape('Layer info did not contain layer type')):
+            extract.RESTServiceLoader._get_feature_layers_info_from_service(mocker.Mock(base_url='foo.bar'))
