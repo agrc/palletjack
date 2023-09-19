@@ -578,7 +578,6 @@ class RESTServiceLoader:
 
         self._class_logger = logging.getLogger(__name__).getChild(self.__class__.__name__)
 
-    #: TODO: Check errors
     def get_features(self, layer=0, chunk_size=100, envelope_params=None, feature_params=None):
         """Download the features from a REST MapService or FeatureService with query enabled.
 
@@ -586,15 +585,6 @@ class RESTServiceLoader:
         requests. 100 seems to be the sweet spot before requests start to error out consistently. To limit the number
         of features returned, you can specify a geographic bounding box via the envelope parameters. Individual chunk
         requests and other HTML requests are wrapped in retries to handle momentary network glitches.
-
-        Raises:
-            ValueError: If envelope is specified but envelope_sr is not.
-            RuntimeError: If the service does not support the query capability.
-            RuntimeError: If the REST response type is not Feature Layer
-            RuntimeError: If the chunk's HTTP response code is not 200 (ie, the request failed)
-            RuntimeError: The response could not be parsed into JSON (a technically successful request but bad data)
-            RuntimeError: If the number of features downloaded does not match the number of OIDs in the service
-                (subsetted by envelope if provided).
 
         Args:
             layer (int, optional): Layer within the service to download. Defaults to 0.
@@ -605,6 +595,15 @@ class RESTServiceLoader:
             feature_params (dict, optional): Additional query parameters to pass to the service when downloading
                 features. Parameter defaults to None, and the query defaults to 'outFields': '*', 'returnGeometry':
                 'true'. See the ArcGIS REST API documentation for more information.
+
+        Raises:
+            ValueError: If envelope is specified but envelope_sr is not.
+            RuntimeError: If the service does not support the query capability.
+            RuntimeError: If the REST response type is not Feature Layer.
+            RuntimeError: If it cannot get a list of Object IDs from the layer
+            RuntimeError: If the chunk's HTTP response code is not 200 (ie, the request failed)
+            RuntimeError: The response could not be parsed into JSON (a technically successful request but bad data)
+            RuntimeError: If the number of features downloaded does not match the number of OIDs requested in each chunk
 
         Returns:
             pd.DataFrame.spatial: The service's features as a spatially-enabled dataframe
@@ -794,6 +793,9 @@ class _ServiceLayer:
     def get_object_ids(self):
         """Get the Object IDs of the feature service layer, using the bounding envelope if present.
 
+        Raises:
+            RuntimeError: If the response does not contain an 'objectIds' key.
+
         Returns:
             list(int): The Object IDs
         """
@@ -822,7 +824,9 @@ class _ServiceLayer:
             unique_id_list (list): The list of unique IDs to download.
 
         Raises:
-            ValueError: If one bound is provided but not the other.
+            Runtime Error: If the chunk's HTTP response code is not 200 (ie, the request failed)
+            Runtime Error: The response could not be parsed into JSON (a technically successful request but bad data)
+            Runtime Error: If the number of features downloaded does not match the number of OIDs requested
 
         Returns:
             pd.DataFrame.spatial: Spatially-enabled dataframe of the service layer's features
