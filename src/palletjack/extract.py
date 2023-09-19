@@ -590,12 +590,16 @@ class RESTServiceLoader:
         return utils.retry(rest_loader._get_features)
 
     def __init__(self, service_url, layer=0, timeout=5, envelope=None, envelope_sr=None):
+        if service_url[-1] == '/':
+            service_url = service_url[:-1]
         self.base_url = f'{service_url}/{layer}'
         self.timeout = timeout
         self.envelope = envelope
         self.envelope_sr = envelope_sr
         if self.envelope and not self.envelope_sr:
             raise ValueError('envelope_sr required when passing in an envelope')
+
+        self._class_logger = logging.getLogger(__name__).getChild(self.__class__.__name__)
 
     def _check_capabilities(self, capability):
         """Raise error if the service does not support capability
@@ -642,6 +646,7 @@ class RESTServiceLoader:
                 'geometryType': 'esriGeometryEnvelope',
                 'inSR': self.envelope_sr
             })
+        self._class_logger.debug(f'OID params: {objectid_params}')
         response = utils.retry(requests.get, f'{self.base_url}/query', params=objectid_params, timeout=self.timeout)
 
         return sorted(response.json()['objectIds'])
@@ -673,6 +678,7 @@ class RESTServiceLoader:
         if (start_oid and end_oid) and (start_oid == end_oid):
             range_params.update({'where': f'OBJECTID ={start_oid}'})
 
+        self._class_logger.debug(f'OID range params: {range_params}')
         response = utils.retry(requests.get, f'{self.base_url}/query', params=range_params, timeout=self.timeout)
 
         return arcgis.features.FeatureSet.from_json(response.text).sdf.sort_values(by='OBJECTID')
@@ -689,12 +695,17 @@ class RESTServiceLoader:
             pd.DataFrame.spatial: Spatially-enabled dataframe of the feature service layer
         """
 
+        self._class_logger.info(f'Getting features from {self.base_url}...')
+        self._class_logger.debug('Checking for query capability...')
         self._check_capabilities('query')
+        self._class_logger.debug('Getting max record count...')
         max_record_count = self._get_max_record_count()
+        self._class_logger.debug('Getting object ids...')
         oids = self._get_object_ids()
 
         feature_dataframes = []
         for i in range(0, len(oids), max_record_count):
+            self._class_logger.debug(f'Downloading features {i} through {i+max_record_count}...')
             oid_subset = oids[i:i + max_record_count]
             feature_dataframes.append(self._get_oid_range_as_dataframe(start_oid=oid_subset[0], end_oid=oid_subset[-1]))
 
