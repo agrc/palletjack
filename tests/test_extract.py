@@ -1103,8 +1103,14 @@ class Test_ServiceLayer:
         )
         assert implicit_return is None
 
-    def test_check_layer_type_works_normally(self, mocker):
+    def test_check_layer_type_allows_feature_layer(self, mocker):
         response_json = {'type': 'Feature Layer'}
+
+        implicit_return = extract._ServiceLayer._check_layer_type(mocker.Mock(layer_properties_json=response_json))
+        assert implicit_return is None
+
+    def test_check_layer_type_allows_table(self, mocker):
+        response_json = {'type': 'Table'}
 
         implicit_return = extract._ServiceLayer._check_layer_type(mocker.Mock(layer_properties_json=response_json))
         assert implicit_return is None
@@ -1112,7 +1118,7 @@ class Test_ServiceLayer:
     def test_check_layer_type_raises_on_group_layer(self, mocker):
         response_json = {'type': 'Group Layer'}
 
-        with pytest.raises(RuntimeError, match='Layer foo.bar/0 is a Group Layer, not a feature layer'):
+        with pytest.raises(RuntimeError, match='Layer foo.bar/0 is a Group Layer, not a feature layer or table'):
             extract._ServiceLayer._check_layer_type(
                 mocker.Mock(layer_properties_json=response_json, layer_url='foo.bar/0')
             )

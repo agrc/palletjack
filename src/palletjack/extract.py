@@ -774,17 +774,19 @@ class _ServiceLayer:
             )
 
     def _check_layer_type(self):
-        """Make sure the layer is a feature layer (and thus we can extract features from it)
+        """Make sure the layer is a feature layer or table (and thus we can extract features from it)
 
         Args:
             response_json (dict): The JSON response from a basic query parsed as a dictionary.
 
         Raises:
-            RuntimeError: If the REST response type is not Feature Layer
+            RuntimeError: If the REST response type is not Feature Layer or Table
         """
 
-        if self.layer_properties_json['type'] != 'Feature Layer':
-            raise RuntimeError(f'Layer {self.layer_url} is a {self.layer_properties_json["type"]}, not a feature layer')
+        if self.layer_properties_json['type'] not in ['Feature Layer', 'Table']:
+            raise RuntimeError(
+                f'Layer {self.layer_url} is a {self.layer_properties_json["type"]}, not a feature layer or table'
+            )
 
     def _get_object_id_field(self):
         """Get the service's objectIdField attribute
