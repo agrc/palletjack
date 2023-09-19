@@ -670,7 +670,7 @@ class TestRESTServiceLoader:
         assert record_count == [8, 16, 42]
         get_mock.assert_called_once_with('foo.bar/query', params={'returnIdsOnly': 'true', 'f': 'json'}, timeout=5)
 
-    def test_get_features_as_dataframe_uses_default_where(self, mocker):
+    def test_get_oid_range_as_dataframe_uses_default_where(self, mocker):
         get_mock = mocker.patch('palletjack.extract.requests.get')
         mocker.patch('palletjack.extract.arcgis')
 
@@ -679,7 +679,7 @@ class TestRESTServiceLoader:
         class_mock.timeout = 5
         class_mock.envelope = None
 
-        extract.RESTServiceLoader._get_features_as_dataframe(class_mock)
+        extract.RESTServiceLoader._get_oid_range_as_dataframe(class_mock)
 
         get_mock.assert_called_once_with(
             'foo.bar/query',
@@ -692,7 +692,7 @@ class TestRESTServiceLoader:
             timeout=5
         )
 
-    def test_get_features_as_dataframe_uses_oid_range(self, mocker):
+    def test_get_oid_range_as_dataframe_uses_oid_range(self, mocker):
         get_mock = mocker.patch('palletjack.extract.requests.get')
         mocker.patch('palletjack.extract.arcgis')
 
@@ -701,7 +701,7 @@ class TestRESTServiceLoader:
         class_mock.timeout = 5
         class_mock.envelope = None
 
-        extract.RESTServiceLoader._get_features_as_dataframe(class_mock, 10, 20)
+        extract.RESTServiceLoader._get_oid_range_as_dataframe(class_mock, 10, 20)
 
         get_mock.assert_called_once_with(
             'foo.bar/query',
@@ -714,7 +714,7 @@ class TestRESTServiceLoader:
             timeout=5
         )
 
-    def test_get_features_as_dataframe_handles_single_oid(self, mocker):
+    def test_get_oid_range_as_dataframe_handles_single_oid(self, mocker):
         get_mock = mocker.patch('palletjack.extract.requests.get')
         mocker.patch('palletjack.extract.arcgis')
 
@@ -723,7 +723,7 @@ class TestRESTServiceLoader:
         class_mock.timeout = 5
         class_mock.envelope = None
 
-        extract.RESTServiceLoader._get_features_as_dataframe(class_mock, 10, 10)
+        extract.RESTServiceLoader._get_oid_range_as_dataframe(class_mock, 10, 10)
 
         get_mock.assert_called_once_with(
             'foo.bar/query',
@@ -736,7 +736,7 @@ class TestRESTServiceLoader:
             timeout=5
         )
 
-    def test_get_features_as_dataframe_sorts_return_df(self, mocker):
+    def test_get_oid_range_as_dataframe_sorts_return_df(self, mocker):
         mocker.patch('palletjack.extract.requests.get')
         fs_mock = mocker.patch('palletjack.extract.arcgis.features.FeatureSet')
         fs_mock.from_json.return_value.sdf = pd.DataFrame({'OBJECTID': [16, 42, 8], 'foo': ['a', 'b', 'c']})
@@ -746,17 +746,17 @@ class TestRESTServiceLoader:
         class_mock.timeout = 5
         class_mock.envelope = None
 
-        output_df = extract.RESTServiceLoader._get_features_as_dataframe(class_mock, 10, 20)
+        output_df = extract.RESTServiceLoader._get_oid_range_as_dataframe(class_mock, 10, 20)
 
         test_df = pd.DataFrame({'OBJECTID': [8, 16, 42], 'foo': ['c', 'a', 'b']})
         test_df.index = [2, 0, 1]
 
         tm.assert_frame_equal(output_df, test_df)
 
-    def test_get_features_as_dataframe_raises_error_on_missing_oid_bound(self, mocker):
+    def test_get_oid_range_as_dataframe_raises_error_on_missing_oid_bound(self, mocker):
 
         with pytest.raises(ValueError, match='Both start ane end OIDs must be provided if using OID range'):
-            extract.RESTServiceLoader._get_features_as_dataframe(mocker.Mock(), start_oid=10)
+            extract.RESTServiceLoader._get_oid_range_as_dataframe(mocker.Mock(), start_oid=10)
 
     def test_get_features_chunks_properly(self, mocker):
         class_mock = mocker.Mock()
@@ -765,10 +765,25 @@ class TestRESTServiceLoader:
 
         mocker.patch('palletjack.extract.pd')
 
-        extract.RESTServiceLoader.get_features(class_mock)
+        extract.RESTServiceLoader._get_features(class_mock)
 
-        assert class_mock._get_features_as_dataframe.call_args_list == [
+        assert class_mock._get_oid_range_as_dataframe.call_args_list == [
             mocker.call(start_oid=10, end_oid=11),
             mocker.call(start_oid=12, end_oid=13),
             mocker.call(start_oid=14, end_oid=14)
         ]
+
+    def test_init_builds_url_with_default_layer(self):
+        test_loader = extract.RESTServiceLoader('foo.bar')
+
+        assert test_loader.base_url == 'foo.bar/0'
+
+    def test_init_builds_url_with_provided_layer(self):
+        test_loader = extract.RESTServiceLoader('foo.bar', 42)
+
+        assert test_loader.base_url == 'foo.bar/42'
+
+    def test_init_raises_on_missing_envelope_sr(self):
+
+        with pytest.raises(ValueError, match='envelope_sr required when passing in an envelope'):
+            test_loader = extract.RESTServiceLoader('foo.bar', envelope='eggs')
