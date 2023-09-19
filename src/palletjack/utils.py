@@ -21,13 +21,19 @@ from palletjack.errors import IntFieldAsFloatError, TimezoneAwareDatetimeError
 
 module_logger = logging.getLogger(__name__)
 
+RETRY_MAX_TRIES = 3
+RETRY_DELAY_TIME = 2
+
 
 def retry(worker_method, *args, **kwargs):
-    """Allows you to retry a function/method three times to overcome network jitters
+    """Allows you to retry a function/method to overcome network jitters or other transient errors.
 
-    Retries worker_method three times (for a total of four tries, including the initial attempt), pausing 2^trycount
-    seconds between each retry. Any arguments for worker_method can be passed in as additional parameters to retry()
-    following worker_method: retry(foo_method, arg1, arg2, keyword_arg=3)
+    Retries worker_method RETRY_MAX_TRIES times (for a total of n+1 tries, including the initial attempt), pausing
+    2^RETRY_DELAY_TIME seconds between each retry. Any arguments for worker_method can be passed in as additional
+    parameters to retry() following worker_method: retry(foo_method, arg1, arg2, keyword_arg=3).
+
+    RETRY_MAX_TRIES and RETRY_DELAY_TIME default to 3 tries and 2 seconds, but can be overridden by setting the
+    palletjack.utils.RETRY_MAX_TRIES and palletjack.utils.RETRY_DELAY_TIME constants in the client script.
 
     Args:
         worker_method (callable): The name of the method to be retried (minus the calling parens)
@@ -39,8 +45,8 @@ def retry(worker_method, *args, **kwargs):
         various: The value(s) returned by worked_method
     """
     tries = 1
-    max_tries = 3
-    delay = 2  #: in seconds
+    max_tries = RETRY_MAX_TRIES
+    delay = RETRY_DELAY_TIME  #: in seconds
 
     #: this inner function (closure? almost-closure?) allows us to keep track of tries without passing it as an arg
     def _inner_retry(worker_method, *args, **kwargs):
