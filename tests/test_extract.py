@@ -818,7 +818,8 @@ class Test_ServiceLayer:
         class_mock.timeout = 5
 
         with pytest.raises(
-            RuntimeError, match='Response does not contain layer information; ensure URL points to a valid layer'
+            RuntimeError,
+            match='Response does not contain maxRecordCount; ensure URL points to a valid layer and is not a Group Layer'
         ):
             layer_info = extract._ServiceLayer._get_layer_info(class_mock)
 

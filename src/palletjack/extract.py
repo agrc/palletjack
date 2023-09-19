@@ -751,10 +751,17 @@ class _ServiceLayer:
         response_json = utils.retry(requests.get, self.layer_url, params={'f': 'json'}, timeout=self.timeout).json()
         try:
             #: bogus boolean to make sure the keys exist
-            response_json['capabilities'] and response_json['type'] and response_json['maxRecordCount']
+            response_json['capabilities'] and response_json['type']  # and response_json['maxRecordCount']
         except KeyError as error:
             raise RuntimeError(
                 'Response does not contain layer information; ensure URL points to a valid layer'
+            ) from error
+
+        try:
+            response_json['maxRecordCount']
+        except KeyError as error:
+            raise RuntimeError(
+                'Response does not contain maxRecordCount; ensure URL points to a valid layer and is not a Group Layer'
             ) from error
 
         return response_json
