@@ -4,6 +4,7 @@ Each different type of source has its own class. Each class may have multiple me
 operations or techniques.
 """
 
+import json
 import logging
 import mimetypes
 import os
@@ -562,24 +563,29 @@ class RESTServiceLoader:
     """
 
     @classmethod
-    def get_features(cls, service_url, layer=0, timeout=5, envelope_params=None, feature_params=None):
+    def get_features(cls, service_url, layer=0, timeout=5, chunk_size=100, envelope_params=None, feature_params=None):
         """Download the features from a REST MapService or FeatureService with query enabled.
 
         Queries the server's maxRecordCount parameter to chunk the request into manageable-sized requests. To increase
         performance, you can specify a geographic bounding box via the envelope parameter to limit the features
         returned. Individual chunk requests and other HTML requests are wrapped in retries to handle momentary network
-        glitches. The whole operation is also wrapped in retry to give it the best chance of success.
+        glitches.
 
         Raises:
             ValueError: If envelope is specified but envelope_sr is not.
             RuntimeError: If the service does not support the query capability.
+            RuntimeError: If the REST response type is not Feature Layer
+            RuntimeError: If the chunk's HTTP response code is not 200 (ie, the request failed)
+            RuntimeError: The response could not be parsed into JSON (a technically successful request but bad data)
             RuntimeError: If the number of features downloaded does not match the number of OIDs in the service
                 (subsetted by envelope if provided).
 
         Args:
             service_url (str): The base URL to the service's REST endpoint.
             layer (int, optional): Layer within the service to download. Defaults to 0.
-            timeout (int, optional): Timeout value in seconds for HTML requests. Defaults to 5.
+            timeout (int, optional): Timeout value in seconds for HTML requests. Defaults to 20.
+            chunk_size (int, optional): Number of features to download per chunk. Defaults to 100. If set to None, it
+                will use maxRecordCount. Adjust if the service is failing frequently.
             envelope_params (dict, optional): Bounding box and it's spatial reference to spatially limit feature
                 collection in the form {'geometry': '{xmin},{ymin},{xmax},{ymax}', 'inSR': '{wkid}'}. Defaults to None.
             feature_params (dict, optional): Additional query parameters to pass to the service when downloading
@@ -589,14 +595,15 @@ class RESTServiceLoader:
         Returns:
             pd.DataFrame.spatial: The service's features as a spatially-enabled dataframe
         """
-        rest_loader = cls(service_url, layer, timeout, envelope_params, feature_params)
-        return utils.retry(rest_loader._get_features)
+        rest_loader = cls(service_url, layer, timeout, chunk_size, envelope_params, feature_params)
+        return rest_loader._get_features()
 
-    def __init__(self, service_url, layer=0, timeout=5, envelope_params=None, feature_params=None):
+    def __init__(self, service_url, layer=0, timeout=20, chunk_size=None, envelope_params=None, feature_params=None):
         if service_url[-1] == '/':
             service_url = service_url[:-1]
         self.base_url = f'{service_url}/{layer}'
         self.timeout = timeout
+        self.chunk_size = chunk_size
 
         self.envelope_params = None
         if envelope_params:
@@ -609,7 +616,7 @@ class RESTServiceLoader:
             self.envelope_params = {'geometryType': 'esriGeometryEnvelope'}
             self.envelope_params.update(envelope_params)
 
-        self.feature_params = {'where': '1=1', 'outFields': '*', 'returnGeometry': 'true'}
+        self.feature_params = {'outFields': '*', 'returnGeometry': 'true'}
         if feature_params:
             self.feature_params.update(feature_params)
 
@@ -709,6 +716,48 @@ class RESTServiceLoader:
 
         return arcgis.features.FeatureSet.from_json(response.text).sdf.sort_values(by='OBJECTID')
 
+    def _get_oid_list_as_dataframe(self, oid_list):
+        """Use a REST query to download features from a MapService or FeatureService layer.
+
+        If both start_oid and end_oid are specified, they will be used to limit the request size where OID >= start_oid
+        and OID <= end_oid (ie, the bounds are inclusive). If both bounds are the same OID, it just downloads that one
+        feature.
+
+        Args:
+            oid_list (list(int)): List of object IDs to download
+
+        Raises:
+            RuntimeError: If the chunk's HTTP response code is not 200 (ie, the request failed)
+            RuntimeError: The response could not be parsed into JSON (a technically successful request but bad data)
+            RuntimeError: If the number of features downloaded does not match the number of OIDs in oid_list
+
+        Returns:
+            pd.DataFrame.spatial: Spatially-enabled dataframe of the service layer's features sorted by OBJECTID
+        """
+
+        range_params = {'f': 'json'}
+        range_params.update(self.feature_params)
+        range_params.update({'objectIds': f'{",".join([str(oid) for oid in oid_list])}'})
+
+        self._class_logger.debug(f'OID range params: {range_params}')
+        response = requests.get(f'{self.base_url}/query', params=range_params, timeout=self.timeout)
+
+        if response.status_code != 200:
+            raise RuntimeError(f'Bad chunk response HTTP status code ({response.status_code})')
+
+        try:
+            features_df = arcgis.features.FeatureSet.from_json(response.text).sdf.sort_values(by='OBJECTID')
+        #: Not sure this is the right JSONDecodeError...
+        except json.JSONDecodeError as error:
+            raise RuntimeError('Could not parse chunk features from response') from error
+
+        if len(features_df) != len(oid_list):
+            raise RuntimeError(
+                f'Missing features. {len(oid_list)} OIDs requested, but {len(features_df)} features downloaded'
+            )
+
+        return features_df
+
     def _get_layer_info(self):
         """Do a basic query to get the layer's information as a dictionary from the json response.
 
@@ -733,11 +782,6 @@ class RESTServiceLoader:
     def _get_features(self):
         """Download the features from a rest service in chunks based on maxRecordCount
 
-        Raises:
-            RuntimeError: If the service does not support the query capability
-            RuntimeError: If the number of features downloaded does not match the number of OIDs in the service
-            (subsetted by envelope if provided).
-
         Returns:
             pd.DataFrame.spatial: Spatially-enabled dataframe of the feature service layer
         """
@@ -748,23 +792,23 @@ class RESTServiceLoader:
         self._check_layer_type(layer_info)
         self._class_logger.debug('Checking for query capability...')
         self._check_capabilities('query', layer_info)
-        self._class_logger.debug('Getting max record count...')
-        max_record_count = self._get_max_record_count(layer_info)
+        max_record_count = self.chunk_size
+        if not max_record_count:
+            self._class_logger.debug('Getting max record count...')
+            max_record_count = self._get_max_record_count(layer_info)
         self._class_logger.debug('Getting object ids...')
         oids = self._get_object_ids()
 
         self._class_logger.debug(f'Downloading {len(oids)} features in chunks of {max_record_count}...')
         feature_dataframes = []
-        for i in range(0, len(oids), max_record_count):
-            # sleep between 150 and 300 ms to be friendly
-            time.sleep(random.randint(150, 300) / 1000)
-            oid_subset = oids[i:i + max_record_count]
-            feature_dataframes.append(self._get_oid_range_as_dataframe(start_oid=oid_subset[0], end_oid=oid_subset[-1]))
+        for oid_subset in utils.chunker(oids, max_record_count):
+            # sleep between 1.5 and 3 s to be friendly
+            time.sleep(random.randint(150, 300) / 100)
+            feature_dataframes.append(utils.retry(self._get_oid_list_as_dataframe, oid_subset))
 
         all_features_df = pd.concat(feature_dataframes)
-        if len(all_features_df) != len(oids):
-            raise RuntimeError(
-                f'Missing features. {len(oids)} OIDs present, but {len(all_features_df)} features downloaded'
-            )
 
         return all_features_df
+
+
+#: TODO: Clean up tests, parameterize max_record_count, verify docstrings
