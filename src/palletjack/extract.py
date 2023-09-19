@@ -663,6 +663,24 @@ class RESTServiceLoader:
 
         return response_json['maxRecordCount']
 
+    def _get_object_id_field(self, response_json):
+        """Get the service's objectIdField attribute
+
+        Args:
+            response_json (dict): The JSON response from a basic query parsed as a dictionary.
+
+        Returns:
+            str: objectIdField
+        """
+
+        try:
+            unique_id_field = response_json['objectIdField']
+        except KeyError:
+            self._class_logger.debug(f'No objectIdField found in {self.base_url}, using OBJECTID instead')
+            unique_id_field = 'OBJECTID'
+
+        return unique_id_field
+
     def _get_object_ids(self):
         """Get the Object IDs of the feature service layer, using the bounding envelope if present.
 
@@ -716,48 +734,33 @@ class RESTServiceLoader:
 
         return arcgis.features.FeatureSet.from_json(response.text).sdf.sort_values(by='OBJECTID')
 
-    def _get_oid_list_as_dataframe(self, oid_list):
-        """Use a REST query to download features from a MapService or FeatureService layer.
+    def _get_unique_id_list_as_dataframe(self, unique_id_field, unique_id_list):
+        unique_id_params = {'f': 'json'}
+        unique_id_params.update(self.feature_params)
+        # unique_id_params.update({'objectIds': f'{",".join([str(oid) for oid in unique_id_list])}'})
+        unique_id_params.update({'where': f'{unique_id_field} in ({",".join([str(oid) for oid in unique_id_list])})'})
 
-        If both start_oid and end_oid are specified, they will be used to limit the request size where OID >= start_oid
-        and OID <= end_oid (ie, the bounds are inclusive). If both bounds are the same OID, it just downloads that one
-        feature.
-
-        Args:
-            oid_list (list(int)): List of object IDs to download
-
-        Raises:
-            RuntimeError: If the chunk's HTTP response code is not 200 (ie, the request failed)
-            RuntimeError: The response could not be parsed into JSON (a technically successful request but bad data)
-            RuntimeError: If the number of features downloaded does not match the number of OIDs in oid_list
-
-        Returns:
-            pd.DataFrame.spatial: Spatially-enabled dataframe of the service layer's features sorted by OBJECTID
-        """
-
-        range_params = {'f': 'json'}
-        range_params.update(self.feature_params)
-        range_params.update({'objectIds': f'{",".join([str(oid) for oid in oid_list])}'})
-
-        self._class_logger.debug(f'OID range params: {range_params}')
-        response = requests.get(f'{self.base_url}/query', params=range_params, timeout=self.timeout)
+        self._class_logger.debug(f'OID range params: {unique_id_params}')
+        response = requests.get(f'{self.base_url}/query', params=unique_id_params, timeout=self.timeout)
 
         if response.status_code != 200:
             raise RuntimeError(f'Bad chunk response HTTP status code ({response.status_code})')
 
         try:
-            features_df = arcgis.features.FeatureSet.from_json(response.text).sdf.sort_values(by='OBJECTID')
+            features_df = arcgis.features.FeatureSet.from_json(response.text).sdf.sort_values(by=unique_id_field)
         #: Not sure this is the right JSONDecodeError...
         except json.JSONDecodeError as error:
             raise RuntimeError('Could not parse chunk features from response') from error
 
-        if len(features_df) != len(oid_list):
+        if len(features_df) != len(unique_id_list):
             raise RuntimeError(
-                f'Missing features. {len(oid_list)} OIDs requested, but {len(features_df)} features downloaded'
+                f'Missing features. {len(unique_id_list)} OIDs requested, but {len(features_df)} features downloaded'
             )
 
         return features_df
 
+    #: TODO: A group layer doesn't have maxRecordCount. This will raise an error before the layer check occurs, and the
+    #: user won't know it's a layer type problem.
     def _get_layer_info(self):
         """Do a basic query to get the layer's information as a dictionary from the json response.
 
@@ -796,6 +799,8 @@ class RESTServiceLoader:
         if not max_record_count:
             self._class_logger.debug('Getting max record count...')
             max_record_count = self._get_max_record_count(layer_info)
+        self._class_logger.debug('Getting object id field...')
+        oid_field = self._get_object_id_field(layer_info)
         self._class_logger.debug('Getting object ids...')
         oids = self._get_object_ids()
 
@@ -804,11 +809,8 @@ class RESTServiceLoader:
         for oid_subset in utils.chunker(oids, max_record_count):
             # sleep between 1.5 and 3 s to be friendly
             time.sleep(random.randint(150, 300) / 100)
-            feature_dataframes.append(utils.retry(self._get_oid_list_as_dataframe, oid_subset))
+            feature_dataframes.append(utils.retry(self._get_unique_id_list_as_dataframe, oid_field, oid_subset))
 
         all_features_df = pd.concat(feature_dataframes)
 
         return all_features_df
-
-
-#: TODO: Clean up tests, parameterize max_record_count, verify docstrings
