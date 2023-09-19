@@ -1106,7 +1106,7 @@ class TestRESTServiceLoader:
 
         test_layer = [{'id': 0, 'type': 'Feature Layer'}]
 
-        assert extract.RESTServiceLoader._get_feature_layers_info_from_service(mocker.Mock()) == test_layer
+        assert extract.RESTServiceLoader.get_feature_layers_info_from_service(mocker.Mock()) == test_layer
 
     def test_get_feature_layers_info_from_service_returns_empty_list_if_no_feature_layers(self, mocker):
         response_json = {'layers': [{'id': 0, 'type': 'Group Layer'}]}

@@ -562,19 +562,19 @@ class RESTServiceLoader:
     retry individual chunks three times in case of error to ensure the best chance of success.
     """
 
-    @classmethod
-    def get_feature_layers_info(cls, service_url, timeout=5):
-        """Get the information dictionary for all the feature layers in the service
+    # @classmethod
+    # def get_feature_layers_info(cls, service_url, timeout=5):
+    #     """Get the information dictionary for all the feature layers in the service
 
-        Args:
-            service_url (str): The base URL to the service's REST endpoint
-            timeout (int, optional): Timeout value in seconds for HTML requests. Defaults to 5.
+    #     Args:
+    #         service_url (str): The base URL to the service's REST endpoint
+    #         timeout (int, optional): Timeout value in seconds for HTML requests. Defaults to 5.
 
-        Returns:
-            _type_: _description_
-        """
-        service = cls(service_url=service_url, timeout=timeout)
-        return service._get_feature_layers_info_from_service()
+    #     Returns:
+    #         _type_: _description_
+    #     """
+    #     service = cls(service_url=service_url, timeout=timeout)
+    #     return service._get_feature_layers_info_from_service()
 
     @classmethod
     def get_features(cls, service_url, layer=0, timeout=5, chunk_size=100, envelope_params=None, feature_params=None):
@@ -616,6 +616,7 @@ class RESTServiceLoader:
         if service_url[-1] == '/':
             service_url = service_url[:-1]
         self.base_url = f'{service_url}/{layer}'
+
         self.timeout = timeout
         self.chunk_size = chunk_size
 
@@ -846,27 +847,45 @@ class RESTServiceLoader:
 
         return all_features_df
 
-    def _get_feature_layers_info_from_service(self):
-        """Get the feature layer ids from a map service
+    @classmethod
+    def get_feature_layers_info_from_service(cls, service_url, timeout):
+        """Get the information dictionary for all the feature layers in the service
+
+        Args:
+            service_url (str): The base URL to the service's REST endpoint
+            timeout (int, optional): Timeout value in seconds for HTML requests. Defaults to 5.
 
         Returns:
-            list: A list of dictionaries containing the info about each feature layer, including id, name, and
-                geometryType
+            _type_: _description_
         """
 
-        self._class_logger.debug('Getting feature layer ids...')
-        response = utils.retry(requests.get, f'{self.base_url}/query', params={'f': 'json'}, timeout=self.timeout)
+        service = cls(service_url, timeout=timeout)
+
+        layers = service._get_feature_layers_info_from_service(service_url)
+
+        return layers
+
+    def _get_feature_layers_info_from_service(self):
+        response = utils.retry(self._get_service_info, self.service_url)
 
         try:
             response_json = response.json()
         except (json.JSONDecodeError) as error:
-            raise RuntimeError(f'Could not parse response from {self.base_url}') from error
+            raise RuntimeError(f'Could not parse response from {self.service_url}') from error
 
         try:
             layers = [layer for layer in response_json['layers'] if layer['type'] == 'Feature Layer']
         except KeyError as error:
             if 'layers' in str(error):
-                raise RuntimeError(f'Response from {self.base_url} does not contain layer information') from error
+                raise RuntimeError(f'Response from {self.service_url} does not contain layer information') from error
             raise RuntimeError('Layer info did not contain layer type') from error
 
         return layers
+
+    def _get_service_info(self, service_url):
+        self._class_logger.debug('Getting feature layer ids...')
+        response = requests.get(f'{service_url}/query', params={'f': 'json'}, timeout=self.timeout)
+
+        response.raise_for_status()
+
+        return response
