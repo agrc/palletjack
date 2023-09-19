@@ -736,8 +736,6 @@ class _ServiceLayer:
 
         self.where_clause = where_clause
 
-    #: TODO: A group layer doesn't have maxRecordCount. This will raise a key error on that before the layer check
-    #: occurs, and the user won't know it's a layer type problem.
     def _get_layer_info(self):
         """Do a basic query to get the layer's information as a dictionary from the json response.
 
