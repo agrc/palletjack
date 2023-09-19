@@ -1,3 +1,5 @@
+import logging
+import sys
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
@@ -123,3 +125,28 @@ def download_from_sftp_update_agol_reclassify_map():
         tempdir.cleanup()
     except Exception as error:
         print(error)
+
+
+def download_from_rest_service():
+    feature_service_url = 'https://hazards.fema.gov/gis/nfhl/rest/services/CSLF/Prelim_CSLF/MapServer'
+    layer = 3
+    envelope = '-114.05,36.95,-109.95,42.05'
+    sr = '4326'
+
+    extract.RESTServiceLoader.get_features(
+        feature_service_url, layer=layer, timeout=10, envelope=envelope, envelope_sr=sr
+    )
+
+
+if __name__ == '__main__':
+    palletjack_logger = logging.getLogger('palletjack')
+    palletjack_logger.setLevel(logging.DEBUG)
+    cli_handler = logging.StreamHandler(sys.stdout)
+    cli_handler.setLevel(logging.DEBUG)
+    formatter = logging.Formatter(
+        fmt='%(levelname)-7s %(asctime)s %(name)15s:%(lineno)5s %(message)s', datefmt='%Y-%m-%d %H:%M:%S'
+    )
+    cli_handler.setFormatter(formatter)
+    palletjack_logger.addHandler(cli_handler)
+
+    download_from_rest_service()
