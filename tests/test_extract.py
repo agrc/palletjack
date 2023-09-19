@@ -825,6 +825,11 @@ class TestRESTServiceLoader:
         with pytest.raises(ValueError, match='envelope_sr required when passing in an envelope'):
             test_loader = extract.RESTServiceLoader('foo.bar', envelope='eggs')
 
+    def test_init_strips_trailing_slash(self):
+        test_loader = extract.RESTServiceLoader('foo.bar/')
+
+        assert test_loader.base_url == 'foo.bar/0'
+
     def test_check_capabilities_raises_on_missing(self, mocker):
         response_mock = mocker.Mock()
         response_mock.json.return_value = {'capabilities': 'map,data'}
@@ -850,3 +855,22 @@ class TestRESTServiceLoader:
 
         with pytest.raises(RuntimeError, match='capabilities record not found in server response'):
             extract.RESTServiceLoader._check_capabilities(mocker.Mock(), 'query')
+
+    def test_check_layer_type_works_normally(self, mocker):
+        response_mock = mocker.Mock()
+        response_mock.json.return_value = {'type': 'Feature Layer'}
+        mocker.patch('palletjack.extract.requests.get', return_value=response_mock)
+
+        #: Should not raise
+        extract.RESTServiceLoader._check_layer_type(mocker.Mock())
+
+    def test_check_layer_type_raises_on_group_layer(self, mocker):
+        response_mock = mocker.Mock()
+        response_mock.json.return_value = {'type': 'Group Layer'}
+        mocker.patch('palletjack.extract.requests.get', return_value=response_mock)
+
+        class_mock = mocker.Mock()
+        class_mock.base_url = 'foo.bar/0'
+
+        with pytest.raises(RuntimeError, match='Layer foo.bar/0 is not a feature layer'):
+            extract.RESTServiceLoader._check_layer_type(class_mock)

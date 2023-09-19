@@ -621,6 +621,17 @@ class RESTServiceLoader:
                 f'{capability.casefold()} capability not in service\'s capabilities ({service_capabilities})'
             )
 
+    def _check_layer_type(self):
+        """Make sure the layer is a feature layer (and thus we can extract features from it)
+
+        Raises:
+            RuntimeError: If the REST response type is not Feature Layer
+        """
+
+        response = utils.retry(requests.get, self.base_url, params={'f': 'json'}, timeout=self.timeout)
+        if response.json()['type'] != 'Feature Layer':
+            raise RuntimeError(f'Layer {self.base_url} is not a feature layer')
+
     def _get_max_record_count(self):
         """Get the service's maxRecordCount attribute
 
@@ -696,6 +707,8 @@ class RESTServiceLoader:
         """
 
         self._class_logger.info(f'Getting features from {self.base_url}...')
+        self._class_logger.debug('Checking layer type...')
+        self._check_layer_type()
         self._class_logger.debug('Checking for query capability...')
         self._check_capabilities('query')
         self._class_logger.debug('Getting max record count...')
