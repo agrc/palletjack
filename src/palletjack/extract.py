@@ -716,10 +716,10 @@ class RESTServiceLoader:
         self._class_logger.debug('Getting object ids...')
         oids = self._get_object_ids()
 
+        self._class_logger.debug(f'Downloading features in chunks of {max_record_count}...')
         feature_dataframes = []
         for i in range(0, len(oids), max_record_count):
             oid_subset = oids[i:i + max_record_count]
-            self._class_logger.debug(f'Downloading features {oid_subset[0]} through {oid_subset[-1]}...')
             feature_dataframes.append(self._get_oid_range_as_dataframe(start_oid=oid_subset[0], end_oid=oid_subset[-1]))
 
         all_features_df = pd.concat(feature_dataframes)
