@@ -68,3 +68,15 @@ Now that you've got the token string, you can build the status query:
 `https://services1.arcgis.com/<unique string>/arcgis/rest/services/<feature layer name>/FeatureServer/<layer id>/append/jobs/<job guid>?f=json&<token from agol>`
 
 Calling this URL in a browser should return a message that will hopefully give you more info as to why it failed.
+
+### Updating Docs
+
+palletjack uses `pdoc` to generate HTML docs in `docs/palletjack` from the docstrings within the code itself. These are then served up via github pages.
+
+The github pages are served from the `gh-pages` branch. After you make edits to the code and update the docstrings, rebase this branch onto the updated `main` branch. To prevent github pages from trying to generate a site from the contents of `docs/palletjack` with jekyll, add a `.nojekyll` file to `docs/palletjack`.
+
+To generate the docs, run `pdoc --html -o docs\ c:\palletjack\repo\src\palletjack --force`. The code's docstrings should be Google-style docstrings with proper indentation to ensure the argument lists, etc are parsed and displayed correctly.
+
+`docs/README.md` is included at the top package level by adding the line `.. include:: ../../docs/README.md` in `__init__.py`'s docstring. This tells pdoc to insert that markdown into the HTML generated for that docstring, and the include directive can be used for more in-depth documentation anywhere else as well. Note that `pdoc` tries to create links for anything surrounded by backticks, which are also used for coad blocks. You may need to manually edit the HTML to remove the links if they change the content of your code blocks (such as in the example import statement).
+
+Once the contents of `docs/palletjack` look correct, force push the `gh-pages` branch to github. This will trigger the action to republish the site. The docs are then accessible at [agrc.github.io/palletjack/palletjack/index.html].
