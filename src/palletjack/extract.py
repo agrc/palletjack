@@ -12,6 +12,7 @@ from io import BytesIO
 from pathlib import Path
 from time import sleep
 
+import arcgis
 import geopandas as gpd
 import pandas as pd
 import pysftp
@@ -574,3 +575,14 @@ class RESTServiceLoader:
         response = utils.retry(requests.get, f'{self.base_url}/query', params=objectid_params, timeout=self.timeout)
 
         return sorted(response.json()['objectIds'])
+
+    def _get_features_as_dataframe(self, start_oid=None, end_oid=None):
+        range_params = {'where': '1=1', 'outFields': '*', 'returnGeometry': 'true', 'f': 'json'}
+        if bool(start_oid) ^ bool(end_oid):
+            raise ValueError('Both start ane end OIDs must be provided if using OID range')
+        if start_oid and end_oid:
+            range_params.update({'where': f'OBJECTID >={start_oid} and OBJECTID <{end_oid}'})
+
+        response = utils.retry(requests.get, f'{self.base_url}/query', params=range_params, timeout=self.timeout)
+
+        return arcgis.features.FeatureSet.from_json(response.text).sdf.sort_values(by='OBJECTID')
