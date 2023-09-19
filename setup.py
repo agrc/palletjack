@@ -44,11 +44,16 @@ setup(
         'SQLAlchemy==1.4.*',
         'pg8000==1.29.*',
         'psycopg2-binary==2.9.*',
-        'numpy==1.23.*',  #: Pinned to 1.23.* to fix "module 'numpy' has no attribute 'str'" error
-        'notebook==6.5.4',  #: Pinning these two to fix dependency resolver taking forever
-        'ipykernel==6.23.1'
+        'numpy<1.24.*',  #: Pinned to < 1.24 to fix "module 'numpy' has no attribute 'str'" error
     ],
     extras_require={
+        'nopro': [
+            #: pinned versions to avoid backtracking if pro (and thus arcgis) aren't already installed
+            'jupyterlab==3.6.5',
+            'jupyter-server==1.24.0',
+            'ipykernel==6.24.0',
+            'ypy-websocket==0.8.2'
+        ],
         'tests': [
             'pylint-quotes==0.2.*',
             'pylint==2.15.*',
