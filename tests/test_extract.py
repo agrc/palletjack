@@ -736,7 +736,7 @@ class TestRESTServiceLoader:
                 'outFields': '*',
                 'returnGeometry': 'true',
                 'f': 'json',
-                'where': 'OBJECTID >=10 and OBJECTID <20'
+                'where': 'OBJECTID >=10 and OBJECTID <=20'
             },
             timeout=5
         )
@@ -872,5 +872,5 @@ class TestRESTServiceLoader:
         class_mock = mocker.Mock()
         class_mock.base_url = 'foo.bar/0'
 
-        with pytest.raises(RuntimeError, match='Layer foo.bar/0 is not a feature layer'):
+        with pytest.raises(RuntimeError, match='Layer foo.bar/0 is a Group Layer, not a feature layer'):
             extract.RESTServiceLoader._check_layer_type(class_mock)
