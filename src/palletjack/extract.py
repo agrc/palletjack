@@ -556,10 +556,11 @@ class RESTServiceLoader:
     """Downloads features from a layer within a map service or feature service (with queries enabled) based on its REST
     endpoint.
 
-    Use the get_features class method to operate without having to create an instance first. This will use either a
-    specified chunk size or the service's maxRecordCount to download the data in appropriately-sized chunks using the
-    OIDs returned by the service. It also supports an envelope to limit the queries to a specific bounding box. It will
-    retry individual chunks three times in case of error to ensure the best chance of success.
+    Create a RestServiceLoader object to represent the service, and then call the get_features method for each layer
+    within the service you want to download. This will use either a specified chunk size or the service's
+    maxRecordCount to download the data in appropriately-sized chunks using the OIDs returned by the service. It also
+    supports an envelope to limit the queries to a specific bounding box. It will retry individual chunks three times
+    in case of error to ensure the best chance of success.
     """
 
     # @classmethod
@@ -576,57 +577,51 @@ class RESTServiceLoader:
     #     service = cls(service_url=service_url, timeout=timeout)
     #     return service._get_feature_layers_info_from_service()
 
-    # @classmethod
-    # def get_features(cls, service_url, layer=0, timeout=5, chunk_size=100, envelope_params=None, feature_params=None):
-    #     """Download the features from a REST MapService or FeatureService with query enabled.
+    def __init__(self, service_url, timeout=5):
+        """Create a representation of a REST FeatureService or MapService
 
-    #     Uses either chunk_size or the service's maxRecordCount parameter to chunk the request into manageable-sized
-    #     requests. 100 seems to be the sweet spot before requests start to error out consistently. To limit the number
-    #     of features returned, you can specify a geographic bounding box via the envelope parameters. Individual chunk
-    #     requests and other HTML requests are wrapped in retries to handle momentary network glitches.
+        Args:
+            service_url (str): The service's REST endpoint
+            timeout (int, optional): Timeout for HTTP requests in seconds. Defaults to 5.
+        """
 
-    #     Raises:
-    #         ValueError: If envelope is specified but envelope_sr is not.
-    #         RuntimeError: If the service does not support the query capability.
-    #         RuntimeError: If the REST response type is not Feature Layer
-    #         RuntimeError: If the chunk's HTTP response code is not 200 (ie, the request failed)
-    #         RuntimeError: The response could not be parsed into JSON (a technically successful request but bad data)
-    #         RuntimeError: If the number of features downloaded does not match the number of OIDs in the service
-    #             (subsetted by envelope if provided).
-
-    #     Args:
-    #         service_url (str): The base URL to the service's REST endpoint.
-    #         layer (int, optional): Layer within the service to download. Defaults to 0.
-    #         timeout (int, optional): Timeout value in seconds for HTML requests. Defaults to 5.
-    #         chunk_size (int, optional): Number of features to download per chunk. Defaults to 100. If set to None, it
-    #             will use the service's maxRecordCount. Adjust if the service is failing frequently.
-    #         envelope_params (dict, optional): Bounding box and it's spatial reference to spatially limit feature
-    #             collection in the form {'geometry': '{xmin},{ymin},{xmax},{ymax}', 'inSR': '{wkid}'}. Defaults to None.
-    #         feature_params (dict, optional): Additional query parameters to pass to the service when downloading
-    #             features. Parameter defaults to None, and the query defaults to 'outFields': '*', 'returnGeometry':
-    #             'true'. See the ArcGIS REST API documentation for more information.
-
-    #     Returns:
-    #         pd.DataFrame.spatial: The service's features as a spatially-enabled dataframe
-    #     """
-    #     rest_loader = cls(service_url, layer, timeout, chunk_size, envelope_params, feature_params)
-    #     return rest_loader._get_features()
-
-    def __init__(self, service_url, timeout=5):  #, chunk_size=None, envelope_params=None, feature_params=None):
         if service_url[-1] == '/':
             service_url = service_url[:-1]
         self.url = service_url
-
         self.timeout = timeout
-        # self.chunk_size = chunk_size
 
         self._class_logger = logging.getLogger(__name__).getChild(self.__class__.__name__)
 
+    #: TODO: Check errors
     def get_features(self, layer=0, chunk_size=100, envelope_params=None, feature_params=None):
-        """Download the features from a rest service in chunks based on maxRecordCount
+        """Download the features from a REST MapService or FeatureService with query enabled.
+
+        Uses either chunk_size or the service's maxRecordCount parameter to chunk the request into manageable-sized
+        requests. 100 seems to be the sweet spot before requests start to error out consistently. To limit the number
+        of features returned, you can specify a geographic bounding box via the envelope parameters. Individual chunk
+        requests and other HTML requests are wrapped in retries to handle momentary network glitches.
+
+        Raises:
+            ValueError: If envelope is specified but envelope_sr is not.
+            RuntimeError: If the service does not support the query capability.
+            RuntimeError: If the REST response type is not Feature Layer
+            RuntimeError: If the chunk's HTTP response code is not 200 (ie, the request failed)
+            RuntimeError: The response could not be parsed into JSON (a technically successful request but bad data)
+            RuntimeError: If the number of features downloaded does not match the number of OIDs in the service
+                (subsetted by envelope if provided).
+
+        Args:
+            layer (int, optional): Layer within the service to download. Defaults to 0.
+            chunk_size (int, optional): Number of features to download per chunk. Defaults to 100. If set to None, it
+                will use the service's maxRecordCount. Adjust if the service is failing frequently.
+            envelope_params (dict, optional): Bounding box and it's spatial reference to spatially limit feature
+                collection in the form {'geometry': '{xmin},{ymin},{xmax},{ymax}', 'inSR': '{wkid}'}. Defaults to None.
+            feature_params (dict, optional): Additional query parameters to pass to the service when downloading
+                features. Parameter defaults to None, and the query defaults to 'outFields': '*', 'returnGeometry':
+                'true'. See the ArcGIS REST API documentation for more information.
 
         Returns:
-            pd.DataFrame.spatial: Spatially-enabled dataframe of the feature service layer
+            pd.DataFrame.spatial: The service's features as a spatially-enabled dataframe
         """
 
         layer = _ServiceLayer(self, layer, envelope_params, feature_params)
