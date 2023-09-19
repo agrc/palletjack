@@ -691,14 +691,24 @@ class TestRESTServiceLoader:
 
         assert test_loader.url == 'foo.bar'
 
-    def test_get_feature_layers_info_only_returns_feature_layers(self, mocker):
-        response_json = {'layers': [{'id': 0, 'type': 'Feature Layer'}, {'id': 1, 'type': 'Group Layer'}]}
+    def test_get_feature_layers_info_only_returns_feature_layers_and_tables(self, mocker):
+        response_json = {
+            'layers': [{
+                'id': 0,
+                'type': 'Feature Layer'
+            }, {
+                'id': 1,
+                'type': 'Group Layer'
+            }, {
+                'id': 2,
+                'type': 'Table'
+            }]
+        }
+        expected_layers = [{'id': 0, 'type': 'Feature Layer'}, {'id': 2, 'type': 'Table'}]
 
         mocker.patch('palletjack.extract.utils.retry', return_value=mocker.Mock(json=lambda: response_json))
 
-        test_layer = [{'id': 0, 'type': 'Feature Layer'}]
-
-        assert extract.RESTServiceLoader.get_feature_layers_info(mocker.Mock()) == test_layer
+        assert extract.RESTServiceLoader.get_feature_layers_info(mocker.Mock()) == expected_layers
 
     def test_get_feature_layers_info_returns_empty_list_if_no_feature_layers(self, mocker):
         response_json = {'layers': [{'id': 0, 'type': 'Group Layer'}]}
@@ -844,14 +854,29 @@ class Test_ServiceLayer:
         class_mock.layer_url = 'foo.bar'
         class_mock.timeout = 5
         class_mock.envelope_params = None
-        class_mock.where_clause = None
+        class_mock.where_clause = '1=1'
 
         record_count = extract._ServiceLayer.get_object_ids(class_mock)
 
         assert record_count == [8, 16, 42]
-        get_mock.assert_called_once_with('foo.bar/query', params={'returnIdsOnly': 'true', 'f': 'json'}, timeout=5)
+        get_mock.assert_called_once_with(
+            'foo.bar/query', params={
+                'returnIdsOnly': 'true',
+                'f': 'json',
+                'where': '1=1'
+            }, timeout=5
+        )
 
     def test_get_object_ids_includes_envelope_params(self, mocker):
+        expected_params = {
+            'returnIdsOnly': 'true',
+            'f': 'json',
+            'where': '1=1',
+            'geometry': 'envelope',
+            'geometryType': 'esriGeometryEnvelope',
+            'inSR': 'sr'
+        }
+
         response_mock = mocker.Mock()
         response_mock.json.return_value = {'objectIds': [8, 16, 42]}
         get_mock = mocker.patch('palletjack.extract.requests.get', return_value=response_mock)
@@ -860,21 +885,11 @@ class Test_ServiceLayer:
         class_mock.layer_url = 'foo.bar'
         class_mock.timeout = 5
         class_mock.envelope_params = {'geometry': 'envelope', 'geometryType': 'esriGeometryEnvelope', 'inSR': 'sr'}
-        class_mock.where_clause = None
+        class_mock.where_clause = '1=1'
         record_count = extract._ServiceLayer.get_object_ids(class_mock)
 
         assert record_count == [8, 16, 42]
-        get_mock.assert_called_once_with(
-            'foo.bar/query',
-            params={
-                'returnIdsOnly': 'true',
-                'f': 'json',
-                'geometry': 'envelope',
-                'geometryType': 'esriGeometryEnvelope',
-                'inSR': 'sr'
-            },
-            timeout=5
-        )
+        get_mock.assert_called_once_with('foo.bar/query', params=expected_params, timeout=5)
 
     def test_get_object_ids_includes_where_clause(self, mocker):
         expected_params = {'returnIdsOnly': 'true', 'f': 'json', 'where': 'foo = bar'}
@@ -894,20 +909,29 @@ class Test_ServiceLayer:
         get_mock.assert_called_once_with('foo.bar/query', params=expected_params, timeout=5)
 
     def test_get_object_ids_returns_sorted_ids(self, mocker):
+        expected_ids = [8, 16, 42]
+        input_ids = [42, 8, 16]
+
         response_mock = mocker.Mock()
-        response_mock.json.return_value = {'objectIds': [16, 42, 8]}
+        response_mock.json.return_value = {'objectIds': input_ids}
         get_mock = mocker.patch('palletjack.extract.requests.get', return_value=response_mock)
 
         class_mock = mocker.Mock()
         class_mock.layer_url = 'foo.bar'
         class_mock.timeout = 5
         class_mock.envelope_params = None
-        class_mock.where_clause = None
+        class_mock.where_clause = '1=1'
 
         record_count = extract._ServiceLayer.get_object_ids(class_mock)
 
-        assert record_count == [8, 16, 42]
-        get_mock.assert_called_once_with('foo.bar/query', params={'returnIdsOnly': 'true', 'f': 'json'}, timeout=5)
+        assert record_count == expected_ids
+        get_mock.assert_called_once_with(
+            'foo.bar/query', params={
+                'returnIdsOnly': 'true',
+                'f': 'json',
+                'where': '1=1'
+            }, timeout=5
+        )
 
     def test_get_object_ids_raises_on_key_error(self, mocker):
         response_mock = mocker.Mock()
@@ -918,7 +942,7 @@ class Test_ServiceLayer:
         class_mock.layer_url = 'foo.bar'
         class_mock.timeout = 5
         class_mock.envelope_params = None
-        class_mock.where_clause = None
+        class_mock.where_clause = '1=1'
 
         with pytest.raises(RuntimeError, match=re.escape(f'Could not get object IDs from foo.bar')):
             record_count = extract._ServiceLayer.get_object_ids(class_mock)
@@ -932,12 +956,18 @@ class Test_ServiceLayer:
         class_mock.layer_url = 'foo.bar'
         class_mock.timeout = 5
         class_mock.envelope_params = None
-        class_mock.where_clause = None
+        class_mock.where_clause = '1=1'
 
         record_count = extract._ServiceLayer.get_object_ids(class_mock)
 
         assert record_count == []
-        get_mock.assert_called_once_with('foo.bar/query', params={'returnIdsOnly': 'true', 'f': 'json'}, timeout=5)
+        get_mock.assert_called_once_with(
+            'foo.bar/query', params={
+                'returnIdsOnly': 'true',
+                'f': 'json',
+                'where': '1=1'
+            }, timeout=5
+        )
 
     def test_get_unique_id_list_as_dataframe_creates_list(self, mocker):
         class_mock = mocker.Mock()
