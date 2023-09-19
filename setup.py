@@ -15,7 +15,7 @@ with open('src/palletjack/version.py', encoding='utf-8') as fp:
 setup(
     name='ugrc-palletjack',
     version=version['__version__'],
-    description='Updating AGOL feature services with data from SFTP shares.',
+    description='Updating AGOL feature services with data from external tables.',
     long_description=(Path(__file__).parent / 'README.md').read_text(),
     long_description_content_type='text/markdown',
     author='Jake Adams, UGRC',
