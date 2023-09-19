@@ -550,6 +550,14 @@ class PostgresLoader:
 
 
 class RESTServiceLoader:
+    """Downloads features from a layer within a map or feature service (with queries enabled) based on its REST
+    endpoint.
+
+    Use the get_features class method to operate without having to create an instance first. This will use the
+    service's maxRecordCount to download the data in appropriately-sized chunks using the OIDs returned by the service.
+    It also supports an envelope to limit the queries to a specific bounding box. It will retry both individual chunks
+    and the whole operation to ensure the best chance of success.
+    """
 
     @classmethod
     def get_features(cls, service_url, layer=0, timeout=5, envelope=None, envelope_sr=None):
@@ -557,7 +565,8 @@ class RESTServiceLoader:
 
         Queries the server's maxRecordCount parameter to chunk the request into manageable-sized requests. To increase
         performance, you can specify a geographic bounding box via the envelope parameter to limit the features
-        returned. Individual chunk requests are wrapped in retries to handle momentary network glitches.
+        returned. Individual chunk requests and other HTML requests are wrapped in retries to handle momentary network
+        glitches. The whole operation is also wrapped in retry to give it the best chance of success.
 
         Args:
             service_url (str): The base URL to the service's REST endpoint
@@ -572,7 +581,7 @@ class RESTServiceLoader:
             pd.DataFrame.spatial: The service's features as a spatially-enabled dataframe
         """
         rest_loader = cls(service_url, layer, timeout, envelope, envelope_sr)
-        rest_loader._get_features()
+        return utils.retry(rest_loader._get_features)
 
     def __init__(self, service_url, layer=0, timeout=5, envelope=None, envelope_sr=None):
         self.base_url = f'{service_url}/{layer}'
@@ -643,6 +652,16 @@ class RESTServiceLoader:
         return arcgis.features.FeatureSet.from_json(response.text).sdf.sort_values(by='OBJECTID')
 
     def _get_features(self):
+        """Download the features from a rest service in chunks based on maxRecordCount
+
+        Raises:
+            RuntimeError: If the number of features downloaded does not match the number of OIDs in the service
+            (subsetted by envelope if provided).
+
+        Returns:
+            pd.DataFrame.spatial: Spatially-enabled dataframe of the feature service layer
+        """
+
         max_record_count = self._get_max_record_count()
         oids = self._get_object_ids()
 
@@ -651,4 +670,10 @@ class RESTServiceLoader:
             oid_subset = oids[i:i + max_record_count]
             feature_dataframes.append(self._get_oid_range_as_dataframe(start_oid=oid_subset[0], end_oid=oid_subset[-1]))
 
-        return pd.concat(feature_dataframes)
+        all_features_df = pd.concat(feature_dataframes)
+        if len(all_features_df) != len(oids):
+            raise RuntimeError(
+                f'Missing features. {len(oids)} OIDs present, but {len(all_features_df)} features downloaded'
+            )
+
+        return all_features_df

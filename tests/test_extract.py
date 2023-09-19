@@ -763,7 +763,7 @@ class TestRESTServiceLoader:
         class_mock._get_max_record_count.return_value = 2
         class_mock._get_object_ids.return_value = [10, 11, 12, 13, 14]
 
-        mocker.patch('palletjack.extract.pd')
+        mocker.patch('palletjack.extract.pd.concat', return_value=pd.DataFrame([0, 1, 2, 3, 4]))
 
         extract.RESTServiceLoader._get_features(class_mock)
 
@@ -772,6 +772,16 @@ class TestRESTServiceLoader:
             mocker.call(start_oid=12, end_oid=13),
             mocker.call(start_oid=14, end_oid=14)
         ]
+
+    def test_get_features_raises_on_shorter_dataframe(self, mocker):
+        class_mock = mocker.Mock()
+        class_mock._get_max_record_count.return_value = 2
+        class_mock._get_object_ids.return_value = [10, 11, 12, 13, 14]
+
+        mocker.patch('palletjack.extract.pd.concat', return_value=pd.DataFrame([0, 1, 2, 3]))
+
+        with pytest.raises(RuntimeError, match='Missing features. 5 OIDs present, but 4 features downloaded'):
+            extract.RESTServiceLoader._get_features(class_mock)
 
     def test_init_builds_url_with_default_layer(self):
         test_loader = extract.RESTServiceLoader('foo.bar')
