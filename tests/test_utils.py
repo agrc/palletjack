@@ -18,6 +18,20 @@ def iris():
     return pd.read_csv('https://raw.githubusercontent.com/mwaskom/seaborn-data/master/iris.csv')
 
 
+@pytest.fixture
+def set_max_tries():
+    palletjack.utils.RETRY_MAX_TRIES = 1
+    yield
+    palletjack.utils.RETRY_MAX_TRIES = 3
+
+
+@pytest.fixture
+def set_delay_time():
+    palletjack.utils.RETRY_DELAY_TIME = 3
+    yield
+    palletjack.utils.RETRY_DELAY_TIME = 2
+
+
 class TestRenameColumns:
 
     def test_rename_columns_for_agol_handles_special_and_space(self):
@@ -190,19 +204,19 @@ class TestRetry:
         # assert answer == 42
         assert mock.function.call_count == 4
 
-    def test_retry_uses_global_retry_max_value(self, mocker):
+    def test_retry_uses_global_retry_max_value(self, mocker, set_max_tries):
         mock = mocker.Mock()
         mock.function.side_effect = [Exception, Exception, 42]
         mocker.patch('palletjack.utils.sleep')
 
-        palletjack.utils.RETRY_MAX_TRIES = 1
+        # palletjack.utils.RETRY_MAX_TRIES = 1
 
         with pytest.raises(Exception):
             answer = palletjack.utils.retry(mock.function, 'a', 'b')
 
         assert mock.function.call_count == 2
 
-    def test_retry_uses_global_retry_delay_time_value(self, mocker):
+    def test_retry_uses_global_retry_delay_time_value(self, mocker, set_delay_time):
         mock = mocker.Mock()
         mock.function.side_effect = [
             Exception,
@@ -210,7 +224,7 @@ class TestRetry:
         ]
         sleep_mock = mocker.patch('palletjack.utils.sleep')
 
-        palletjack.utils.RETRY_DELAY_TIME = 3
+        # palletjack.utils.RETRY_DELAY_TIME = 3
 
         answer = palletjack.utils.retry(mock.function, 'a', 'b')
 
