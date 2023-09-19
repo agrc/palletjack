@@ -714,6 +714,28 @@ class TestRESTServiceLoader:
             timeout=5
         )
 
+    def test_get_features_as_dataframe_handles_single_oid(self, mocker):
+        get_mock = mocker.patch('palletjack.extract.requests.get')
+        mocker.patch('palletjack.extract.arcgis')
+
+        class_mock = mocker.Mock()
+        class_mock.base_url = 'foo.bar'
+        class_mock.timeout = 5
+        class_mock.envelope = None
+
+        extract.RESTServiceLoader._get_features_as_dataframe(class_mock, 10, 10)
+
+        get_mock.assert_called_once_with(
+            'foo.bar/query',
+            params={
+                'outFields': '*',
+                'returnGeometry': 'true',
+                'f': 'json',
+                'where': 'OBJECTID =10'
+            },
+            timeout=5
+        )
+
     def test_get_features_as_dataframe_sorts_return_df(self, mocker):
         mocker.patch('palletjack.extract.requests.get')
         fs_mock = mocker.patch('palletjack.extract.arcgis.features.FeatureSet')
@@ -735,3 +757,18 @@ class TestRESTServiceLoader:
 
         with pytest.raises(ValueError, match='Both start ane end OIDs must be provided if using OID range'):
             extract.RESTServiceLoader._get_features_as_dataframe(mocker.Mock(), start_oid=10)
+
+    def test_get_features_chunks_properly(self, mocker):
+        class_mock = mocker.Mock()
+        class_mock._get_max_record_count.return_value = 2
+        class_mock._get_object_ids.return_value = [10, 11, 12, 13, 14]
+
+        mocker.patch('palletjack.extract.pd')
+
+        extract.RESTServiceLoader.get_features(class_mock)
+
+        assert class_mock._get_features_as_dataframe.call_args_list == [
+            mocker.call(start_oid=10, end_oid=11),
+            mocker.call(start_oid=12, end_oid=13),
+            mocker.call(start_oid=14, end_oid=14)
+        ]

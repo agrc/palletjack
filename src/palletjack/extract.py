@@ -576,13 +576,28 @@ class RESTServiceLoader:
 
         return sorted(response.json()['objectIds'])
 
+    #:TODO: Need to adjust the objectID bounds to make sure it captures single-length OID lists
     def _get_features_as_dataframe(self, start_oid=None, end_oid=None):
         range_params = {'where': '1=1', 'outFields': '*', 'returnGeometry': 'true', 'f': 'json'}
         if bool(start_oid) ^ bool(end_oid):
             raise ValueError('Both start ane end OIDs must be provided if using OID range')
         if start_oid and end_oid:
             range_params.update({'where': f'OBJECTID >={start_oid} and OBJECTID <{end_oid}'})
+        #: If we have a range that is just one OID long, just get that one OID
+        if (start_oid and end_oid) and (start_oid == end_oid):
+            range_params.update({'where': f'OBJECTID ={start_oid}'})
 
         response = utils.retry(requests.get, f'{self.base_url}/query', params=range_params, timeout=self.timeout)
 
         return arcgis.features.FeatureSet.from_json(response.text).sdf.sort_values(by='OBJECTID')
+
+    def get_features(self):
+        max_record_count = self._get_max_record_count()
+        oids = self._get_object_ids()
+
+        feature_dataframes = []
+        for i in range(0, len(oids), max_record_count):
+            oid_subset = oids[i:i + max_record_count]
+            feature_dataframes.append(self._get_features_as_dataframe(start_oid=oid_subset[0], end_oid=oid_subset[-1]))
+
+        return pd.concat(feature_dataframes)
