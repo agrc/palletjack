@@ -560,7 +560,7 @@ class RESTServiceLoader:
     """
 
     @classmethod
-    def get_features(cls, service_url, layer=0, timeout=5, envelope=None, envelope_sr=None):
+    def get_features(cls, service_url, layer=0, timeout=5, envelope_params=None, feature_params=None):
         """Download the features from a REST MapService or FeatureService with query enabled.
 
         Queries the server's maxRecordCount parameter to chunk the request into manageable-sized requests. To increase
@@ -572,32 +572,44 @@ class RESTServiceLoader:
             ValueError: If envelope is specified but envelope_sr is not.
             RuntimeError: If the service does not support the query capability.
             RuntimeError: If the number of features downloaded does not match the number of OIDs in the service
-            (subsetted by envelope if provided).
+                (subsetted by envelope if provided).
 
         Args:
             service_url (str): The base URL to the service's REST endpoint.
             layer (int, optional): Layer within the service to download. Defaults to 0.
-            timeout (int, optional): Timeout value for HTML requests. Defaults to 5.
-            envelope (str, optional): Bounding box to spatially limit feature collection in the form `{xmin},{ymin},
-            {xmax},{ymax}. Defaults to None.
-            envelope_sr (str, optional): The spatial reference of the envelop coordinates. Required if envelope is
-            provided. Defaults to None.
+            timeout (int, optional): Timeout value in seconds for HTML requests. Defaults to 5.
+            envelope_params (dict, optional): Bounding box and it's spatial reference to spatially limit feature
+                collection in the form {'geometry': '{xmin},{ymin},{xmax},{ymax}', 'inSR': '{wkid}'}. Defaults to None.
+            feature_params (dict, optional): Additional query parameters to pass to the service when downloading
+                features. Parameter defaults to None, and the query defaults to 'outFields': '*', 'returnGeometry':
+                'true'. See the ArcGIS REST API documentation for more information.
 
         Returns:
             pd.DataFrame.spatial: The service's features as a spatially-enabled dataframe
         """
-        rest_loader = cls(service_url, layer, timeout, envelope, envelope_sr)
+        rest_loader = cls(service_url, layer, timeout, envelope_params, feature_params)
         return utils.retry(rest_loader._get_features)
 
-    def __init__(self, service_url, layer=0, timeout=5, envelope=None, envelope_sr=None):
+    def __init__(self, service_url, layer=0, timeout=5, envelope_params=None, feature_params=None):
         if service_url[-1] == '/':
             service_url = service_url[:-1]
         self.base_url = f'{service_url}/{layer}'
         self.timeout = timeout
-        self.envelope = envelope
-        self.envelope_sr = envelope_sr
-        if self.envelope and not self.envelope_sr:
-            raise ValueError('envelope_sr required when passing in an envelope')
+
+        self.envelope_params = None
+        if envelope_params:
+            try:
+                envelope_params['geometry'] and envelope_params['inSR']
+            except KeyError as error:
+                raise ValueError(
+                    'envelope_params must contain both the envelope geometry and its spatial reference'
+                ) from error
+            self.envelope_params = {'geometryType': 'esriGeometryEnvelope'}
+            self.envelope_params.update(envelope_params)
+
+        self.feature_params = {'where': '1=1', 'outFields': '*', 'returnGeometry': 'true'}
+        if feature_params:
+            self.feature_params.update(feature_params)
 
         self._class_logger = logging.getLogger(__name__).getChild(self.__class__.__name__)
 
@@ -651,12 +663,8 @@ class RESTServiceLoader:
 
         objectid_params = {'returnIdsOnly': 'true', 'f': 'json'}
 
-        if self.envelope:
-            objectid_params.update({
-                'geometry': self.envelope,
-                'geometryType': 'esriGeometryEnvelope',
-                'inSR': self.envelope_sr
-            })
+        if self.envelope_params is not None:
+            objectid_params.update(self.envelope_params)
         self._class_logger.debug(f'OID params: {objectid_params}')
         response = utils.retry(requests.get, f'{self.base_url}/query', params=objectid_params, timeout=self.timeout)
 
@@ -680,7 +688,8 @@ class RESTServiceLoader:
             pd.DataFrame.spatial: Spatially-enabled dataframe of the service layer's features
         """
 
-        range_params = {'where': '1=1', 'outFields': '*', 'returnGeometry': 'true', 'f': 'json'}
+        range_params = {'f': 'json'}
+        range_params.update(self.feature_params)
         if bool(start_oid) ^ bool(end_oid):
             raise ValueError('Both start ane end OIDs must be provided if using OID range')
         if start_oid and end_oid:
@@ -716,7 +725,7 @@ class RESTServiceLoader:
         self._class_logger.debug('Getting object ids...')
         oids = self._get_object_ids()
 
-        self._class_logger.debug(f'Downloading features in chunks of {max_record_count}...')
+        self._class_logger.debug(f'Downloading {len(oids)} features in chunks of {max_record_count}...')
         feature_dataframes = []
         for i in range(0, len(oids), max_record_count):
             oid_subset = oids[i:i + max_record_count]
