@@ -553,7 +553,7 @@ class PostgresLoader:
 
 
 class RESTServiceLoader:
-    """Downloads features from a layer within a map or feature service (with queries enabled) based on its REST
+    """Downloads features from a layer within a map service or feature service (with queries enabled) based on its REST
     endpoint.
 
     Use the get_features class method to operate without having to create an instance first. This will use either a
@@ -561,6 +561,20 @@ class RESTServiceLoader:
     OIDs returned by the service. It also supports an envelope to limit the queries to a specific bounding box. It will
     retry individual chunks three times in case of error to ensure the best chance of success.
     """
+
+    @classmethod
+    def get_feature_layers_info(cls, service_url, timeout=5):
+        """Get the information dictionary for all the feature layers in the service
+
+        Args:
+            service_url (str): The base URL to the service's REST endpoint
+            timeout (int, optional): Timeout value in seconds for HTML requests. Defaults to 5.
+
+        Returns:
+            _type_: _description_
+        """
+        service = cls(service_url=service_url, timeout=timeout)
+        return service._get_feature_layers_info_from_service()
 
     @classmethod
     def get_features(cls, service_url, layer=0, timeout=5, chunk_size=100, envelope_params=None, feature_params=None):
@@ -583,7 +597,7 @@ class RESTServiceLoader:
         Args:
             service_url (str): The base URL to the service's REST endpoint.
             layer (int, optional): Layer within the service to download. Defaults to 0.
-            timeout (int, optional): Timeout value in seconds for HTML requests. Defaults to 20.
+            timeout (int, optional): Timeout value in seconds for HTML requests. Defaults to 5.
             chunk_size (int, optional): Number of features to download per chunk. Defaults to 100. If set to None, it
                 will use the service's maxRecordCount. Adjust if the service is failing frequently.
             envelope_params (dict, optional): Bounding box and it's spatial reference to spatially limit feature
@@ -831,3 +845,28 @@ class RESTServiceLoader:
         all_features_df = pd.concat(feature_dataframes)
 
         return all_features_df
+
+    def _get_feature_layers_info_from_service(self):
+        """Get the feature layer ids from a map service
+
+        Returns:
+            list: A list of dictionaries containing the info about each feature layer, including id, name, and
+                geometryType
+        """
+
+        self._class_logger.debug('Getting feature layer ids...')
+        response = utils.retry(requests.get, f'{self.base_url}/query', params={'f': 'json'}, timeout=self.timeout)
+
+        try:
+            response_json = response.json()
+        except (json.JSONDecodeError) as error:
+            raise RuntimeError(f'Could not parse response from {self.base_url}') from error
+
+        try:
+            layers = [layer for layer in response_json['layers'] if layer['type'] == 'Feature Layer']
+        except KeyError as error:
+            if 'layers' in str(error):
+                raise RuntimeError(f'Response from {self.base_url} does not contain layer information') from error
+            raise RuntimeError('Layer info did not contain layer type') from error
+
+        return layers
