@@ -844,6 +844,7 @@ class Test_ServiceLayer:
         class_mock.layer_url = 'foo.bar'
         class_mock.timeout = 5
         class_mock.envelope_params = None
+        class_mock.where_clause = None
 
         record_count = extract._ServiceLayer.get_object_ids(class_mock)
 
@@ -859,6 +860,7 @@ class Test_ServiceLayer:
         class_mock.layer_url = 'foo.bar'
         class_mock.timeout = 5
         class_mock.envelope_params = {'geometry': 'envelope', 'geometryType': 'esriGeometryEnvelope', 'inSR': 'sr'}
+        class_mock.where_clause = None
         record_count = extract._ServiceLayer.get_object_ids(class_mock)
 
         assert record_count == [8, 16, 42]
@@ -874,6 +876,23 @@ class Test_ServiceLayer:
             timeout=5
         )
 
+    def test_get_object_ids_includes_where_clause(self, mocker):
+        expected_params = {'returnIdsOnly': 'true', 'f': 'json', 'where': 'foo = bar'}
+
+        response_mock = mocker.Mock()
+        response_mock.json.return_value = {'objectIds': [8, 16, 42]}
+        get_mock = mocker.patch('palletjack.extract.requests.get', return_value=response_mock)
+
+        class_mock = mocker.Mock()
+        class_mock.layer_url = 'foo.bar'
+        class_mock.timeout = 5
+        class_mock.envelope_params = None
+        class_mock.where_clause = 'foo = bar'
+        record_count = extract._ServiceLayer.get_object_ids(class_mock)
+
+        assert record_count == [8, 16, 42]
+        get_mock.assert_called_once_with('foo.bar/query', params=expected_params, timeout=5)
+
     def test_get_object_ids_returns_sorted_ids(self, mocker):
         response_mock = mocker.Mock()
         response_mock.json.return_value = {'objectIds': [16, 42, 8]}
@@ -883,6 +902,7 @@ class Test_ServiceLayer:
         class_mock.layer_url = 'foo.bar'
         class_mock.timeout = 5
         class_mock.envelope_params = None
+        class_mock.where_clause = None
 
         record_count = extract._ServiceLayer.get_object_ids(class_mock)
 
@@ -898,6 +918,7 @@ class Test_ServiceLayer:
         class_mock.layer_url = 'foo.bar'
         class_mock.timeout = 5
         class_mock.envelope_params = None
+        class_mock.where_clause = None
 
         with pytest.raises(RuntimeError, match=re.escape(f'Could not get object IDs from foo.bar')):
             record_count = extract._ServiceLayer.get_object_ids(class_mock)
@@ -911,6 +932,7 @@ class Test_ServiceLayer:
         class_mock.layer_url = 'foo.bar'
         class_mock.timeout = 5
         class_mock.envelope_params = None
+        class_mock.where_clause = None
 
         record_count = extract._ServiceLayer.get_object_ids(class_mock)
 
