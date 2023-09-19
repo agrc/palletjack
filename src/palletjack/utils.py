@@ -830,6 +830,9 @@ class Chunking:
             dataframe (pd.DataFrame): Input DataFrame
             chunk_size (int): The max number of rows for each sub dataframe
 
+        Raises:
+            ValueError: If the dataframe has only a single row and thus can't be chunked smaller
+
         Returns:
             list[pd.DataFrame]: A list of dataframes with at most chunk_size rows per dataframe
         """
@@ -891,14 +894,12 @@ class Chunking:
         the second chunk [4, 5, 6] turns out to be too large, so it gets divided into [4, 5] and [6]. The resulting
         list of chunks should be [1, 2, 3], [4, 5], [6], [7, 8, 9], [10].
 
-        Will raise an error if a single row is still larger than max_bytes.
+        The chunking process will raise an error if it tries to chunk a dataframe with only one row, which means a
+        single row is larger than max_bytes (usually caused by a large and complex geometry).
 
         Args:
             dataframe (pd.DataFrame.spatial): A spatially-enabled dataframe to divide
             max_bytes (int): The max utf-16 encoded geojson size for any one chunk
-
-        Raises:
-            ValueError: If a single row is larger than max_bytes and therefore cannot be chunked smaller
         """
 
         #: Calculate number of chunks needed and the guesstimate max number of rows to achieve that size

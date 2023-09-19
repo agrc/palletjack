@@ -1779,6 +1779,7 @@ class TestDataFrameChunking:
         #: First chunk triggers a recursive call, which returns a single row and should error out
 
         max_bytes = 4
+        error_text = 'Dataframe chunk is only one row (index 2), further chunking impossible'
 
         df = pd.DataFrame(['a', 'b', 'c', 'd', 'e'], columns=['foo'])
         mocker.patch('palletjack.utils.pd.DataFrame.spatial.to_featureset', return_value=mocker.Mock())
@@ -1788,14 +1789,14 @@ class TestDataFrameChunking:
             'palletjack.utils.Chunking._chunk_dataframe',
             side_effect=[
                 [df.iloc[:3], df.iloc[3:]],
-                ValueError('Dataframe chunk is only one row (index 2), further chunking impossible'),
+                ValueError(error_text),
             ]
         )
 
         with pytest.raises(ValueError) as exc_info:
             df_list = palletjack.utils.Chunking._recursive_dataframe_chunking(df, max_bytes)
 
-        assert 'Dataframe chunk is only one row (index 2), further chunking impossible' in str(exc_info.value)
+        assert error_text in str(exc_info.value)
 
     def test_build_upload_json_calls_null_string_fixer_appropriate_number_of_times(self, mocker):
 
