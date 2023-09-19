@@ -558,11 +558,11 @@ class RESTServiceLoader:
     """Downloads features from a layer within a map service or feature service (with queries enabled) based on its REST
     endpoint.
 
-    Create a RestServiceLoader object to represent the service, and then call the get_features method for each layer
-    within the service you want to download. This will use either a specified chunk size or the service's
-    maxRecordCount to download the data in appropriately-sized chunks using the OIDs returned by the service. It also
-    supports an envelope to limit the queries to a specific bounding box. It will retry individual chunks three times
-    in case of error to ensure the best chance of success.
+    Create a RestServiceLoader object to represent the service and call get_features on the RESTServiceLoader object,
+    passing in a ServiceLayer object representing the layer you want to download. This will use either a specified
+    chunk size or the service's maxRecordCount to download the data in appropriately-sized chunks using the OIDs
+    returned by the service. It will retry individual chunks three times in case of error to ensure the best chance of
+    success.
     """
 
     def __init__(self, service_url, timeout=5):
@@ -581,38 +581,24 @@ class RESTServiceLoader:
         self._class_logger = logging.getLogger(__name__).getChild(self.__class__.__name__)
 
     def get_features(self, service_layer, chunk_size=100):
-        """Download the features from a REST MapService or FeatureService with query enabled.
+        """Download the features from a ServiceLayer by unique ID in chunk_size-limited requests.
 
         Uses either chunk_size or the service's maxRecordCount parameter to chunk the request into manageable-sized
         requests. 100 seems to be the sweet spot before requests start to error out consistently. To limit the number
-        of features returned, you can specify a geographic bounding box via the envelope parameters. Individual chunk
-        requests and other HTML requests are wrapped in retries to handle momentary network glitches.
+        of features returned, you can specify a geographic bounding box or where clause when creating the ServiceLayer.
+        Individual chunk requests and other HTML requests are wrapped in retries to handle momentary network glitches.
+
+        This method does not catch any errors raised by the individual ServiceLayer methods it calls. See that class
+        for more information on the individual errors.
 
         Args:
-            layer_id (int, optional): Layer within the service to download. Defaults to 0.
+            service_layer (ServiceLayer): A ServiceLayer object representing the layer to download
             chunk_size (int, optional): Number of features to download per chunk. Defaults to 100. If set to None, it
                 will use the service's maxRecordCount. Adjust if the service is failing frequently.
-            envelope_params (dict, optional): Bounding box and it's spatial reference to spatially limit feature
-                collection in the form {'geometry': '{xmin},{ymin},{xmax},{ymax}', 'inSR': '{wkid}'}. Defaults to None.
-            feature_params (dict, optional): Additional query parameters to pass to the service when downloading
-                features. Parameter defaults to None, and the query defaults to 'outFields': '*', 'returnGeometry':
-                'true'. See the ArcGIS REST API documentation for more information.
-            where_clause (str, optional): Where clause to refine the features returned. Defaults to '1=1'.
-
-        Raises:
-            ValueError: If envelope is specified but envelope_sr is not.
-            RuntimeError: If the service does not support the query capability.
-            RuntimeError: If the REST response type is not Feature Layer.
-            RuntimeError: If it cannot get a list of Object IDs from the layer
-            RuntimeError: If the chunk's HTTP response code is not 200 (ie, the request failed)
-            RuntimeError: The response could not be parsed into JSON (a technically successful request but bad data)
-            RuntimeError: If the number of features downloaded does not match the number of OIDs requested in each chunk
 
         Returns:
             pd.DataFrame.spatial: The service's features as a spatially-enabled dataframe
         """
-
-        # service_layer = _ServiceLayer(self, layer_id, envelope_params, feature_params, where_clause)
 
         self._class_logger.info('Getting features from %s...', service_layer.layer_url)
         self._class_logger.debug('Checking for query capability...')
@@ -690,9 +676,11 @@ class RESTServiceLoader:
 class ServiceLayer:
     """Represents a single layer within a service and provides methods for querying the layer and downloading features.
 
-    Downloads features in two stages: first, it gets the object ids to download, and then uses these in a where clause
-    to download the features. Thus, any queries, where clauses, or subsetting should be done when getting the object
-    ids, not when actually downloading the features.
+    The methods in this object represent the individual steps of a more complete download process involving sanity
+    checks, getting the list of unique IDs to download, and then downloading based on those unique IDS. Any queries,
+    where clauses, or subsetting can be done by specifying the envelope_params, feature_params, and/or where_clause to
+    limit the unique IDs used to download the features. The get_features method in the RESTServiceLoader class handles
+    all of these steps and should be used instead of calling the methods in this class directly.
     """
 
     def __init__(self, layer_url, timeout=5, envelope_params=None, feature_params=None, where_clause='1=1'):
@@ -712,8 +700,6 @@ class ServiceLayer:
 
         self._class_logger = logging.getLogger(__name__).getChild(self.__class__.__name__)
 
-        # self.layer_url = f'{service.url}/{layer_id}'
-        # self.timeout = service.timeout
         if layer_url[-1] == '/':
             layer_url = layer_url[:-1]
         self.layer_url = layer_url
