@@ -989,25 +989,11 @@ class Test_ServiceLayer:
             extract._ServiceLayer.get_unique_id_list_as_dataframe(class_mock, 'OBJECTID', oid_list)
 
     def test_init_builds_envelope_params(self, mocker):
-        test_loader = extract._ServiceLayer.__init__(
-            mocker.Mock(_get_layer_info=lambda: {'maxRecordCount': 8}),
-            mocker.Mock(),
-            42,
-            envelope_params={
-                'geometry': 'eggs',
-                'inSR': 'spam'
-            }
-        )
+        mocker.patch('palletjack.extract._ServiceLayer._get_layer_info', return_value={'maxRecordCount': 8})
+        mocker.patch('palletjack.extract._ServiceLayer._get_object_id_field')
+        mocker.patch('palletjack.extract._ServiceLayer._check_layer_type')
 
-        test_loader = extract._ServiceLayer(
-            mocker.Mock(_get_layer_info=lambda: {'maxRecordCount': 8}),
-            mocker.Mock(),
-            42,
-            envelope_params={
-                'geometry': 'eggs',
-                'inSR': 'spam'
-            }
-        )
+        test_loader = extract._ServiceLayer(mocker.Mock(), 42, envelope_params={'geometry': 'eggs', 'inSR': 'spam'})
 
         assert test_loader.envelope_params == {
             'geometryType': 'esriGeometryEnvelope',
@@ -1016,11 +1002,12 @@ class Test_ServiceLayer:
         }
 
     def test_init_builds_feature_params(self, mocker):
-        test_loader = extract._ServiceLayer.__init__(
-            mocker.Mock(_get_layer_info=lambda: {'maxRecordCount': 8}),
-            mocker.Mock(),
-            42,
-            feature_params={
+        mocker.patch('palletjack.extract._ServiceLayer._get_layer_info', return_value={'maxRecordCount': 8})
+        mocker.patch('palletjack.extract._ServiceLayer._get_object_id_field')
+        mocker.patch('palletjack.extract._ServiceLayer._check_layer_type')
+
+        test_loader = extract._ServiceLayer(
+            mocker.Mock(), 42, feature_params={
                 'where': 'eggs',
                 'returnGeometry': 'spam'
             }

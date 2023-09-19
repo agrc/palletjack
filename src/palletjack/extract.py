@@ -563,20 +563,6 @@ class RESTServiceLoader:
     in case of error to ensure the best chance of success.
     """
 
-    # @classmethod
-    # def get_feature_layers_info(cls, service_url, timeout=5):
-    #     """Get the information dictionary for all the feature layers in the service
-
-    #     Args:
-    #         service_url (str): The base URL to the service's REST endpoint
-    #         timeout (int, optional): Timeout value in seconds for HTML requests. Defaults to 5.
-
-    #     Returns:
-    #         _type_: _description_
-    #     """
-    #     service = cls(service_url=service_url, timeout=timeout)
-    #     return service._get_feature_layers_info_from_service()
-
     def __init__(self, service_url, timeout=5):
         """Create a representation of a REST FeatureService or MapService
 
@@ -647,14 +633,14 @@ class RESTServiceLoader:
 
         return all_features_df
 
-
     def get_feature_layers_info(self):
         """Get the information dictionary for any and all feature layers within the service.
 
         Retries the request to the service's REST endpoint three times in case of error.
 
         Raises:
-            RuntimeError: If the response can't be parsed as JSON, the service does not contain layers, or the response does not contain information about the layer types
+            RuntimeError: If the response can't be parsed as JSON, the service does not contain layers, or the response
+                does not contain information about the layer types
 
         Returns:
             dict: The parsed JSON info of the service's feature layers
