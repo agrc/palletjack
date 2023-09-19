@@ -669,3 +669,69 @@ class TestRESTServiceLoader:
 
         assert record_count == [8, 16, 42]
         get_mock.assert_called_once_with('foo.bar/query', params={'returnIdsOnly': 'true', 'f': 'json'}, timeout=5)
+
+    def test_get_features_as_dataframe_uses_default_where(self, mocker):
+        get_mock = mocker.patch('palletjack.extract.requests.get')
+        mocker.patch('palletjack.extract.arcgis')
+
+        class_mock = mocker.Mock()
+        class_mock.base_url = 'foo.bar'
+        class_mock.timeout = 5
+        class_mock.envelope = None
+
+        extract.RESTServiceLoader._get_features_as_dataframe(class_mock)
+
+        get_mock.assert_called_once_with(
+            'foo.bar/query',
+            params={
+                'where': '1=1',
+                'outFields': '*',
+                'returnGeometry': 'true',
+                'f': 'json'
+            },
+            timeout=5
+        )
+
+    def test_get_features_as_dataframe_uses_oid_range(self, mocker):
+        get_mock = mocker.patch('palletjack.extract.requests.get')
+        mocker.patch('palletjack.extract.arcgis')
+
+        class_mock = mocker.Mock()
+        class_mock.base_url = 'foo.bar'
+        class_mock.timeout = 5
+        class_mock.envelope = None
+
+        extract.RESTServiceLoader._get_features_as_dataframe(class_mock, 10, 20)
+
+        get_mock.assert_called_once_with(
+            'foo.bar/query',
+            params={
+                'outFields': '*',
+                'returnGeometry': 'true',
+                'f': 'json',
+                'where': 'OBJECTID >=10 and OBJECTID <20'
+            },
+            timeout=5
+        )
+
+    def test_get_features_as_dataframe_sorts_return_df(self, mocker):
+        mocker.patch('palletjack.extract.requests.get')
+        fs_mock = mocker.patch('palletjack.extract.arcgis.features.FeatureSet')
+        fs_mock.from_json.return_value.sdf = pd.DataFrame({'OBJECTID': [16, 42, 8], 'foo': ['a', 'b', 'c']})
+
+        class_mock = mocker.Mock()
+        class_mock.base_url = 'foo.bar'
+        class_mock.timeout = 5
+        class_mock.envelope = None
+
+        output_df = extract.RESTServiceLoader._get_features_as_dataframe(class_mock, 10, 20)
+
+        test_df = pd.DataFrame({'OBJECTID': [8, 16, 42], 'foo': ['c', 'a', 'b']})
+        test_df.index = [2, 0, 1]
+
+        tm.assert_frame_equal(output_df, test_df)
+
+    def test_get_features_as_dataframe_raises_error_on_missing_oid_bound(self, mocker):
+
+        with pytest.raises(ValueError, match='Both start ane end OIDs must be provided if using OID range'):
+            extract.RESTServiceLoader._get_features_as_dataframe(mocker.Mock(), start_oid=10)
