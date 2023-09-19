@@ -941,3 +941,17 @@ def fix_numeric_empty_strings(feature_set, feature_layer_fields):
                 feature.attributes[field_name] = None
 
     return feature_set
+
+
+def chunker(sequence, chunk_size):
+    """Break sequence into chunk_size chunks
+
+    Args:
+        sequence (iterable): Any iterable sequence
+        chunk_size (int): Desired number of elements in each chunk
+
+    Returns:
+        generator: Generator of original sequence broken into chunk_size lists
+    """
+
+    return (sequence[position:position + chunk_size] for position in range(0, len(sequence), chunk_size))

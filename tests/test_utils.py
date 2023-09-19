@@ -1811,3 +1811,12 @@ class TestDataFrameChunking:
         assert len(json_list) == 5
         assert json_list == ['new_json'] * 5
         assert mock_string_fixer.call_count == 5
+
+
+class TestChunker:
+
+    def test_chunker(self):
+        sequence = ['a', 'b', 'c', 'd', 'e', 'f', 'g']
+        chunks = [chunk for chunk in palletjack.utils.chunker(sequence, 3)]
+
+        assert chunks == [['a', 'b', 'c'], ['d', 'e', 'f'], ['g']]
