@@ -630,7 +630,7 @@ class RESTServiceLoader:
 
         response = utils.retry(requests.get, self.base_url, params={'f': 'json'}, timeout=self.timeout)
         if response.json()['type'] != 'Feature Layer':
-            raise RuntimeError(f'Layer {self.base_url} is not a feature layer')
+            raise RuntimeError(f'Layer {self.base_url} is a {response.json()["type"]}, not a feature layer')
 
     def _get_max_record_count(self):
         """Get the service's maxRecordCount attribute
@@ -666,12 +666,12 @@ class RESTServiceLoader:
         """Use a REST query to download features from a MapService or FeatureService layer.
 
         If both start_oid and end_oid are specified, they will be used to limit the request size where OID >= start_oid
-        and OID < end_oid (just like a python slice- [start_oid:end_oid]). If both bounds are the same OID, it just
-        downloads that one feature.
+        and OID <= end_oid (ie, the bounds are inclusive). If both bounds are the same OID, it just downloads that one
+        feature.
 
         Args:
             start_oid (int, optional): Lower bound (inclusive). Defaults to None.
-            end_oid (int, optional): Upper bound (exclusive). Defaults to None.
+            end_oid (int, optional): Upper bound (inclusive). Defaults to None.
 
         Raises:
             ValueError: If one bound is provided but not the other.
@@ -684,7 +684,7 @@ class RESTServiceLoader:
         if bool(start_oid) ^ bool(end_oid):
             raise ValueError('Both start ane end OIDs must be provided if using OID range')
         if start_oid and end_oid:
-            range_params.update({'where': f'OBJECTID >={start_oid} and OBJECTID <{end_oid}'})
+            range_params.update({'where': f'OBJECTID >={start_oid} and OBJECTID <={end_oid}'})
         #: If we have a range that is just one OID long, just get that one OID
         if (start_oid and end_oid) and (start_oid == end_oid):
             range_params.update({'where': f'OBJECTID ={start_oid}'})
@@ -718,8 +718,8 @@ class RESTServiceLoader:
 
         feature_dataframes = []
         for i in range(0, len(oids), max_record_count):
-            self._class_logger.debug(f'Downloading features {i} through {i+max_record_count}...')
             oid_subset = oids[i:i + max_record_count]
+            self._class_logger.debug(f'Downloading features {oid_subset[0]} through {oid_subset[-1]}...')
             feature_dataframes.append(self._get_oid_range_as_dataframe(start_oid=oid_subset[0], end_oid=oid_subset[-1]))
 
         all_features_df = pd.concat(feature_dataframes)
