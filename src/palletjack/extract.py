@@ -11,6 +11,7 @@ import os
 import random
 import re
 import time
+import warnings
 from io import BytesIO
 from pathlib import Path
 from time import sleep
@@ -578,7 +579,7 @@ class RESTServiceLoader:
 
         self._class_logger = logging.getLogger(__name__).getChild(self.__class__.__name__)
 
-    def get_features(self, layer=0, chunk_size=100, envelope_params=None, feature_params=None):
+    def get_features(self, layer_id=0, chunk_size=100, envelope_params=None, feature_params=None):
         """Download the features from a REST MapService or FeatureService with query enabled.
 
         Uses either chunk_size or the service's maxRecordCount parameter to chunk the request into manageable-sized
@@ -587,7 +588,7 @@ class RESTServiceLoader:
         requests and other HTML requests are wrapped in retries to handle momentary network glitches.
 
         Args:
-            layer (int, optional): Layer within the service to download. Defaults to 0.
+            layer_id (int, optional): Layer within the service to download. Defaults to 0.
             chunk_size (int, optional): Number of features to download per chunk. Defaults to 100. If set to None, it
                 will use the service's maxRecordCount. Adjust if the service is failing frequently.
             envelope_params (dict, optional): Bounding box and it's spatial reference to spatially limit feature
@@ -609,7 +610,7 @@ class RESTServiceLoader:
             pd.DataFrame.spatial: The service's features as a spatially-enabled dataframe
         """
 
-        layer = _ServiceLayer(self, layer, envelope_params, feature_params)
+        layer = _ServiceLayer(self, layer_id, envelope_params, feature_params)
 
         self._class_logger.info(f'Getting features from {layer.layer_url}...')
         self._class_logger.debug('Checking for query capability...')
@@ -620,6 +621,10 @@ class RESTServiceLoader:
             max_record_count = layer.max_record_count
         self._class_logger.debug('Getting object ids...')
         oids = layer.get_object_ids()
+
+        if len(oids) == 0:
+            warnings.warn(f'Layer {layer.layer_url} has no features')
+            return None
 
         self._class_logger.debug(f'Downloading {len(oids)} features in chunks of {max_record_count}...')
         feature_dataframes = []
@@ -811,6 +816,9 @@ class _ServiceLayer:
             oids = sorted(response.json()['objectIds'])
         except KeyError as error:
             raise RuntimeError(f'Could not get object IDs from {self.layer_url}') from error
+        except TypeError as error:
+            if '\'NoneType\' object is not iterable' in str(error):
+                oids = []
 
         return oids
 

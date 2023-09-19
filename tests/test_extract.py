@@ -672,15 +672,14 @@ class TestRESTServiceLoader:
 
         sleep_mock.assert_called_once_with(.42)
 
-    # def test_init_builds_url_with_default_layer(self):
-    #     test_loader = extract.RESTServiceLoader('foo.bar')
+    def test_get_features_warns_on_zero_oids(self, mocker):
+        layer_mock = mocker.patch('palletjack.extract._ServiceLayer').return_value
+        layer_mock.get_object_ids.return_value = []
+        layer_mock.layer_url = 'foo.bar/0'
 
-    #     assert test_loader.base_url == 'foo.bar/0'
-
-    # def test_init_builds_url_with_provided_layer(self):
-    #     test_loader = extract.RESTServiceLoader('foo.bar', 42)
-
-    #     assert test_loader.base_url == 'foo.bar/42'
+        with pytest.warns(UserWarning, match='Layer foo.bar/0 has no features'):
+            features = extract.RESTServiceLoader.get_features(mocker.Mock(), 100)
+        assert features is None
 
     def test_init_strips_trailing_slash(self):
         test_loader = extract.RESTServiceLoader('foo.bar/')
@@ -902,6 +901,21 @@ class Test_ServiceLayer:
 
         with pytest.raises(RuntimeError, match=re.escape(f'Could not get object IDs from foo.bar')):
             record_count = extract._ServiceLayer.get_object_ids(class_mock)
+
+    def test_get_object_ids_returns_empty_list_on_no_oids(self, mocker):
+        response_mock = mocker.Mock()
+        response_mock.json.return_value = {'objectIds': None}
+        get_mock = mocker.patch('palletjack.extract.requests.get', return_value=response_mock)
+
+        class_mock = mocker.Mock()
+        class_mock.layer_url = 'foo.bar'
+        class_mock.timeout = 5
+        class_mock.envelope_params = None
+
+        record_count = extract._ServiceLayer.get_object_ids(class_mock)
+
+        assert record_count == []
+        get_mock.assert_called_once_with('foo.bar/query', params={'returnIdsOnly': 'true', 'f': 'json'}, timeout=5)
 
     def test_get_unique_id_list_as_dataframe_creates_list(self, mocker):
         class_mock = mocker.Mock()
