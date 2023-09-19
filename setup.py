@@ -45,6 +45,8 @@ setup(
         'pg8000==1.29.*',
         'psycopg2-binary==2.9.*',
         'numpy==1.23.*',  #: Pinned to 1.23.* to fix "module 'numpy' has no attribute 'str'" error
+        'notebook==6.5.4',  #: Pinning these two to fix dependency resolver taking forever
+        'ipykernel==6.23.1'
     ],
     extras_require={
         'tests': [
