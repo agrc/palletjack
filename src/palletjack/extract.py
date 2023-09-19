@@ -647,26 +647,20 @@ class RESTServiceLoader:
 
         return all_features_df
 
-    @classmethod
-    def get_feature_layers_info_from_service(cls, service_url, timeout):
-        """Get the information dictionary for all the feature layers in the service
 
-        Args:
-            service_url (str): The base URL to the service's REST endpoint
-            timeout (int, optional): Timeout value in seconds for HTML requests. Defaults to 5.
+    def get_feature_layers_info(self):
+        """Get the information dictionary for any and all feature layers within the service.
+
+        Retries the request to the service's REST endpoint three times in case of error.
+
+        Raises:
+            RuntimeError: If the response can't be parsed as JSON, the service does not contain layers, or the response does not contain information about the layer types
 
         Returns:
-            _type_: _description_
+            dict: The parsed JSON info of the service's feature layers
         """
 
-        service = cls(service_url, timeout=timeout)
-
-        layers = service._get_feature_layers_info()
-
-        return layers
-
-    def _get_feature_layers_info(self):
-        response = utils.retry(self._get_service_info, self.url)
+        response = utils.retry(self._get_service_info)
 
         try:
             response_json = response.json()
@@ -682,9 +676,17 @@ class RESTServiceLoader:
 
         return layers
 
-    def _get_service_info(self, service_url):
-        self._class_logger.debug('Getting feature layer ids...')
-        response = requests.get(f'{service_url}/query', params={'f': 'json'}, timeout=self.timeout)
+    def _get_service_info(self):
+        """Get the basic info from the service's REST endpoint
+
+        Raises:
+            requests.HTTPError: If the response returns a status code considered an error
+
+        Returns:
+            requests.Response: Raw response object from a /query request.
+        """
+        self._class_logger.debug('Getting service information...')
+        response = requests.get(f'{self.url}/query', params={'f': 'json'}, timeout=self.timeout)
 
         response.raise_for_status()
 
@@ -692,8 +694,22 @@ class RESTServiceLoader:
 
 
 class _ServiceLayer:
+    """Represents a single layer within a service and provides methods for querying the layer and downloading features.
+    Should be created by methods within the RESTService class and not directly by the user.
+    """
 
     def __init__(self, service, layer_id, envelope_params=None, feature_params=None):
+        """Create an object representing a single layer
+
+        Args:
+            service (palletjack.extract.RESTService): The RESTService object representing the parent service
+            layer_id (int): The layer's ID within the service
+            envelope_params (dict, optional): Bounding box and it's spatial reference to spatially limit feature
+                collection in the form {'geometry': '{xmin},{ymin},{xmax},{ymax}', 'inSR': '{wkid}'}. Defaults to None.
+            feature_params (dict, optional): Additional query parameters to pass to the service when downloading
+                features. Parameter defaults to None, and the query defaults to 'outFields': '*', 'returnGeometry':
+                'true'. See the ArcGIS REST API documentation for more information.
+        """
 
         self._class_logger = logging.getLogger(__name__).getChild(self.__class__.__name__)
 
