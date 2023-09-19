@@ -9,6 +9,7 @@ import numpy as np
 import pandas as pd
 import pytest
 import requests
+import ujson
 from pandas import testing as tm
 
 from palletjack import extract
@@ -610,13 +611,6 @@ class TestPostgresLoader:
 
 class TestRESTServiceLoader:
 
-    # def test_get_max_record_count_works_normally(self, mocker):
-    #     response_json = {'maxRecordCount': 42}
-
-    #     record_count = extract.RESTServiceLoader._get_max_record_count(mocker.Mock(), response_json)
-
-    #     assert record_count == 42
-
     def test_get_features_gets_max_record_count_from_properties(self, mocker):
 
         layer_mock = mocker.patch('palletjack.extract._ServiceLayer').return_value
@@ -1024,7 +1018,7 @@ class Test_ServiceLayer:
 
         mocker.patch(
             'palletjack.extract.arcgis.features.FeatureSet.from_json',
-            side_effect=json.JSONDecodeError('foo', 'bar', 0)
+            side_effect=ujson.JSONDecodeError('foo', 'bar', 0)
         )
 
         oid_list = [10, 11, 12, 13, 14]

@@ -22,6 +22,7 @@ import pandas as pd
 import pysftp
 import requests
 import sqlalchemy
+import ujson
 from googleapiclient.http import MediaIoBaseDownload
 
 from palletjack import utils
@@ -613,7 +614,7 @@ class RESTServiceLoader:
 
         layer = _ServiceLayer(self, layer_id, envelope_params, feature_params, where_clause)
 
-        self._class_logger.info(f'Getting features from {layer.layer_url}...')
+        self._class_logger.info('Getting features from %s...', layer.layer_url)
         self._class_logger.debug('Checking for query capability...')
         layer.check_capabilities('query')
         max_record_count = chunk_size
@@ -627,7 +628,7 @@ class RESTServiceLoader:
             warnings.warn(f'Layer {layer.layer_url} has no features')
             return None
 
-        self._class_logger.debug(f'Downloading {len(oids)} features in chunks of {max_record_count}...')
+        self._class_logger.debug('Downloading %s features in chunks of %s...', len(oids), max_record_count)
         feature_dataframes = []
         for oid_subset in utils.chunker(oids, max_record_count):
             # sleep between 1.5 and 3 s to be friendly
@@ -801,7 +802,7 @@ class _ServiceLayer:
         try:
             unique_id_field = self.layer_properties_json['objectIdField']
         except KeyError:
-            self._class_logger.debug(f'No objectIdField found in {self.layer_url}, using OBJECTID instead')
+            self._class_logger.debug('No objectIdField found in %s, using OBJECTID instead', self.layer_url)
             unique_id_field = 'OBJECTID'
 
         return unique_id_field
@@ -819,7 +820,7 @@ class _ServiceLayer:
         objectid_params = {'returnIdsOnly': 'true', 'f': 'json', 'where': self.where_clause}
         if self.envelope_params is not None:
             objectid_params.update(self.envelope_params)
-        self._class_logger.debug(f'OID params: {objectid_params}')
+        self._class_logger.debug('OID params: %s', objectid_params)
 
         response = utils.retry(requests.get, f'{self.layer_url}/query', params=objectid_params, timeout=self.timeout)
         oids = []
@@ -854,7 +855,7 @@ class _ServiceLayer:
         unique_id_params.update(self.feature_params)
         unique_id_params.update({'where': f'{unique_id_field} in ({",".join([str(oid) for oid in unique_id_list])})'})
 
-        self._class_logger.debug(f'OID range params: {unique_id_params}')
+        self._class_logger.debug('OID range params: %s', unique_id_params)
         response = requests.get(f'{self.layer_url}/query', params=unique_id_params, timeout=self.timeout)
 
         if response.status_code != 200:
@@ -862,8 +863,8 @@ class _ServiceLayer:
 
         try:
             features_df = arcgis.features.FeatureSet.from_json(response.text).sdf.sort_values(by=unique_id_field)
-        #: Not sure this is the right JSONDecodeError...
-        except json.JSONDecodeError as error:
+
+        except ujson.JSONDecodeError as error:
             raise RuntimeError('Could not parse chunk features from response') from error
 
         if len(features_df) != len(unique_id_list):
