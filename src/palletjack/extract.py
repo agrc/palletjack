@@ -623,7 +623,10 @@ class RESTServiceLoader:
                 utils.retry(service_layer.get_unique_id_list_as_dataframe, service_layer.oid_field, oid_subset)
             )
 
-        all_features_df = pd.concat(feature_dataframes)
+        #: if you don't do ignore_index=True, the index wont' be unique and this will trip up esri's spatial dataframe
+        #: which tries calling [geom_col][0] to determine the geoemtry type, which then returns a series instead of a
+        #: single value because the index isn't unique
+        all_features_df = pd.concat(feature_dataframes, ignore_index=True)
 
         return all_features_df
 

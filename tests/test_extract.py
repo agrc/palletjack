@@ -675,6 +675,25 @@ class TestRESTServiceLoader:
             features = extract.RESTServiceLoader.get_features(mocker.Mock(), layer_mock, chunk_size=100)
         assert features is None
 
+    def test_get_features_concats_with_new_index(self, mocker):
+        layer_mock = mocker.patch('palletjack.extract.ServiceLayer').return_value
+        layer_mock.max_record_count = 100
+        layer_mock.oid_field = 'OBJECTID'
+        layer_mock.get_object_ids.return_value = list(range(0, 142))
+        layer_mock.get_unique_id_list_as_dataframe.side_effect = [
+            pd.DataFrame(['a', 'b', 'c'], columns=['SHAPE']),
+            pd.DataFrame(['d', 'e', 'f'], columns=['SHAPE']),
+        ]
+        mocker.patch('palletjack.utils.chunker', return_value=[[0, 1, 2], [3, 4, 5]])
+
+        # mocker.patch('palletjack.extract.pd.concat')
+        mocker.patch('palletjack.extract.time.sleep')
+
+        returned_df = extract.RESTServiceLoader.get_features(mocker.Mock(), layer_mock)
+
+        assert returned_df.index.is_unique
+        assert returned_df['SHAPE'][0] == 'a'
+
     def test_init_strips_trailing_slash(self):
         test_loader = extract.RESTServiceLoader('foo.bar/')
 
