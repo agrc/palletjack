@@ -613,7 +613,7 @@ class TestRESTServiceLoader:
 
     def test_get_features_gets_max_record_count_from_properties(self, mocker):
 
-        layer_mock = mocker.patch('palletjack.extract._ServiceLayer').return_value
+        layer_mock = mocker.patch('palletjack.extract.ServiceLayer').return_value
         layer_mock.max_record_count = 42
         layer_mock.get_object_ids.return_value = list(range(0, 142))
 
@@ -621,12 +621,12 @@ class TestRESTServiceLoader:
         mocker.patch('palletjack.extract.time.sleep')
         chunker_mock = mocker.patch('palletjack.utils.chunker')
 
-        extract.RESTServiceLoader.get_features(mocker.Mock(), chunk_size=None)
+        extract.RESTServiceLoader.get_features(mocker.Mock(), layer_mock, chunk_size=None)
 
         chunker_mock.assert_called_once_with(list(range(0, 142)), 42)
 
     def test_get_features_chunks_smaller_final_chunk(self, mocker):
-        layer_mock = mocker.patch('palletjack.extract._ServiceLayer').return_value
+        layer_mock = mocker.patch('palletjack.extract.ServiceLayer').return_value
         layer_mock.max_record_count = 100
         layer_mock.oid_field = 'OBJECTID'
         layer_mock.get_object_ids.return_value = list(range(0, 142))
@@ -634,7 +634,7 @@ class TestRESTServiceLoader:
         mocker.patch('palletjack.extract.pd.concat')
         mocker.patch('palletjack.extract.time.sleep')
 
-        extract.RESTServiceLoader.get_features(mocker.Mock())
+        extract.RESTServiceLoader.get_features(mocker.Mock(), layer_mock)
 
         assert layer_mock.get_unique_id_list_as_dataframe.call_args_list == [
             mocker.call('OBJECTID', list(range(0, 100))),
@@ -642,7 +642,7 @@ class TestRESTServiceLoader:
         ]
 
     def test_get_features_chunks_single_chunk_smaller_than_max_record_count(self, mocker):
-        layer_mock = mocker.patch('palletjack.extract._ServiceLayer').return_value
+        layer_mock = mocker.patch('palletjack.extract.ServiceLayer').return_value
         layer_mock.max_record_count = 10
         layer_mock.oid_field = 'OBJECTID'
         layer_mock.get_object_ids.return_value = [10, 11, 12, 13, 14]
@@ -650,29 +650,29 @@ class TestRESTServiceLoader:
         mocker.patch('palletjack.extract.pd.concat', return_value=pd.DataFrame([0, 1, 2, 3, 4]))
         mocker.patch('palletjack.extract.time.sleep')
 
-        extract.RESTServiceLoader.get_features(mocker.Mock(), 100)
+        extract.RESTServiceLoader.get_features(mocker.Mock(), layer_mock, chunk_size=100)
 
         layer_mock.get_unique_id_list_as_dataframe.assert_called_once_with('OBJECTID', [10, 11, 12, 13, 14])
 
     def test_get_features_sleeps(self, mocker):
-        layer_mock = mocker.patch('palletjack.extract._ServiceLayer').return_value
+        layer_mock = mocker.patch('palletjack.extract.ServiceLayer').return_value
         layer_mock.get_object_ids.return_value = [10, 11, 12, 13, 14]
 
         mocker.patch('palletjack.extract.pd.concat', return_value=pd.DataFrame([0, 1, 2, 3, 4]))
         sleep_mock = mocker.patch('palletjack.extract.time.sleep')
         mocker.patch('palletjack.extract.random.randint', return_value=42)
 
-        extract.RESTServiceLoader.get_features(mocker.Mock(), 100)
+        extract.RESTServiceLoader.get_features(mocker.Mock(), layer_mock, chunk_size=100)
 
         sleep_mock.assert_called_once_with(.42)
 
     def test_get_features_warns_on_zero_oids(self, mocker):
-        layer_mock = mocker.patch('palletjack.extract._ServiceLayer').return_value
+        layer_mock = mocker.patch('palletjack.extract.ServiceLayer').return_value
         layer_mock.get_object_ids.return_value = []
         layer_mock.layer_url = 'foo.bar/0'
 
         with pytest.warns(UserWarning, match='Layer foo.bar/0 has no features'):
-            features = extract.RESTServiceLoader.get_features(mocker.Mock(), 100)
+            features = extract.RESTServiceLoader.get_features(mocker.Mock(), layer_mock, chunk_size=100)
         assert features is None
 
     def test_init_strips_trailing_slash(self):
@@ -776,7 +776,7 @@ class Test_ServiceLayer:
         class_mock.layer_url = 'foo.bar'
         class_mock.timeout = 5
 
-        layer_info = extract._ServiceLayer._get_layer_info(class_mock)
+        layer_info = extract.ServiceLayer._get_layer_info(class_mock)
 
         assert layer_info == {'capabilities': 'foo,bar,baz', 'type': 'Feature Layer', 'maxRecordCount': 42}
 
@@ -792,7 +792,7 @@ class Test_ServiceLayer:
         with pytest.raises(
             RuntimeError, match='Response does not contain layer information; ensure URL points to a valid layer'
         ):
-            layer_info = extract._ServiceLayer._get_layer_info(class_mock)
+            layer_info = extract.ServiceLayer._get_layer_info(class_mock)
 
     def test_get_layer_info_raises_on_missing_type(self, mocker):
         response_mock = mocker.Mock()
@@ -806,7 +806,7 @@ class Test_ServiceLayer:
         with pytest.raises(
             RuntimeError, match='Response does not contain layer information; ensure URL points to a valid layer'
         ):
-            layer_info = extract._ServiceLayer._get_layer_info(class_mock)
+            layer_info = extract.ServiceLayer._get_layer_info(class_mock)
 
     def test_get_layer_info_raises_on_missing_record_count(self, mocker):
         response_mock = mocker.Mock()
@@ -821,7 +821,7 @@ class Test_ServiceLayer:
             RuntimeError,
             match='Response does not contain maxRecordCount; ensure URL points to a valid layer and is not a Group Layer'
         ):
-            layer_info = extract._ServiceLayer._get_layer_info(class_mock)
+            layer_info = extract.ServiceLayer._get_layer_info(class_mock)
 
     def test_get_layer_info_retries_on_timeout(self, mocker):
         mocker.patch.object(extract.utils, 'sleep')
@@ -835,7 +835,7 @@ class Test_ServiceLayer:
         class_mock.layer_url = 'foo.bar'
         class_mock.timeout = 5
 
-        extract._ServiceLayer._get_layer_info(class_mock)
+        extract.ServiceLayer._get_layer_info(class_mock)
 
         assert get_mock.call_count == 2
         get_mock.assert_called_with('foo.bar', params={'f': 'json'}, timeout=5)
@@ -851,7 +851,7 @@ class Test_ServiceLayer:
         class_mock.envelope_params = None
         class_mock.where_clause = '1=1'
 
-        record_count = extract._ServiceLayer.get_object_ids(class_mock)
+        record_count = extract.ServiceLayer.get_object_ids(class_mock)
 
         assert record_count == [8, 16, 42]
         get_mock.assert_called_once_with(
@@ -881,7 +881,7 @@ class Test_ServiceLayer:
         class_mock.timeout = 5
         class_mock.envelope_params = {'geometry': 'envelope', 'geometryType': 'esriGeometryEnvelope', 'inSR': 'sr'}
         class_mock.where_clause = '1=1'
-        record_count = extract._ServiceLayer.get_object_ids(class_mock)
+        record_count = extract.ServiceLayer.get_object_ids(class_mock)
 
         assert record_count == [8, 16, 42]
         get_mock.assert_called_once_with('foo.bar/query', params=expected_params, timeout=5)
@@ -898,7 +898,7 @@ class Test_ServiceLayer:
         class_mock.timeout = 5
         class_mock.envelope_params = None
         class_mock.where_clause = 'foo = bar'
-        record_count = extract._ServiceLayer.get_object_ids(class_mock)
+        record_count = extract.ServiceLayer.get_object_ids(class_mock)
 
         assert record_count == [8, 16, 42]
         get_mock.assert_called_once_with('foo.bar/query', params=expected_params, timeout=5)
@@ -917,7 +917,7 @@ class Test_ServiceLayer:
         class_mock.envelope_params = None
         class_mock.where_clause = '1=1'
 
-        record_count = extract._ServiceLayer.get_object_ids(class_mock)
+        record_count = extract.ServiceLayer.get_object_ids(class_mock)
 
         assert record_count == expected_ids
         get_mock.assert_called_once_with(
@@ -940,7 +940,7 @@ class Test_ServiceLayer:
         class_mock.where_clause = '1=1'
 
         with pytest.raises(RuntimeError, match=re.escape(f'Could not get object IDs from foo.bar')):
-            record_count = extract._ServiceLayer.get_object_ids(class_mock)
+            record_count = extract.ServiceLayer.get_object_ids(class_mock)
 
     def test_get_object_ids_returns_empty_list_on_no_oids(self, mocker):
         response_mock = mocker.Mock()
@@ -953,7 +953,7 @@ class Test_ServiceLayer:
         class_mock.envelope_params = None
         class_mock.where_clause = '1=1'
 
-        record_count = extract._ServiceLayer.get_object_ids(class_mock)
+        record_count = extract.ServiceLayer.get_object_ids(class_mock)
 
         assert record_count == []
         get_mock.assert_called_once_with(
@@ -979,7 +979,7 @@ class Test_ServiceLayer:
 
         oid_list = [10, 11, 12, 13, 14]
 
-        extract._ServiceLayer.get_unique_id_list_as_dataframe(class_mock, 'OBJECTID', oid_list)
+        extract.ServiceLayer.get_unique_id_list_as_dataframe(class_mock, 'OBJECTID', oid_list)
 
         requests_mock.assert_called_once_with(
             'foo.bar/query',
@@ -1005,7 +1005,7 @@ class Test_ServiceLayer:
         oid_list = [10, 11, 12, 13, 14]
 
         with pytest.raises(RuntimeError, match=re.escape('Bad chunk response HTTP status code (404)')):
-            extract._ServiceLayer.get_unique_id_list_as_dataframe(class_mock, 'OBJECTID', oid_list)
+            extract.ServiceLayer.get_unique_id_list_as_dataframe(class_mock, 'OBJECTID', oid_list)
 
     def test_get_unique_id_list_as_dataframe_raises_on_json_error(self, mocker):
         class_mock = mocker.Mock()
@@ -1025,7 +1025,7 @@ class Test_ServiceLayer:
         oid_list = [10, 11, 12, 13, 14]
 
         with pytest.raises(RuntimeError, match=re.escape('Could not parse chunk features from response')):
-            extract._ServiceLayer.get_unique_id_list_as_dataframe(class_mock, 'OBJECTID', oid_list)
+            extract.ServiceLayer.get_unique_id_list_as_dataframe(class_mock, 'OBJECTID', oid_list)
 
     def test_get_unique_id_list_as_dataframe_raises_on_len_mismatch(self, mocker):
         class_mock = mocker.Mock()
@@ -1047,14 +1047,14 @@ class Test_ServiceLayer:
         with pytest.raises(
             RuntimeError, match=re.escape('Missing features. 5 OIDs requested, but 4 features downloaded')
         ):
-            extract._ServiceLayer.get_unique_id_list_as_dataframe(class_mock, 'OBJECTID', oid_list)
+            extract.ServiceLayer.get_unique_id_list_as_dataframe(class_mock, 'OBJECTID', oid_list)
 
     def test_init_builds_envelope_params(self, mocker):
-        mocker.patch('palletjack.extract._ServiceLayer._get_layer_info', return_value={'maxRecordCount': 8})
-        mocker.patch('palletjack.extract._ServiceLayer._get_object_id_field')
-        mocker.patch('palletjack.extract._ServiceLayer._check_layer_type')
+        mocker.patch('palletjack.extract.ServiceLayer._get_layer_info', return_value={'maxRecordCount': 8})
+        mocker.patch('palletjack.extract.ServiceLayer._get_object_id_field')
+        mocker.patch('palletjack.extract.ServiceLayer._check_layer_type')
 
-        test_loader = extract._ServiceLayer(mocker.Mock(), 42, envelope_params={'geometry': 'eggs', 'inSR': 'spam'})
+        test_loader = extract.ServiceLayer('foo/bar', envelope_params={'geometry': 'eggs', 'inSR': 'spam'})
 
         assert test_loader.envelope_params == {
             'geometryType': 'esriGeometryEnvelope',
@@ -1063,16 +1063,11 @@ class Test_ServiceLayer:
         }
 
     def test_init_builds_feature_params(self, mocker):
-        mocker.patch('palletjack.extract._ServiceLayer._get_layer_info', return_value={'maxRecordCount': 8})
-        mocker.patch('palletjack.extract._ServiceLayer._get_object_id_field')
-        mocker.patch('palletjack.extract._ServiceLayer._check_layer_type')
+        mocker.patch('palletjack.extract.ServiceLayer._get_layer_info', return_value={'maxRecordCount': 8})
+        mocker.patch('palletjack.extract.ServiceLayer._get_object_id_field')
+        mocker.patch('palletjack.extract.ServiceLayer._check_layer_type')
 
-        test_loader = extract._ServiceLayer(
-            mocker.Mock(), 42, feature_params={
-                'where': 'eggs',
-                'returnGeometry': 'spam'
-            }
-        )
+        test_loader = extract.ServiceLayer('foo/bar', feature_params={'where': 'eggs', 'returnGeometry': 'spam'})
 
         assert test_loader.feature_params == {'outFields': '*', 'where': 'eggs', 'returnGeometry': 'spam'}
 
@@ -1081,11 +1076,8 @@ class Test_ServiceLayer:
         with pytest.raises(
             ValueError, match='envelope_params must contain both the envelope geometry and its spatial reference'
         ):
-            test_loader = extract._ServiceLayer.__init__(
-                mocker.Mock(_get_layer_info=lambda: {'maxRecordCount': 8}),
-                mocker.Mock(),
-                42,
-                envelope_params={'inSR': 'eggs'}
+            test_loader = extract.ServiceLayer.__init__(
+                mocker.Mock(_get_layer_info=lambda: {'maxRecordCount': 8}), 'foo/bar', envelope_params={'inSR': 'eggs'}
             )
 
     def test_init_raises_on_missing_envelope_sr(self, mocker):
@@ -1093,10 +1085,9 @@ class Test_ServiceLayer:
         with pytest.raises(
             ValueError, match='envelope_params must contain both the envelope geometry and its spatial reference'
         ):
-            test_loader = extract._ServiceLayer.__init__(
+            test_loader = extract.ServiceLayer.__init__(
                 mocker.Mock(_get_layer_info=lambda: {'maxRecordCount': 8}),
-                mocker.Mock(),
-                42,
+                'foo/bar',
                 envelope_params={'geometry': 'eggs'}
             )
 
@@ -1105,12 +1096,18 @@ class Test_ServiceLayer:
         with pytest.raises(
             ValueError, match='envelope_params must contain both the envelope geometry and its spatial reference'
         ):
-            test_loader = extract._ServiceLayer.__init__(
-                mocker.Mock(_get_layer_info=lambda: {'maxRecordCount': 8}),
-                mocker.Mock(),
-                42,
-                envelope_params={'ham': 'eggs'}
+            test_loader = extract.ServiceLayer.__init__(
+                mocker.Mock(_get_layer_info=lambda: {'maxRecordCount': 8}), 'foo/bar', envelope_params={'ham': 'eggs'}
             )
+
+    def test_init_strips_trailing_slash_on_url(self, mocker):
+        mocker.patch('palletjack.extract.ServiceLayer._get_layer_info', return_value={'maxRecordCount': 8})
+        mocker.patch('palletjack.extract.ServiceLayer._get_object_id_field')
+        mocker.patch('palletjack.extract.ServiceLayer._check_layer_type')
+
+        test_layer = extract.ServiceLayer('foo/bar/')
+
+        assert test_layer.layer_url == 'foo/bar'
 
     def test_check_capabilities_raises_on_missing(self, mocker):
         response_json = {'capabilities': 'map,data'}
@@ -1118,12 +1115,12 @@ class Test_ServiceLayer:
         with pytest.raises(
             RuntimeError, match=re.escape('query capability not in layer\'s capabilities ([\'map\', \'data\'])')
         ):
-            extract._ServiceLayer.check_capabilities(mocker.Mock(layer_properties_json=response_json), 'query')
+            extract.ServiceLayer.check_capabilities(mocker.Mock(layer_properties_json=response_json), 'query')
 
     def test_check_capabilities_passes_on_differing_cases(self, mocker):
         response_json = {'capabilities': 'Map,Query,Data'}
 
-        implicit_return = extract._ServiceLayer.check_capabilities(
+        implicit_return = extract.ServiceLayer.check_capabilities(
             mocker.Mock(layer_properties_json=response_json), 'query'
         )
         assert implicit_return is None
@@ -1131,33 +1128,31 @@ class Test_ServiceLayer:
     def test_check_layer_type_allows_feature_layer(self, mocker):
         response_json = {'type': 'Feature Layer'}
 
-        implicit_return = extract._ServiceLayer._check_layer_type(mocker.Mock(layer_properties_json=response_json))
+        implicit_return = extract.ServiceLayer._check_layer_type(mocker.Mock(layer_properties_json=response_json))
         assert implicit_return is None
 
     def test_check_layer_type_allows_table(self, mocker):
         response_json = {'type': 'Table'}
 
-        implicit_return = extract._ServiceLayer._check_layer_type(mocker.Mock(layer_properties_json=response_json))
+        implicit_return = extract.ServiceLayer._check_layer_type(mocker.Mock(layer_properties_json=response_json))
         assert implicit_return is None
 
     def test_check_layer_type_raises_on_group_layer(self, mocker):
         response_json = {'type': 'Group Layer'}
 
         with pytest.raises(RuntimeError, match='Layer foo.bar/0 is a Group Layer, not a feature layer or table'):
-            extract._ServiceLayer._check_layer_type(
+            extract.ServiceLayer._check_layer_type(
                 mocker.Mock(layer_properties_json=response_json, layer_url='foo.bar/0')
             )
 
     def test_get_object_id_field_gets_field_from_properties(self, mocker):
         response_json = {'objectIdField': 'OBJECTID_1'}
 
-        assert extract._ServiceLayer._get_object_id_field(
+        assert extract.ServiceLayer._get_object_id_field(
             mocker.Mock(layer_properties_json=response_json)
         ) == 'OBJECTID_1'
 
     def test_get_object_id_field_uses_OBJECTID_if_no_field(self, mocker):
         response_json = {}
 
-        assert extract._ServiceLayer._get_object_id_field(
-            mocker.Mock(layer_properties_json=response_json)
-        ) == 'OBJECTID'
+        assert extract.ServiceLayer._get_object_id_field(mocker.Mock(layer_properties_json=response_json)) == 'OBJECTID'
