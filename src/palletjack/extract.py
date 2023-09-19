@@ -580,7 +580,7 @@ class RESTServiceLoader:
 
         self._class_logger = logging.getLogger(__name__).getChild(self.__class__.__name__)
 
-    def get_features(self, layer_id=0, chunk_size=100, envelope_params=None, feature_params=None, where_clause='1=1'):
+    def get_features(self, service_layer, chunk_size=100):
         """Download the features from a REST MapService or FeatureService with query enabled.
 
         Uses either chunk_size or the service's maxRecordCount parameter to chunk the request into manageable-sized
@@ -612,20 +612,20 @@ class RESTServiceLoader:
             pd.DataFrame.spatial: The service's features as a spatially-enabled dataframe
         """
 
-        layer = _ServiceLayer(self, layer_id, envelope_params, feature_params, where_clause)
+        # service_layer = _ServiceLayer(self, layer_id, envelope_params, feature_params, where_clause)
 
-        self._class_logger.info('Getting features from %s...', layer.layer_url)
+        self._class_logger.info('Getting features from %s...', service_layer.layer_url)
         self._class_logger.debug('Checking for query capability...')
-        layer.check_capabilities('query')
+        service_layer.check_capabilities('query')
         max_record_count = chunk_size
         if not max_record_count:
             self._class_logger.debug('Getting max record count...')
-            max_record_count = layer.max_record_count
+            max_record_count = service_layer.max_record_count
         self._class_logger.debug('Getting object ids...')
-        oids = layer.get_object_ids()
+        oids = service_layer.get_object_ids()
 
         if len(oids) == 0:
-            warnings.warn(f'Layer {layer.layer_url} has no features')
+            warnings.warn(f'Layer {service_layer.layer_url} has no features')
             return None
 
         self._class_logger.debug('Downloading %s features in chunks of %s...', len(oids), max_record_count)
@@ -633,7 +633,9 @@ class RESTServiceLoader:
         for oid_subset in utils.chunker(oids, max_record_count):
             # sleep between 1.5 and 3 s to be friendly
             time.sleep(random.randint(150, 300) / 100)
-            feature_dataframes.append(utils.retry(layer.get_unique_id_list_as_dataframe, layer.oid_field, oid_subset))
+            feature_dataframes.append(
+                utils.retry(service_layer.get_unique_id_list_as_dataframe, service_layer.oid_field, oid_subset)
+            )
 
         all_features_df = pd.concat(feature_dataframes)
 
@@ -685,21 +687,20 @@ class RESTServiceLoader:
         return response
 
 
-class _ServiceLayer:
+class ServiceLayer:
     """Represents a single layer within a service and provides methods for querying the layer and downloading features.
-    Should be created by methods within the RESTService class and not directly by the user.
 
     Downloads features in two stages: first, it gets the object ids to download, and then uses these in a where clause
     to download the features. Thus, any queries, where clauses, or subsetting should be done when getting the object
     ids, not when actually downloading the features.
     """
 
-    def __init__(self, service, layer_id, envelope_params=None, feature_params=None, where_clause='1=1'):
+    def __init__(self, layer_url, timeout=5, envelope_params=None, feature_params=None, where_clause='1=1'):
         """Create an object representing a single layer
 
         Args:
-            service (palletjack.extract.RESTService): The RESTService object representing the parent service
-            layer_id (int): The layer's ID within the service
+            layer_url (str): The full URL to the desired layer
+            timeout (int, optional): Timeout for HTTP requests in seconds. Defaults to 5.
             envelope_params (dict, optional): Bounding box and it's spatial reference to spatially limit feature
                 collection in the form {'geometry': '{xmin},{ymin},{xmax},{ymax}', 'inSR': '{wkid}'}. Defaults to None.
             feature_params (dict, optional): Additional query parameters to pass to the service when downloading
@@ -711,8 +712,12 @@ class _ServiceLayer:
 
         self._class_logger = logging.getLogger(__name__).getChild(self.__class__.__name__)
 
-        self.layer_url = f'{service.url}/{layer_id}'
-        self.timeout = service.timeout
+        # self.layer_url = f'{service.url}/{layer_id}'
+        # self.timeout = service.timeout
+        if layer_url[-1] == '/':
+            layer_url = layer_url[:-1]
+        self.layer_url = layer_url
+        self.timeout = timeout
 
         self.layer_properties_json = self._get_layer_info()
         self.max_record_count = self.layer_properties_json['maxRecordCount']
