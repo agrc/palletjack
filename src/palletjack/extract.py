@@ -573,4 +573,4 @@ class RESTServiceLoader:
             })
         response = utils.retry(requests.get, f'{self.base_url}/query', params=objectid_params, timeout=self.timeout)
 
-        return response.json()['objectIds']
+        return sorted(response.json()['objectIds'])
