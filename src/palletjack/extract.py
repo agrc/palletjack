@@ -553,6 +553,24 @@ class RESTServiceLoader:
 
     @classmethod
     def get_features(cls, service_url, layer=0, timeout=5, envelope=None, envelope_sr=None):
+        """Download the features from a REST MapService or FeatureService with query enabled.
+
+        Queries the server's maxRecordCount parameter to chunk the request into manageable-sized requests. To increase
+        performance, you can specify a geographic bounding box via the envelope parameter to limit the features
+        returned. Individual chunk requests are wrapped in retries to handle momentary network glitches.
+
+        Args:
+            service_url (str): The base URL to the service's REST endpoint
+            layer (int, optional): Layer within the service to download. Defaults to 0.
+            timeout (int, optional): Timeout value for HTML requests. Defaults to 5.
+            envelope (str, optional): Bounding box to spatially limit feature collection in the form `{xmin},{ymin},
+            {xmax},{ymax}. Defaults to None.
+            envelope_sr (str, optional): The spatial reference of the envelop coordinates. Required if envelope is
+            provided. Defaults to None.
+
+        Returns:
+            pd.DataFrame.spatial: The service's features as a spatially-enabled dataframe
+        """
         rest_loader = cls(service_url, layer, timeout, envelope, envelope_sr)
         rest_loader._get_features()
 
@@ -565,10 +583,22 @@ class RESTServiceLoader:
             raise ValueError('envelope_sr required when passing in an envelope')
 
     def _get_max_record_count(self):
+        """Get the service's maxRecordCount attribute
+
+        Returns:
+            int: maxRecordCount
+        """
+
         response = utils.retry(requests.get, self.base_url, params={'f': 'json'}, timeout=self.timeout)
         return response.json()['maxRecordCount']
 
     def _get_object_ids(self):
+        """Get the Object IDs of the feature service layer, using the bounding envelope if present.
+
+        Returns:
+            list(int): The Object IDs
+        """
+
         objectid_params = {'returnIdsOnly': 'true', 'f': 'json'}
 
         if self.envelope:
@@ -581,8 +611,24 @@ class RESTServiceLoader:
 
         return sorted(response.json()['objectIds'])
 
-    #:TODO: Need to adjust the objectID bounds to make sure it captures single-length OID lists
     def _get_oid_range_as_dataframe(self, start_oid=None, end_oid=None):
+        """Use a REST query to download features from a MapService or FeatureService layer.
+
+        If both start_oid and end_oid are specified, they will be used to limit the request size where OID >= start_oid
+        and OID < end_oid (just like a python slice- [start_oid:end_oid]). If both bounds are the same OID, it just
+        downloads that one feature.
+
+        Args:
+            start_oid (int, optional): Lower bound (inclusive). Defaults to None.
+            end_oid (int, optional): Upper bound (exclusive). Defaults to None.
+
+        Raises:
+            ValueError: If one bound is provided but not the other.
+
+        Returns:
+            pd.DataFrame.spatial: Spatially-enabled dataframe of the service layer's features
+        """
+
         range_params = {'where': '1=1', 'outFields': '*', 'returnGeometry': 'true', 'f': 'json'}
         if bool(start_oid) ^ bool(end_oid):
             raise ValueError('Both start ane end OIDs must be provided if using OID range')
