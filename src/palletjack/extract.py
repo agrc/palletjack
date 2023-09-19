@@ -576,272 +576,77 @@ class RESTServiceLoader:
     #     service = cls(service_url=service_url, timeout=timeout)
     #     return service._get_feature_layers_info_from_service()
 
-    @classmethod
-    def get_features(cls, service_url, layer=0, timeout=5, chunk_size=100, envelope_params=None, feature_params=None):
-        """Download the features from a REST MapService or FeatureService with query enabled.
+    # @classmethod
+    # def get_features(cls, service_url, layer=0, timeout=5, chunk_size=100, envelope_params=None, feature_params=None):
+    #     """Download the features from a REST MapService or FeatureService with query enabled.
 
-        Uses either chunk_size or the service's maxRecordCount parameter to chunk the request into manageable-sized
-        requests. 100 seems to be the sweet spot before requests start to error out consistently. To limit the number
-        of features returned, you can specify a geographic bounding box via the envelope parameters. Individual chunk
-        requests and other HTML requests are wrapped in retries to handle momentary network glitches.
+    #     Uses either chunk_size or the service's maxRecordCount parameter to chunk the request into manageable-sized
+    #     requests. 100 seems to be the sweet spot before requests start to error out consistently. To limit the number
+    #     of features returned, you can specify a geographic bounding box via the envelope parameters. Individual chunk
+    #     requests and other HTML requests are wrapped in retries to handle momentary network glitches.
 
-        Raises:
-            ValueError: If envelope is specified but envelope_sr is not.
-            RuntimeError: If the service does not support the query capability.
-            RuntimeError: If the REST response type is not Feature Layer
-            RuntimeError: If the chunk's HTTP response code is not 200 (ie, the request failed)
-            RuntimeError: The response could not be parsed into JSON (a technically successful request but bad data)
-            RuntimeError: If the number of features downloaded does not match the number of OIDs in the service
-                (subsetted by envelope if provided).
+    #     Raises:
+    #         ValueError: If envelope is specified but envelope_sr is not.
+    #         RuntimeError: If the service does not support the query capability.
+    #         RuntimeError: If the REST response type is not Feature Layer
+    #         RuntimeError: If the chunk's HTTP response code is not 200 (ie, the request failed)
+    #         RuntimeError: The response could not be parsed into JSON (a technically successful request but bad data)
+    #         RuntimeError: If the number of features downloaded does not match the number of OIDs in the service
+    #             (subsetted by envelope if provided).
 
-        Args:
-            service_url (str): The base URL to the service's REST endpoint.
-            layer (int, optional): Layer within the service to download. Defaults to 0.
-            timeout (int, optional): Timeout value in seconds for HTML requests. Defaults to 5.
-            chunk_size (int, optional): Number of features to download per chunk. Defaults to 100. If set to None, it
-                will use the service's maxRecordCount. Adjust if the service is failing frequently.
-            envelope_params (dict, optional): Bounding box and it's spatial reference to spatially limit feature
-                collection in the form {'geometry': '{xmin},{ymin},{xmax},{ymax}', 'inSR': '{wkid}'}. Defaults to None.
-            feature_params (dict, optional): Additional query parameters to pass to the service when downloading
-                features. Parameter defaults to None, and the query defaults to 'outFields': '*', 'returnGeometry':
-                'true'. See the ArcGIS REST API documentation for more information.
+    #     Args:
+    #         service_url (str): The base URL to the service's REST endpoint.
+    #         layer (int, optional): Layer within the service to download. Defaults to 0.
+    #         timeout (int, optional): Timeout value in seconds for HTML requests. Defaults to 5.
+    #         chunk_size (int, optional): Number of features to download per chunk. Defaults to 100. If set to None, it
+    #             will use the service's maxRecordCount. Adjust if the service is failing frequently.
+    #         envelope_params (dict, optional): Bounding box and it's spatial reference to spatially limit feature
+    #             collection in the form {'geometry': '{xmin},{ymin},{xmax},{ymax}', 'inSR': '{wkid}'}. Defaults to None.
+    #         feature_params (dict, optional): Additional query parameters to pass to the service when downloading
+    #             features. Parameter defaults to None, and the query defaults to 'outFields': '*', 'returnGeometry':
+    #             'true'. See the ArcGIS REST API documentation for more information.
 
-        Returns:
-            pd.DataFrame.spatial: The service's features as a spatially-enabled dataframe
-        """
-        rest_loader = cls(service_url, layer, timeout, chunk_size, envelope_params, feature_params)
-        return rest_loader._get_features()
+    #     Returns:
+    #         pd.DataFrame.spatial: The service's features as a spatially-enabled dataframe
+    #     """
+    #     rest_loader = cls(service_url, layer, timeout, chunk_size, envelope_params, feature_params)
+    #     return rest_loader._get_features()
 
-    def __init__(self, service_url, layer=0, timeout=20, chunk_size=None, envelope_params=None, feature_params=None):
+    def __init__(self, service_url, timeout=5):  #, chunk_size=None, envelope_params=None, feature_params=None):
         if service_url[-1] == '/':
             service_url = service_url[:-1]
-        self.base_url = f'{service_url}/{layer}'
+        self.url = service_url
 
         self.timeout = timeout
-        self.chunk_size = chunk_size
-
-        self.envelope_params = None
-        if envelope_params:
-            try:
-                envelope_params['geometry'] and envelope_params['inSR']
-            except KeyError as error:
-                raise ValueError(
-                    'envelope_params must contain both the envelope geometry and its spatial reference'
-                ) from error
-            self.envelope_params = {'geometryType': 'esriGeometryEnvelope'}
-            self.envelope_params.update(envelope_params)
-
-        self.feature_params = {'outFields': '*', 'returnGeometry': 'true'}
-        if feature_params:
-            self.feature_params.update(feature_params)
+        # self.chunk_size = chunk_size
 
         self._class_logger = logging.getLogger(__name__).getChild(self.__class__.__name__)
 
-    def _check_capabilities(self, capability, response_json):
-        """Raise error if the service does not support capability
-
-        Args:
-            response_json (dict): The JSON response from a basic query parsed as a dictionary.
-            capability (str): The capability in question; will be casefolded.
-
-        Raises:
-            RuntimeError: if the casefolded capability is not present in the service's capabilities.
-        """
-        service_capabilities = response_json['capabilities'].casefold().split(',')
-        if capability.casefold() not in service_capabilities:
-            raise RuntimeError(
-                f'{capability.casefold()} capability not in service\'s capabilities ({service_capabilities})'
-            )
-
-    def _check_layer_type(self, response_json):
-        """Make sure the layer is a feature layer (and thus we can extract features from it)
-
-        Args:
-            response_json (dict): The JSON response from a basic query parsed as a dictionary.
-
-        Raises:
-            RuntimeError: If the REST response type is not Feature Layer
-        """
-
-        if response_json['type'] != 'Feature Layer':
-            raise RuntimeError(f'Layer {self.base_url} is a {response_json["type"]}, not a feature layer')
-
-    def _get_max_record_count(self, response_json):
-        """Get the service's maxRecordCount attribute
-
-        Args:
-            response_json (dict): The JSON response from a basic query parsed as a dictionary.
-
-        Returns:
-            int: maxRecordCount
-        """
-
-        return response_json['maxRecordCount']
-
-    def _get_object_id_field(self, response_json):
-        """Get the service's objectIdField attribute
-
-        Args:
-            response_json (dict): The JSON response from a basic query parsed as a dictionary.
-
-        Returns:
-            str: objectIdField
-        """
-
-        try:
-            unique_id_field = response_json['objectIdField']
-        except KeyError:
-            self._class_logger.debug(f'No objectIdField found in {self.base_url}, using OBJECTID instead')
-            unique_id_field = 'OBJECTID'
-
-        return unique_id_field
-
-    def _get_object_ids(self):
-        """Get the Object IDs of the feature service layer, using the bounding envelope if present.
-
-        Returns:
-            list(int): The Object IDs
-        """
-
-        objectid_params = {'returnIdsOnly': 'true', 'f': 'json'}
-
-        if self.envelope_params is not None:
-            objectid_params.update(self.envelope_params)
-        self._class_logger.debug(f'OID params: {objectid_params}')
-        response = utils.retry(requests.get, f'{self.base_url}/query', params=objectid_params, timeout=self.timeout)
-        oids = []
-        try:
-            oids = sorted(response.json()['objectIds'])
-        except KeyError as error:
-            raise RuntimeError(f'Could not get object IDs from {self.base_url}') from error
-
-        return oids
-
-    def _get_oid_range_as_dataframe(self, unique_id_field='OBJECTID', start_oid=None, end_oid=None):
-        """Use a REST query to download features from a MapService or FeatureService layer.
-
-        If both start_oid and end_oid are specified, they will be used to limit the request size where OID >= start_oid
-        and OID <= end_oid (ie, the bounds are inclusive). If both bounds are the same OID, it just downloads that one
-        feature.
-
-        Args:
-            unique_id_field (str, optional): The name of the field containing the unique ID. Defaults to 'OBJECTID'.
-            start_oid (int, optional): Lower bound (inclusive). Defaults to None.
-            end_oid (int, optional): Upper bound (inclusive). Defaults to None.
-
-        Raises:
-            ValueError: If one bound is provided but not the other.
-
-        Returns:
-            pd.DataFrame.spatial: Spatially-enabled dataframe of the service layer's features
-        """
-
-        range_params = {'f': 'json'}
-        range_params.update(self.feature_params)
-        start_oid_exists = start_oid is not None
-        end_oid_exists = end_oid is not None
-        if (start_oid_exists and not end_oid_exists) or (not start_oid_exists and end_oid_exists):
-            raise ValueError('Both start ane end OIDs must be provided if using OID range')
-        if start_oid_exists and end_oid_exists:
-            range_params.update({'where': f'{unique_id_field} >={start_oid} and {unique_id_field} <={end_oid}'})
-        #: If we have a range that is just one OID long, just get that one OID
-        if (start_oid_exists and end_oid_exists) and (start_oid == end_oid):
-            range_params.update({'where': f'{unique_id_field} ={start_oid}'})
-
-        self._class_logger.debug(f'OID range params: {range_params}')
-        response = utils.retry(requests.get, f'{self.base_url}/query', params=range_params, timeout=self.timeout)
-
-        return arcgis.features.FeatureSet.from_json(response.text).sdf.sort_values(by=unique_id_field)
-
-    def _get_unique_id_list_as_dataframe(self, unique_id_field, unique_id_list):
-        """Use a REST query to download specified features from a MapService or FeatureService layer.
-
-        unique_id_list defines the ids in unique_id_fied to download.
-
-        Args:
-            unique_id_field (str): The field in the service layer used as the unique ID.
-            unique_id_list (list): The list of unique IDs to download.
-
-        Raises:
-            ValueError: If one bound is provided but not the other.
-
-        Returns:
-            pd.DataFrame.spatial: Spatially-enabled dataframe of the service layer's features
-        """
-        unique_id_params = {'f': 'json'}
-        unique_id_params.update(self.feature_params)
-        unique_id_params.update({'where': f'{unique_id_field} in ({",".join([str(oid) for oid in unique_id_list])})'})
-
-        self._class_logger.debug(f'OID range params: {unique_id_params}')
-        response = requests.get(f'{self.base_url}/query', params=unique_id_params, timeout=self.timeout)
-
-        if response.status_code != 200:
-            raise RuntimeError(f'Bad chunk response HTTP status code ({response.status_code})')
-
-        try:
-            features_df = arcgis.features.FeatureSet.from_json(response.text).sdf.sort_values(by=unique_id_field)
-        #: Not sure this is the right JSONDecodeError...
-        except json.JSONDecodeError as error:
-            raise RuntimeError('Could not parse chunk features from response') from error
-
-        if len(features_df) != len(unique_id_list):
-            raise RuntimeError(
-                f'Missing features. {len(unique_id_list)} OIDs requested, but {len(features_df)} features downloaded'
-            )
-
-        return features_df
-
-    #: TODO: A group layer doesn't have maxRecordCount. This will raise a key error on that before the layer check
-    #: occurs, and the user won't know it's a layer type problem.
-    def _get_layer_info(self):
-        """Do a basic query to get the layer's information as a dictionary from the json response.
-
-        Raises:
-            RuntimeError: If the response does not contain 'capabilities', 'type', or 'maxRecordCount' keys.
-
-        Returns:
-            dict: The query's json response as a dictionary
-        """
-
-        response_json = utils.retry(requests.get, self.base_url, params={'f': 'json'}, timeout=self.timeout).json()
-        try:
-            #: bogus boolean to make sure the keys exist
-            response_json['capabilities'] and response_json['type'] and response_json['maxRecordCount']
-        except KeyError as error:
-            raise RuntimeError(
-                'Response does not contain layer information; ensure URL points to a valid layer'
-            ) from error
-
-        return response_json
-
-    def _get_features(self):
+    def get_features(self, layer=0, chunk_size=100, envelope_params=None, feature_params=None):
         """Download the features from a rest service in chunks based on maxRecordCount
 
         Returns:
             pd.DataFrame.spatial: Spatially-enabled dataframe of the feature service layer
         """
 
-        self._class_logger.info(f'Getting features from {self.base_url}...')
-        layer_info = self._get_layer_info()
-        self._class_logger.debug('Checking layer type...')
-        self._check_layer_type(layer_info)
+        layer = _ServiceLayer(self, layer, envelope_params, feature_params)
+
+        self._class_logger.info(f'Getting features from {layer.layer_url}...')
         self._class_logger.debug('Checking for query capability...')
-        self._check_capabilities('query', layer_info)
-        max_record_count = self.chunk_size
+        layer.check_capabilities('query')
+        max_record_count = chunk_size
         if not max_record_count:
             self._class_logger.debug('Getting max record count...')
-            max_record_count = self._get_max_record_count(layer_info)
-        self._class_logger.debug('Getting object id field...')
-        oid_field = self._get_object_id_field(layer_info)
+            max_record_count = layer.max_record_count
         self._class_logger.debug('Getting object ids...')
-        oids = self._get_object_ids()
+        oids = layer.get_object_ids()
 
         self._class_logger.debug(f'Downloading {len(oids)} features in chunks of {max_record_count}...')
         feature_dataframes = []
         for oid_subset in utils.chunker(oids, max_record_count):
             # sleep between 1.5 and 3 s to be friendly
             time.sleep(random.randint(150, 300) / 100)
-            feature_dataframes.append(utils.retry(self._get_unique_id_list_as_dataframe, oid_field, oid_subset))
+            feature_dataframes.append(utils.retry(layer.get_unique_id_list_as_dataframe, layer.oid_field, oid_subset))
 
         all_features_df = pd.concat(feature_dataframes)
 
@@ -861,23 +666,23 @@ class RESTServiceLoader:
 
         service = cls(service_url, timeout=timeout)
 
-        layers = service._get_feature_layers_info_from_service(service_url)
+        layers = service._get_feature_layers_info()
 
         return layers
 
-    def _get_feature_layers_info_from_service(self):
-        response = utils.retry(self._get_service_info, self.service_url)
+    def _get_feature_layers_info(self):
+        response = utils.retry(self._get_service_info, self.url)
 
         try:
             response_json = response.json()
         except (json.JSONDecodeError) as error:
-            raise RuntimeError(f'Could not parse response from {self.service_url}') from error
+            raise RuntimeError(f'Could not parse response from {self.url}') from error
 
         try:
             layers = [layer for layer in response_json['layers'] if layer['type'] == 'Feature Layer']
         except KeyError as error:
             if 'layers' in str(error):
-                raise RuntimeError(f'Response from {self.service_url} does not contain layer information') from error
+                raise RuntimeError(f'Response from {self.url} does not contain layer information') from error
             raise RuntimeError('Layer info did not contain layer type') from error
 
         return layers
@@ -889,3 +694,161 @@ class RESTServiceLoader:
         response.raise_for_status()
 
         return response
+
+
+class _ServiceLayer:
+
+    def __init__(self, service, layer_id, envelope_params=None, feature_params=None):
+
+        self._class_logger = logging.getLogger(__name__).getChild(self.__class__.__name__)
+
+        self.layer_url = f'{service.url}/{layer_id}'
+        self.timeout = service.timeout
+
+        self.layer_properties_json = self._get_layer_info()
+        self.max_record_count = self.layer_properties_json['maxRecordCount']
+        self.oid_field = self._get_object_id_field()
+        self._check_layer_type()
+
+        self.envelope_params = None
+        if envelope_params:
+            try:
+                envelope_params['geometry'] and envelope_params['inSR']
+            except KeyError as error:
+                raise ValueError(
+                    'envelope_params must contain both the envelope geometry and its spatial reference'
+                ) from error
+            self.envelope_params = {'geometryType': 'esriGeometryEnvelope'}
+            self.envelope_params.update(envelope_params)
+
+        self.feature_params = {'outFields': '*', 'returnGeometry': 'true'}
+        if feature_params:
+            self.feature_params.update(feature_params)
+
+    #: TODO: A group layer doesn't have maxRecordCount. This will raise a key error on that before the layer check
+    #: occurs, and the user won't know it's a layer type problem.
+    def _get_layer_info(self):
+        """Do a basic query to get the layer's information as a dictionary from the json response.
+
+        Raises:
+            RuntimeError: If the response does not contain 'capabilities', 'type', or 'maxRecordCount' keys.
+
+        Returns:
+            dict: The query's json response as a dictionary
+        """
+
+        response_json = utils.retry(requests.get, self.layer_url, params={'f': 'json'}, timeout=self.timeout).json()
+        try:
+            #: bogus boolean to make sure the keys exist
+            response_json['capabilities'] and response_json['type'] and response_json['maxRecordCount']
+        except KeyError as error:
+            raise RuntimeError(
+                'Response does not contain layer information; ensure URL points to a valid layer'
+            ) from error
+
+        return response_json
+
+    def check_capabilities(self, capability):
+        """Raise error if the layer does not support capability
+
+        Args:
+            capability (str): The capability in question; will be casefolded.
+
+        Raises:
+            RuntimeError: if the casefolded capability is not present in the layer's capabilities.
+        """
+        layer_capabilities = self.layer_properties_json['capabilities'].casefold().split(',')
+        if capability.casefold() not in layer_capabilities:
+            raise RuntimeError(
+                f'{capability.casefold()} capability not in layer\'s capabilities ({layer_capabilities})'
+            )
+
+    def _check_layer_type(self):
+        """Make sure the layer is a feature layer (and thus we can extract features from it)
+
+        Args:
+            response_json (dict): The JSON response from a basic query parsed as a dictionary.
+
+        Raises:
+            RuntimeError: If the REST response type is not Feature Layer
+        """
+
+        if self.layer_properties_json['type'] != 'Feature Layer':
+            raise RuntimeError(f'Layer {self.layer_url} is a {self.layer_properties_json["type"]}, not a feature layer')
+
+    def _get_object_id_field(self):
+        """Get the service's objectIdField attribute
+
+        Args:
+            response_json (dict): The JSON response from a basic query parsed as a dictionary.
+
+        Returns:
+            str: objectIdField
+        """
+
+        try:
+            unique_id_field = self.layer_properties_json['objectIdField']
+        except KeyError:
+            self._class_logger.debug(f'No objectIdField found in {self.layer_url}, using OBJECTID instead')
+            unique_id_field = 'OBJECTID'
+
+        return unique_id_field
+
+    def get_object_ids(self):
+        """Get the Object IDs of the feature service layer, using the bounding envelope if present.
+
+        Returns:
+            list(int): The Object IDs
+        """
+
+        objectid_params = {'returnIdsOnly': 'true', 'f': 'json'}
+
+        if self.envelope_params is not None:
+            objectid_params.update(self.envelope_params)
+        self._class_logger.debug(f'OID params: {objectid_params}')
+        response = utils.retry(requests.get, f'{self.layer_url}/query', params=objectid_params, timeout=self.timeout)
+        oids = []
+        try:
+            oids = sorted(response.json()['objectIds'])
+        except KeyError as error:
+            raise RuntimeError(f'Could not get object IDs from {self.layer_url}') from error
+
+        return oids
+
+    def get_unique_id_list_as_dataframe(self, unique_id_field, unique_id_list):
+        """Use a REST query to download specified features from a MapService or FeatureService layer.
+
+        unique_id_list defines the ids in unique_id_fied to download.
+
+        Args:
+            unique_id_field (str): The field in the service layer used as the unique ID.
+            unique_id_list (list): The list of unique IDs to download.
+
+        Raises:
+            ValueError: If one bound is provided but not the other.
+
+        Returns:
+            pd.DataFrame.spatial: Spatially-enabled dataframe of the service layer's features
+        """
+        unique_id_params = {'f': 'json'}
+        unique_id_params.update(self.feature_params)
+        unique_id_params.update({'where': f'{unique_id_field} in ({",".join([str(oid) for oid in unique_id_list])})'})
+
+        self._class_logger.debug(f'OID range params: {unique_id_params}')
+        response = requests.get(f'{self.layer_url}/query', params=unique_id_params, timeout=self.timeout)
+
+        if response.status_code != 200:
+            raise RuntimeError(f'Bad chunk response HTTP status code ({response.status_code})')
+
+        try:
+            features_df = arcgis.features.FeatureSet.from_json(response.text).sdf.sort_values(by=unique_id_field)
+        #: Not sure this is the right JSONDecodeError...
+        except json.JSONDecodeError as error:
+            raise RuntimeError('Could not parse chunk features from response') from error
+
+        if len(features_df) != len(unique_id_list):
+            raise RuntimeError(
+                f'Missing features. {len(unique_id_list)} OIDs requested, but {len(features_df)} features downloaded'
+            )
+
+        return features_df
