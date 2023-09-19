@@ -687,6 +687,11 @@ class TestRESTServiceLoader:
 
         assert test_loader.url == 'foo.bar'
 
+    def test_init_doesnt_strip_trailing_slash_if_no_trailing_slash(self):
+        test_loader = extract.RESTServiceLoader('foo.bar')
+
+        assert test_loader.url == 'foo.bar'
+
     def test_get_feature_layers_info_only_returns_feature_layers(self, mocker):
         response_json = {'layers': [{'id': 0, 'type': 'Feature Layer'}, {'id': 1, 'type': 'Group Layer'}]}
 
@@ -694,14 +699,14 @@ class TestRESTServiceLoader:
 
         test_layer = [{'id': 0, 'type': 'Feature Layer'}]
 
-        assert extract.RESTServiceLoader._get_feature_layers_info(mocker.Mock()) == test_layer
+        assert extract.RESTServiceLoader.get_feature_layers_info(mocker.Mock()) == test_layer
 
     def test_get_feature_layers_info_returns_empty_list_if_no_feature_layers(self, mocker):
         response_json = {'layers': [{'id': 0, 'type': 'Group Layer'}]}
 
         mocker.patch('palletjack.extract.utils.retry', return_value=mocker.Mock(json=lambda: response_json))
 
-        assert extract.RESTServiceLoader._get_feature_layers_info(mocker.Mock()) == []
+        assert extract.RESTServiceLoader.get_feature_layers_info(mocker.Mock()) == []
 
     def test_get_feature_layers_info_raises_on_json_parse_error(self, mocker):
         response_mock = mocker.Mock()
@@ -710,20 +715,47 @@ class TestRESTServiceLoader:
         mocker.patch('palletjack.extract.utils.retry', return_value=response_mock)
 
         with pytest.raises(RuntimeError, match=re.escape('Could not parse response from foo.bar')):
-            extract.RESTServiceLoader._get_feature_layers_info(mocker.Mock(url='foo.bar'))
+            extract.RESTServiceLoader.get_feature_layers_info(mocker.Mock(url='foo.bar'))
 
     def test_get_feature_layers_info_raises_on_missing_layers_key(self, mocker):
         mocker.patch('palletjack.extract.utils.retry', return_value=mocker.Mock(json=lambda: {'foo': 'bar'}))
 
         with pytest.raises(RuntimeError, match=re.escape('Response from foo.bar does not contain layer information')):
-            extract.RESTServiceLoader._get_feature_layers_info(mocker.Mock(url='foo.bar'))
+            extract.RESTServiceLoader.get_feature_layers_info(mocker.Mock(url='foo.bar'))
 
     def test_get_feature_layers_info_raises_on_missing_layer_type(self, mocker):
 
         mocker.patch('palletjack.extract.utils.retry', return_value=mocker.Mock(json=lambda: {'layers': [{'id': 0}]}))
 
         with pytest.raises(RuntimeError, match=re.escape('Layer info did not contain layer type')):
-            extract.RESTServiceLoader._get_feature_layers_info(mocker.Mock(url='foo.bar'))
+            extract.RESTServiceLoader.get_feature_layers_info(mocker.Mock(url='foo.bar'))
+
+    def test__get_service_info_uses_proper_query(self, mocker):
+        mock_response = mocker.Mock()
+        mock_response.status_code = 200
+
+        get_mock = mocker.patch('palletjack.extract.requests.get')
+        get_mock.return_value = mock_response
+
+        service_mock = mocker.Mock(url='http://fakeurl.com', timeout=10)
+
+        response = extract.RESTServiceLoader._get_service_info(service_mock)
+
+        get_mock.assert_called_once_with('http://fakeurl.com/query', params={'f': 'json'}, timeout=10)
+        assert response == mock_response
+
+    def test__get_service_info_raises_http_error(self, mocker):
+        mock_response = mocker.Mock()
+        mock_response.status_code = 404
+        mock_response.raise_for_status.side_effect = requests.exceptions.HTTPError
+
+        get_mock = mocker.patch('palletjack.extract.requests.get')
+        get_mock.return_value = mock_response
+
+        service_mock = mocker.Mock(url='http://fakeurl.com', timeout=10)
+
+        with pytest.raises(requests.exceptions.HTTPError):
+            extract.RESTServiceLoader._get_service_info(service_mock)
 
 
 class Test_ServiceLayer:
@@ -955,6 +987,46 @@ class Test_ServiceLayer:
             RuntimeError, match=re.escape('Missing features. 5 OIDs requested, but 4 features downloaded')
         ):
             extract._ServiceLayer.get_unique_id_list_as_dataframe(class_mock, 'OBJECTID', oid_list)
+
+    def test_init_builds_envelope_params(self, mocker):
+        test_loader = extract._ServiceLayer.__init__(
+            mocker.Mock(_get_layer_info=lambda: {'maxRecordCount': 8}),
+            mocker.Mock(),
+            42,
+            envelope_params={
+                'geometry': 'eggs',
+                'inSR': 'spam'
+            }
+        )
+
+        test_loader = extract._ServiceLayer(
+            mocker.Mock(_get_layer_info=lambda: {'maxRecordCount': 8}),
+            mocker.Mock(),
+            42,
+            envelope_params={
+                'geometry': 'eggs',
+                'inSR': 'spam'
+            }
+        )
+
+        assert test_loader.envelope_params == {
+            'geometryType': 'esriGeometryEnvelope',
+            'geometry': 'eggs',
+            'inSR': 'spam'
+        }
+
+    def test_init_builds_feature_params(self, mocker):
+        test_loader = extract._ServiceLayer.__init__(
+            mocker.Mock(_get_layer_info=lambda: {'maxRecordCount': 8}),
+            mocker.Mock(),
+            42,
+            feature_params={
+                'where': 'eggs',
+                'returnGeometry': 'spam'
+            }
+        )
+
+        assert test_loader.feature_params == {'outFields': '*', 'where': 'eggs', 'returnGeometry': 'spam'}
 
     def test_init_raises_on_missing_envelope_geometry(self, mocker):
 
