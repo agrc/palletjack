@@ -546,3 +546,31 @@ class PostgresLoader:
             self._class_logger.warning('Dataframe contains no rows. Shape: %s', spatial_dataframe.shape)
 
         return spatial_dataframe
+
+
+class RESTServiceLoader:
+
+    def __init__(self, service_url, layer=0, timeout=5, envelope=None, envelope_sr=None):
+        self.base_url = f'{service_url}/{layer}'
+        self.timeout = timeout
+        self.envelope = envelope
+        self.envelope_sr = envelope_sr
+        if self.envelope and not self.envelope_sr:
+            raise ValueError('envelope_sr required when passing in an envelope')
+
+    def _get_max_record_count(self):
+        response = utils.retry(requests.get, self.base_url, params={'f': 'json'}, timeout=self.timeout)
+        return response.json()['maxRecordCount']
+
+    def _get_object_ids(self):
+        objectid_params = {'returnIdsOnly': 'true', 'f': 'json'}
+
+        if self.envelope:
+            objectid_params.update({
+                'geometry': self.envelope,
+                'geometryType': 'esriGeometryEnvelope',
+                'inSR': self.envelope_sr
+            })
+        response = utils.retry(requests.get, f'{self.base_url}/query', params=objectid_params, timeout=self.timeout)
+
+        return response.json()['objectIds']

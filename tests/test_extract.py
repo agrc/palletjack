@@ -6,6 +6,7 @@ import geopandas as gpd
 import numpy as np
 import pandas as pd
 import pytest
+import requests
 from pandas import testing as tm
 
 from palletjack import extract
@@ -603,3 +604,68 @@ class TestPostgresLoader:
         dataframe = loader.read_table_into_dataframe('table', 'name', '4326', 'geometry')
 
         assert dataframe.spatial.geometry_type == ['polygon']
+
+
+class TestRESTServiceLoader:
+
+    def test_get_max_record_count_works_normally(self, mocker):
+        response_mock = mocker.Mock()
+        response_mock.json.return_value = {'maxRecordCount': 42}
+        get_mock = mocker.patch('palletjack.extract.requests.get', return_value=response_mock)
+
+        class_mock = mocker.Mock()
+        class_mock.base_url = 'foo.bar'
+        class_mock.timeout = 5
+
+        record_count = extract.RESTServiceLoader._get_max_record_count(class_mock)
+
+        assert record_count == 42
+        get_mock.assert_called_once_with('foo.bar', params={'f': 'json'}, timeout=5)
+
+    def test_get_max_record_count_retries_on_timeout(self, mocker):
+        mocker.patch.object(extract.utils, 'sleep')
+        response_mock = mocker.Mock()
+        response_mock.json.return_value = {'maxRecordCount': 42}
+        get_mock = mocker.patch(
+            'palletjack.extract.requests.get', side_effect=[requests.exceptions.Timeout, response_mock]
+        )
+
+        class_mock = mocker.Mock()
+        class_mock.base_url = 'foo.bar'
+        class_mock.timeout = 5
+
+        record_count = extract.RESTServiceLoader._get_max_record_count(class_mock)
+
+        assert record_count == 42
+        assert get_mock.call_count == 2
+        get_mock.assert_called_with('foo.bar', params={'f': 'json'}, timeout=5)
+
+    def test_get_object_ids_works_normally(self, mocker):
+        response_mock = mocker.Mock()
+        response_mock.json.return_value = {'objectIds': [8, 16, 42]}
+        get_mock = mocker.patch('palletjack.extract.requests.get', return_value=response_mock)
+
+        class_mock = mocker.Mock()
+        class_mock.base_url = 'foo.bar'
+        class_mock.timeout = 5
+        class_mock.envelope = None
+
+        record_count = extract.RESTServiceLoader._get_object_ids(class_mock)
+
+        assert record_count == [8, 16, 42]
+        get_mock.assert_called_once_with('foo.bar/query', params={'returnIdsOnly': 'true', 'f': 'json'}, timeout=5)
+
+    def test_get_object_ids_returns_sorted_ids(self, mocker):
+        response_mock = mocker.Mock()
+        response_mock.json.return_value = {'objectIds': [16, 42, 8]}
+        get_mock = mocker.patch('palletjack.extract.requests.get', return_value=response_mock)
+
+        class_mock = mocker.Mock()
+        class_mock.base_url = 'foo.bar'
+        class_mock.timeout = 5
+        class_mock.envelope = None
+
+        record_count = extract.RESTServiceLoader._get_object_ids(class_mock)
+
+        assert record_count == [8, 16, 42]
+        get_mock.assert_called_once_with('foo.bar/query', params={'returnIdsOnly': 'true', 'f': 'json'}, timeout=5)
