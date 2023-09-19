@@ -556,20 +556,20 @@ class RESTServiceLoader:
     """Downloads features from a layer within a map or feature service (with queries enabled) based on its REST
     endpoint.
 
-    Use the get_features class method to operate without having to create an instance first. This will use the
-    service's maxRecordCount to download the data in appropriately-sized chunks using the OIDs returned by the service.
-    It also supports an envelope to limit the queries to a specific bounding box. It will retry both individual chunks
-    and the whole operation to ensure the best chance of success.
+    Use the get_features class method to operate without having to create an instance first. This will use either a
+    specified chunk size or the service's maxRecordCount to download the data in appropriately-sized chunks using the
+    OIDs returned by the service. It also supports an envelope to limit the queries to a specific bounding box. It will
+    retry individual chunks three times in case of error to ensure the best chance of success.
     """
 
     @classmethod
     def get_features(cls, service_url, layer=0, timeout=5, chunk_size=100, envelope_params=None, feature_params=None):
         """Download the features from a REST MapService or FeatureService with query enabled.
 
-        Queries the server's maxRecordCount parameter to chunk the request into manageable-sized requests. To increase
-        performance, you can specify a geographic bounding box via the envelope parameter to limit the features
-        returned. Individual chunk requests and other HTML requests are wrapped in retries to handle momentary network
-        glitches.
+        Uses either chunk_size or the service's maxRecordCount parameter to chunk the request into manageable-sized
+        requests. 100 seems to be the sweet spot before requests start to error out consistently. To limit the number
+        of features returned, you can specify a geographic bounding box via the envelope parameters. Individual chunk
+        requests and other HTML requests are wrapped in retries to handle momentary network glitches.
 
         Raises:
             ValueError: If envelope is specified but envelope_sr is not.
@@ -585,7 +585,7 @@ class RESTServiceLoader:
             layer (int, optional): Layer within the service to download. Defaults to 0.
             timeout (int, optional): Timeout value in seconds for HTML requests. Defaults to 20.
             chunk_size (int, optional): Number of features to download per chunk. Defaults to 100. If set to None, it
-                will use maxRecordCount. Adjust if the service is failing frequently.
+                will use the service's maxRecordCount. Adjust if the service is failing frequently.
             envelope_params (dict, optional): Bounding box and it's spatial reference to spatially limit feature
                 collection in the form {'geometry': '{xmin},{ymin},{xmax},{ymax}', 'inSR': '{wkid}'}. Defaults to None.
             feature_params (dict, optional): Additional query parameters to pass to the service when downloading
@@ -710,6 +710,7 @@ class RESTServiceLoader:
         feature.
 
         Args:
+            unique_id_field (str, optional): The name of the field containing the unique ID. Defaults to 'OBJECTID'.
             start_oid (int, optional): Lower bound (inclusive). Defaults to None.
             end_oid (int, optional): Upper bound (inclusive). Defaults to None.
 
@@ -738,6 +739,20 @@ class RESTServiceLoader:
         return arcgis.features.FeatureSet.from_json(response.text).sdf.sort_values(by=unique_id_field)
 
     def _get_unique_id_list_as_dataframe(self, unique_id_field, unique_id_list):
+        """Use a REST query to download specified features from a MapService or FeatureService layer.
+
+        unique_id_list defines the ids in unique_id_fied to download.
+
+        Args:
+            unique_id_field (str): The field in the service layer used as the unique ID.
+            unique_id_list (list): The list of unique IDs to download.
+
+        Raises:
+            ValueError: If one bound is provided but not the other.
+
+        Returns:
+            pd.DataFrame.spatial: Spatially-enabled dataframe of the service layer's features
+        """
         unique_id_params = {'f': 'json'}
         unique_id_params.update(self.feature_params)
         unique_id_params.update({'where': f'{unique_id_field} in ({",".join([str(oid) for oid in unique_id_list])})'})
