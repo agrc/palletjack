@@ -749,6 +749,19 @@ class TestRESTServiceLoader:
         assert record_count == [8, 16, 42]
         get_mock.assert_called_once_with('foo.bar/query', params={'returnIdsOnly': 'true', 'f': 'json'}, timeout=5)
 
+    def test_get_object_ids_raises_on_key_error(self, mocker):
+        response_mock = mocker.Mock()
+        response_mock.json.return_value = {'foo': 'bar'}
+        get_mock = mocker.patch('palletjack.extract.requests.get', return_value=response_mock)
+
+        class_mock = mocker.Mock()
+        class_mock.base_url = 'foo.bar'
+        class_mock.timeout = 5
+        class_mock.envelope_params = None
+
+        with pytest.raises(RuntimeError, match=re.escape(f'Could not get object IDs from foo.bar')):
+            record_count = extract.RESTServiceLoader._get_object_ids(class_mock)
+
     def test_get_oid_range_as_dataframe_uses_default_where(self, mocker):
         get_mock = mocker.patch('palletjack.extract.requests.get')
         mocker.patch('palletjack.extract.arcgis')
@@ -832,7 +845,15 @@ class TestRESTServiceLoader:
 
         tm.assert_frame_equal(output_df, test_df)
 
-    def test_get_oid_list_as_dataframe_creates_oid_list(self, mocker):
+    def test_get_oid_range_as_dataframe_raises_error_on_missing_oid_bound(self, mocker):
+
+        class_mock = mocker.Mock()
+        class_mock.feature_params = {'where': '1=1', 'outFields': '*', 'returnGeometry': 'true'}
+
+        with pytest.raises(ValueError, match='Both start ane end OIDs must be provided if using OID range'):
+            extract.RESTServiceLoader._get_oid_range_as_dataframe(class_mock, start_oid=10)
+
+    def test_get_unique_id_list_as_dataframe_creates_list(self, mocker):
         class_mock = mocker.Mock()
         class_mock.base_url = 'foo.bar'
         class_mock.timeout = 5
@@ -847,7 +868,7 @@ class TestRESTServiceLoader:
 
         oid_list = [10, 11, 12, 13, 14]
 
-        extract.RESTServiceLoader._get_oid_list_as_dataframe(class_mock, oid_list)
+        extract.RESTServiceLoader._get_unique_id_list_as_dataframe(class_mock, 'OBJECTID', oid_list)
 
         requests_mock.assert_called_once_with(
             'foo.bar/query',
@@ -855,12 +876,12 @@ class TestRESTServiceLoader:
                 'f': 'json',
                 'outFields': '*',
                 'returnGeometry': 'true',
-                'objectIds': '10,11,12,13,14'
+                'where': 'OBJECTID in (10,11,12,13,14)'
             },
             timeout=5
         )
 
-    def test_get_oid_list_as_dataframe_raises_on_404(self, mocker):
+    def test_get_unique_id_list_as_dataframe_raises_on_404(self, mocker):
         class_mock = mocker.Mock()
         class_mock.base_url = 'foo.bar'
         class_mock.timeout = 5
@@ -873,9 +894,9 @@ class TestRESTServiceLoader:
         oid_list = [10, 11, 12, 13, 14]
 
         with pytest.raises(RuntimeError, match=re.escape('Bad chunk response HTTP status code (404)')):
-            extract.RESTServiceLoader._get_oid_list_as_dataframe(class_mock, oid_list)
+            extract.RESTServiceLoader._get_unique_id_list_as_dataframe(class_mock, 'OBJECTID', oid_list)
 
-    def test_get_oid_list_as_dataframe_raises_on_json_error(self, mocker):
+    def test_get_unique_id_list_as_dataframe_raises_on_json_error(self, mocker):
         class_mock = mocker.Mock()
         class_mock.base_url = 'foo.bar'
         class_mock.timeout = 5
@@ -893,9 +914,9 @@ class TestRESTServiceLoader:
         oid_list = [10, 11, 12, 13, 14]
 
         with pytest.raises(RuntimeError, match=re.escape('Could not parse chunk features from response')):
-            extract.RESTServiceLoader._get_oid_list_as_dataframe(class_mock, oid_list)
+            extract.RESTServiceLoader._get_unique_id_list_as_dataframe(class_mock, 'OBJECTID', oid_list)
 
-    def test_get_oid_list_as_dataframe_raises_on_len_mismatch(self, mocker):
+    def test_get_unique_id_list_as_dataframe_raises_on_len_mismatch(self, mocker):
         class_mock = mocker.Mock()
         class_mock.base_url = 'foo.bar'
         class_mock.timeout = 5
@@ -915,58 +936,59 @@ class TestRESTServiceLoader:
         with pytest.raises(
             RuntimeError, match=re.escape('Missing features. 5 OIDs requested, but 4 features downloaded')
         ):
-            extract.RESTServiceLoader._get_oid_list_as_dataframe(class_mock, oid_list)
+            extract.RESTServiceLoader._get_unique_id_list_as_dataframe(class_mock, 'OBJECTID', oid_list)
 
-    def test_get_oid_range_as_dataframe_raises_error_on_missing_oid_bound(self, mocker):
-
-        class_mock = mocker.Mock()
-        class_mock.feature_params = {'where': '1=1', 'outFields': '*', 'returnGeometry': 'true'}
-
-        with pytest.raises(ValueError, match='Both start ane end OIDs must be provided if using OID range'):
-            extract.RESTServiceLoader._get_oid_range_as_dataframe(class_mock, start_oid=10)
-
-    def test_get_features_chunks_smaller_final_chunk(self, mocker):
+    def test_get_features_gets_max_record_count_from_properties(self, mocker):
         class_mock = mocker.Mock()
         # class_mock._get_max_record_count.return_value = 2
         class_mock._get_object_ids.return_value = list(range(0, 142))
+        class_mock._get_object_id_field.return_value = 'OBJECTID'
+        class_mock.chunk_size = None
+        class_mock._get_max_record_count.return_value = 100
 
         mocker.patch('palletjack.extract.pd.concat')
         mocker.patch('palletjack.extract.time.sleep')
 
         extract.RESTServiceLoader._get_features(class_mock)
 
-        assert class_mock._get_oid_list_as_dataframe.call_args_list == [
-            mocker.call(list(range(0, 100))),
-            mocker.call(list(range(100, 142))),
+        class_mock._get_max_record_count.assert_called_once()
+
+    def test_get_features_chunks_smaller_final_chunk(self, mocker):
+        class_mock = mocker.Mock()
+        # class_mock._get_max_record_count.return_value = 2
+        class_mock._get_object_ids.return_value = list(range(0, 142))
+        class_mock._get_object_id_field.return_value = 'OBJECTID'
+        class_mock.chunk_size = 100
+
+        mocker.patch('palletjack.extract.pd.concat')
+        mocker.patch('palletjack.extract.time.sleep')
+
+        extract.RESTServiceLoader._get_features(class_mock)
+
+        assert class_mock._get_unique_id_list_as_dataframe.call_args_list == [
+            mocker.call('OBJECTID', list(range(0, 100))),
+            mocker.call('OBJECTID', list(range(100, 142))),
         ]
 
     def test_get_features_chunks_single_chunk_smaller_than_max_record_count(self, mocker):
         class_mock = mocker.Mock()
         class_mock._get_max_record_count.return_value = 10
+        class_mock._get_object_id_field.return_value = 'OBJECTID'
         class_mock._get_object_ids.return_value = [10, 11, 12, 13, 14]
+        class_mock.chunk_size = 100
 
         mocker.patch('palletjack.extract.pd.concat', return_value=pd.DataFrame([0, 1, 2, 3, 4]))
         mocker.patch('palletjack.extract.time.sleep')
 
         extract.RESTServiceLoader._get_features(class_mock)
 
-        class_mock._get_oid_list_as_dataframe.assert_called_once_with([10, 11, 12, 13, 14])
-
-    # def test_get_features_raises_on_shorter_dataframe(self, mocker):
-    #     class_mock = mocker.Mock()
-    #     class_mock._get_max_record_count.return_value = 2
-    #     class_mock._get_object_ids.return_value = [10, 11, 12, 13, 14]
-    #     mocker.patch('palletjack.extract.time.sleep')
-
-    #     mocker.patch('palletjack.extract.pd.concat', return_value=pd.DataFrame([0, 1, 2, 3]))
-
-    #     with pytest.raises(RuntimeError, match='Missing features. 5 OIDs present, but 4 features downloaded'):
-    #         extract.RESTServiceLoader._get_features(class_mock)
+        class_mock._get_unique_id_list_as_dataframe.assert_called_once_with('OBJECTID', [10, 11, 12, 13, 14])
 
     def test_get_features_sleeps(self, mocker):
         class_mock = mocker.Mock()
         # class_mock._get_max_record_count.return_value = 2
         class_mock._get_object_ids.return_value = [10, 11, 12, 13, 14]
+        class_mock.chunk_size = 100
 
         mocker.patch('palletjack.extract.pd.concat', return_value=pd.DataFrame([0, 1, 2, 3, 4]))
         sleep_mock = mocker.patch('palletjack.extract.time.sleep')
@@ -975,7 +997,6 @@ class TestRESTServiceLoader:
         extract.RESTServiceLoader._get_features(class_mock)
 
         sleep_mock.assert_called_once_with(.42)
-        # assert sleep_mock.call_args_list == [mocker.call(.42), mocker.call(.42), mocker.call(.42)]
 
     def test_init_builds_url_with_default_layer(self):
         test_loader = extract.RESTServiceLoader('foo.bar')
@@ -1041,3 +1062,13 @@ class TestRESTServiceLoader:
 
         with pytest.raises(RuntimeError, match='Layer foo.bar/0 is a Group Layer, not a feature layer'):
             extract.RESTServiceLoader._check_layer_type(class_mock, response_json)
+
+    def test_get_object_id_field_gets_field_from_properties(self, mocker):
+        response_json = {'objectIdField': 'OBJECTID_1'}
+
+        assert extract.RESTServiceLoader._get_object_id_field(mocker.Mock(), response_json) == 'OBJECTID_1'
+
+    def test_get_object_id_field_uses_OBJECTID_if_no_field(self, mocker):
+        response_json = {}
+
+        assert extract.RESTServiceLoader._get_object_id_field(mocker.Mock(), response_json) == 'OBJECTID'
