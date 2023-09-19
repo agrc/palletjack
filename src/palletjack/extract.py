@@ -579,7 +579,7 @@ class RESTServiceLoader:
 
         self._class_logger = logging.getLogger(__name__).getChild(self.__class__.__name__)
 
-    def get_features(self, layer_id=0, chunk_size=100, envelope_params=None, feature_params=None):
+    def get_features(self, layer_id=0, chunk_size=100, envelope_params=None, feature_params=None, where_clause=None):
         """Download the features from a REST MapService or FeatureService with query enabled.
 
         Uses either chunk_size or the service's maxRecordCount parameter to chunk the request into manageable-sized
@@ -596,6 +596,7 @@ class RESTServiceLoader:
             feature_params (dict, optional): Additional query parameters to pass to the service when downloading
                 features. Parameter defaults to None, and the query defaults to 'outFields': '*', 'returnGeometry':
                 'true'. See the ArcGIS REST API documentation for more information.
+            where_clause (str, optional): Where clause to refine the features returned. Defaults to None.
 
         Raises:
             ValueError: If envelope is specified but envelope_sr is not.
@@ -610,7 +611,7 @@ class RESTServiceLoader:
             pd.DataFrame.spatial: The service's features as a spatially-enabled dataframe
         """
 
-        layer = _ServiceLayer(self, layer_id, envelope_params, feature_params)
+        layer = _ServiceLayer(self, layer_id, envelope_params, feature_params, where_clause)
 
         self._class_logger.info(f'Getting features from {layer.layer_url}...')
         self._class_logger.debug('Checking for query capability...')
@@ -686,9 +687,13 @@ class RESTServiceLoader:
 class _ServiceLayer:
     """Represents a single layer within a service and provides methods for querying the layer and downloading features.
     Should be created by methods within the RESTService class and not directly by the user.
+
+    Downloads features in two stages: first, it gets the object ids to download, and then uses these in a where clause
+    to download the features. Thus, any queries, where clauses, or subsetting should be done when getting the object
+    ids, not when actually downloading the features.
     """
 
-    def __init__(self, service, layer_id, envelope_params=None, feature_params=None):
+    def __init__(self, service, layer_id, envelope_params=None, feature_params=None, where_clause=None):
         """Create an object representing a single layer
 
         Args:
@@ -699,6 +704,8 @@ class _ServiceLayer:
             feature_params (dict, optional): Additional query parameters to pass to the service when downloading
                 features. Parameter defaults to None, and the query defaults to 'outFields': '*', 'returnGeometry':
                 'true'. See the ArcGIS REST API documentation for more information.
+            where_clause (str, optional): Where clause to refine the features returned. Defaults to None.
+
         """
 
         self._class_logger = logging.getLogger(__name__).getChild(self.__class__.__name__)
@@ -725,6 +732,8 @@ class _ServiceLayer:
         self.feature_params = {'outFields': '*', 'returnGeometry': 'true'}
         if feature_params:
             self.feature_params.update(feature_params)
+
+        self.where_clause = where_clause
 
     #: TODO: A group layer doesn't have maxRecordCount. This will raise a key error on that before the layer check
     #: occurs, and the user won't know it's a layer type problem.
@@ -796,7 +805,7 @@ class _ServiceLayer:
         return unique_id_field
 
     def get_object_ids(self):
-        """Get the Object IDs of the feature service layer, using the bounding envelope if present.
+        """Get the Object IDs of the feature service layer, using the bounding envelope and/or where clause if present.
 
         Raises:
             RuntimeError: If the response does not contain an 'objectIds' key.
@@ -806,10 +815,12 @@ class _ServiceLayer:
         """
 
         objectid_params = {'returnIdsOnly': 'true', 'f': 'json'}
-
         if self.envelope_params is not None:
             objectid_params.update(self.envelope_params)
+        if self.where_clause is not None:
+            objectid_params['where'] = self.where_clause
         self._class_logger.debug(f'OID params: {objectid_params}')
+
         response = utils.retry(requests.get, f'{self.layer_url}/query', params=objectid_params, timeout=self.timeout)
         oids = []
         try:
