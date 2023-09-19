@@ -649,7 +649,7 @@ class TestRESTServiceLoader:
         class_mock = mocker.Mock()
         class_mock.base_url = 'foo.bar'
         class_mock.timeout = 5
-        class_mock.envelope = None
+        class_mock.envelope_params = None
 
         record_count = extract.RESTServiceLoader._get_object_ids(class_mock)
 
@@ -664,9 +664,7 @@ class TestRESTServiceLoader:
         class_mock = mocker.Mock()
         class_mock.base_url = 'foo.bar'
         class_mock.timeout = 5
-        class_mock.envelope = 'envelope'
-        class_mock.envelope_sr = 'sr'
-
+        class_mock.envelope_params = {'geometry': 'envelope', 'geometryType': 'esriGeometryEnvelope', 'inSR': 'sr'}
         record_count = extract.RESTServiceLoader._get_object_ids(class_mock)
 
         assert record_count == [8, 16, 42]
@@ -690,7 +688,7 @@ class TestRESTServiceLoader:
         class_mock = mocker.Mock()
         class_mock.base_url = 'foo.bar'
         class_mock.timeout = 5
-        class_mock.envelope = None
+        class_mock.envelope_params = None
 
         record_count = extract.RESTServiceLoader._get_object_ids(class_mock)
 
@@ -704,7 +702,7 @@ class TestRESTServiceLoader:
         class_mock = mocker.Mock()
         class_mock.base_url = 'foo.bar'
         class_mock.timeout = 5
-        class_mock.envelope = None
+        class_mock.feature_params = {'where': '1=1', 'outFields': '*', 'returnGeometry': 'true'}
 
         extract.RESTServiceLoader._get_oid_range_as_dataframe(class_mock)
 
@@ -726,7 +724,7 @@ class TestRESTServiceLoader:
         class_mock = mocker.Mock()
         class_mock.base_url = 'foo.bar'
         class_mock.timeout = 5
-        class_mock.envelope = None
+        class_mock.feature_params = {'where': '1=1', 'outFields': '*', 'returnGeometry': 'true'}
 
         extract.RESTServiceLoader._get_oid_range_as_dataframe(class_mock, 10, 20)
 
@@ -748,7 +746,7 @@ class TestRESTServiceLoader:
         class_mock = mocker.Mock()
         class_mock.base_url = 'foo.bar'
         class_mock.timeout = 5
-        class_mock.envelope = None
+        class_mock.feature_params = {'where': '1=1', 'outFields': '*', 'returnGeometry': 'true'}
 
         extract.RESTServiceLoader._get_oid_range_as_dataframe(class_mock, 10, 10)
 
@@ -771,7 +769,7 @@ class TestRESTServiceLoader:
         class_mock = mocker.Mock()
         class_mock.base_url = 'foo.bar'
         class_mock.timeout = 5
-        class_mock.envelope = None
+        class_mock.feature_params = {'where': '1=1', 'outFields': '*', 'returnGeometry': 'true'}
 
         output_df = extract.RESTServiceLoader._get_oid_range_as_dataframe(class_mock, 10, 20)
 
@@ -782,8 +780,11 @@ class TestRESTServiceLoader:
 
     def test_get_oid_range_as_dataframe_raises_error_on_missing_oid_bound(self, mocker):
 
+        class_mock = mocker.Mock()
+        class_mock.feature_params = {'where': '1=1', 'outFields': '*', 'returnGeometry': 'true'}
+
         with pytest.raises(ValueError, match='Both start ane end OIDs must be provided if using OID range'):
-            extract.RESTServiceLoader._get_oid_range_as_dataframe(mocker.Mock(), start_oid=10)
+            extract.RESTServiceLoader._get_oid_range_as_dataframe(class_mock, start_oid=10)
 
     def test_get_features_chunks_properly(self, mocker):
         class_mock = mocker.Mock()
@@ -820,10 +821,26 @@ class TestRESTServiceLoader:
 
         assert test_loader.base_url == 'foo.bar/42'
 
+    def test_init_raises_on_missing_envelope_geometry(self):
+
+        with pytest.raises(
+            ValueError, match='envelope_params must contain both the envelope geometry and its spatial reference'
+        ):
+            test_loader = extract.RESTServiceLoader('foo.bar', envelope_params={'inSR': 'eggs'})
+
     def test_init_raises_on_missing_envelope_sr(self):
 
-        with pytest.raises(ValueError, match='envelope_sr required when passing in an envelope'):
-            test_loader = extract.RESTServiceLoader('foo.bar', envelope='eggs')
+        with pytest.raises(
+            ValueError, match='envelope_params must contain both the envelope geometry and its spatial reference'
+        ):
+            test_loader = extract.RESTServiceLoader('foo.bar', envelope_params={'geometry': 'eggs'})
+
+    def test_init_raises_on_missing_envelope_geometry_and_sr(self):
+
+        with pytest.raises(
+            ValueError, match='envelope_params must contain both the envelope geometry and its spatial reference'
+        ):
+            test_loader = extract.RESTServiceLoader('foo.bar', envelope_params={'ham': 'eggs'})
 
     def test_init_strips_trailing_slash(self):
         test_loader = extract.RESTServiceLoader('foo.bar/')
