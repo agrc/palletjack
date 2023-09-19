@@ -568,8 +568,14 @@ class RESTServiceLoader:
         returned. Individual chunk requests and other HTML requests are wrapped in retries to handle momentary network
         glitches. The whole operation is also wrapped in retry to give it the best chance of success.
 
+        Raises:
+            ValueError: If envelope is specified but envelope_sr is not.
+            RuntimeError: If the service does not support the query capability.
+            RuntimeError: If the number of features downloaded does not match the number of OIDs in the service
+            (subsetted by envelope if provided).
+
         Args:
-            service_url (str): The base URL to the service's REST endpoint
+            service_url (str): The base URL to the service's REST endpoint.
             layer (int, optional): Layer within the service to download. Defaults to 0.
             timeout (int, optional): Timeout value for HTML requests. Defaults to 5.
             envelope (str, optional): Bounding box to spatially limit feature collection in the form `{xmin},{ymin},
@@ -590,6 +596,26 @@ class RESTServiceLoader:
         self.envelope_sr = envelope_sr
         if self.envelope and not self.envelope_sr:
             raise ValueError('envelope_sr required when passing in an envelope')
+
+    def _check_capabilities(self, capability):
+        """Raise error if the service does not support capability
+
+        Args:
+            capability (str): The capability in question; will be casefolded.
+
+        Raises:
+            RuntimeError: If the server response does not include the `capabilities` property.
+            RuntimeError: if the casefolded capability is not present in the service's capabilities.
+        """
+        response = utils.retry(requests.get, self.base_url, params={'f': 'json'}, timeout=self.timeout)
+        try:
+            service_capabilities = response.json()['capabilities'].casefold().split(',')
+        except KeyError as error:
+            raise RuntimeError('capabilities record not found in server response') from error
+        if capability.casefold() not in service_capabilities:
+            raise RuntimeError(
+                f'{capability.casefold()} capability not in service\'s capabilities ({service_capabilities})'
+            )
 
     def _get_max_record_count(self):
         """Get the service's maxRecordCount attribute
@@ -655,6 +681,7 @@ class RESTServiceLoader:
         """Download the features from a rest service in chunks based on maxRecordCount
 
         Raises:
+            RuntimeError: If the service does not support the query capability
             RuntimeError: If the number of features downloaded does not match the number of OIDs in the service
             (subsetted by envelope if provided).
 
@@ -662,6 +689,7 @@ class RESTServiceLoader:
             pd.DataFrame.spatial: Spatially-enabled dataframe of the feature service layer
         """
 
+        self._check_capabilities('query')
         max_record_count = self._get_max_record_count()
         oids = self._get_object_ids()
 
