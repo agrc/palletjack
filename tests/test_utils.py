@@ -201,15 +201,12 @@ class TestRetry:
         with pytest.raises(Exception):
             answer = palletjack.utils.retry(mock.function, 'a', 'b')
 
-        # assert answer == 42
         assert mock.function.call_count == 4
 
     def test_retry_uses_global_retry_max_value(self, mocker, set_max_tries):
         mock = mocker.Mock()
         mock.function.side_effect = [Exception, Exception, 42]
         mocker.patch('palletjack.utils.sleep')
-
-        # palletjack.utils.RETRY_MAX_TRIES = 1
 
         with pytest.raises(Exception):
             answer = palletjack.utils.retry(mock.function, 'a', 'b')
@@ -223,8 +220,6 @@ class TestRetry:
             42,
         ]
         sleep_mock = mocker.patch('palletjack.utils.sleep')
-
-        # palletjack.utils.RETRY_DELAY_TIME = 3
 
         answer = palletjack.utils.retry(mock.function, 'a', 'b')
 
