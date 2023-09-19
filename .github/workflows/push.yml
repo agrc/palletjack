@@ -23,7 +23,7 @@ jobs:
       uses: actions/checkout@v2
 
     - name: Install module
-      run: pip install .[tests]
+      run: pip install .[tests,nopro]
 
     - name: Test with pytest
       run: pytest
