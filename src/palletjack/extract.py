@@ -7,7 +7,9 @@ operations or techniques.
 import logging
 import mimetypes
 import os
+import random
 import re
+import time
 from io import BytesIO
 from pathlib import Path
 from time import sleep
@@ -613,46 +615,46 @@ class RESTServiceLoader:
 
         self._class_logger = logging.getLogger(__name__).getChild(self.__class__.__name__)
 
-    def _check_capabilities(self, capability):
+    def _check_capabilities(self, capability, response_json):
         """Raise error if the service does not support capability
 
         Args:
+            response_json (dict): The JSON response from a basic query parsed as a dictionary.
             capability (str): The capability in question; will be casefolded.
 
         Raises:
-            RuntimeError: If the server response does not include the `capabilities` property.
             RuntimeError: if the casefolded capability is not present in the service's capabilities.
         """
-        response = utils.retry(requests.get, self.base_url, params={'f': 'json'}, timeout=self.timeout)
-        try:
-            service_capabilities = response.json()['capabilities'].casefold().split(',')
-        except KeyError as error:
-            raise RuntimeError('capabilities record not found in server response') from error
+        service_capabilities = response_json['capabilities'].casefold().split(',')
         if capability.casefold() not in service_capabilities:
             raise RuntimeError(
                 f'{capability.casefold()} capability not in service\'s capabilities ({service_capabilities})'
             )
 
-    def _check_layer_type(self):
+    def _check_layer_type(self, response_json):
         """Make sure the layer is a feature layer (and thus we can extract features from it)
+
+        Args:
+            response_json (dict): The JSON response from a basic query parsed as a dictionary.
 
         Raises:
             RuntimeError: If the REST response type is not Feature Layer
         """
 
-        response = utils.retry(requests.get, self.base_url, params={'f': 'json'}, timeout=self.timeout)
-        if response.json()['type'] != 'Feature Layer':
-            raise RuntimeError(f'Layer {self.base_url} is a {response.json()["type"]}, not a feature layer')
+        if response_json['type'] != 'Feature Layer':
+            raise RuntimeError(f'Layer {self.base_url} is a {response_json["type"]}, not a feature layer')
 
-    def _get_max_record_count(self):
+    def _get_max_record_count(self, response_json):
         """Get the service's maxRecordCount attribute
+
+        Args:
+            response_json (dict): The JSON response from a basic query parsed as a dictionary.
 
         Returns:
             int: maxRecordCount
         """
 
-        response = utils.retry(requests.get, self.base_url, params={'f': 'json'}, timeout=self.timeout)
-        return response.json()['maxRecordCount']
+        return response_json['maxRecordCount']
 
     def _get_object_ids(self):
         """Get the Object IDs of the feature service layer, using the bounding envelope if present.
@@ -667,8 +669,12 @@ class RESTServiceLoader:
             objectid_params.update(self.envelope_params)
         self._class_logger.debug(f'OID params: {objectid_params}')
         response = utils.retry(requests.get, f'{self.base_url}/query', params=objectid_params, timeout=self.timeout)
+        try:
+            oids = sorted(response.json()['objectIds'])
+        except KeyError as error:
+            raise RuntimeError(f'Could not get object IDs from {self.base_url}') from error
 
-        return sorted(response.json()['objectIds'])
+        return sorted(oids)
 
     def _get_oid_range_as_dataframe(self, start_oid=None, end_oid=None):
         """Use a REST query to download features from a MapService or FeatureService layer.
@@ -703,6 +709,27 @@ class RESTServiceLoader:
 
         return arcgis.features.FeatureSet.from_json(response.text).sdf.sort_values(by='OBJECTID')
 
+    def _get_layer_info(self):
+        """Do a basic query to get the layer's information as a dictionary from the json response.
+
+        Raises:
+            RuntimeError: If the response does not contain 'capabilities', 'type', or 'maxRecordCount' keys.
+
+        Returns:
+            dict: The query's json response as a dictionary
+        """
+
+        response_json = utils.retry(requests.get, self.base_url, params={'f': 'json'}, timeout=self.timeout).json()
+        try:
+            #: bogus boolean to make sure the keys exist
+            response_json['capabilities'] and response_json['type'] and response_json['maxRecordCount']
+        except KeyError as error:
+            raise RuntimeError(
+                'Response does not contain layer information; ensure URL points to a valid layer'
+            ) from error
+
+        return response_json
+
     def _get_features(self):
         """Download the features from a rest service in chunks based on maxRecordCount
 
@@ -716,18 +743,21 @@ class RESTServiceLoader:
         """
 
         self._class_logger.info(f'Getting features from {self.base_url}...')
+        layer_info = self._get_layer_info()
         self._class_logger.debug('Checking layer type...')
-        self._check_layer_type()
+        self._check_layer_type(layer_info)
         self._class_logger.debug('Checking for query capability...')
-        self._check_capabilities('query')
+        self._check_capabilities('query', layer_info)
         self._class_logger.debug('Getting max record count...')
-        max_record_count = self._get_max_record_count()
+        max_record_count = self._get_max_record_count(layer_info)
         self._class_logger.debug('Getting object ids...')
         oids = self._get_object_ids()
 
         self._class_logger.debug(f'Downloading {len(oids)} features in chunks of {max_record_count}...')
         feature_dataframes = []
         for i in range(0, len(oids), max_record_count):
+            # sleep between 150 and 300 ms to be friendly
+            time.sleep(random.randint(150, 300) / 1000)
             oid_subset = oids[i:i + max_record_count]
             feature_dataframes.append(self._get_oid_range_as_dataframe(start_oid=oid_subset[0], end_oid=oid_subset[-1]))
 
