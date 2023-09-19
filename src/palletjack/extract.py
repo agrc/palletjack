@@ -694,14 +694,15 @@ class RESTServiceLoader:
             objectid_params.update(self.envelope_params)
         self._class_logger.debug(f'OID params: {objectid_params}')
         response = utils.retry(requests.get, f'{self.base_url}/query', params=objectid_params, timeout=self.timeout)
+        oids = []
         try:
             oids = sorted(response.json()['objectIds'])
         except KeyError as error:
             raise RuntimeError(f'Could not get object IDs from {self.base_url}') from error
 
-        return sorted(oids)
+        return oids
 
-    def _get_oid_range_as_dataframe(self, start_oid=None, end_oid=None):
+    def _get_oid_range_as_dataframe(self, unique_id_field='OBJECTID', start_oid=None, end_oid=None):
         """Use a REST query to download features from a MapService or FeatureService layer.
 
         If both start_oid and end_oid are specified, they will be used to limit the request size where OID >= start_oid
@@ -721,23 +722,24 @@ class RESTServiceLoader:
 
         range_params = {'f': 'json'}
         range_params.update(self.feature_params)
-        if bool(start_oid) ^ bool(end_oid):
+        start_oid_exists = start_oid is not None
+        end_oid_exists = end_oid is not None
+        if (start_oid_exists and not end_oid_exists) or (not start_oid_exists and end_oid_exists):
             raise ValueError('Both start ane end OIDs must be provided if using OID range')
-        if start_oid and end_oid:
-            range_params.update({'where': f'OBJECTID >={start_oid} and OBJECTID <={end_oid}'})
+        if start_oid_exists and end_oid_exists:
+            range_params.update({'where': f'{unique_id_field} >={start_oid} and {unique_id_field} <={end_oid}'})
         #: If we have a range that is just one OID long, just get that one OID
-        if (start_oid and end_oid) and (start_oid == end_oid):
-            range_params.update({'where': f'OBJECTID ={start_oid}'})
+        if (start_oid_exists and end_oid_exists) and (start_oid == end_oid):
+            range_params.update({'where': f'{unique_id_field} ={start_oid}'})
 
         self._class_logger.debug(f'OID range params: {range_params}')
         response = utils.retry(requests.get, f'{self.base_url}/query', params=range_params, timeout=self.timeout)
 
-        return arcgis.features.FeatureSet.from_json(response.text).sdf.sort_values(by='OBJECTID')
+        return arcgis.features.FeatureSet.from_json(response.text).sdf.sort_values(by=unique_id_field)
 
     def _get_unique_id_list_as_dataframe(self, unique_id_field, unique_id_list):
         unique_id_params = {'f': 'json'}
         unique_id_params.update(self.feature_params)
-        # unique_id_params.update({'objectIds': f'{",".join([str(oid) for oid in unique_id_list])}'})
         unique_id_params.update({'where': f'{unique_id_field} in ({",".join([str(oid) for oid in unique_id_list])})'})
 
         self._class_logger.debug(f'OID range params: {unique_id_params}')
@@ -759,8 +761,8 @@ class RESTServiceLoader:
 
         return features_df
 
-    #: TODO: A group layer doesn't have maxRecordCount. This will raise an error before the layer check occurs, and the
-    #: user won't know it's a layer type problem.
+    #: TODO: A group layer doesn't have maxRecordCount. This will raise a key error on that before the layer check
+    #: occurs, and the user won't know it's a layer type problem.
     def _get_layer_info(self):
         """Do a basic query to get the layer's information as a dictionary from the json response.
 

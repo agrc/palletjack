@@ -611,16 +611,21 @@ class TestPostgresLoader:
 class TestRESTServiceLoader:
 
     def test_get_layer_info_works_normally(self, mocker):
-        response_mock = mocker.Mock()
-        response_mock.json.return_value = {'capabilities': 'foo,bar,baz', 'type': 'Feature Layer', 'maxRecordCount': 42}
-        get_mock = mocker.patch('palletjack.extract.requests.get', return_value=response_mock)
+
+        retry_mock = mocker.patch('palletjack.extract.utils.retry')
+        retry_mock.return_value.json.return_value = {
+            'capabilities': 'foo,bar,baz',
+            'type': 'Feature Layer',
+            'maxRecordCount': 42
+        }
 
         class_mock = mocker.Mock()
         class_mock.base_url = 'foo.bar'
         class_mock.timeout = 5
 
-        #: should not raise
         layer_info = extract.RESTServiceLoader._get_layer_info(class_mock)
+
+        assert layer_info == {'capabilities': 'foo,bar,baz', 'type': 'Feature Layer', 'maxRecordCount': 42}
 
     def test_get_layer_info_raises_on_missing_capabilities(self, mocker):
         response_mock = mocker.Mock()
@@ -664,7 +669,7 @@ class TestRESTServiceLoader:
         ):
             layer_info = extract.RESTServiceLoader._get_layer_info(class_mock)
 
-    def test_get_layer_info_retries_on_tiemout(self, mocker):
+    def test_get_layer_info_retries_on_timeout(self, mocker):
         mocker.patch.object(extract.utils, 'sleep')
         response_mock = mocker.Mock()
         response_mock.json.return_value = {'capabilities': 'foo,bar,baz', 'type': 'Feature Layer', 'maxRecordCount': 42}
@@ -682,13 +687,6 @@ class TestRESTServiceLoader:
         get_mock.assert_called_with('foo.bar', params={'f': 'json'}, timeout=5)
 
     def test_get_max_record_count_works_normally(self, mocker):
-        # response_mock = mocker.Mock()
-        # response_mock.json.return_value = {'maxRecordCount': 42}
-        # get_mock = mocker.patch('palletjack.extract.requests.get', return_value=response_mock)
-
-        # class_mock = mocker.Mock()
-        # class_mock.base_url = 'foo.bar'
-        # class_mock.timeout = 5
         response_json = {'maxRecordCount': 42}
 
         record_count = extract.RESTServiceLoader._get_max_record_count(mocker.Mock(), response_json)
@@ -793,7 +791,7 @@ class TestRESTServiceLoader:
         class_mock.timeout = 5
         class_mock.feature_params = {'where': '1=1', 'outFields': '*', 'returnGeometry': 'true'}
 
-        extract.RESTServiceLoader._get_oid_range_as_dataframe(class_mock, 10, 20)
+        extract.RESTServiceLoader._get_oid_range_as_dataframe(class_mock, start_oid=10, end_oid=20)
 
         get_mock.assert_called_once_with(
             'foo.bar/query',
@@ -815,7 +813,7 @@ class TestRESTServiceLoader:
         class_mock.timeout = 5
         class_mock.feature_params = {'where': '1=1', 'outFields': '*', 'returnGeometry': 'true'}
 
-        extract.RESTServiceLoader._get_oid_range_as_dataframe(class_mock, 10, 10)
+        extract.RESTServiceLoader._get_oid_range_as_dataframe(class_mock, start_oid=10, end_oid=10)
 
         get_mock.assert_called_once_with(
             'foo.bar/query',
@@ -838,20 +836,50 @@ class TestRESTServiceLoader:
         class_mock.timeout = 5
         class_mock.feature_params = {'where': '1=1', 'outFields': '*', 'returnGeometry': 'true'}
 
-        output_df = extract.RESTServiceLoader._get_oid_range_as_dataframe(class_mock, 10, 20)
+        output_df = extract.RESTServiceLoader._get_oid_range_as_dataframe(class_mock, start_oid=10, end_oid=20)
 
         test_df = pd.DataFrame({'OBJECTID': [8, 16, 42], 'foo': ['c', 'a', 'b']})
         test_df.index = [2, 0, 1]
 
         tm.assert_frame_equal(output_df, test_df)
 
-    def test_get_oid_range_as_dataframe_raises_error_on_missing_oid_bound(self, mocker):
+    def test_get_oid_range_as_dataframe_raises_error_on_missing_lower_oid_bound(self, mocker):
 
         class_mock = mocker.Mock()
         class_mock.feature_params = {'where': '1=1', 'outFields': '*', 'returnGeometry': 'true'}
 
         with pytest.raises(ValueError, match='Both start ane end OIDs must be provided if using OID range'):
             extract.RESTServiceLoader._get_oid_range_as_dataframe(class_mock, start_oid=10)
+
+    def test_get_oid_range_as_dataframe_raises_error_on_missing_upper_oid_bound(self, mocker):
+
+        class_mock = mocker.Mock()
+        class_mock.feature_params = {'where': '1=1', 'outFields': '*', 'returnGeometry': 'true'}
+
+        with pytest.raises(ValueError, match='Both start ane end OIDs must be provided if using OID range'):
+            extract.RESTServiceLoader._get_oid_range_as_dataframe(class_mock, end_oid=10)
+
+    def test_get_oid_range_as_dataframe_doesnt_raise_on_lower_bound_zero(self, mocker):
+        get_mock = mocker.patch('palletjack.extract.requests.get')
+        mocker.patch('palletjack.extract.arcgis')
+
+        class_mock = mocker.Mock()
+        class_mock.base_url = 'foo.bar'
+        class_mock.timeout = 5
+        class_mock.feature_params = {'where': '1=1', 'outFields': '*', 'returnGeometry': 'true'}
+
+        extract.RESTServiceLoader._get_oid_range_as_dataframe(class_mock, start_oid=0, end_oid=10)
+
+        get_mock.assert_called_once_with(
+            'foo.bar/query',
+            params={
+                'outFields': '*',
+                'returnGeometry': 'true',
+                'f': 'json',
+                'where': 'OBJECTID >=0 and OBJECTID <=10'
+            },
+            timeout=5
+        )
 
     def test_get_unique_id_list_as_dataframe_creates_list(self, mocker):
         class_mock = mocker.Mock()
@@ -940,7 +968,6 @@ class TestRESTServiceLoader:
 
     def test_get_features_gets_max_record_count_from_properties(self, mocker):
         class_mock = mocker.Mock()
-        # class_mock._get_max_record_count.return_value = 2
         class_mock._get_object_ids.return_value = list(range(0, 142))
         class_mock._get_object_id_field.return_value = 'OBJECTID'
         class_mock.chunk_size = None
@@ -955,7 +982,6 @@ class TestRESTServiceLoader:
 
     def test_get_features_chunks_smaller_final_chunk(self, mocker):
         class_mock = mocker.Mock()
-        # class_mock._get_max_record_count.return_value = 2
         class_mock._get_object_ids.return_value = list(range(0, 142))
         class_mock._get_object_id_field.return_value = 'OBJECTID'
         class_mock.chunk_size = 100
@@ -1045,14 +1071,14 @@ class TestRESTServiceLoader:
     def test_check_capabilities_passes_on_differing_cases(self, mocker):
         response_json = {'capabilities': 'Map,Query,Data'}
 
-        #: Should not raise
-        extract.RESTServiceLoader._check_capabilities(mocker.Mock(), 'query', response_json)
+        implicit_return = extract.RESTServiceLoader._check_capabilities(mocker.Mock(), 'query', response_json)
+        assert implicit_return is None
 
     def test_check_layer_type_works_normally(self, mocker):
         response_json = {'type': 'Feature Layer'}
 
-        #: Should not raise
-        extract.RESTServiceLoader._check_layer_type(mocker.Mock(), response_json)
+        implicit_return = extract.RESTServiceLoader._check_layer_type(mocker.Mock(), response_json)
+        assert implicit_return is None
 
     def test_check_layer_type_raises_on_group_layer(self, mocker):
         response_json = {'type': 'Group Layer'}
