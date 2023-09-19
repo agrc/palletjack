@@ -609,24 +609,64 @@ class TestPostgresLoader:
 
 class TestRESTServiceLoader:
 
-    def test_get_max_record_count_works_normally(self, mocker):
+    def test_get_layer_info_works_normally(self, mocker):
         response_mock = mocker.Mock()
-        response_mock.json.return_value = {'maxRecordCount': 42}
+        response_mock.json.return_value = {'capabilities': 'foo,bar,baz', 'type': 'Feature Layer', 'maxRecordCount': 42}
         get_mock = mocker.patch('palletjack.extract.requests.get', return_value=response_mock)
 
         class_mock = mocker.Mock()
         class_mock.base_url = 'foo.bar'
         class_mock.timeout = 5
 
-        record_count = extract.RESTServiceLoader._get_max_record_count(class_mock)
+        #: should not raise
+        layer_info = extract.RESTServiceLoader._get_layer_info(class_mock)
 
-        assert record_count == 42
-        get_mock.assert_called_once_with('foo.bar', params={'f': 'json'}, timeout=5)
+    def test_get_layer_info_raises_on_missing_capabilities(self, mocker):
+        response_mock = mocker.Mock()
+        response_mock.json.return_value = {'type': 'Feature Layer', 'maxRecordCount': 42}
+        get_mock = mocker.patch('palletjack.extract.requests.get', return_value=response_mock)
 
-    def test_get_max_record_count_retries_on_timeout(self, mocker):
+        class_mock = mocker.Mock()
+        class_mock.base_url = 'foo.bar'
+        class_mock.timeout = 5
+
+        with pytest.raises(
+            RuntimeError, match='Response does not contain layer information; ensure URL points to a valid layer'
+        ):
+            layer_info = extract.RESTServiceLoader._get_layer_info(class_mock)
+
+    def test_get_layer_info_raises_on_missing_type(self, mocker):
+        response_mock = mocker.Mock()
+        response_mock.json.return_value = {'capabilities': 'foo,bar,baz', 'maxRecordCount': 42}
+        get_mock = mocker.patch('palletjack.extract.requests.get', return_value=response_mock)
+
+        class_mock = mocker.Mock()
+        class_mock.base_url = 'foo.bar'
+        class_mock.timeout = 5
+
+        with pytest.raises(
+            RuntimeError, match='Response does not contain layer information; ensure URL points to a valid layer'
+        ):
+            layer_info = extract.RESTServiceLoader._get_layer_info(class_mock)
+
+    def test_get_layer_info_raises_on_missing_record_count(self, mocker):
+        response_mock = mocker.Mock()
+        response_mock.json.return_value = {'capabilities': 'foo,bar,baz', 'type': 'Feature Layer'}
+        get_mock = mocker.patch('palletjack.extract.requests.get', return_value=response_mock)
+
+        class_mock = mocker.Mock()
+        class_mock.base_url = 'foo.bar'
+        class_mock.timeout = 5
+
+        with pytest.raises(
+            RuntimeError, match='Response does not contain layer information; ensure URL points to a valid layer'
+        ):
+            layer_info = extract.RESTServiceLoader._get_layer_info(class_mock)
+
+    def test_get_layer_info_retries_on_tiemout(self, mocker):
         mocker.patch.object(extract.utils, 'sleep')
         response_mock = mocker.Mock()
-        response_mock.json.return_value = {'maxRecordCount': 42}
+        response_mock.json.return_value = {'capabilities': 'foo,bar,baz', 'type': 'Feature Layer', 'maxRecordCount': 42}
         get_mock = mocker.patch(
             'palletjack.extract.requests.get', side_effect=[requests.exceptions.Timeout, response_mock]
         )
@@ -635,11 +675,24 @@ class TestRESTServiceLoader:
         class_mock.base_url = 'foo.bar'
         class_mock.timeout = 5
 
-        record_count = extract.RESTServiceLoader._get_max_record_count(class_mock)
+        extract.RESTServiceLoader._get_layer_info(class_mock)
 
-        assert record_count == 42
         assert get_mock.call_count == 2
         get_mock.assert_called_with('foo.bar', params={'f': 'json'}, timeout=5)
+
+    def test_get_max_record_count_works_normally(self, mocker):
+        # response_mock = mocker.Mock()
+        # response_mock.json.return_value = {'maxRecordCount': 42}
+        # get_mock = mocker.patch('palletjack.extract.requests.get', return_value=response_mock)
+
+        # class_mock = mocker.Mock()
+        # class_mock.base_url = 'foo.bar'
+        # class_mock.timeout = 5
+        response_json = {'maxRecordCount': 42}
+
+        record_count = extract.RESTServiceLoader._get_max_record_count(mocker.Mock(), response_json)
+
+        assert record_count == 42
 
     def test_get_object_ids_works_normally(self, mocker):
         response_mock = mocker.Mock()
@@ -792,6 +845,7 @@ class TestRESTServiceLoader:
         class_mock._get_object_ids.return_value = [10, 11, 12, 13, 14]
 
         mocker.patch('palletjack.extract.pd.concat', return_value=pd.DataFrame([0, 1, 2, 3, 4]))
+        sleep_mock = mocker.patch('palletjack.extract.time.sleep')
 
         extract.RESTServiceLoader._get_features(class_mock)
 
@@ -805,11 +859,25 @@ class TestRESTServiceLoader:
         class_mock = mocker.Mock()
         class_mock._get_max_record_count.return_value = 2
         class_mock._get_object_ids.return_value = [10, 11, 12, 13, 14]
+        sleep_mock = mocker.patch('palletjack.extract.time.sleep')
 
         mocker.patch('palletjack.extract.pd.concat', return_value=pd.DataFrame([0, 1, 2, 3]))
 
         with pytest.raises(RuntimeError, match='Missing features. 5 OIDs present, but 4 features downloaded'):
             extract.RESTServiceLoader._get_features(class_mock)
+
+    def test_get_features_sleeps(self, mocker):
+        class_mock = mocker.Mock()
+        class_mock._get_max_record_count.return_value = 2
+        class_mock._get_object_ids.return_value = [10, 11, 12, 13, 14]
+
+        mocker.patch('palletjack.extract.pd.concat', return_value=pd.DataFrame([0, 1, 2, 3, 4]))
+        sleep_mock = mocker.patch('palletjack.extract.time.sleep')
+        mocker.patch('palletjack.extract.random.randint', return_value=42)
+
+        extract.RESTServiceLoader._get_features(class_mock)
+
+        assert sleep_mock.call_args_list == [mocker.call(.042), mocker.call(.042), mocker.call(.042)]
 
     def test_init_builds_url_with_default_layer(self):
         test_loader = extract.RESTServiceLoader('foo.bar')
@@ -848,46 +916,30 @@ class TestRESTServiceLoader:
         assert test_loader.base_url == 'foo.bar/0'
 
     def test_check_capabilities_raises_on_missing(self, mocker):
-        response_mock = mocker.Mock()
-        response_mock.json.return_value = {'capabilities': 'map,data'}
-        mocker.patch('palletjack.extract.requests.get', return_value=response_mock)
+        response_json = {'capabilities': 'map,data'}
 
         with pytest.raises(
             RuntimeError, match=re.escape('query capability not in service\'s capabilities ([\'map\', \'data\'])')
         ):
-            extract.RESTServiceLoader._check_capabilities(mocker.Mock(), 'query')
+            extract.RESTServiceLoader._check_capabilities(mocker.Mock(), 'query', response_json)
 
     def test_check_capabilities_passes_on_differing_cases(self, mocker):
-        response_mock = mocker.Mock()
-        response_mock.json.return_value = {'capabilities': 'Map,Query,Data'}
-        mocker.patch('palletjack.extract.requests.get', return_value=response_mock)
+        response_json = {'capabilities': 'Map,Query,Data'}
 
         #: Should not raise
-        extract.RESTServiceLoader._check_capabilities(mocker.Mock(), 'query')
-
-    def test_check_capabilities_raises_on_missing_capabilities_key(self, mocker):
-        response_mock = mocker.Mock()
-        response_mock.json.return_value = {'foo': 'bar'}
-        mocker.patch('palletjack.extract.requests.get', return_value=response_mock)
-
-        with pytest.raises(RuntimeError, match='capabilities record not found in server response'):
-            extract.RESTServiceLoader._check_capabilities(mocker.Mock(), 'query')
+        extract.RESTServiceLoader._check_capabilities(mocker.Mock(), 'query', response_json)
 
     def test_check_layer_type_works_normally(self, mocker):
-        response_mock = mocker.Mock()
-        response_mock.json.return_value = {'type': 'Feature Layer'}
-        mocker.patch('palletjack.extract.requests.get', return_value=response_mock)
+        response_json = {'type': 'Feature Layer'}
 
         #: Should not raise
-        extract.RESTServiceLoader._check_layer_type(mocker.Mock())
+        extract.RESTServiceLoader._check_layer_type(mocker.Mock(), response_json)
 
     def test_check_layer_type_raises_on_group_layer(self, mocker):
-        response_mock = mocker.Mock()
-        response_mock.json.return_value = {'type': 'Group Layer'}
-        mocker.patch('palletjack.extract.requests.get', return_value=response_mock)
+        response_json = {'type': 'Group Layer'}
 
         class_mock = mocker.Mock()
         class_mock.base_url = 'foo.bar/0'
 
         with pytest.raises(RuntimeError, match='Layer foo.bar/0 is a Group Layer, not a feature layer'):
-            extract.RESTServiceLoader._check_layer_type(class_mock)
+            extract.RESTServiceLoader._check_layer_type(class_mock, response_json)
