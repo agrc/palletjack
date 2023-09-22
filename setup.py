@@ -39,8 +39,9 @@ setup(
     install_requires=[
         'pysftp==0.2.9',
         'arcgis==2.1.*',
+        'pyogrio==0.6.*',
         'pygsheets==2.0.*',
-        'geopandas==0.12.*',
+        'geopandas==0.14.*',
         'SQLAlchemy==1.4.*',
         'pg8000==1.29.*',
         'psycopg2-binary==2.9.*',
