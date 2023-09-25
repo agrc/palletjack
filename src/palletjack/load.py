@@ -42,12 +42,6 @@ class FeatureServiceUpdater:
         self._class_logger = logging.getLogger(__name__).getChild(self.__class__.__name__)
         self.feature_service_itemid = feature_service_itemid
         self.feature_layer = arcgis.features.FeatureLayer.fromitem(gis.content.get(feature_service_itemid))
-        # if dataframe is not None:
-        #     self.new_dataframe = dataframe
-        #     if 'SHAPE' in self.new_dataframe.columns:
-        #         self.new_dataframe.spatial.set_geometry('SHAPE')
-        # if fields is not None:
-        #     self.fields = list(set(fields) - {'Shape_Area', 'Shape_Length'})  #: We don't use these auto-gen fields
         self.working_dir = working_dir if working_dir else None
         self.layer_index = layer_index
 
@@ -281,115 +275,13 @@ class FeatureServiceUpdater:
         """
 
         fields = list(dataframe.columns)
-        return list(set(fields) - {'Shape_Area', 'Shape_Length'})  #: We don't use these auto-gen fields
+        for auto_gen_field in ['Shape_Area', 'Shape_Length']:
+            try:
+                fields.remove(auto_gen_field)
+            except ValueError:
+                continue
 
-    # def _add_new_data_to_hosted_feature_layer(self) -> int:
-    #     """Adds new features to existing hosted feature layer. Uses fields from new dataframe.
-
-    #     Raises:
-    #         ValueError: If the new field and existing fields don't match, the new data contains null fields,
-    #             the new data exceeds the existing field lengths, or a specified field is missing from either
-    #             new or live data.
-
-    #     Returns:
-    #         int: Number of features added
-    #     """
-
-    #     self._class_logger.info(
-    #         'Adding items to layer `%s` in itemid `%s` in-place', self.layer_index, self.feature_service_itemid
-    #     )
-    #     self._class_logger.debug('Using fields %s', self.fields)
-
-    #     #: Field checks to prevent various AGOL errors
-    #     utils.FieldChecker.check_fields(self.feature_layer.properties, self.new_dataframe, self.fields, add_oid=False)
-
-    #     #: Upsert
-    #     append_count = self._upload_data(
-    #         self.feature_layer,
-    #         self.new_dataframe,
-    #         upsert=False,
-    #     )
-    #     return append_count
-
-    # def _delete_data_from_hosted_feature_layer(self, delete_oids) -> int:
-    #     """Deletes features from a hosted feature layer based on comma-separated string of OIDS
-
-    #     Args:
-    #         delete_oids (list[int]): List of OIDs to delete
-
-    #     Raises:
-    #         RuntimeError: If any of the OIDs fail to delete
-
-    #     Returns:
-    #         int: The number of features deleted
-    #     """
-
-    #     self._class_logger.info(
-    #         'Deleting features from layer `%s` in itemid `%s`', self.layer_index, self.feature_service_itemid
-    #     )
-    #     self._class_logger.debug('Delete string: %s', delete_oids)
-
-    #     #: Verify delete list
-    #     # oid_list = utils.DeleteUtils.check_delete_oids_are_comma_separated(delete_oids)
-    #     oid_numeric = utils.DeleteUtils.check_delete_oids_are_ints(delete_oids)
-    #     utils.DeleteUtils.check_for_empty_oid_list(oid_numeric, delete_oids)
-    #     delete_string = ','.join([str(oid) for oid in oid_numeric])
-    #     num_missing_oids = utils.DeleteUtils.check_delete_oids_are_in_live_data(
-    #         delete_string, oid_numeric, self.feature_layer
-    #     )
-
-    #     #: Note: apparently not all services support rollback: https://developers.arcgis.com/rest/services-reference/enterprise/delete-features.htm
-    #     deletes = utils.retry(
-    #         self.feature_layer.delete_features,
-    #         deletes=delete_string,
-    #         rollback_on_failure=True,
-    #     )
-
-    #     failed_deletes = [result['objectId'] for result in deletes['deleteResults'] if not result['success']]
-    #     if failed_deletes:
-    #         raise RuntimeError(f'The following Object IDs failed to delete: {failed_deletes}')
-
-    #     #: The REST API still returns success: True on missing OIDs, so we have to track this ourselves
-    #     actual_delete_count = len(deletes['deleteResults']) - num_missing_oids
-
-    #     return actual_delete_count
-
-    # def _update_hosted_feature_layer(self, update_geometry) -> int:
-    #     """Updates existing features within a hosted feature layer using OBJECTID as the join field
-
-    #     Raises:
-    #         ValueError: If the new field and existing fields don't match, the new data contains null fields,
-    #             the new data exceeds the existing field lengths, or a specified field is missing from either
-    #             new or live data.
-
-    #     Returns:
-    #         int: Number of features updated
-    #     """
-
-    #     self._class_logger.info(
-    #         'Updating layer `%s` in itemid `%s` in-place', self.layer_index, self.feature_service_itemid
-    #     )
-    #     self._class_logger.debug('Updating fields %s', self.fields)
-
-    #     #: Add null geometries if update_geometry==False so that we can create a featureset from the dataframe
-    #     #: (geometries will be ignored by upsert call)
-    #     if not update_geometry:
-    #         self._class_logger.debug('Attribute-only update; inserting null geometries')
-    #         self.new_dataframe['SHAPE'] = utils.get_null_geometries(self.feature_layer.properties)
-
-    #     #: Field checks to prevent various AGOL errors
-    #     utils.FieldChecker.check_fields(self.feature_layer.properties, self.new_dataframe, self.fields, add_oid=True)
-
-    #     #: Upsert
-    #     append_count = self._upload_data(
-    #         self.feature_layer,
-    #         self.new_dataframe,
-    #         upsert=True,
-    #         upsert_matching_field='OBJECTID',
-    #         append_fields=self.fields,  #: Apparently this works if append_fields is all the fields, but not a subset?
-    #         update_geometry=update_geometry
-    #     )
-    #     return append_count
+        return fields
 
     #: TODO: shouldn't target_featurelayer come from self.feature_layer?
     def _upload_data(self, target_featurelayer, dataframe, **append_kwargs):
@@ -459,51 +351,6 @@ class FeatureServiceUpdater:
 
         self._class_logger.debug(pd.Series(chunk_sizes).describe())
         return running_append_total
-
-    # def _truncate_and_load_data(self):
-    #     """Overwrite a layer by truncating and loading new data
-
-    #     Raises:
-    #         RuntimeError: If loading fails and reloading of old data fails (old data will be written to disk)
-
-    #     Returns:
-    #         int: Number of features loaded
-    #     """
-
-    #     self._class_logger.info(
-    #         'Truncating and loading layer `%s` in itemid `%s`', self.layer_index, self.feature_service_itemid
-    #     )
-    #     start = datetime.now()
-
-    #     #: Save the data to disk if failsafe dir provided
-    #     #: TODO: return path programmatically so client can catch exception and try to reload automatically?
-    #     if self.failsafe_dir:
-    #         self._class_logger.info('Saving existing data to %s', self.failsafe_dir)
-    #         saved_layer_path = utils.save_feature_layer_to_json(self.feature_layer, self.failsafe_dir)
-
-    #     #: Field checks to prevent various AGOL errors
-    #     utils.FieldChecker.check_fields(self.feature_layer.properties, self.new_dataframe, self.fields, add_oid=False)
-
-    #     self._class_logger.info('Truncating existing features...')
-    #     self._truncate_existing_data()
-
-    #     try:
-    #         self._class_logger.info('Loading new data...')
-    #         append_count = self._upload_data(self.feature_layer, self.new_dataframe, upsert=False)
-    #         self._class_logger.debug('Total truncate and load time: %s', datetime.now() - start)
-    #     except Exception:
-    #         if self.failsafe_dir:
-    #             self._class_logger.error(
-    #                 'Append failed, feature service may be dirty due to append chunking. Data saved to %s',
-    #                 saved_layer_path
-    #             )
-    #             raise
-    #         self._class_logger.error(
-    #             'Append failed, feature service may be dirty due to append chunking. Old data not saved (no failsafe dir set)'
-    #         )
-    #         raise
-
-    #     return append_count
 
     def _truncate_existing_data(self):
         """Remove all existing features from the live dataset
