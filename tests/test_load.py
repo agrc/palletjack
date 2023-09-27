@@ -1222,7 +1222,8 @@ class TestGDBStuff:
         with pytest.raises(ValueError) as exc_info:
             load.FeatureServiceUpdater._save_to_gdb_and_zip(updater_mock, mocker.Mock())
 
-        assert exc_info.value.args[0] == r'Error reading \foo\bar\upload.gdb. Verify upload.gdb exists in /foo/bar'
+        gdb_path = Path('/foo/bar/upload.gdb')
+        assert exc_info.value.args[0] == f'Error reading {gdb_path}. Verify upload.gdb exists in /foo/bar'
 
     def test__save_to_gdb_and_zip_uses_wkid_when_missing_latestwkid(self, mocker):
         gdf_mock = mocker.patch('palletjack.load.gpd.GeoDataFrame').return_value
@@ -1262,7 +1263,7 @@ class TestGDBStuff:
         with pytest.raises(RuntimeError) as exc_info:
             load.FeatureServiceUpdater._upload_gdb(updater_mock, gdb_path)
 
-        assert exc_info.value.args[0] == r'Error uploading \foo\bar\upload.gdb to AGOL'
+        assert exc_info.value.args[0] == f'Error uploading {gdb_path} to AGOL'
         assert updater_mock.gis.content.add.call_count == 4  #: retries
 
     def test__cleanup_deletes_agol_and_file(self, mocker):
