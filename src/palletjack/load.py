@@ -26,20 +26,22 @@ logger = logging.getLogger(__name__)
 class FeatureServiceUpdater:
     """Update an AGOL Feature Service with data from a pandas DataFrame.
 
-    Contains four class methods that can be called directly without needing to instantiate an object: add_features,
-    remove_features, update_features, and truncate_and_load_features.
+    This class represents the feature layer that will be updated and stores a reference to the feature layer and it's
+    containing gis. It contains four methods for updating the layer's data: add_features, remove_features,
+    update_features, and truncate_and_load_features.
 
     It is the client's responsibility to separate out the new data into these different steps. If the extract/transform
-    stages result in seperate groups of records that need to be added, deleted, and updated, the client must call the
+    stages result in separate groups of records that need to be added, deleted, and updated, the client must call the
     three different methods with dataframes containing only the respective records for each operation.
 
-    Because the update process uploads the data as geojson, all input geometries must be in WGS84 (wkid 4326). Input
-    dataframes can be projected using dataframe.spatial.project(4326). ArcGIS Online will then project the uploaded
-    data to match the hosted feature service's projection.
+    The methods save the updated data as a new layer in an empty file geodatabase, zip it and upload it to AGOL, and
+    then use this as the source data for a call to the feature layer's .append() method. You must provide an empty file
+    geodatabase named 'upload.gdb' in working_dir for pyogrio to save the dataframe to as part of the upload process.
     """
 
     def __init__(self, gis, feature_service_itemid, working_dir=None, layer_index=0):
         self._class_logger = logging.getLogger(__name__).getChild(self.__class__.__name__)
+        self.gis = gis
         self.feature_service_itemid = feature_service_itemid
         self.feature_layer = arcgis.features.FeatureLayer.fromitem(gis.content.get(feature_service_itemid))
         self.working_dir = working_dir if working_dir else None
@@ -48,18 +50,14 @@ class FeatureServiceUpdater:
     def add_features(self, dataframe):
         """Adds new features to existing hosted feature layer from new dataframe.
 
-        The new dataframe must have a 'SHAPE' column containing geometries of the same type as the live data. The
-        dataframe must have a WGS84 (wkid 4326) projection. New OBJECTIDs will be automatically generated.
+        The new dataframe must have a 'SHAPE' column containing geometries of the same type as the live data.
 
         The new dataframe's columns and data must match the existing data's fields (with the exception of generated
         fields like shape area and length) in name, type, and allowable length. Live fields that are not nullable and
         don't have a default value must have a value in the new data; missing data in these fields will raise an error.
 
         Args:
-            gis (arcgis.gis.GIS): GIS item for AGOL org
-            features_service_item_id (str): itemid for service to update
             dataframe (pd.DataFrame.spatial): Spatially enabled dataframe of data to be added
-            layer_index (int): Index of layer within service to update. Defaults to 0.
 
         Raises:
             ValueError: If the new field and existing fields don't match, the SHAPE field is missing or has an
@@ -81,7 +79,6 @@ class FeatureServiceUpdater:
 
         #: Upload
         append_count = self._upload_data(
-            self.feature_layer,
             dataframe,
             upsert=False,
         )
@@ -91,7 +88,7 @@ class FeatureServiceUpdater:
         """Deletes features from a hosted feature layer based on comma-separated string of Object IDs
 
         This is a wrapper around the arcgis.FeatureLayer.delete_features method that adds some sanity checking. The
-        delete operation is rolled-back if any of the features fail to delete using (rollback_on_failure=True). This
+        delete operation is rolled back if any of the features fail to delete using (rollback_on_failure=True). This
         function will raise a RuntimeError as well after delete_features() returns if any of them fail.
 
         The sanity checks will raise errors or warnings as appropriate if any of them fail.
@@ -153,14 +150,11 @@ class FeatureServiceUpdater:
 
         The new data can have either attributes and geometries or only attributes based on the update_geometry flag. A
         combination of updates from a source with both attributes & geometries and a source with attributes-only must
-        be done with two separate calls. The geometries must be provided in a SHAPE column, be the same type as the
-        live data, and have a WGS84 (wkid 4326) projection.
+        be done with two separate calls. The geometries must be provided in a SHAPE column and be the same type as the
+        live data.
 
         Args:
-            gis (arcgis.gis.GIS): GIS item for AGOL org
-            features_service_item_id (str): itemid for service to update
             dataframe (pd.DataFrame.spatial): Spatially enabled dataframe of data to be updated
-            layer_index (int): Index of layer within service to update. Defaults to 0.
             update_geometry (bool): Whether to update attributes and geometry (True) or just attributes (False).
                 Defaults to False.
 
@@ -191,7 +185,6 @@ class FeatureServiceUpdater:
 
         #: Upload data
         append_count = self._upload_data(
-            self.feature_layer,
             dataframe,
             upsert=True,
             upsert_matching_field='OBJECTID',
@@ -203,24 +196,20 @@ class FeatureServiceUpdater:
     def truncate_and_load_features(self, dataframe, failsafe_dir=None):
         """Overwrite a hosted feature layer by truncating and loading the new data
 
-        When the existing dataset is truncated, a copy is kept in memory as a spatially-enabled dataframe. If the new
-        data fail to load, this copy is reloaded. If the reload fails, the copy is written to failsafe_dir with the
-        filename {todays_date}.json (2022-12-31.json).
+        When the existing dataset is truncated, a copy is kept in memory as a spatially-enabled dataframe. If
+        failsafe_dir is set, this is saved as json with the filename {todays_date}.json (2022-12-31.json).
 
-        The new dataframe must have a 'SHAPE' column containing geometries of the same type as the live data. The
-        dataframe must have a WGS84 (wkid 4326) projection. New OBJECTIDs will be automatically generated.
+        The new dataframe must have a 'SHAPE' column containing geometries of the same type as the live data. New
+        OBJECTIDs will be automatically generated.
 
         The new dataframe's columns and data must match the existing data's fields (with the exception of generated
         fields like shape area and length) in name, type, and allowable length. Live fields that are not nullable and
         don't have a default value must have a value in the new data; missing data in these fields will raise an error.
 
         Args:
-            gis (arcgis.gis.GIS): GIS item for AGOL org
-            feature_service_itemid (str): itemid for service to update
             dataframe (pd.DataFrame.spatial): Spatially enabled dataframe of new data to be loaded
             failsafe_dir (str, optional): Directory to save original data in case of complete failure. If left blank,
-            existing data won't be saved. Defaults to ''
-            layer_index (int, optional): Index of layer within service to update. Defaults to 0.
+            existing data won't be saved. Defaults to None
 
         Returns:
             int: Number of features loaded
@@ -247,18 +236,13 @@ class FeatureServiceUpdater:
 
         try:
             self._class_logger.info('Loading new data...')
-            append_count = self._upload_data(self.feature_layer, dataframe, upsert=False)
+            append_count = self._upload_data(dataframe, upsert=False)
             self._class_logger.debug('Total truncate and load time: %s', datetime.now() - start)
         except Exception:
             if failsafe_dir:
-                self._class_logger.error(
-                    'Append failed, feature service may be dirty due to append chunking. Data saved to %s',
-                    saved_layer_path
-                )
+                self._class_logger.error('Append failed. Data saved to %s', saved_layer_path)
                 raise
-            self._class_logger.error(
-                'Append failed, feature service may be dirty due to append chunking. Old data not saved (no failsafe dir set)'
-            )
+            self._class_logger.error('Append failed. Old data not saved (no failsafe dir set)')
             raise
 
         return append_count
@@ -283,25 +267,26 @@ class FeatureServiceUpdater:
 
         return fields
 
-    #: TODO: shouldn't target_featurelayer come from self.feature_layer?
-    def _upload_data(self, target_featurelayer, dataframe, **append_kwargs):
-        """UPdate and inSERT data into live dataset with featurelayer.append()
+    def _upload_data(self, dataframe, **append_kwargs):
+        """Append a spatially-enabled dataframe to a feature layer by uploading it as a zipped file gdb
 
-        Note: The call to to_featureset() in this method will add new OBJECTIDs to the new data if they aren't already present.
+        We first save the new dataframe as a layer in an empty geodatabase, then zip it and upload it to AGOL as a
+        standalone item. We then call append on the target feature layer with this item as the source for the append,
+        using upsert where appropriate to update existing data using OBJECTID as the join field. Afterwards, we delete
+        the gdb item and the zipped gdb.
 
         Args:
-            target_featurelayer (arcgis.features.FeatureLayer): Live dataset
-            dataframe (pd.DataFrame): Spatially-enabled dataframe containing new data. Column names must match live
-                data. New data must have a valid shape column
-            append_kwargs (keyword arguments): Arguments to be passed to .append()
+            dataframe (pd.DataFrame.spatial): A spatially-enabled dataframe containing data to be added or upserted to
+            the feature layer. The fields must match the live fields in name, type, and length (where applicable). The
+            dataframe must have a SHAPE column containing geometries of the same type as the live data.
 
         Raises:
-            RuntimeError: If append fails; will attempt to rollback appends that worked.
+            ValueError: If the field used as a key for upsert matching is not present in either the new or live data
+            RuntimeError: If the append operation fails
 
         Returns:
-            dict: Messages returned from append operation
+            int: The number of records upserted
         """
-
         try:
             if append_kwargs['upsert'] \
                 and (
@@ -315,42 +300,114 @@ class FeatureServiceUpdater:
         except KeyError:
             pass
 
-        #: FIXME: With chunking, rollback could leave the data in an inconsistent state if a chunk fails midway through the process. All the chunks before that won't be rolled back, so some of the data will be new and some will be old. I suppose this will be ok for upserts, where the data will just get updated again. However, adds will probably just create duplicates of the chunks that aren't rolled back if we try to re-do the whole add op again. Do we create a list of dataframe row indices that were in the successful chunks?
+        zipped_gdb_path = self._save_to_gdb_and_zip(dataframe)
 
-        running_append_total = 0
-        geojsons = utils.Chunking.build_upload_json(dataframe, target_featurelayer.properties.fields, 20_000_000)
-        self._class_logger.info('Appending/upserting data in %s chunk(s)', len(geojsons))
-        chunk_sizes = []
-        for chunk, geojson in enumerate(geojsons, 1):
-            try:
-                chunk_start = datetime.now()
-                chunk_size = sys.getsizeof(geojson.encode('utf-16'))
-                chunk_sizes.append(chunk_size)
-                self._class_logger.debug('Uploading chunk %s of %s, %s bytes', chunk, len(geojsons), chunk_size)
-                result, messages = utils.retry(
-                    target_featurelayer.append,
-                    upload_format='geojson',
-                    edits=geojson,
-                    return_messages=True,
-                    rollback=True,
-                    **append_kwargs
-                )
-                self._class_logger.debug(messages)
-                self._class_logger.debug('Chunk time: %s', datetime.now() - chunk_start)
-            except Exception:
-                self._class_logger.debug(pd.Series(chunk_sizes).describe())
-                self._class_logger.error('Append failed, feature service may be dirty due to append chunking.')
-                raise
+        gdb_item = self._upload_gdb(zipped_gdb_path)
+
+        try:
+            result, messages = utils.retry(
+                self.feature_layer.append,
+                item_id=gdb_item.id,
+                upload_format='filegdb',
+                source_table_name='upload',
+                return_messages=True,
+                rollback=True,
+                **append_kwargs
+            )
             if not result:
-                self._class_logger.debug(pd.Series(chunk_sizes).describe())
-                raise RuntimeError(
-                    f'Failed to append data at chunk {chunk} of {len(geojsons)}. Append operation should have been rolled back.'
-                )
+                raise RuntimeError('Append failed but did not error')
+        except Exception as error:
+            raise RuntimeError('Failed to append data from gdb, changes should have been rolled back') from error
 
-            running_append_total += messages['recordCount']
+        self._cleanup(gdb_item, zipped_gdb_path)
 
-        self._class_logger.debug(pd.Series(chunk_sizes).describe())
-        return running_append_total
+        return messages['recordCount']
+
+    def _save_to_gdb_and_zip(self, dataframe):
+        """Save a spatially-enabled dataframe to a gdb and zip it.
+
+        Requires an empty file gdb named 'upload.gdb' to exist in self.working_dir (which also must be set). Uses
+        pyogrio to save the dataframe to the gdb, then uses shutil.make_archive to zip the gdb. The zipped gdb is saved
+        in the gdb's parent directory.
+
+        Args:
+            dataframe (pd.DataFrame.spatial): The input dataframe to be saved. Must contain geometries in the SHAPE field
+
+        Raises:
+            ValueError: If self.working_dir is not set or the empty upload.gdb doesn't exist in it
+
+        Returns:
+            pathlib.Path: The path to the zipped GDB
+        """
+
+        if not self.working_dir:
+            raise ValueError('No working directory set, cannot search for gdb')
+
+        gdb_path = Path(self.working_dir) / 'upload.gdb'
+
+        try:
+            pyogrio.list_layers(gdb_path)
+        except pyogrio.errors.DataSourceError as error:
+            raise ValueError(f'Error reading {gdb_path}. Verify upload.gdb exists in {self.working_dir}') from error
+
+        gdf = gpd.GeoDataFrame(dataframe, geometry='SHAPE')
+        try:
+            gdf.set_crs(dataframe.spatial.sr['latestWkid'], inplace=True)
+        except KeyError:
+            gdf.set_crs(dataframe.spatial.sr['wkid'], inplace=True)
+        gdf.to_file(gdb_path, layer='upload', engine='pyogrio', driver='OpenFileGDB')
+
+        zipped_gdb_path = shutil.make_archive(gdb_path, 'zip', root_dir=gdb_path.parent, base_dir=gdb_path.name)
+
+        return zipped_gdb_path
+
+    def _upload_gdb(self, zipped_gdb_path):
+        """Add a zipped gdb to AGOL as an item to self.gis
+
+        Args:
+            zipped_gdb_path (str or Path-like): Path to the zipped gdb
+
+        Raises:
+            RuntimeError: If there is an error uploading the gdb to AGOL
+
+        Returns:
+            arcgis.gis.Item: Reference to the resulting Item object in self.gis
+        """
+
+        try:
+            gdb_item = utils.retry(
+                self.gis.content.add,
+                item_properties={
+                    'type': 'File Geodatabase',
+                    'title': 'Temporary gdb upload',
+                    'snippet': 'Temporary gdb upload from palletjack'
+                },
+                data=zipped_gdb_path
+            )
+        except Exception as error:
+            raise RuntimeError(f'Error uploading {zipped_gdb_path} to AGOL') from error
+        return gdb_item
+
+    def _cleanup(self, gdb_item, zipped_gdb_path):
+        """Remove the zipped gdb from disk and the gdb item from AGOL
+
+        Args:
+            gdb_item (arcgis.gis.Item): Reference to the gdb item in self.gis
+            zipped_gdb_path (str or Path-like): Path to the gdb on disk
+
+        Raises:
+            RuntimeError: If there are errors deleting the gdb item or the zipped gdb
+        """
+
+        try:
+            gdb_item.delete()
+        except Exception as error:
+            raise RuntimeError(f'Error deleting gdb item {gdb_item.id} from AGOL') from error
+
+        try:
+            Path(zipped_gdb_path).unlink()
+        except Exception as error:
+            raise RuntimeError(f'Error deleting zipped gdb {zipped_gdb_path}') from error
 
     def _truncate_existing_data(self):
         """Remove all existing features from the live dataset
