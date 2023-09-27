@@ -418,7 +418,7 @@ class FieldChecker:
         field_checker.check_live_and_new_field_types_match(fields)
         field_checker.check_for_non_null_fields(fields)
         field_checker.check_field_length(fields)
-        field_checker.check_srs_wgs84()
+        # field_checker.check_srs_wgs84()
         field_checker.check_nullable_ints_shapely()
 
     def __init__(self, live_data_properties, new_dataframe):

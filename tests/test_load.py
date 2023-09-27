@@ -103,7 +103,6 @@ class TestUpdateLayer:
         load.FeatureServiceUpdater.update_features(updater_mock, new_dataframe, update_geometry=True)
 
         updater_mock._upload_data.assert_called_once_with(
-            fl_mock,
             new_dataframe,
             upsert=True,
             upsert_matching_field='OBJECTID',
@@ -131,7 +130,6 @@ class TestUpdateLayer:
             check_for_non_null_fields=mocker.DEFAULT,
             check_field_length=mocker.DEFAULT,
             check_fields_present=mocker.DEFAULT,
-            check_srs_wgs84=mocker.DEFAULT,
             check_nullable_ints_shapely=mocker.DEFAULT,
         )
 
@@ -141,7 +139,6 @@ class TestUpdateLayer:
         load.utils.FieldChecker.check_for_non_null_fields.assert_called_once_with(['foo', 'bar', 'OBJECTID'])
         load.utils.FieldChecker.check_field_length.assert_called_once_with(['foo', 'bar', 'OBJECTID'])
         load.utils.FieldChecker.check_fields_present.assert_called_once_with(['foo', 'bar', 'OBJECTID'], add_oid=True)
-        load.utils.FieldChecker.check_srs_wgs84.assert_called_once()
         load.utils.FieldChecker.check_nullable_ints_shapely.assert_called_once()
 
     def test_update_features_no_geometry_calls_null_geometry_generator(self, mocker):
@@ -187,7 +184,6 @@ class TestUpdateLayer:
         load.FeatureServiceUpdater.update_features(updater_mock, new_dataframe, update_geometry=False)
 
         updater_mock._upload_data.assert_called_once_with(
-            updater_mock.feature_layer,
             new_dataframe,
             upsert=True,
             upsert_matching_field='OBJECTID',
@@ -215,7 +211,6 @@ class TestAddToLayer:
         load.FeatureServiceUpdater.add_features(updater_mock, new_dataframe)
 
         updater_mock._upload_data.assert_called_once_with(
-            updater_mock.feature_layer,
             new_dataframe,
             upsert=False,
         )
@@ -238,7 +233,6 @@ class TestAddToLayer:
             check_for_non_null_fields=mocker.DEFAULT,
             check_field_length=mocker.DEFAULT,
             check_fields_present=mocker.DEFAULT,
-            check_srs_wgs84=mocker.DEFAULT,
             check_nullable_ints_shapely=mocker.DEFAULT,
         )
         load.FeatureServiceUpdater.add_features(updater_mock, new_dataframe)
@@ -247,7 +241,6 @@ class TestAddToLayer:
         load.utils.FieldChecker.check_for_non_null_fields.assert_called_once_with(['foo', 'bar'])
         load.utils.FieldChecker.check_field_length.assert_called_once_with(['foo', 'bar'])
         load.utils.FieldChecker.check_fields_present.assert_called_once_with(['foo', 'bar'], add_oid=False)
-        load.utils.FieldChecker.check_srs_wgs84.assert_called_once()
         load.utils.FieldChecker.check_nullable_ints_shapely.assert_called_once()
 
 
@@ -366,9 +359,6 @@ class TestTruncateAndLoadLayer:
 
         updater_mock = mocker.Mock()
         updater_mock._class_logger = logging.getLogger('mock logger')
-        updater_mock.feature_service_itemid = 'foo123'
-        updater_mock.layer_index = 0
-        updater_mock.feature_layer.feature_layer.properties.name = 'foolayer'
         new_dataframe = pd.DataFrame(columns=['Foo', 'Bar'])
 
         mocker.patch('palletjack.utils.FieldChecker')
@@ -384,18 +374,14 @@ class TestTruncateAndLoadLayer:
                 updater_mock, new_dataframe, failsafe_dir='foo'
             )
 
-        assert updater_mock._upload_data.call_args_list[0].args == (updater_mock.feature_layer, new_dataframe)
-        assert updater_mock._upload_data.call_args_list[0].kwargs == {'upsert': False}
-
-        assert f'Append failed, feature service may be dirty due to append chunking. Data saved to bar_path' in caplog.text
+        updater_mock._upload_data.assert_called_once_with(new_dataframe, upsert=False)
+        assert f'Append failed. Data saved to bar_path' in caplog.text
 
     def test_truncate_and_load_append_fails_failsafe_dir_absent(self, mocker, caplog):
         caplog.set_level(logging.DEBUG)
 
         updater_mock = mocker.Mock()
         updater_mock._class_logger = logging.getLogger('mock logger')
-        updater_mock.feature_service_itemid = 'foo123'
-        updater_mock.layer_index = 0
 
         new_dataframe = pd.DataFrame(columns=['Foo', 'Bar'])
 
@@ -410,10 +396,9 @@ class TestTruncateAndLoadLayer:
         with pytest.raises(RuntimeError, match='Failed to append data. Append operation should have been rolled back.'):
             uploaded_features = load.FeatureServiceUpdater.truncate_and_load_features(updater_mock, new_dataframe)
 
-        assert updater_mock._upload_data.call_args_list[0].args == (updater_mock.feature_layer, new_dataframe)
-        assert updater_mock._upload_data.call_args_list[0].kwargs == {'upsert': False}
+        updater_mock._upload_data.assert_called_once_with(new_dataframe, upsert=False)
 
-        assert f'Append failed, feature service may be dirty due to append chunking. Old data not saved (no failsafe dir set)' in caplog.text
+        assert f'Append failed. Old data not saved (no failsafe dir set)' in caplog.text
 
     def test_truncate_and_load_calls_field_checkers(self, mocker, caplog):
 
@@ -437,7 +422,6 @@ class TestTruncateAndLoadLayer:
             check_for_non_null_fields=mocker.DEFAULT,
             check_field_length=mocker.DEFAULT,
             check_fields_present=mocker.DEFAULT,
-            check_srs_wgs84=mocker.DEFAULT,
             check_nullable_ints_shapely=mocker.DEFAULT,
         )
 
@@ -449,7 +433,6 @@ class TestTruncateAndLoadLayer:
         load.utils.FieldChecker.check_for_non_null_fields.assert_called_once_with(['Foo', 'Bar'])
         load.utils.FieldChecker.check_field_length.assert_called_once_with(['Foo', 'Bar'])
         load.utils.FieldChecker.check_fields_present.assert_called_once_with(['Foo', 'Bar'], add_oid=False)
-        load.utils.FieldChecker.check_srs_wgs84.assert_called_once()
         load.utils.FieldChecker.check_nullable_ints_shapely.assert_called_once()
 
         assert uploaded_features == 42
@@ -994,57 +977,49 @@ class TestAttachments:
 class TestUploadData:
 
     def test_upload_data_calls_append_with_proper_args(self, mocker):
-        mock_fl = mocker.Mock()
-        mock_fl.append.return_value = (True, {'recordCount': 42})
-        mocker.patch('palletjack.utils.sleep')
-        mocker.patch('palletjack.utils.Chunking.build_upload_json', autospec=True, return_value=['json'])
+        expected_kwargs = {
+            'item_id': '1234',
+            'upload_format': 'filegdb',
+            'source_table_name': 'upload',
+            'upsert': True,
+            'rollback': True,
+            'return_messages': True,
+        }
+        updater_mock = mocker.Mock()
+        updater_mock._upload_gdb.return_value.id = '1234'
+        updater_mock.feature_layer.append.return_value = (True, {'recordCount': 42})
 
-        load.FeatureServiceUpdater._upload_data(mocker.Mock(), mock_fl, mocker.Mock(), upsert=True)
+        load.FeatureServiceUpdater._upload_data(updater_mock, mocker.Mock(), upsert=True)
 
-        mock_fl.append.assert_called_once_with(
-            upload_format='geojson', edits='json', upsert=True, rollback=True, return_messages=True
-        )
-
-    def test_upload_data_calls_append_for_multiple_chunks(self, mocker):
-        mock_fl = mocker.Mock()
-        mock_fl.append.return_value = (True, {'recordCount': 42})
-        mocker.patch('palletjack.utils.sleep')
-        mocker.patch('palletjack.utils.Chunking.build_upload_json', autospec=True, return_value=['json1', 'json2'])
-
-        load.FeatureServiceUpdater._upload_data(mocker.Mock(), mock_fl, mocker.Mock(), upsert=True)
-
-        assert mock_fl.append.call_count == 2
-        assert mock_fl.append.call_args_list == [
-            mocker.call(upload_format='geojson', edits='json1', upsert=True, rollback=True, return_messages=True),
-            mocker.call(upload_format='geojson', edits='json2', upsert=True, rollback=True, return_messages=True),
-        ]
+        updater_mock.feature_layer.append.assert_called_once_with(**expected_kwargs)
 
     def test_upload_data_retries_on_exception(self, mocker):
-        mock_fl = mocker.Mock()
-        mock_fl.append.side_effect = [Exception, (True, {'recordCount': 42})]
-        mocker.patch('palletjack.utils.Chunking.build_upload_json', autospec=True, return_value=['json'])
+        updater_mock = mocker.Mock()
+        updater_mock._upload_gdb.return_value.id = '1234'
+        updater_mock.feature_layer.append.side_effect = [Exception, (True, {'recordCount': 42})]
         mocker.patch('palletjack.utils.sleep')
 
-        load.FeatureServiceUpdater._upload_data(mocker.Mock(), mock_fl, mocker.Mock(), upsert=True)
+        load.FeatureServiceUpdater._upload_data(updater_mock, mocker.Mock(), upsert=True)
 
-        assert mock_fl.append.call_count == 2
+        assert updater_mock.feature_layer.append.call_count == 2
 
     def test_upload_data_raises_on_False_result(self, mocker):
-        mock_fl = mocker.Mock()
-        mock_fl.append.return_value = (False, {'message': 'foo'})
-        mocker.patch('palletjack.utils.Chunking.build_upload_json', autospec=True, return_value=['json'])
-        mocker.patch('palletjack.utils.sleep')
+        expected_inner_error = 'Append failed but did not error'
+        expected_outer_error = 'Failed to append data from gdb, changes should have been rolled back'
+        updater_mock = mocker.Mock()
+        updater_mock._upload_gdb.return_value.id = '1234'
+        updater_mock.feature_layer.append.return_value = (False, {'message': 'foo'})
 
         with pytest.raises(RuntimeError) as exc_info:
-            load.FeatureServiceUpdater._upload_data(mocker.Mock(), mock_fl, mocker.Mock(), upsert=True)
+            load.FeatureServiceUpdater._upload_data(updater_mock, mocker.Mock(), upsert=True)
 
-        assert exc_info.value.args[
-            0] == 'Failed to append data at chunk 1 of 1. Append operation should have been rolled back.'
+        assert exc_info.value.args[0] == expected_outer_error
+        assert exc_info.value.__cause__.args[0] == expected_inner_error
 
     def test_upload_data_raises_on_upsert_field_not_in_append_fields(self, mocker):
         append_kwargs = {'upsert_matching_field': 'foo', 'append_fields': ['bar', 'baz'], 'upsert': True}
         with pytest.raises(ValueError) as exc_info:
-            load.FeatureServiceUpdater._upload_data(mocker.Mock(), mocker.Mock(), mocker.Mock(), **append_kwargs)
+            load.FeatureServiceUpdater._upload_data(mocker.Mock(), mocker.Mock(), **append_kwargs)
 
         assert exc_info.value.args[0
                                   ] == 'Upsert matching field foo not found in either append fields or existing fields.'
@@ -1053,7 +1028,7 @@ class TestUploadData:
         append_kwargs = {'upsert_matching_field': 'foo', 'append_fields': ['foo', 'bar'], 'upsert': True}
         df = pd.DataFrame(columns=['bar', 'baz'])
         with pytest.raises(ValueError) as exc_info:
-            load.FeatureServiceUpdater._upload_data(mocker.Mock(), mocker.Mock(), df, **append_kwargs)
+            load.FeatureServiceUpdater._upload_data(mocker.Mock(), df, **append_kwargs)
 
         assert exc_info.value.args[0
                                   ] == 'Upsert matching field foo not found in either append fields or existing fields.'
@@ -1062,7 +1037,7 @@ class TestUploadData:
         append_kwargs = {'upsert_matching_field': 'foo', 'append_fields': ['bar', 'baz'], 'upsert': True}
         df = pd.DataFrame(columns=['bar', 'baz'])
         with pytest.raises(ValueError) as exc_info:
-            load.FeatureServiceUpdater._upload_data(mocker.Mock(), mocker.Mock(), df, **append_kwargs)
+            load.FeatureServiceUpdater._upload_data(mocker.Mock(), df, **append_kwargs)
 
         assert exc_info.value.args[0
                                   ] == 'Upsert matching field foo not found in either append fields or existing fields.'
@@ -1208,3 +1183,116 @@ class TestColorRampReclassifier:
         }]
 
         assert update_mock.called_with(item_properties={'text': json.dumps(data)})
+
+
+class TestGDBStuff:
+
+    def test__save_to_gdb_and_zip_uses_correct_directories(self, mocker):
+        expected_call_args = [Path('/foo/bar/upload.gdb'), 'zip']
+        expected_call_kwargs = {'root_dir': Path('/foo/bar'), 'base_dir': 'upload.gdb'}
+
+        updater_mock = mocker.Mock()
+        updater_mock.working_dir = '/foo/bar'
+
+        mocker.patch('palletjack.load.pyogrio')
+        mocker.patch('palletjack.load.gpd')
+        shutil_mock = mocker.patch('palletjack.load.shutil')
+
+        foo = load.FeatureServiceUpdater._save_to_gdb_and_zip(
+            updater_mock, mocker.Mock(**{'spatial.sr': {
+                'latestWkid': 'foo'
+            }})
+        )
+
+        shutil_mock.make_archive.assert_called_once_with(*expected_call_args, **expected_call_kwargs)
+
+    def test__save_to_gdb_and_zip_raises_on_missing_working_dir(self, mocker):
+        updater_mock = mocker.Mock()
+        updater_mock.working_dir = None
+
+        with pytest.raises(ValueError) as exc_info:
+            load.FeatureServiceUpdater._save_to_gdb_and_zip(updater_mock, mocker.Mock())
+
+        assert exc_info.value.args[0] == 'No working directory set, cannot search for gdb'
+
+    def test__save_to_gdb_and_zip_raises_on_missing_gdb(self, mocker):
+        updater_mock = mocker.Mock()
+        updater_mock.working_dir = '/foo/bar'
+
+        with pytest.raises(ValueError) as exc_info:
+            load.FeatureServiceUpdater._save_to_gdb_and_zip(updater_mock, mocker.Mock())
+
+        assert exc_info.value.args[0] == r'Error reading \foo\bar\upload.gdb. Verify upload.gdb exists in /foo/bar'
+
+    def test__save_to_gdb_and_zip_uses_wkid_when_missing_latestwkid(self, mocker):
+        gdf_mock = mocker.patch('palletjack.load.gpd.GeoDataFrame').return_value
+        df_attrs = {'spatial.sr': {'wkid': 'foo'}}
+        df_mock = mocker.Mock(**df_attrs)
+        mocker.patch('palletjack.load.pyogrio')
+        mocker.patch('palletjack.load.shutil')
+        mocker.patch('palletjack.load.Path')
+
+        load.FeatureServiceUpdater._save_to_gdb_and_zip(mocker.Mock(), df_mock)
+
+        gdf_mock.set_crs.assert_called_with('foo', inplace=True)
+
+    def test__upload_gdb_calls_add(self, mocker):
+        gdb_path = Path('/foo/bar/upload.gdb')
+        expected_call_kwargs = {
+            'item_properties': {
+                'type': 'File Geodatabase',
+                'title': 'Temporary gdb upload',
+                'snippet': 'Temporary gdb upload from palletjack'
+            },
+            'data': gdb_path
+        }
+
+        updater_mock = mocker.Mock()
+
+        foo = load.FeatureServiceUpdater._upload_gdb(updater_mock, gdb_path)
+
+        updater_mock.gis.content.add.assert_called_once_with(**expected_call_kwargs)
+
+    def test__upload_gdb_raises_on_agol_error(self, mocker):
+        gdb_path = Path('/foo/bar/upload.gdb')
+        updater_mock = mocker.Mock()
+        updater_mock.gis.content.add.side_effect = [Exception('foo')] * 4
+        mocker.patch('palletjack.utils.sleep')
+
+        with pytest.raises(RuntimeError) as exc_info:
+            load.FeatureServiceUpdater._upload_gdb(updater_mock, gdb_path)
+
+        assert exc_info.value.args[0] == r'Error uploading \foo\bar\upload.gdb to AGOL'
+        assert updater_mock.gis.content.add.call_count == 4  #: retries
+
+    def test__cleanup_deletes_agol_and_file(self, mocker):
+        zipped_path = Path('/foo/bar/upload.gdb.zip')
+        gdb_item_mock = mocker.Mock()
+        path_mock = mocker.patch('palletjack.load.Path')
+
+        load.FeatureServiceUpdater._cleanup(mocker.Mock(), gdb_item_mock, zipped_path)
+
+        gdb_item_mock.delete.assert_called_once_with()
+        path_mock.assert_called_once_with(zipped_path)
+        path_mock.return_value.unlink.assert_called_once_with()
+
+    def test__cleanup_raises_on_agol_error(self, mocker):
+        expected_error = 'Error deleting gdb item 1234 from AGOL'
+        gdb_item_mock = mocker.Mock(id='1234')
+        gdb_item_mock.delete.side_effect = [RuntimeError('Unable to delete item.')]
+
+        with pytest.raises(RuntimeError) as exc_info:
+            load.FeatureServiceUpdater._cleanup(mocker.Mock(), gdb_item_mock, 'foo/bar')
+
+        assert exc_info.value.args[0] == expected_error
+
+    def test__cleanup_raises_on_file_error(self, mocker):
+        expected_error = 'Error deleting zipped gdb /foo/bar/upload.gdb.zip'
+        gdb_item_mock = mocker.Mock()
+        path_mock = mocker.patch('palletjack.load.Path')
+        path_mock.return_value.unlink.side_effect = [IOError]
+
+        with pytest.raises(RuntimeError) as exc_info:
+            load.FeatureServiceUpdater._cleanup(mocker.Mock(), gdb_item_mock, '/foo/bar/upload.gdb.zip')
+
+        assert exc_info.value.args[0] == expected_error
