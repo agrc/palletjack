@@ -56,6 +56,7 @@ setup(
             'ypy-websocket==0.8.2'
         ],
         'tests': [
+            'pdoc3==0.10.*',
             'pylint-quotes==0.2.*',
             'pylint==2.15.*',
             'pytest-cov==4.0.*',

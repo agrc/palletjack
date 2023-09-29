@@ -71,7 +71,7 @@ Calling this URL in a browser should return a message that will hopefully give y
 
 ### Updating Docs
 
-palletjack uses `pdoc` to generate HTML docs in `docs/palletjack` from the docstrings within the code itself. These are then served up via github pages.
+palletjack uses `pdoc3` to generate HTML docs in `docs/palletjack` from the docstrings within the code itself. These are then served up via github pages.
 
 The github pages are served from the `gh-pages` branch. After you make edits to the code and update the docstrings, rebase this branch onto the updated `main` branch. To prevent github pages from trying to generate a site from the contents of `docs/palletjack` with jekyll, add a `.nojekyll` file to `docs/palletjack`.
 
