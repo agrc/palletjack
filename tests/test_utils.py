@@ -6,6 +6,7 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
+import pyogrio
 import pytest
 from arcgis import geometry
 from pandas import testing as tm
@@ -1622,53 +1623,49 @@ class TestDeleteUtils:
         assert number_of_missing_oids == 1
 
 
-class TestSaveDataframeToJSON:
+class TestSaveDataframeToGDF:
 
-    def test_save_feature_layer_to_json_calls_write_with_json_and_returns_right_path(self, mocker):
-
-        mock_df = pd.DataFrame({
-            'foo': [1],
-            'x': [11],
-            'y': [14],
-        })
-
-        mock_sdf = pd.DataFrame.spatial.from_xy(mock_df, 'x', 'y')
-        mock_fl = mocker.Mock()
-        mock_fl.query.return_value.sdf = mock_sdf
-        mock_fl.properties.name = 'flayer'
-
-        open_mock = mocker.MagicMock()
-        context_manager_mock = mocker.MagicMock()
-        context_manager_mock.return_value.__enter__.return_value = open_mock
-        mocker.patch('palletjack.utils.Path.open', new=context_manager_mock)
-
-        out_path = palletjack.utils.save_feature_layer_to_json(mock_fl, 'foo')
-
-        test_json_string = '{"features": [{"geometry": {"spatialReference": {"wkid": 4326}, "x": 11, "y": 14}, "attributes": {"foo": 1, "x": 11, "y": 14, "OBJECTID": 1}}], "objectIdFieldName": "OBJECTID", "displayFieldName": "OBJECTID", "spatialReference": {"wkid": 4326}, "geometryType": "esriGeometryPoint", "fields": [{"name": "foo", "type": "esriFieldTypeInteger", "alias": "foo"}, {"name": "x", "type": "esriFieldTypeInteger", "alias": "x"}, {"name": "y", "type": "esriFieldTypeInteger", "alias": "y"}]}'
-
-        open_mock.write.assert_called_with(test_json_string)
-        assert out_path == Path('foo', f'flayer_{datetime.date.today()}.json')
-
-    def test_save_feature_layer_to_json_doesnt_save_empty_data(self, mocker):
-
-        mock_df = pd.DataFrame()
+    def test_save_feature_layer_to_gdb_calls_to_file_with_right_path(self, mocker):
+        expected_out_path = Path('foo', 'backup.gdb')
+        expected_out_layer = f'flayer_{datetime.date.today().strftime("%Y_%m_%d")}'
 
         mock_fl = mocker.Mock()
-        mock_fl.query.return_value.sdf = mock_df
         mock_fl.properties.name = 'flayer'
-        spatial_mock = mocker.patch.object(mock_df, 'spatial')
+        mock_fl.query.return_value.sdf.empty = False
+        gdf_mock = mocker.patch('palletjack.utils.sedf_to_gdf').return_value
 
-        # open_mock = mocker.MagicMock()
-        # context_manager_mock = mocker.MagicMock()
-        # context_manager_mock.return_value.__enter__.return_value = open_mock
-        write_mock = mocker.patch('palletjack.utils.Path.write_text')
+        out_path = palletjack.utils.save_feature_layer_to_gdb(mock_fl, 'foo')
 
-        out_path = palletjack.utils.save_feature_layer_to_json(mock_fl, 'foo')
+        assert out_path == expected_out_path
+        gdf_mock.to_file.assert_called_once_with(
+            expected_out_path, layer=expected_out_layer, engine='pyogrio', driver='OpenFileGDB'
+        )
 
-        write_mock.write.assert_not_called()
-        spatial_mock.to_featureset.assert_not_called()
+    def test_save_feature_layer_to_gdb_doesnt_save_empty_data(self, mocker):
 
+        mock_fl = mocker.Mock()
+        mock_fl.properties.name = 'flayer'
+        mock_fl.query.return_value.sdf.empty = True
+        gdf_mock = mocker.patch('palletjack.utils.sedf_to_gdf').return_value
+
+        out_path = palletjack.utils.save_feature_layer_to_gdb(mock_fl, 'foo')
+
+        gdf_mock.to_file.assert_not_called()
         assert out_path == 'No data to save in feature layer flayer'
+
+    def test_save_feature_layer_to_gdb_raises_on_gdb_write_error(self, mocker):
+        gdb_path = Path('/foo/bar/backup.gdb')
+        date = datetime.date.today().strftime("%Y_%m_%d")
+        expected_error = f'Error writing flayer_{date} to {gdb_path}. Verify {gdb_path.parent} exists and is writable.'
+
+        mock_fl = mocker.Mock()
+        mock_fl.properties.name = 'flayer'
+        mock_fl.query.return_value.sdf.empty = False
+        gdf_mock = mocker.patch('palletjack.utils.sedf_to_gdf').return_value
+        gdf_mock.to_file.side_effect = pyogrio.errors.DataSourceError
+
+        with pytest.raises(ValueError, match=re.escape(expected_error)):
+            out_path = palletjack.utils.save_feature_layer_to_gdb(mock_fl, '/foo/bar')
 
 
 class TestDataFrameChunking:
@@ -1856,3 +1853,23 @@ class TestChunker:
         chunks = [chunk for chunk in palletjack.utils.chunker(sequence, 3)]
 
         assert chunks == [['a', 'b', 'c'], ['d', 'e', 'f'], ['g']]
+
+
+class TestSEDFtoGDF:
+
+    def test_sedf_to_gdf_uses_wkid_when_missing_latestwkid(self, mocker):
+        gdf_mock = mocker.patch('palletjack.utils.gpd.GeoDataFrame').return_value
+        df_attrs = {'spatial.sr': {'wkid': 'foo'}}
+        df_mock = mocker.Mock(**df_attrs)
+
+        palletjack.utils.sedf_to_gdf(df_mock)
+
+        gdf_mock.set_crs.assert_called_with('foo', inplace=True)
+
+    def test_sedf_to_gdf_uses_sedf_geometry_column(self, mocker):
+        mock_sedf = mocker.Mock(**{'spatial.name': 'FOOSHAPE', 'spatial.sr': {'wkid': 'foo'}})
+        gpd_mock = mocker.patch('palletjack.utils.gpd.GeoDataFrame')
+
+        palletjack.utils.sedf_to_gdf(mock_sedf)
+
+        gpd_mock.assert_called_with(mock_sedf, geometry='FOOSHAPE')

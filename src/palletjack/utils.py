@@ -13,8 +13,10 @@ from pathlib import Path
 from time import sleep
 
 import arcgis
+import geopandas as gpd
 import pandas as pd
 import pygsheets
+import pyogrio
 import requests
 
 from palletjack.errors import IntFieldAsFloatError, TimezoneAwareDatetimeError
@@ -370,8 +372,27 @@ def authorize_pygsheets(credentials):
         raise RuntimeError('Could not authenticate to Google API') from err
 
 
-def save_feature_layer_to_json(feature_layer, directory):
-    """Save a feature_layer to directory for safety as {layer name}_{todays date}.json
+def sedf_to_gdf(dataframe):
+    """Convert an Esri Spatially Enabled DataFrame to a GeoPandas GeoDataFrame
+
+    Args:
+        dataframe (pd.DataFrame.spatial): Esri spatially enabled dataframe to convert
+
+    Returns:
+        GeoPandas.DataFrame: dataframe converted to GeoDataFrame
+    """
+
+    gdf = gpd.GeoDataFrame(dataframe, geometry=dataframe.spatial.name)
+    try:
+        gdf.set_crs(dataframe.spatial.sr['latestWkid'], inplace=True)
+    except KeyError:
+        gdf.set_crs(dataframe.spatial.sr['wkid'], inplace=True)
+
+    return gdf
+
+
+def save_feature_layer_to_gdb(feature_layer, directory):
+    """Save a feature_layer to a gdb for safety as backup.gdb/{layer name}_{todays date}
 
     Args:
         feature_layer (arcgis.features.FeatureLayer): The FeatureLayer object to save to disk.
@@ -387,9 +408,17 @@ def save_feature_layer_to_json(feature_layer, directory):
     if dataframe.empty:
         return f'No data to save in feature layer {feature_layer.properties.name}'
 
-    out_path = Path(directory, f'{feature_layer.properties.name}_{datetime.date.today()}.json')
+    gdf = sedf_to_gdf(dataframe)
+
+    out_path = Path(directory, 'backup.gdb')
+    out_layer = f'{feature_layer.properties.name}_{datetime.date.today().strftime("%Y_%m_%d")}'
     module_logger.debug('Saving existing data to %s', out_path)
-    out_path.write_text(dataframe.spatial.to_featureset().to_json, encoding='utf-8')
+    try:
+        gdf.to_file(out_path, layer=out_layer, engine='pyogrio', driver='OpenFileGDB')
+    except pyogrio.errors.DataSourceError as error:
+        raise ValueError(
+            f'Error writing {out_layer} to {out_path}. Verify {Path(directory)} exists and is writable.'
+        ) from error
 
     return out_path
 

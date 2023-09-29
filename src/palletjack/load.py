@@ -34,9 +34,10 @@ class FeatureServiceUpdater:
     stages result in separate groups of records that need to be added, deleted, and updated, the client must call the
     three different methods with dataframes containing only the respective records for each operation.
 
-    The methods save the updated data as a new layer in an empty file geodatabase, zip it and upload it to AGOL, and
-    then use this as the source data for a call to the feature layer's .append() method. You must provide an empty file
-    geodatabase named 'upload.gdb' in working_dir for pyogrio to save the dataframe to as part of the upload process.
+    The method used to upload the data to AGOL saves the updated data as a new layer named upload in working_dir/upload.
+    gdb, zips the gdb, uploads it to AGOL, and then uses this as the source data for a call to the feature layer's
+    .append() method. The geodatabase upload.gdb will be created in working_dir if it doesn't already exist. Ideally,
+    working_dir should be a TemporaryDirectory unless persistent access to the gdb is desired.
     """
 
     def __init__(self, gis, feature_service_itemid, working_dir=None, layer_index=0):
@@ -193,11 +194,12 @@ class FeatureServiceUpdater:
         )
         return append_count
 
-    def truncate_and_load_features(self, dataframe, failsafe_dir=None):
+    def truncate_and_load_features(self, dataframe, save_old=False):
         """Overwrite a hosted feature layer by truncating and loading the new data
 
         When the existing dataset is truncated, a copy is kept in memory as a spatially-enabled dataframe. If
-        failsafe_dir is set, this is saved as json with the filename {todays_date}.json (2022-12-31.json).
+        save_old is set, this is saved as a layer in self.working_dir/backup.gdb with the layer name
+        {featurelayer.name}_{todays_date}.json (foobar_2022-12-31.json).
 
         The new dataframe must have a 'SHAPE' column containing geometries of the same type as the live data. New
         OBJECTIDs will be automatically generated.
@@ -208,8 +210,7 @@ class FeatureServiceUpdater:
 
         Args:
             dataframe (pd.DataFrame.spatial): Spatially enabled dataframe of new data to be loaded
-            failsafe_dir (str, optional): Directory to save original data in case of complete failure. If left blank,
-            existing data won't be saved. Defaults to None
+            save_old (bool, optional): Save existing data to backup.gdb in working_dir. Defaults to False
 
         Returns:
             int: Number of features loaded
@@ -220,11 +221,10 @@ class FeatureServiceUpdater:
         )
         start = datetime.now()
 
-        #: Save the data to disk if failsafe dir provided
-        #: TODO: return path programmatically so client can catch exception and try to reload automatically?
-        if failsafe_dir:
-            self._class_logger.info('Saving existing data to %s', failsafe_dir)
-            saved_layer_path = utils.save_feature_layer_to_json(self.feature_layer, failsafe_dir)
+        #: Save the data to disk if desired
+        if save_old:
+            self._class_logger.info('Saving existing data to %s', self.working_dir)
+            saved_layer_path = utils.save_feature_layer_to_gdb(self.feature_layer, self.working_dir)
 
         fields = FeatureServiceUpdater._get_fields_from_dataframe(dataframe)
 
@@ -239,10 +239,10 @@ class FeatureServiceUpdater:
             append_count = self._upload_data(dataframe, upsert=False)
             self._class_logger.debug('Total truncate and load time: %s', datetime.now() - start)
         except Exception:
-            if failsafe_dir:
+            if save_old:
                 self._class_logger.error('Append failed. Data saved to %s', saved_layer_path)
                 raise
-            self._class_logger.error('Append failed. Old data not saved (no failsafe dir set)')
+            self._class_logger.error('Append failed. Old data not saved (save_old set to False)')
             raise
 
         return append_count
@@ -324,14 +324,14 @@ class FeatureServiceUpdater:
         return messages['recordCount']
 
     def _save_to_gdb_and_zip(self, dataframe):
-        """Save a spatially-enabled dataframe to a gdb and zip it.
+        """Save a spatially-enabled dataframe to a gdb, zip it, and return path to the zipped file.
 
-        Requires an empty file gdb named 'upload.gdb' to exist in self.working_dir (which also must be set). Uses
-        pyogrio to save the dataframe to the gdb, then uses shutil.make_archive to zip the gdb. The zipped gdb is saved
-        in the gdb's parent directory.
+        Requires self.working_dir to be set. Uses pyogrio to save the dataframe to the gdb, then uses
+        shutil.make_archive to zip the gdb. The zipped gdb is saved in self.working_dir.
 
         Args:
-            dataframe (pd.DataFrame.spatial): The input dataframe to be saved. Must contain geometries in the SHAPE field
+            dataframe (pd.DataFrame.spatial): The input dataframe to be saved. Must contain geometries in the SHAPE
+            field
 
         Raises:
             ValueError: If self.working_dir is not set or the empty upload.gdb doesn't exist in it
@@ -340,24 +340,23 @@ class FeatureServiceUpdater:
             pathlib.Path: The path to the zipped GDB
         """
 
-        if not self.working_dir:
-            raise ValueError('No working directory set, cannot search for gdb')
+        try:
+            gdb_path = Path(self.working_dir) / 'upload.gdb'
+        except TypeError as error:
+            raise AttributeError('working_dir not specified on FeatureServiceUpdater') from error
 
-        gdb_path = Path(self.working_dir) / 'upload.gdb'
+        gdf = utils.sedf_to_gdf(dataframe)
 
         try:
-            pyogrio.list_layers(gdb_path)
+            gdf.to_file(gdb_path, layer='upload', engine='pyogrio', driver='OpenFileGDB')
         except pyogrio.errors.DataSourceError as error:
-            raise ValueError(f'Error reading {gdb_path}. Verify upload.gdb exists in {self.working_dir}') from error
-
-        gdf = gpd.GeoDataFrame(dataframe, geometry='SHAPE')
+            raise ValueError(
+                f'Error writing layer to {gdb_path}. Verify {self.working_dir} exists and is writable.'
+            ) from error
         try:
-            gdf.set_crs(dataframe.spatial.sr['latestWkid'], inplace=True)
-        except KeyError:
-            gdf.set_crs(dataframe.spatial.sr['wkid'], inplace=True)
-        gdf.to_file(gdb_path, layer='upload', engine='pyogrio', driver='OpenFileGDB')
-
-        zipped_gdb_path = shutil.make_archive(gdb_path, 'zip', root_dir=gdb_path.parent, base_dir=gdb_path.name)
+            zipped_gdb_path = shutil.make_archive(gdb_path, 'zip', root_dir=gdb_path.parent, base_dir=gdb_path.name)
+        except OSError as error:
+            raise ValueError(f'Error zipping {gdb_path}') from error
 
         return zipped_gdb_path
 
@@ -402,12 +401,14 @@ class FeatureServiceUpdater:
         try:
             gdb_item.delete()
         except Exception as error:
-            raise RuntimeError(f'Error deleting gdb item {gdb_item.id} from AGOL') from error
+            warnings.warn(f'Error deleting gdb item {gdb_item.id} from AGOL')
+            warnings.warn(repr(error))
 
         try:
             Path(zipped_gdb_path).unlink()
         except Exception as error:
-            raise RuntimeError(f'Error deleting zipped gdb {zipped_gdb_path}') from error
+            warnings.warn(f'Error deleting zipped gdb {zipped_gdb_path}')
+            warnings.warn(repr(error))
 
     def _truncate_existing_data(self):
         """Remove all existing features from the live dataset
