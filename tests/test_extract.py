@@ -694,6 +694,20 @@ class TestRESTServiceLoader:
         assert returned_df.index.is_unique
         assert returned_df['SHAPE'][0] == 'a'
 
+    def test_get_features_retries_on_failed_oid_get(self, mocker):
+        layer_mock = mocker.patch('palletjack.extract.ServiceLayer').return_value
+        layer_mock.max_record_count = 100
+        layer_mock.oid_field = 'OBJECTID'
+        layer_mock.get_object_ids.side_effect = [RuntimeError, list(range(0, 142))]
+
+        mocker.patch('palletjack.extract.pd.concat')
+        mocker.patch('palletjack.extract.time.sleep')
+        chunker_mock = mocker.patch('palletjack.utils.chunker')
+
+        extract.RESTServiceLoader.get_features(mocker.Mock(), layer_mock, chunk_size=None)
+
+        assert layer_mock.get_object_ids.call_count == 2
+
     def test_init_strips_trailing_slash(self):
         test_loader = extract.RESTServiceLoader('foo.bar/')
 
