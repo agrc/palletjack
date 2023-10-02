@@ -254,7 +254,9 @@ class DataCleaning:
         """
 
         for field in date_fields:
-            dataframe[field] = pd.to_datetime(dataframe[field], **to_datetime_kwargs).dt.tz_localize(None)
+            dataframe[field] = pd.to_datetime(dataframe[field], **to_datetime_kwargs) \
+                                    .dt.as_unit('ns') \
+                                    .dt.tz_localize(None)
 
         return dataframe
 
