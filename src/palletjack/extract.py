@@ -608,7 +608,7 @@ class RESTServiceLoader:
             self._class_logger.debug('Getting max record count...')
             max_record_count = service_layer.max_record_count
         self._class_logger.debug('Getting object ids...')
-        oids = service_layer.get_object_ids()
+        oids = utils.retry(service_layer.get_object_ids)
 
         if len(oids) == 0:
             warnings.warn(f'Layer {service_layer.layer_url} has no features')
