@@ -53,7 +53,7 @@ setup(
             'jupyterlab==3.6.5',
             'jupyter-server==1.24.0',
             'ipykernel==6.24.0',
-            'ypy-websocket==0.8.2'
+            'ypy-websocket==0.12.3'
         ],
         'tests': [
             'pdoc3==0.10.*',
