@@ -58,7 +58,7 @@ setup(
         'tests': [
             'pdoc3==0.10.*',
             'pylint-quotes==0.2.*',
-            'pylint==2.15.*',
+            'pylint>=2.15,<3.1',
             'pytest-cov==4.0.*',
             'pytest-instafail==0.4.*',
             'pytest-isort==3.1.*',
