@@ -12,6 +12,7 @@ jobs:
     runs-on: ubuntu-latest
     environment:
       name: prod
+      url: https://pypi.org/project/ugrc-palletjack
     permissions:
       # IMPORTANT: this permission is mandatory for trusted publishing
       id-token: write
