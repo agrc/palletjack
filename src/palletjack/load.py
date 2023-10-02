@@ -299,11 +299,13 @@ class FeatureServiceUpdater:
                 )
         except KeyError:
             pass
-
+        self._class_logger.debug('Saving data to gdb and zipping...')
         zipped_gdb_path = self._save_to_gdb_and_zip(dataframe)
 
+        self._class_logger.debug('Uploading gdb to AGOL...')
         gdb_item = self._upload_gdb(zipped_gdb_path)
 
+        self._class_logger.debug('Appending data from gdb to feature layer...')
         try:
             result, messages = utils.retry(
                 self.feature_layer.append,
