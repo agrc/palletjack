@@ -50,7 +50,7 @@ setup(
     extras_require={
         'nopro': [
             #: pinned versions to avoid backtracking if pro (and thus arcgis) aren't already installed
-            'jupyterlab==3.6.5',
+            'jupyterlab==4.0.6',
             'jupyter-server==1.24.0',
             'ipykernel==6.24.0',
             'ypy-websocket==0.8.2'
