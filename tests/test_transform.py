@@ -600,6 +600,19 @@ class TestDatetimeSwitching:
         assert retyped_df['a'].dtype == np.dtype('datetime64[ns]')
         assert retyped_df['b'].dtype == np.dtype('datetime64[ns]')
 
+    def test_switch_to_datetime_handles_units_besides_ns(self, mocker):
+        df = pd.DataFrame({
+            'b': ['2015-09-02T23:08:12+00:00', '2015-09-02T23:08:12+00:00'],
+        })
+        df['b'] = pd.to_datetime(df['b']).dt.as_unit('ms')
+
+        retyped_df = palletjack.transform.DataCleaning.switch_to_datetime(df, ['b'])
+
+        test_df = pd.DataFrame({'b': [pd.Timestamp('2015-09-02 23:08:12'), pd.Timestamp('2015-09-02 23:08:12')]})
+
+        tm.assert_frame_equal(retyped_df, test_df)
+        assert retyped_df['b'].dtype == np.dtype('datetime64[ns]')
+
 
 class TestDataFrameColumnRenaming:
 
