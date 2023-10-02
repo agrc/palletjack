@@ -62,7 +62,7 @@ setup(
             'pytest-cov==4.0.*',
             'pytest-instafail==0.4.*',
             'pytest-isort==3.1.*',
-            'pytest-pylint==0.19.*',
+            # 'pytest-pylint==0.19.*',  #: https://github.com/carsongee/pytest-pylint/issues/180
             'pytest-watch==4.2.*',
             'pytest==7.*',
             'yapf==0.32.*',
