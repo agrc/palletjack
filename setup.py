@@ -43,7 +43,7 @@ setup(
         'pygsheets==2.0.*',
         'geopandas==0.14.*',
         'SQLAlchemy==1.4.*',
-        'pg8000==1.29.*',
+        'pg8000>=1.29,<1.31',
         'psycopg2-binary==2.9.*',
         'numpy<=1.23.5',  #: Pinned to < 1.24 to fix "module 'numpy' has no attribute 'str'" error
     ],
