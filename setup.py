@@ -38,20 +38,20 @@ setup(
     keywords=['gis'],
     install_requires=[
         'pysftp==0.2.9',
-        'arcgis==2.1.*',
+        'arcgis>=2.1,<2.3',
         'pyogrio==0.6.*',
         'pygsheets==2.0.*',
         'geopandas==0.14.*',
-        'SQLAlchemy==1.4.*',
+        'SQLAlchemy>=1.4,<2.1',
         'pg8000>=1.29,<1.31',
         'psycopg2-binary==2.9.*',
-        'numpy<=1.23.5',  #: Pinned to < 1.24 to fix "module 'numpy' has no attribute 'str'" error
+        'numpy<=1.26.0',  #: Pinned to < 1.24 to fix "module 'numpy' has no attribute 'str'" error
     ],
     extras_require={
         'nopro': [
             #: pinned versions to avoid backtracking if pro (and thus arcgis) aren't already installed
-            'jupyterlab==3.6.5',
-            'jupyter-server==1.24.0',
+            'jupyterlab==4.0.7',
+            'jupyter-server==2.7.3',
             'ipykernel==6.24.0',
             'ypy-websocket==0.8.2'
         ],
@@ -59,14 +59,14 @@ setup(
             'pdoc3==0.10.*',
             'pylint-quotes==0.2.*',
             'pylint>=2.15,<3.1',
-            'pytest-cov==4.0.*',
+            'pytest-cov>=4.0,<4.2',
             'pytest-instafail==0.4.*',
             'pytest-isort==3.1.*',
             # 'pytest-pylint==0.19.*',  #: https://github.com/carsongee/pytest-pylint/issues/180
             'pytest-watch==4.2.*',
             'pytest==7.*',
             'yapf>=0.32,<0.41',
-            'pytest-mock==3.10.*',
+            'pytest-mock>=3.10,<3.12',
         ]
     },
     setup_requires=[
