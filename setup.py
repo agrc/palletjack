@@ -52,15 +52,15 @@ setup(
             #: pinned versions to avoid backtracking if pro (and thus arcgis) aren't already installed
             'jupyterlab==3.6.5',
             'jupyter-server==1.24.0',
-            'ipykernel==6.24.0',
-            'ypy-websocket==0.8.2'
+            'ipykernel==6.25.2',
+            'ypy-websocket==0.12.4'
         ],
         'tests': [
             'pdoc3==0.10.*',
             'pylint-quotes==0.2.*',
             'pylint>=2.15,<3.1',
             'pytest-cov==4.0.*',
-            'pytest-instafail==0.4.*',
+            'pytest-instafail>=0.4,<0.6',
             'pytest-isort==3.1.*',
             # 'pytest-pylint==0.19.*',  #: https://github.com/carsongee/pytest-pylint/issues/180
             'pytest-watch==4.2.*',
