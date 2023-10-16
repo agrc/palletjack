@@ -38,23 +38,15 @@ setup(
     keywords=['gis'],
     install_requires=[
         'pysftp==0.2.9',
-        'arcgis==2.1.*',
+        'arcgis==2.2.*',
         'pyogrio==0.6.*',
         'pygsheets==2.0.*',
         'geopandas==0.14.*',
         'SQLAlchemy==1.4.*',
         'pg8000>=1.29,<1.31',
         'psycopg2-binary==2.9.*',
-        'numpy<=1.23.5',  #: Pinned to < 1.24 to fix "module 'numpy' has no attribute 'str'" error
     ],
     extras_require={
-        'nopro': [
-            #: pinned versions to avoid backtracking if pro (and thus arcgis) aren't already installed
-            'jupyterlab==3.6.5',
-            'jupyter-server==1.24.0',
-            'ipykernel==6.24.0',
-            'ypy-websocket==0.8.2'
-        ],
         'tests': [
             'pdoc3==0.10.*',
             'pylint-quotes==0.2.*',
