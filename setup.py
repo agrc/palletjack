@@ -48,6 +48,7 @@ setup(
     ],
     extras_require={
         'tests': [
+            'austin-dist==3.6.*',
             'pdoc3==0.10.*',
             'pylint-quotes==0.2.*',
             'pylint>=2.15,<3.1',
