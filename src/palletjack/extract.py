@@ -580,6 +580,7 @@ class RESTServiceLoader:
 
         self._class_logger = logging.getLogger(__name__).getChild(self.__class__.__name__)
 
+    @profile
     def get_features(self, service_layer, chunk_size=100):
         """Download the features from a ServiceLayer by unique ID in chunk_size-limited requests.
 
@@ -615,18 +616,18 @@ class RESTServiceLoader:
             return None
 
         self._class_logger.debug('Downloading %s features in chunks of %s...', len(oids), max_record_count)
-        feature_dataframes = []
+        all_features_df = pd.DataFrame()
         for oid_subset in utils.chunker(oids, max_record_count):
             # sleep between 1.5 and 3 s to be friendly
             time.sleep(random.randint(150, 300) / 100)
-            feature_dataframes.append(
+            all_features_df = pd.concat([
+                all_features_df,
                 utils.retry(service_layer.get_unique_id_list_as_dataframe, service_layer.oid_field, oid_subset)
-            )
-
-        #: if you don't do ignore_index=True, the index wont' be unique and this will trip up esri's spatial dataframe
-        #: which tries calling [geom_col][0] to determine the geoemtry type, which then returns a series instead of a
+            ],
+                                        ignore_index=True)
+        #: if you don't do ignore_index=True, the index won't be unique and this will trip up esri's spatial dataframe
+        #: which tries calling [geom_col][0] to determine the geometry type, which then returns a series instead of a
         #: single value because the index isn't unique
-        all_features_df = pd.concat(feature_dataframes, ignore_index=True)
 
         return all_features_df
 
@@ -833,6 +834,7 @@ class ServiceLayer:
 
         return oids
 
+    @profile
     def get_unique_id_list_as_dataframe(self, unique_id_field, unique_id_list):
         """Use a REST query to download specified features from a MapService or FeatureService layer.
 
@@ -861,7 +863,9 @@ class ServiceLayer:
             raise RuntimeError(f'Bad chunk response HTTP status code ({response.status_code})')
 
         try:
-            features_df = arcgis.features.FeatureSet.from_json(response.text).sdf.sort_values(by=unique_id_field)
+            fs = arcgis.features.FeatureSet.from_json(response.text)
+            features_df = fs.sdf.sort_values(by=unique_id_field)
+            # features_df = arcgis.features.FeatureSet.from_json(response.text).sdf.sort_values(by=unique_id_field)
 
         except ujson.JSONDecodeError as error:
             raise RuntimeError('Could not parse chunk features from response') from error

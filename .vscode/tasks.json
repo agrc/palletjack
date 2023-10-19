@@ -1,0 +1,20 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "type": "austin",
+            // "file": "src/palletjack/_rest_testing.py",
+            "args": [
+                "python",
+                "src/palletjack/_rest_testing.py"
+            ],
+            "label": "Profile _rest_testing.py",
+            "command": [
+                "conda",
+                "activate",
+                "palletjack",
+                "&&",
+            ]
+        }
+    ]
+}
