@@ -580,7 +580,6 @@ class RESTServiceLoader:
 
         self._class_logger = logging.getLogger(__name__).getChild(self.__class__.__name__)
 
-    @profile
     def get_features(self, service_layer, chunk_size=100):
         """Download the features from a ServiceLayer by unique ID in chunk_size-limited requests.
 
@@ -834,7 +833,6 @@ class ServiceLayer:
 
         return oids
 
-    @profile
     def get_unique_id_list_as_dataframe(self, unique_id_field, unique_id_list):
         """Use a REST query to download specified features from a MapService or FeatureService layer.
 
@@ -865,7 +863,6 @@ class ServiceLayer:
         try:
             fs = arcgis.features.FeatureSet.from_json(response.text)
             features_df = fs.sdf.sort_values(by=unique_id_field)
-            # features_df = arcgis.features.FeatureSet.from_json(response.text).sdf.sort_values(by=unique_id_field)
 
         except ujson.JSONDecodeError as error:
             raise RuntimeError('Could not parse chunk features from response') from error
