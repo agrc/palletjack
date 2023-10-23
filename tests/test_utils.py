@@ -1118,6 +1118,19 @@ class TestCheckFieldsMatch:
 
         assert 'New dataframe does not have a SHAPE column' in str(exc_info.value)
 
+    def test_check_geometry_types_raises_on_missing_geometry_type(self, mocker):
+        new_df = pd.DataFrame({'SHAPE': ['polyline', None]})
+
+        properties_mock = mocker.Mock()
+        properties_mock.geometryType = 'esriGeometryPolyline'
+        properties_mock.fields = {'a': ['b']}
+
+        with pytest.raises(ValueError) as exc_info:
+            checker = palletjack.utils.FieldChecker(properties_mock, new_df)
+            checker._check_geometry_types()
+
+        assert 'New dataframe has missing geometries at index [1]' in str(exc_info.value)
+
 
 class TestNullableIntWarning:
 
