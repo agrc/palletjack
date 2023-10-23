@@ -1075,9 +1075,10 @@ class TestCheckFieldsMatch:
         checker._check_geometry_types()
 
     def test_check_geometry_types_raises_on_multiple_types(self, mocker):
-        new_df = mocker.Mock()
+        new_df = mocker.MagicMock()
         new_df.columns = ['SHAPE']
         new_df.spatial.geometry_type = [1, 2]
+        new_df['SHAPE'].isna.return_value.any.return_value = False
 
         properties_mock = mocker.Mock()
         properties_mock.geometryType = 'esriGeometryPoint'
@@ -1090,9 +1091,10 @@ class TestCheckFieldsMatch:
         assert 'New dataframe has multiple geometry types' in str(exc_info.value)
 
     def test_check_geometry_types_raises_on_incompatible_type(self, mocker):
-        new_df = mocker.Mock()
+        new_df = mocker.MagicMock()
         new_df.columns = ['SHAPE']
         new_df.spatial.geometry_type = ['Polygon']
+        new_df['SHAPE'].isna.return_value.any.return_value = False
 
         properties_mock = mocker.Mock()
         properties_mock.geometryType = 'esriGeometryPoint'
