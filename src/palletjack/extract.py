@@ -12,8 +12,10 @@ import random
 import re
 import time
 import warnings
+from datetime import timedelta
 from io import BytesIO
 from pathlib import Path
+from string import Template
 from time import sleep
 
 import arcgis
@@ -873,3 +875,167 @@ class ServiceLayer:
             )
 
         return features_df
+
+class SalesforceApiUserCredentials:
+    """A salesforce API user credential model"""
+
+    def __init__(self, secret, key) -> None:
+        self.client_secret = secret
+        self.client_id = key
+
+
+class SalesforceSandboxCredentials:
+    """A salesforce sandbox credential model"""
+
+    def __init__(self, username, password, token, secret, key) -> None:
+        self.username = username
+        self.password = password + token
+        self.client_secret = secret
+        self.client_id = key
+
+
+class SalesforceRestLoader:
+    """Queries a Salesforce organization using SOQL using the REST API.
+
+    Create a Salesforce credential model and a SalesforceRest loader to authenticate and query Salesforce.
+    Call get_records with a SOQL query to get the results as a pandas dataframe."""
+
+    sandbox = False
+    access_token_template = Template(
+        "https://$org.sandbox.my.salesforce.com/services/oauth2/token"
+    )
+    access_token_url = ""
+    access_token = {}
+
+    query_template = Template(
+        "https://$org.sandbox.my.salesforce.com/services/data/v58.0/query"
+    )
+    query_url = ""
+
+    client_secret = None
+    client_id = None
+    username = None
+    password = None
+
+    def __init__(self, org, credentials, sandbox=False) -> None:
+        """Create a SalesforceRestLoader to query Salesforce.
+
+        Args:
+            org (string): the salesforce organization name in the format https://org.my.salesforce.com
+            credentials (SalesforceApiUserCredentials | SalesforceSandboxCredentials): The credentials to use to authenticate.
+            sandbox (bool, optional): The credentials for sandboxes are different than API users. Defaults to False if it's not a sandbox instance of Salesforce.
+        """
+        self.client_secret = credentials.client_secret
+        self.client_id = credentials.client_id
+
+        if sandbox:
+            self.username = credentials.username
+            self.password = credentials.password
+
+        #: TODO: make sure all of these required fields have values
+
+        self.access_token_url = self.access_token_template.substitute(org=org)
+        self.query_url = self.query_template.substitute(org=org)
+
+        self.sandbox = sandbox
+
+        self._class_logger = logging.getLogger(__name__).getChild(
+            self.__class__.__name__
+        )
+
+    def _is_token_valid(self, token: dict[str, str]) -> bool:
+        """Checks if the token is valid by looking at the issued_at field.
+
+        Args:
+            token (dict[str, str]): the sales force token response to check
+
+        Returns:
+            bool: true if the token is valid
+        """
+        if "issued_at" not in token.keys():
+            return False
+
+        issued = timedelta.max
+        expired = timedelta(days=30)
+
+        try:
+            ticks = int(token["issued_at"])
+            issued = timedelta(microseconds=ticks / 10)
+
+            self._class_logger.debug("Token is {%d} days old", issued.days)
+        except ValueError:
+            self._class_logger.warning(
+                "could not convert issued_at delta to a number %s", token
+            )
+
+            return False
+
+        return issued < expired
+
+    def _get_token(self) -> dict[str, str]:
+        """Gets a new Salesforce access token if the current one is expired."""
+        if self._is_token_valid(self.access_token):
+            return self.access_token
+
+        form_data = {
+            "grant_type": "password",
+            "client_id": self.client_id,
+            "client_secret": self.client_secret,
+        }
+
+        if self.sandbox:
+            form_data["username"] = self.username
+            form_data["password"] = self.password
+
+        #: TODO! add retry logic
+        response = requests.post(
+            self.access_token_url,
+            data=form_data,
+            headers={"Content-Type": "application/x-www-form-urlencoded"},
+            timeout=10,
+        )
+
+        self._class_logger.debug("requesting new token %s", response)
+
+        response.raise_for_status()
+
+        self.access_token = response.json()
+
+        return self.access_token
+
+    def get_records(self, query):
+        """Queries the Salesforce API and returns the results as a dict.
+
+        Args:
+            query (str): A SOQL query string.
+
+        Raises:
+            ValueError: If the query fails.
+
+        Returns:
+            pd.Dataframe: A dataframe of the results.
+        """
+        token = self._get_token()
+
+        #: TODO! add retry logic
+        response = requests.get(
+            self.query_url,
+            params={"q": query},
+            headers={
+                "Authorization": f"Bearer {token['access_token']}",
+            },
+            timeout=30,
+        )
+
+        try:
+            response.raise_for_status()
+        except requests.exceptions.HTTPError as error:
+            self._class_logger.error("Error getting records from Salesforce %s", error)
+
+            raise ValueError(
+                f"Error getting records from Salesforce {response.json()}"
+            ) from error
+
+        data = response.json()
+
+        return pd.DataFrame(data["records"])
