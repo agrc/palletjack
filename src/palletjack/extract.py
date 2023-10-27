@@ -624,8 +624,7 @@ class RESTServiceLoader:
             all_features_df = pd.concat([
                 all_features_df,
                 utils.retry(service_layer.get_unique_id_list_as_dataframe, service_layer.oid_field, oid_subset)
-            ],
-                                        ignore_index=True)
+            ], ignore_index=True)
         #: if you don't do ignore_index=True, the index won't be unique and this will trip up esri's spatial dataframe
         #: which tries calling [geom_col][0] to determine the geometry type, which then returns a series instead of a
         #: single value because the index isn't unique
@@ -838,7 +837,7 @@ class ServiceLayer:
     def get_unique_id_list_as_dataframe(self, unique_id_field, unique_id_list):
         """Use a REST query to download specified features from a MapService or FeatureService layer.
 
-        unique_id_list defines the ids in unique_id_fied to download.
+        unique_id_list defines the ids in unique_id_field to download.
 
         Args:
             unique_id_field (str): The field in the service layer used as the unique ID.
@@ -876,6 +875,7 @@ class ServiceLayer:
 
         return features_df
 
+
 class SalesforceApiUserCredentials:
     """A salesforce API user credential model"""
 
@@ -897,19 +897,19 @@ class SalesforceSandboxCredentials:
 class SalesforceRestLoader:
     """Queries a Salesforce organization using SOQL using the REST API.
 
+    To use this loader a connected app needs to be created in Salesforce which create the credentials. You can then use the workbench, https://workbench.developerforce.com/query.php, to construct and test SOQL queries.
+
     Create a Salesforce credential model and a SalesforceRest loader to authenticate and query Salesforce.
     Call get_records with a SOQL query to get the results as a pandas dataframe."""
 
     sandbox = False
-    access_token_template = Template(
-        "https://$org.sandbox.my.salesforce.com/services/oauth2/token"
-    )
+    #: TODO! verify the prod url template. I assume it does not contain sandbox
+    access_token_template = Template("https://$org.sandbox.my.salesforce.com/services/oauth2/token")
     access_token_url = ""
     access_token = {}
 
-    query_template = Template(
-        "https://$org.sandbox.my.salesforce.com/services/data/v58.0/query"
-    )
+    #: TODO! verify the prod url template. I assume it does not contain sandbox
+    query_template = Template("https://$org.sandbox.my.salesforce.com/services/data/v58.0/query")
     query_url = ""
 
     client_secret = None
@@ -939,9 +939,7 @@ class SalesforceRestLoader:
 
         self.sandbox = sandbox
 
-        self._class_logger = logging.getLogger(__name__).getChild(
-            self.__class__.__name__
-        )
+        self._class_logger = logging.getLogger(__name__).getChild(self.__class__.__name__)
 
     def _is_token_valid(self, token: dict[str, str]) -> bool:
         """Checks if the token is valid by looking at the issued_at field.
@@ -964,9 +962,7 @@ class SalesforceRestLoader:
 
             self._class_logger.debug("Token is {%d} days old", issued.days)
         except ValueError:
-            self._class_logger.warning(
-                "could not convert issued_at delta to a number %s", token
-            )
+            self._class_logger.warning("could not convert issued_at delta to a number %s", token)
 
             return False
 
@@ -1003,7 +999,7 @@ class SalesforceRestLoader:
 
         return self.access_token
 
-    def get_records(self, query):
+    def get_records(self, query) -> pd.DataFrame:
         """Queries the Salesforce API and returns the results as a dict.
 
         Args:
@@ -1032,9 +1028,7 @@ class SalesforceRestLoader:
         except requests.exceptions.HTTPError as error:
             self._class_logger.error("Error getting records from Salesforce %s", error)
 
-            raise ValueError(
-                f"Error getting records from Salesforce {response.json()}"
-            ) from error
+            raise ValueError(f"Error getting records from Salesforce {response.json()}") from error
 
         data = response.json()
 
