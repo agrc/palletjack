@@ -983,7 +983,6 @@ class SalesforceRestLoader:
             form_data["username"] = self.username
             form_data["password"] = self.password
 
-        #: TODO! add retry logic
         response = requests.post(
             self.access_token_url,
             data=form_data,
@@ -1013,7 +1012,6 @@ class SalesforceRestLoader:
         """
         token = self._get_token()
 
-        #: TODO! add retry logic
         response = requests.get(
             self.query_url,
             params={"q": query},
