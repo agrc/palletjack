@@ -897,7 +897,8 @@ class SalesforceSandboxCredentials:
 class SalesforceRestLoader:
     """Queries a Salesforce organization using SOQL using the REST API.
 
-    To use this loader a connected app needs to be created in Salesforce which create the credentials. You can then use the workbench, https://workbench.developerforce.com/query.php, to construct and test SOQL queries.
+    To use this loader a connected app needs to be created in Salesforce which create the credentials.
+    You can then use the workbench, https://workbench.developerforce.com/query.php, to construct and test SOQL queries.
 
     Create a Salesforce credential model and a SalesforceRest loader to authenticate and query Salesforce.
     Call get_records with a SOQL query to get the results as a pandas dataframe."""
@@ -921,8 +922,10 @@ class SalesforceRestLoader:
 
         Args:
             org (string): the salesforce organization name in the format https://org.my.salesforce.com
-            credentials (SalesforceApiUserCredentials | SalesforceSandboxCredentials): The credentials to use to authenticate.
-            sandbox (bool, optional): The credentials for sandboxes are different than API users. Defaults to False if it's not a sandbox instance of Salesforce.
+            credentials (SalesforceApiUserCredentials | SalesforceSandboxCredentials): The credentials to use to
+            authenticate.
+            sandbox (bool, optional): The credentials for sandboxes are different than API users. Defaults to False if
+            it's not a sandbox instance of Salesforce.
         """
         self.client_secret = credentials.client_secret
         self.client_id = credentials.client_id
