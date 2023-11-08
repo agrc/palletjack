@@ -1,4 +1,4 @@
-"""A single source of truth for the version in a programatically-accessible variable.
+"""A single source of truth for the version in a programmatically-accessible variable.
 This must only include a single line: __version__ = '0.0.0'
 """
 

@@ -4,33 +4,34 @@ on: [push, pull_request]
 
 jobs:
   test:
-    name: Setup and Test
+    name: Unit Tests
     runs-on: ubuntu-latest
 
     steps:
-    - name: Set up Python
-      uses: actions/setup-python@v4
-      with:
-        python-version: 3.9
-
-    - name: Install libkrb5 for Kerberos on Linux
-        # if: contains(matrix.os, 'ubuntu')
-      run: |
-        sudo apt install -y libkrb5-dev
-        pip install requests-kerberos
-
-    - name: Checkout code
+    - name: ⬇️ Set up code
       uses: actions/checkout@v4
       with:
         show-progress: false
 
-    - name: Install module
-      run: pip install .[tests,nopro]
+    - name: 🐍 Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: 3.9
+        cache: pip
+        cache-dependency-path: setup.py
 
-    - name: Test with pytest
+    - name: 📥 Install dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y libkrb5-dev
+
+    - name: 🏗 Install module
+      run: pip install .[tests]
+
+    - name: 🧪 Run pytest
       run: pytest
 
-    - name: Report coverage to Codecov
+    - name: ⬆️ Upload coverage to Codecov
       uses: codecov/codecov-action@v3
       with:
         file: ./cov.xml
