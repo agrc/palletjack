@@ -935,8 +935,6 @@ class SalesforceRestLoader:
             self.password = credentials.password
             org = org + ".sandbox"
 
-        #: TODO: make sure all of these required fields have values
-
         self.access_token_url = self.access_token_template.substitute(org=org)
         self.query_url = self.query_template.substitute(org=org)
 
