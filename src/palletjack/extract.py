@@ -903,13 +903,12 @@ class SalesforceRestLoader:
     Call get_records with a SOQL query to get the results as a pandas dataframe."""
 
     sandbox = False
-    #: TODO! verify the prod url template. I assume it does not contain sandbox
-    access_token_template = Template("https://$org.sandbox.my.salesforce.com/services/oauth2/token")
+
+    access_token_template = Template("https://$org.my.salesforce.com/services/oauth2/token")
     access_token_url = ""
     access_token = {}
 
-    #: TODO! verify the prod url template. I assume it does not contain sandbox
-    query_template = Template("https://$org.sandbox.my.salesforce.com/services/data/v58.0/query")
+    query_template = Template("https://$org.my.salesforce.com/services/data/v58.0/query")
     query_url = ""
 
     client_secret = None
@@ -931,6 +930,7 @@ class SalesforceRestLoader:
         if sandbox:
             self.username = credentials.username
             self.password = credentials.password
+            org = org + ".sandbox"
 
         #: TODO: make sure all of these required fields have values
 
