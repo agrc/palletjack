@@ -3,14 +3,15 @@ import logging
 import re
 from pathlib import Path
 
-import arcgis
 import geopandas as gpd
 import numpy as np
 import pandas as pd
 import pytest
 import requests
+import requests_mock
 import ujson
 from pandas import testing as tm
+from datetime import datetime, timedelta
 
 from palletjack import extract
 
@@ -1189,3 +1190,126 @@ class Test_ServiceLayer:
         response_json = {}
 
         assert extract.ServiceLayer._get_object_id_field(mocker.Mock(layer_properties_json=response_json)) == 'OBJECTID'
+
+
+ORG = "ugrc"
+
+
+class TestSalesForceLoader:
+
+    def ticks(self, dt):
+        return (dt - datetime(1970, 1, 1)).total_seconds() * 1000
+
+    @pytest.fixture
+    def credentials(self):
+        return type(
+            "Credentials", (), {
+                "client_secret": "secret",
+                "client_id": "id",
+                "username": "user",
+                "password": "pass"
+            }
+        )
+
+    @pytest.fixture
+    def loader(self, credentials):
+
+        return extract.SalesforceRestLoader(ORG, credentials)
+
+    url_template_test_data = [(
+        True, "https://ugrc.sandbox.my.salesforce.com/services/oauth2/token",
+        "https://ugrc.sandbox.my.salesforce.com/services/data/v58.0/query"
+    ),
+                              (
+                                  False, "https://ugrc.my.salesforce.com/services/oauth2/token",
+                                  "https://ugrc.my.salesforce.com/services/data/v58.0/query"
+                              )]
+
+    def test_password_and_token_concatenation_for_sandbox_credentials(self):
+        loader = extract.SalesforceRestLoader(
+            ORG, credentials=extract.SalesforceSandboxCredentials("1", "2", "3", "4", "5"), sandbox=True
+        )
+
+        assert loader.username == "1"
+        assert loader.password == "23"
+        assert loader.client_secret == "4"
+        assert loader.client_id == "5"
+
+    def test_credential_values(self):
+        loader = extract.SalesforceRestLoader(ORG, credentials=extract.SalesforceApiUserCredentials(
+            "1",
+            "2",
+        ))
+
+        assert loader.client_secret == "1"
+        assert loader.client_id == "2"
+        assert loader.username == None
+        assert loader.password == None
+
+    @pytest.mark.parametrize("is_sandbox,access_token_url,query_url", url_template_test_data)
+    def test_url_template_substitutions(self, is_sandbox, access_token_url, query_url):
+        loader = extract.SalesforceRestLoader(
+            ORG, credentials=extract.SalesforceSandboxCredentials("", "", "", "", ""), sandbox=is_sandbox
+        )
+
+        assert loader.access_token_url == access_token_url
+        assert loader.query_url == query_url
+
+    def test_is_token_valid_returns_false_if_issued_at_not_in_token(self, loader):
+        assert not loader._is_token_valid({})
+
+    def test_is_token_valid_returns_false_if_issued_at_cannot_be_converted_to_number(self, loader):
+        assert not loader._is_token_valid({"issued_at": "not a number"})
+
+    def test_is_token_valid_returns_true_if_token_is_valid(self, loader):
+        issued_at = datetime.now() - timedelta(days=15)
+        token = {"issued_at": self.ticks(issued_at)}
+
+        assert loader._is_token_valid(token)
+
+    def test_is_token_valid_returns_false_if_token_is_expired(self, loader):
+        issued_at = datetime.now() - timedelta(days=31)
+        token = {"issued_at": self.ticks(issued_at)}
+
+        assert not loader._is_token_valid(token)
+
+    def test_get_token_returns_cached_token_if_valid(self, loader):
+        issued_at = datetime.now() - timedelta(days=15)
+        token = {"issued_at": self.ticks(issued_at), "access_token": "token"}
+
+        loader.access_token = token
+
+        assert loader._get_token() == loader.access_token
+
+    def test_get_token_returns_new_token_if_cached_token_is_expired(self, loader):
+        issued_at = datetime.now() - timedelta(days=31)
+        token = {"issued_at": self.ticks(issued_at), "access_token": "token"}
+
+        loader.access_token = token
+
+        with requests_mock.Mocker() as m:
+            m.post(loader.access_token_url, json={"access_token": "new_token", "issued_at": "now"})
+            assert loader._get_token() == {"access_token": "new_token", "issued_at": "now"}
+
+    def test_get_records_returns_dataframe(self, loader):
+        issued_at = datetime.now() - timedelta(days=1)
+        token = {"issued_at": self.ticks(issued_at), "access_token": "token"}
+
+        loader.access_token = token
+
+        with requests_mock.Mocker() as m:
+            m.get(loader.query_url, json={"records": [{"Id": "1", "Name": "Test"}]})
+
+            assert isinstance(loader.get_records("SELECT Id, Name FROM Account"), pd.DataFrame)
+
+    def test_get_records_raises_error_on_failed_request(self, loader):
+        issued_at = datetime.now() - timedelta(days=1)
+        token = {"issued_at": self.ticks(issued_at), "access_token": "token"}
+
+        loader.access_token = token
+
+        with requests_mock.Mocker() as m:
+            m.get(loader.query_url, status_code=400, json={"message": "Error"})
+
+            with pytest.raises(ValueError):
+                loader.get_records("SELECT Id, Name FROM Account")
