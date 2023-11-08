@@ -12,7 +12,7 @@ import random
 import re
 import time
 import warnings
-from datetime import timedelta
+from datetime import datetime, timedelta
 from io import BytesIO
 from pathlib import Path
 from string import Template
@@ -954,19 +954,19 @@ class SalesforceRestLoader:
             return False
 
         issued = timedelta.max
-        expired = timedelta(days=30)
+        lease = timedelta(days=30)
 
         try:
             ticks = int(token["issued_at"])
-            issued = timedelta(microseconds=ticks / 10)
+            issued = datetime.fromtimestamp(ticks / 1000)
 
-            self._class_logger.debug("Token is {%d} days old", issued.days)
+            self._class_logger.debug("Token is {%s} days old", issued)
         except ValueError:
             self._class_logger.warning("could not convert issued_at delta to a number %s", token)
 
             return False
 
-        return issued < expired
+        return datetime.now() < (issued + lease)
 
     def _get_token(self) -> dict[str, str]:
         """Gets a new Salesforce access token if the current one is expired."""
