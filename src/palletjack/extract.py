@@ -624,7 +624,8 @@ class RESTServiceLoader:
             all_features_df = pd.concat([
                 all_features_df,
                 utils.retry(service_layer.get_unique_id_list_as_dataframe, service_layer.oid_field, oid_subset)
-            ], ignore_index=True)
+            ],
+                                        ignore_index=True)
         #: if you don't do ignore_index=True, the index won't be unique and this will trip up esri's spatial dataframe
         #: which tries calling [geom_col][0] to determine the geometry type, which then returns a series instead of a
         #: single value because the index isn't unique
@@ -1000,7 +1001,7 @@ class SalesforceRestLoader:
         return self.access_token
 
     def get_records(self, query) -> pd.DataFrame:
-        """Queries the Salesforce API and returns the results as a dict.
+        """Queries the Salesforce API and returns the results as a dataframe.
 
         Args:
             query (str): A SOQL query string.
