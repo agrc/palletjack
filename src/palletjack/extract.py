@@ -918,6 +918,10 @@ class SalesforceRestLoader:
     username = None
     password = None
 
+    token_lease_in_days = 30
+    access_token_timeout_in_seconds = 10
+    soql_query_timeout_in_seconds = 30
+
     def __init__(self, org, credentials, sandbox=False) -> None:
         """Create a SalesforceRestLoader to query Salesforce.
 
@@ -956,7 +960,7 @@ class SalesforceRestLoader:
             return False
 
         issued = timedelta.max
-        lease = timedelta(days=30)
+        lease = timedelta(days=self.token_lease_in_days)
 
         try:
             ticks = int(token["issued_at"])
@@ -989,7 +993,7 @@ class SalesforceRestLoader:
             self.access_token_url,
             data=form_data,
             headers={"Content-Type": "application/x-www-form-urlencoded"},
-            timeout=10,
+            timeout=self.access_token_timeout_in_seconds,
         )
 
         self._class_logger.debug("requesting new token %s", response)
@@ -1020,7 +1024,7 @@ class SalesforceRestLoader:
             headers={
                 "Authorization": f"Bearer {token['access_token']}",
             },
-            timeout=30,
+            timeout=self.soql_query_timeout_in_seconds,
         )
 
         try:
