@@ -923,10 +923,15 @@ class SalesforceRestLoader:
     soql_query_timeout_in_seconds = 30
 
     def __init__(self, org, credentials, sandbox=False) -> None:
-        """Create a SalesforceRestLoader to query Salesforce.
+        """Create a SalesforceRestLoader to query Salesforce. Timeout values are set to default values and can be
+        modified by updating the instance variables.
+
+        token_lease_in_days: The number of days before the token expires. Defaults to 30 days.
+        access_token_timeout_in_seconds: The timeout for getting a new token. Defaults to 10 seconds.
+        soql_query_timeout_in_seconds: The timeout for a SOQL query. Defaults to 30 seconds.
 
         Args:
-            org (string): the salesforce organization name in the format https://org.my.salesforce.com
+            org (string): the organization name from the salesforce url https://[org].my.salesforce.com
             credentials (SalesforceApiUserCredentials | SalesforceSandboxCredentials): The credentials to use to
             authenticate.
             sandbox (bool, optional): The credentials for sandboxes are different than API users. Defaults to False if
