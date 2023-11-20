@@ -59,8 +59,8 @@ The `arcgis` library does all the heavy lifting for spatial data. If the `arcpy`
 
 ### Troubleshooting Weird Append Errors
 
-If a `FeatureLayer.append()` call (within a load.FeatureServiceUpdater method) fails with an "Unknown Error: 500" error or something like that, you can query the results to get more info. The debug log will include the HTTP GET call, something like the following:
-`https://services1.arcgis.com:443 POST /<unique string>/arcgis/rest/services/<feature layer name>/FeatureServer/<layer id>/append/jobs/<job guid>?f=json token=<crazy long token string>`
+If a `FeatureLayer.append()` call (within a load.FeatureServiceUpdater method) fails with an "Unknown Error: 500" error or something like that, you can query the results to get more info. The `urllib3` debug-level logs will include the HTTP GET or POST call, something like the following:
+`https://services1.arcgis.com:443 POST /<unique string>/arcgis/rest/services/<feature layer name>/FeatureServer/<layer id>/append/jobs/<job guid>?f=json token=<crazy long token string>`. The defualt `basicConfig` logger includes the `urllib3` logs (`logging.basicConfig(level=logging.DEBUG)`) and is great for development debugging, or you can add a specific logger for `urllib3` in your code and set it's level to debug.  
 
 You can use this and a token from an AGOL tab to build a new job status url. To get the token, log into AGOL in a browser and open a private hosted feature layer item. Click the layer, and then open the developer console. With the Network tab of the console open, click on the "View" link for the service URL. You should see a document in the list whose name includes "?token=<really long token string>". Copy the name and then copy out the token string.
 
