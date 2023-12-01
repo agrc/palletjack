@@ -54,7 +54,7 @@ setup(
             'pytest-cov>=4.0,<4.2',
             'pytest-instafail>=0.4,<0.6',
             'pytest-isort==3.1.*',
-            'pytest-mock>=3.10,<3.12',
+            'pytest-mock>=3.10,<3.13',
             'pytest-pylint==0.20.*',
             'pytest-watch==4.2.*',
             'pytest==7.*',
