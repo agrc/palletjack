@@ -1,0 +1,2995 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
+<meta name="generator" content="pdoc 0.10.0" />
+<title>palletjack.utils API documentation</title>
+<meta name="description" content="Utility classes and methods that are used internally throughout palletjack. Many are exposed publicly in case they are useful elsewhere in a client&#39;s …" />
+<link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/sanitize.min.css" integrity="sha256-PK9q560IAAa6WVRRh76LtCaI8pjTJ2z11v0miyNNjrs=" crossorigin>
+<link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/typography.min.css" integrity="sha256-7l/o7C8jubJiy74VsKTidCy1yBkRtiUGbVkYBylBqUg=" crossorigin>
+<link rel="stylesheet preload" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.1/styles/github.min.css" crossorigin>
+<style>:root{--highlight-color:#fe9}.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:30px;overflow:hidden}#sidebar > *:last-child{margin-bottom:2cm}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:1em 0 .50em 0}h3{font-size:1.4em;margin:25px 0 10px 0}h4{margin:0;font-size:105%}h1:target,h2:target,h3:target,h4:target,h5:target,h6:target{background:var(--highlight-color);padding:.2em 0}a{color:#058;text-decoration:none;transition:color .3s ease-in-out}a:hover{color:#e82}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900}pre code{background:#f8f8f8;font-size:.8em;line-height:1.4em}code{background:#f2f2f1;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{background:#f8f8f8;border:0;border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0;padding:1ex}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{margin-top:.6em;font-weight:bold}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-weight:bold;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}dt:target .name{background:var(--highlight-color)}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}td{padding:0 .5em}.admonition{padding:.1em .5em;margin-bottom:1em}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
+<style media="screen and (min-width: 700px)">@media screen and (min-width:700px){#sidebar{width:30%;height:100vh;overflow:auto;position:sticky;top:0}#content{width:70%;max-width:100ch;padding:3em 4em;border-left:1px solid #ddd}pre code{font-size:1em}.item .name{font-size:1em}main{display:flex;flex-direction:row-reverse;justify-content:flex-end}.toc ul ul,#index ul{padding-left:1.5em}.toc > ul > li{margin-top:.5em}}</style>
+<style media="print">@media print{#sidebar h1{page-break-before:always}.source{display:none}}@media print{*{background:transparent !important;color:#000 !important;box-shadow:none !important;text-shadow:none !important}a[href]:after{content:" (" attr(href) ")";font-size:90%}a[href][title]:after{content:none}abbr[title]:after{content:" (" attr(title) ")"}.ir a:after,a[href^="javascript:"]:after,a[href^="#"]:after{content:""}pre,blockquote{border:1px solid #999;page-break-inside:avoid}thead{display:table-header-group}tr,img{page-break-inside:avoid}img{max-width:100% !important}@page{margin:0.5cm}p,h2,h3{orphans:3;widows:3}h1,h2,h3,h4,h5,h6{page-break-after:avoid}}</style>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.1/highlight.min.js" integrity="sha256-Uv3H6lx7dJmRfRvH8TH6kJD1TSK1aFcwgx+mdg3epi8=" crossorigin></script>
+<script>window.addEventListener('DOMContentLoaded', () => hljs.initHighlighting())</script>
+</head>
+<body>
+<main>
+<article id="content">
+<header>
+<h1 class="title">Module <code>palletjack.utils</code></h1>
+</header>
+<section id="section-intro">
+<p>Utility classes and methods that are used internally throughout palletjack. Many are exposed publicly in case they are useful elsewhere in a client's code.</p>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">&#34;&#34;&#34;Utility classes and methods that are used internally throughout palletjack. Many are exposed publicly in case they are useful elsewhere in a client&#39;s code.
+&#34;&#34;&#34;
+
+import datetime
+import importlib
+import logging
+import random
+import re
+import sys
+import warnings
+from math import floor
+from pathlib import Path
+from time import sleep
+
+import arcgis
+import pandas as pd
+import pygsheets
+import requests
+
+from palletjack.errors import IntFieldAsFloatError, TimezoneAwareDatetimeError
+
+module_logger = logging.getLogger(__name__)
+
+
+def retry(worker_method, *args, **kwargs):
+    &#34;&#34;&#34;Allows you to retry a function/method three times to overcome network jitters
+
+    Retries worker_method three times (for a total of four tries, including the initial attempt), pausing 2^trycount
+    seconds between each retry. Any arguments for worker_method can be passed in as additional parameters to retry()
+    following worker_method: retry(foo_method, arg1, arg2, keyword_arg=3)
+
+    Args:
+        worker_method (callable): The name of the method to be retried (minus the calling parens)
+
+    Raises:
+        error: The final error that causes worker_method to fail after 3 retries
+
+    Returns:
+        various: The value(s) returned by worked_method
+    &#34;&#34;&#34;
+    tries = 1
+    max_tries = 3
+    delay = 2  #: in seconds
+
+    #: this inner function (closure? almost-closure?) allows us to keep track of tries without passing it as an arg
+    def _inner_retry(worker_method, *args, **kwargs):
+        nonlocal tries
+
+        try:
+            return worker_method(*args, **kwargs)
+
+        #: ArcGIS API for Python loves throwing bog-standard Exceptions, so we can&#39;t narrow this down further
+        except Exception as error:
+            if tries &lt;= max_tries:  #pylint: disable=no-else-return
+                wait_time = delay**tries
+                module_logger.debug(
+                    &#39;Exception &#34;%s&#34; thrown on &#34;%s&#34;. Retrying after %s seconds...&#39;, error, worker_method, wait_time
+                )
+                sleep(wait_time)
+                tries += 1
+                return _inner_retry(worker_method, *args, **kwargs)
+            else:
+                raise error
+
+    return _inner_retry(worker_method, *args, **kwargs)
+
+
+def rename_columns_for_agol(columns):
+    &#34;&#34;&#34;Replace special characters and spaces with &#39;_&#39; to match AGOL field names
+
+    Args:
+        columns (iter): The new columns to be renamed
+
+    Returns:
+        Dict: Mapping {&#39;original name&#39;: &#39;cleaned_name&#39;}
+    &#34;&#34;&#34;
+
+    rename_dict = {}
+    for column in columns:
+        no_specials = re.sub(r&#39;[^a-zA-Z0-9_]&#39;, &#39;_&#39;, column)
+        match = re.match(r&#39;(^[0-9_]+)&#39;, no_specials)
+        if match:
+            number = match.groups()[0]
+            rename_dict[column] = no_specials.removeprefix(number) + number
+            continue
+        rename_dict[column] = no_specials
+    return rename_dict
+
+
+#: Unused?
+def check_fields_match(featurelayer, new_dataframe):
+    &#34;&#34;&#34;Make sure new data doesn&#39;t have any extra fields, warn if it doesn&#39;t contain all live fields
+
+    Args:
+        featurelayer (arcgis.features.FeatureLayer): Live data
+        new_dataframe (pd.DataFrame): New data
+
+    Raises:
+        RuntimeError: If new data contains a field not present in the live data
+    &#34;&#34;&#34;
+
+    live_fields = {field[&#39;name&#39;] for field in featurelayer.properties.fields}
+    new_fields = set(new_dataframe.columns)
+    #: Remove SHAPE field from set (live &#34;featurelayer.properties[&#39;fields&#39;]&#34; does not expose the &#39;SHAPE&#39; field)
+    try:
+        new_fields.remove(&#39;SHAPE&#39;)
+    except KeyError:
+        pass
+    new_dif = new_fields - live_fields
+    live_dif = live_fields - new_fields
+    if new_dif:
+        raise RuntimeError(
+            f&#39;New dataset contains the following fields that are not present in the live dataset: {new_dif}&#39;
+        )
+    if live_dif:
+        module_logger.warning(
+            &#39;New dataset does not contain the following fields that are present in the live dataset: %s&#39;, live_dif
+        )
+
+
+#: Unused?
+def check_index_column_in_feature_layer(featurelayer, index_column):
+    &#34;&#34;&#34;Ensure index_column is present for any future operations
+
+    Args:
+        featurelayer (arcgis.features.FeatureLayer): The live feature layer
+        index_column (str): The index column meant to link new and live data
+
+    Raises:
+        RuntimeError: If index_column is not in featurelayer&#39;s fields
+    &#34;&#34;&#34;
+
+    featurelayer_fields = [field[&#39;name&#39;] for field in featurelayer.properties.fields]
+    if index_column not in featurelayer_fields:
+        raise RuntimeError(f&#39;Index column {index_column} not found in feature layer fields {featurelayer_fields}&#39;)
+
+
+#: unused?
+def rename_fields(dataframe, field_mapping):
+    &#34;&#34;&#34;Rename fields based on field_mapping
+
+    Args:
+        dataframe (pd.DataFrame): Dataframe with columns to be renamed
+        field_mapping (dict): Mapping of existing field names to new names
+
+    Raises:
+        ValueError: If an existing name from field_mapping is not found in dataframe.columns
+
+    Returns:
+        pd.DataFrame: Dataframe with renamed fields
+    &#34;&#34;&#34;
+
+    for original_name in field_mapping.keys():
+        if original_name not in dataframe.columns:
+            raise ValueError(f&#39;Field {original_name} not found in dataframe.&#39;)
+
+    renamed_df = dataframe.rename(columns=field_mapping)
+
+    return renamed_df
+
+
+#: This isn&#39;t used anymore... but it feels like a shame to lose it.
+def build_sql_in_list(series):
+    &#34;&#34;&#34;Generate a properly formatted list to be a target for a SQL &#39;IN&#39; clause
+
+    Args:
+        series (pd.Series): Series of values to be included in the &#39;IN&#39; list
+
+    Returns:
+        str: Values formatted as (1, 2, 3) for numbers or (&#39;a&#39;, &#39;b&#39;, &#39;c&#39;) for anything else
+    &#34;&#34;&#34;
+    if pd.api.types.is_numeric_dtype(series):
+        return f&#39;({&#34;, &#34;.join(series.astype(str))})&#39;
+    else:
+        quoted_values = [f&#34;&#39;{value}&#39;&#34; for value in series]
+        return f&#39;({&#34;, &#34;.join(quoted_values)})&#39;
+
+
+#: Unused in v3, but keeping for &#34;unique constraint&#34; info.
+def check_field_set_to_unique(featurelayer, field_name):
+    &#34;&#34;&#34;Makes sure field_name has a &#34;unique constraint&#34; in AGOL, which allows it to be used for .append upserts
+
+    Args:
+        featurelayer (arcgis.features.FeatureLayer): The target feature layer
+        field_name (str): The AGOL-valid field name to check
+
+    Raises:
+        RuntimeError: If the field is not unique (or if it&#39;s indexed but not unique)
+    &#34;&#34;&#34;
+
+    fields = [field[&#39;fields&#39;] for field in featurelayer.properties.indexes]
+    if field_name not in fields:
+        raise RuntimeError(f&#39;{field_name} does not have a &#34;unique constraint&#34; set within the feature layer&#39;)
+    for field in featurelayer.properties.indexes:
+        if field[&#39;fields&#39;] == field_name:
+            if not field[&#39;isUnique&#39;]:
+                raise RuntimeError(f&#39;{field_name} does not have a &#34;unique constraint&#34; set within the feature layer&#39;)
+
+
+class Geocoding:
+    &#34;&#34;&#34;Methods for geocoding an address
+    &#34;&#34;&#34;
+
+    @staticmethod
+    def geocode_addr(street, zone, api_key, rate_limits, **api_args):
+        &#34;&#34;&#34;Geocode an address through the UGRC Web API geocoder
+
+        Invalid results are returned with an x,y of 0,0, a score of 0.0, and a match address of &#39;No Match&#39;
+
+        Args:
+            street (str): The street address
+            zone (str): The zip code or city
+            api_key (str): API key obtained from developer.mapserv.utah.gov
+            rate_limits (Tuple &lt;float&gt;): A lower and upper bound in seconds for pausing between API calls. Defaults to
+                (0.015, 0.03)
+            **api_args (dict): Keyword arguments to be passed as parameters in the API GET call. The API key will be
+                added to this dict.
+
+        Returns:
+            tuple[int]: The match&#39;s x coordinate, y coordinate, score, and match address
+        &#34;&#34;&#34;
+
+        sleep(random.uniform(rate_limits[0], rate_limits[1]))
+        url = f&#39;https://api.mapserv.utah.gov/api/v1/geocode/{street}/{zone}&#39;
+        api_args[&#39;apiKey&#39;] = api_key
+
+        try:
+            geocode_result_dict = retry(Geocoding._geocode_api_call, url, api_args)
+        except Exception as error:
+            module_logger.error(error)
+            return (0, 0, 0., &#39;No API response&#39;)
+
+        return (
+            geocode_result_dict[&#39;location&#39;][&#39;x&#39;],
+            geocode_result_dict[&#39;location&#39;][&#39;y&#39;],
+            geocode_result_dict[&#39;score&#39;],
+            geocode_result_dict[&#39;matchAddress&#39;],
+        )
+
+    @staticmethod
+    def _geocode_api_call(url, api_args):
+        &#34;&#34;&#34;Makes a requests.get call to the geocoding API.
+
+        Meant to be called through a retry wrapper so that the RuntimeErrors get tried again a couple times before
+            finally raising the error.
+
+        Args:
+            url (str): Base url for GET request
+            api_args (dict): Dictionary of URL parameters
+
+        Raises:
+            RuntimeError: If the server does not return response and request.get returns a falsy object.
+            RuntimeError: If the server returns a status code other than 200 or 404
+
+        Returns:
+            dict: The &#39;results&#39; dictionary of the response json (location, score, and matchAddress)
+        &#34;&#34;&#34;
+
+        response = requests.get(url, params=api_args)
+
+        #: The server times out and doesn&#39;t respond
+        if response is None:
+            module_logger.debug(&#39;GET call did not return a response&#39;)
+            raise RuntimeError(&#39;No response from GET; request timeout?&#39;)
+
+        #: The point does geocode
+        if response.status_code == 200:
+            return response.json()[&#39;result&#39;]
+
+        #: The point doesn&#39;t geocode
+        if response.status_code == 404:
+            return {
+                &#39;location&#39;: {
+                    &#39;x&#39;: 0,
+                    &#39;y&#39;: 0
+                },
+                &#39;score&#39;: 0.,
+                &#39;matchAddress&#39;: &#39;No Match&#39;,
+            }
+
+        #: If we haven&#39;t returned, raise an error to trigger _retry
+        raise RuntimeError(f&#39;Did not receive a valid geocoding response; status code: {response.status_code}&#39;)
+
+    @staticmethod
+    def validate_api_key(api_key):
+        &#34;&#34;&#34;Check to see if a Web API key is valid by geocoding a single, known address point
+
+        Args:
+            api_key (str): API Key
+
+        Raises:
+            RuntimeError: If there was a network or other error attempting to geocode the known point
+            ValueError: If the API responds with an invalid key message
+            UserWarning: If the API responds with some other abnormal result
+        &#34;&#34;&#34;
+
+        url = &#39;https://api.mapserv.utah.gov/api/v1/geocode/326 east south temple street/slc&#39;
+
+        try:
+            response = retry(requests.get, url=url, params={&#39;apiKey&#39;: api_key})
+        except Exception as error:
+            raise RuntimeError(
+                &#39;Could not determine key validity; check your API key and/or network connection&#39;
+            ) from error
+        response_json = response.json()
+        if response_json[&#39;status&#39;] == 200:
+            return
+        if response_json[&#39;status&#39;] == 400 and &#39;Invalid API key&#39; in response_json[&#39;message&#39;]:
+            raise ValueError(f&#39;API key validation failed: {response_json[&#34;message&#34;]}&#39;)
+
+        warnings.warn(f&#39;Unhandled API key validation response {response_json[&#34;status&#34;]}: {response_json[&#34;message&#34;]}&#39;)
+
+
+def calc_modulus_for_reporting_interval(n, split_value=500):
+    &#34;&#34;&#34;Calculate a number that can be used as a modulus for splitting n up into 10 or 20 intervals, depending on
+    split_value.
+
+    Args:
+        n (int): The number to divide into intervals
+        split_value (int, optional): The point at which it should create 20 intervals instead of 10. Defaults to 500.
+
+    Returns:
+        int: Number to be used as modulus to compare to 0 in reporting code
+    &#34;&#34;&#34;
+
+    if n &lt;= 10:
+        return 1
+
+    if n &lt; split_value:
+        return floor(n / 10)
+
+    return floor(n / 20)
+
+
+def authorize_pygsheets(credentials):
+    &#34;&#34;&#34;Authenticate pygsheets using either a service file or google.auth.credentials.Credentials object.
+
+    Requires either the path to a service account .json file that has access to the files in question or  a `google.
+    auth.credentials.Credentials` object. Calling `google.auth.default()` in a Google Cloud Function will give you a
+    tuple of a `Credentials` object and the project id. You can use this `Credentials` object to authorize pygsheets as
+    the same account the Cloud Function is running under.
+
+    Tries first to load credentials from file; if this fails tries credentials directly as a custom_credential.
+
+    Args:
+        credentials (str or google.auth.credentials.Credentials): Path to the service file OR credentials object
+            obtained from google.auth.default() within a cloud function.
+
+    Raises:
+        RuntimeError: If both authorization method attempts fail
+
+    Returns:
+        pygsheets.Client: Authorized pygsheets client
+    &#34;&#34;&#34;
+
+    try:
+        return pygsheets.authorize(service_file=credentials)
+    except (FileNotFoundError, TypeError) as err:
+        module_logger.debug(err)
+        module_logger.debug(&#39;Credentials file not found, trying as environment variable&#39;)
+    try:
+        return pygsheets.authorize(custom_credentials=credentials)
+    except Exception as err:
+        raise RuntimeError(&#39;Could not authenticate to Google API&#39;) from err
+
+
+def save_feature_layer_to_json(feature_layer, directory):
+    &#34;&#34;&#34;Save a feature_layer to directory for safety as {layer name}_{todays date}.json
+
+    Args:
+        feature_layer (arcgis.features.FeatureLayer): The FeatureLayer object to save to disk.
+        directory (str or Path): The directory to save the data to.
+
+    Returns:
+        Path: The full path to the output file, named with the layer name and today&#39;s date.
+    &#34;&#34;&#34;
+
+    module_logger.debug(&#39;Downloading existing data...&#39;)
+    dataframe = feature_layer.query().sdf
+
+    if dataframe.empty:
+        return f&#39;No data to save in feature layer {feature_layer.properties.name}&#39;
+
+    out_path = Path(directory, f&#39;{feature_layer.properties.name}_{datetime.date.today()}.json&#39;)
+    module_logger.debug(&#39;Saving existing data to %s&#39;, out_path)
+    out_path.write_text(dataframe.spatial.to_featureset().to_json, encoding=&#39;utf-8&#39;)
+
+    return out_path
+
+
+class FieldChecker:
+    &#34;&#34;&#34;Check the fields of a new dataframe against live data. Each method will raise errors if its checks fail.
+    Provides the check_fields class method to run all the checks in one call with having to create an object.
+    &#34;&#34;&#34;
+
+    @classmethod
+    def check_fields(cls, live_data_properties, new_dataframe, fields, add_oid):
+        &#34;&#34;&#34;Run all the field checks, raising errors and warnings where they fail.
+
+        Check individual method docstrings for details and specific errors raised.
+
+        Args:
+            live_data_properties (dict): FeatureLayer.properties of live data
+            new_dataframe (pd.DataFrame): New data to be checked
+            fields (List[str]): Fields to check
+            add_oid (bool): Add OBJECTID to fields if its not already present (for operations that are dependent on
+                OBJECTID, such as upsert)
+        &#34;&#34;&#34;
+
+        field_checker = cls(live_data_properties, new_dataframe)
+        field_checker.check_live_and_new_field_types_match(fields)
+        field_checker.check_for_non_null_fields(fields)
+        field_checker.check_field_length(fields)
+        field_checker.check_fields_present(fields, add_oid=add_oid)
+        field_checker.check_srs_wgs84()
+        field_checker.check_nullable_ints_shapely()
+
+    def __init__(self, live_data_properties, new_dataframe):
+        &#34;&#34;&#34;
+        Args:
+            live_data_properties (dict): FeatureLayer.properties of live data
+            new_dataframe (pd.DataFrame): New data to be checked
+        &#34;&#34;&#34;
+
+        self.live_data_properties = live_data_properties
+        self.fields_dataframe = pd.DataFrame(live_data_properties.fields)
+        self.new_dataframe = new_dataframe
+
+    def check_live_and_new_field_types_match(self, fields):
+        &#34;&#34;&#34;Raise an error if the field types of the live and new data don&#39;t match.
+
+        Uses a dictionary mapping Esri field types to pandas dtypes. If &#39;SHAPE&#39; is included in the fields, it calls
+        _check_geometry_types to verify the spatial types are compatible.
+
+        Args:
+            fields (List[str]): Fields to be updated
+
+        Raises:
+            ValueError: If the field types or spatial types are incompatible, the new data has multiple geometry types,
+                or the new data is not a valid spatially-enabled dataframe.
+            NotImplementedError: If the live data has a field that has not yet been mapped to a pandas dtype.
+        &#34;&#34;&#34;
+
+        #: Converting dtypes to str and comparing seems to be the only way to break out into shorts and longs, singles
+        #: and doubles. Otherwise, checking subclass is probably more pythonic.
+        short_ints = [&#39;uint8&#39;, &#39;uint16&#39;, &#39;int8&#39;, &#39;int16&#39;]
+        long_ints = [&#39;int&#39;, &#39;uint32&#39;, &#39;uint64&#39;, &#39;int32&#39;, &#39;int64&#39;]
+
+        #: Leaving the commented types here for future implementation if necessary
+        esri_to_pandas_types_mapping = {
+            &#39;esriFieldTypeInteger&#39;: [&#39;int&#39;] + short_ints + long_ints,
+            &#39;esriFieldTypeSmallInteger&#39;: short_ints,
+            &#39;esriFieldTypeDouble&#39;: [&#39;float&#39;, &#39;float32&#39;, &#39;float64&#39;],
+            &#39;esriFieldTypeSingle&#39;: [&#39;float32&#39;],
+            &#39;esriFieldTypeString&#39;: [&#39;str&#39;, &#39;object&#39;, &#39;string&#39;],
+            &#39;esriFieldTypeDate&#39;: [&#39;datetime64[ns]&#39;],
+            &#39;esriFieldTypeGeometry&#39;: [&#39;geometry&#39;],
+            &#39;esriFieldTypeOID&#39;: [&#39;int&#39;] + short_ints + long_ints,
+            #  &#39;esriFieldTypeBlob&#39;: [],
+            &#39;esriFieldTypeGlobalID&#39;: [&#39;str&#39;, &#39;object&#39;, &#39;string&#39;],
+            #  &#39;esriFieldTypeRaster&#39;: [],
+            &#39;esriFieldTypeGUID&#39;: [&#39;str&#39;, &#39;object&#39;, &#39;string&#39;],
+            #  &#39;esriFieldTypeXML&#39;: [],
+        }
+
+        #: geometry checking gets its own function
+        if &#39;SHAPE&#39; in fields:
+            self._check_geometry_types()
+            fields.remove(&#39;SHAPE&#39;)
+
+        fields_to_check = self.fields_dataframe[self.fields_dataframe[&#39;name&#39;].isin(fields)].set_index(&#39;name&#39;)
+
+        invalid_fields = []
+        int_fields_as_floats = []
+        datetime_fields_with_timezone = []
+        for field in fields:
+            #: check against the str.lower to catch normal dtypes (int64) and the new, pd.NA-aware dtypes (Int64)
+            new_dtype = str(self.new_dataframe[field].dtype).lower()
+            live_type = fields_to_check.loc[field, &#39;type&#39;]
+
+            try:
+                if new_dtype not in esri_to_pandas_types_mapping[live_type]:
+                    invalid_fields.append((field, live_type, str(self.new_dataframe[field].dtype)))
+                if new_dtype in [&#39;float&#39;, &#39;float32&#39;, &#39;float64&#39;
+                                ] and live_type in [&#39;esriFieldTypeInteger&#39;, &#39;esriFieldTypeSmallInteger&#39;]:
+                    int_fields_as_floats.append(field)
+                if &#39;datetime64&#39; in new_dtype and new_dtype != &#39;datetime64[ns]&#39; and live_type == &#39;esriFieldTypeDate&#39;:
+                    datetime_fields_with_timezone.append(field)
+            except KeyError:
+                # pylint: disable-next=raise-missing-from
+                raise NotImplementedError(f&#39;Live field &#34;{field}&#34; type &#34;{live_type}&#34; not yet mapped to a pandas dtype&#39;)
+
+        if invalid_fields:
+            if int_fields_as_floats:
+                raise IntFieldAsFloatError(
+                    f&#39;Field type incompatibilities (field, live type, new type): {invalid_fields}\n&#39; \
+                    &#39;Check the following int fields for null/np.nan values and convert to panda\&#39;s nullable int &#39;\
+                    f&#39;dtype: {&#34;, &#34;.join(int_fields_as_floats)}&#39;
+                )
+            if datetime_fields_with_timezone:
+                raise TimezoneAwareDatetimeError(
+                    f&#39;Field type incompatibilities (field, live type, new type): {invalid_fields}\n&#39; \
+                    &#39;Check the following datetime fields for timezone aware dtypes values and convert to &#39;\
+                    &#39;timezone-naive dtypes using pd.to_datetime(df[\&#39;field\&#39;]).dt.tz_localize(None): &#39;\
+                    f&#39;{&#34;, &#34;.join(datetime_fields_with_timezone)}&#39;
+                )
+            raise ValueError(f&#39;Field type incompatibilities (field, live type, new type): {invalid_fields}&#39;)
+
+    def _check_geometry_types(self):
+        &#34;&#34;&#34;Raise an error if the live and new data geometry types are incompatible.
+
+        Args:
+            live_data_properties (dict): FeatureLayer.properties of live data
+            new_dataframe (pd.DataFrame): New data to be added/updated
+
+        Raises:
+            ValueError: If the new data is not a valid spatially-enabled dataframe, has multiple geometry types, or has
+                a geometry type that doesn&#39;t match the live data.
+        &#34;&#34;&#34;
+
+        esri_to_sedf_geometry_mapping = {
+            &#39;esriGeometryPoint&#39;: &#39;point&#39;,
+            &#39;esriGeometryMultipoint&#39;: &#39;multipoint&#39;,
+            &#39;esriGeometryPolyline&#39;: &#39;polyline&#39;,
+            &#39;esriGeometryPolygon&#39;: &#39;polygon&#39;,
+            &#39;esriGeometryEnvelope&#39;: &#39;envelope&#39;,
+        }
+
+        if &#39;SHAPE&#39; not in self.new_dataframe.columns:
+            raise ValueError(&#39;New dataframe does not have a SHAPE column&#39;)
+
+        live_geometry_type = self.live_data_properties.geometryType
+        new_geometry_types = self.new_dataframe.spatial.geometry_type
+        if len(new_geometry_types) &gt; 1:
+            raise ValueError(&#39;New dataframe has multiple geometry types&#39;)
+        if esri_to_sedf_geometry_mapping[live_geometry_type] != new_geometry_types[0].lower():
+            raise ValueError(
+                f&#39;New dataframe geometry type &#34;{new_geometry_types[0]}&#34; incompatible with live geometry type &#34;{live_geometry_type}&#34;&#39;
+            )
+
+    def check_for_non_null_fields(self, fields):
+        &#34;&#34;&#34;Raise an error if the new data contains nulls in a field that the live data says is not nullable.
+
+        If this error occurs, the client should use pandas fillna() method to replace NaNs/Nones with empty strings or
+        appropriate nodata values.
+
+        Args:
+            fields (List[str]): Fields to check
+
+        Raises:
+            ValueError: If the new data contains nulls in a field that the live data says is not nullable and doesn&#39;t
+                have a default value.
+        &#34;&#34;&#34;
+
+        columns_with_nulls = self.new_dataframe.columns[self.new_dataframe.isna().any()].tolist()
+        # fields_dataframe = pd.DataFrame(self.live_data_properties[&#39;fields&#39;])
+        non_nullable_live_columns = self.fields_dataframe[
+            ~(self.fields_dataframe[&#39;nullable&#39;]) &amp;
+            ~(self.fields_dataframe[&#39;defaultValue&#39;].astype(bool))][&#39;name&#39;].tolist()
+
+        columns_to_check = [column for column in columns_with_nulls if column in fields]
+
+        #: If none of the columns have nulls, we don&#39;t need to check further
+        if not columns_to_check:
+            return
+
+        problem_fields = []
+        for column in columns_to_check:
+            if column in non_nullable_live_columns:
+                problem_fields.append(column)
+
+        if problem_fields:
+            raise ValueError(
+                f&#39;The following fields cannot have null values in the live data but one or more nulls exist in the new data: {&#34;, &#34;.join(problem_fields)}&#39;
+            )
+
+    def check_field_length(self, fields):
+        &#34;&#34;&#34;Raise an error if a new data string value is longer than allowed in the live data.
+
+        Args:
+            fields (List[str]): Fields to check
+
+        Raises:
+            ValueError: If the string fields in the new data contain a value longer than the corresponding field in the
+                live data allows.
+        &#34;&#34;&#34;
+
+        if &#39;length&#39; not in self.fields_dataframe.columns:
+            module_logger.debug(&#39;No fields with length property&#39;)
+            return
+
+        length_limited_fields = self.fields_dataframe[
+            (self.fields_dataframe[&#39;type&#39;].isin([&#39;esriFieldTypeString&#39;, &#39;esriFieldTypeGlobalID&#39;])) &amp;
+            (self.fields_dataframe[&#39;length&#39;].astype(bool))]
+
+        columns_to_check = length_limited_fields[length_limited_fields[&#39;name&#39;].isin(fields)]
+
+        for field, live_max_length in columns_to_check[[&#39;name&#39;, &#39;length&#39;]].to_records(index=False):
+            new_data_lengths = self.new_dataframe[field].str.len()
+            new_max_length = new_data_lengths.max()
+            if new_max_length &gt; live_max_length:
+                raise ValueError(
+                    f&#39;Row {new_data_lengths.argmax()}, column {field} in new data exceeds the live data max length of {live_max_length}&#39;
+                )
+
+    def check_fields_present(self, fields, add_oid):
+        &#34;&#34;&#34;Raise an error if the fields to be operated on aren&#39;t present in either the live or new data.
+
+        Args:
+            fields (List[str]): The fields to be operated on.
+            add_oid (bool): Add OBJECTID to fields if its not already present (for operations that are dependent on
+                OBJECTID, such as upsert)
+
+        Raises:
+            RuntimeError: If any of fields are not in live or new data.
+        &#34;&#34;&#34;
+
+        live_fields = set(self.fields_dataframe[&#39;name&#39;])
+        new_fields = set(self.new_dataframe.columns)
+        working_fields = set(fields)
+        if add_oid:
+            working_fields.add(&#39;OBJECTID&#39;)
+
+        live_dif = working_fields - live_fields
+        new_dif = working_fields - new_fields
+
+        error_message = []
+        if live_dif:
+            error_message.append(f&#39;Fields missing in live data: {&#34;, &#34;.join(live_dif)}&#39;)
+        if new_dif:
+            error_message.append(f&#39;Fields missing in new data: {&#34;, &#34;.join(new_dif)}&#39;)
+
+        if error_message:
+            raise RuntimeError(&#39;. &#39;.join(error_message))
+
+    def check_srs_wgs84(self):
+        &#34;&#34;&#34;Raise an error if the new spatial reference system isn&#39;t WGS84 as required by geojson.
+
+        Raises:
+            ValueError: If the new SRS value can&#39;t be cast to an int (please log an issue if this occurs)
+            ValueError: If the new SRS value isn&#39;t 4326.
+        &#34;&#34;&#34;
+
+        #: If we modify a spatial data frame, sometimes the .sr.wkid property/dictionary becomes {0:number} instead
+        #: of {&#39;wkid&#39;: number}
+        try:
+            new_srs = self.new_dataframe.spatial.sr.wkid
+        except AttributeError:
+            new_srs = self.new_dataframe.spatial.sr[0]
+
+        try:
+            new_srs = int(new_srs)
+        except ValueError as error:
+            raise ValueError(&#39;Could not cast new SRS to int&#39;) from error
+        if new_srs != 4326:
+            raise ValueError(
+                f&#39;New dataframe SRS {new_srs} is not wkid 4326. Reproject with appropriate transformation.&#39;
+            )
+
+    def check_nullable_ints_shapely(self):
+        &#34;&#34;&#34;Raise a warning if null values occur within nullable integer fields of the dataframe
+
+        Apparently due to a convention within shapely, any null values in an integer field are converted to 0.
+
+        Raises:
+            UserWarning: If we&#39;re using shapely instead of arcpy, the new dataframe uses nullable int dtypes, and there
+                is one or more pd.NA values within a nullable int column.
+        &#34;&#34;&#34;
+
+        #: Only occurs if client is using shapely instead of arcpy
+        if importlib.util.find_spec(&#39;arcpy&#39;):
+            return
+
+        nullable_ints = {&#39;Int8&#39;, &#39;Int16&#39;, &#39;Int32&#39;, &#39;Int64&#39;, &#39;UInt8&#39;, &#39;UInt16&#39;, &#39;UInt32&#39;, &#39;UInt64&#39;}
+        nullable_int_columns = [
+            column for column in self.new_dataframe.columns if str(self.new_dataframe[column].dtype) in nullable_ints
+        ]
+        columns_with_nulls = [column for column in nullable_int_columns if self.new_dataframe[column].isnull().any()]
+
+        if columns_with_nulls:
+            warnings.warn(
+                &#39;The following columns have null values that will be replaced by 0 due to shapely conventions: &#39;\
+                    f&#39;{&#34;, &#34;.join(columns_with_nulls)}&#39;
+            )
+
+
+def get_null_geometries(feature_layer_properties):
+    &#34;&#34;&#34;Generate placeholder geometries near 0, 0 with type based on provided feature layer properties dictionary.
+
+    Args:
+        feature_layer_properties (dict): .properties from a feature layer item, contains &#39;geometryType&#39; key
+
+    Raises:
+        NotImplementedError: If we get a geometryType we haven&#39;t implemented a null-geometry generator for
+
+    Returns:
+        arcgis.geometry.Geometry: A geometry object of the corresponding type centered around null island.
+    &#34;&#34;&#34;
+
+    # esri_to_sedf_geometry_mapping = {
+    #     &#39;esriGeometryPoint&#39;: &#39;point&#39;,
+    #     &#39;esriGeometryMultipoint&#39;: &#39;multipoint&#39;,
+    #     &#39;esriGeometryPolyline&#39;: &#39;polyline&#39;,
+    #     &#39;esriGeometryPolygon&#39;: &#39;polygon&#39;,
+    #     &#39;esriGeometryEnvelope&#39;: &#39;envelope&#39;,
+    # }
+
+    live_geometry_type = feature_layer_properties.geometryType
+
+    if live_geometry_type == &#39;esriGeometryPoint&#39;:
+        return arcgis.geometry.Point({&#39;x&#39;: 0, &#39;y&#39;: 0, &#39;spatialReference&#39;: {&#39;wkid&#39;: 4326}}).JSON
+
+    if live_geometry_type == &#39;esriGeometryPolyline&#39;:
+        return arcgis.geometry.Polyline({
+            &#39;paths&#39;: [[[0, 0], [.1, .1], [.2, .2]]],
+            &#39;spatialReference&#39;: {
+                &#39;wkid&#39;: 4326
+            }
+        }).JSON
+
+    if live_geometry_type == &#39;esriGeometryPolygon&#39;:
+        return arcgis.geometry.Polygon({
+            &#39;rings&#39;: [[[0, .1], [.1, .1], [.1, 0], [0, 0]]],
+            &#39;spatialReference&#39;: {
+                &#39;wkid&#39;: 4326
+            }
+        }).JSON
+
+    raise NotImplementedError(f&#39;Null value generator for live geometry type {live_geometry_type} not yet implemented&#39;)
+
+
+class DeleteUtils:
+    &#34;&#34;&#34;Verify Object IDs used for delete operations
+    &#34;&#34;&#34;
+
+    @staticmethod
+    def check_delete_oids_are_ints(oid_list):
+        &#34;&#34;&#34;Raise an error if a list of strings can&#39;t be parsed as ints
+
+        Args:
+            oid_list (list[int]): List of Object IDs to delete
+
+        Raises:
+            TypeError: If any of the items in oid_list can&#39;t be cast to ints
+
+        Returns:
+            list[int]: oid_list converted to ints
+        &#34;&#34;&#34;
+
+        numeric_oids = []
+        bad_oids = []
+        for oid in oid_list:
+            try:
+                numeric_oids.append(int(oid))
+            except ValueError:
+                bad_oids.append(oid)
+        if bad_oids:
+            raise TypeError(f&#39;Couldn\&#39;t convert OBJECTID(s) `{bad_oids}` to integer&#39;)
+        return numeric_oids
+
+    @staticmethod
+    def check_for_empty_oid_list(oid_list, numeric_oids):
+        &#34;&#34;&#34;Raise an error if the parsed Object ID list is empty
+
+        Args:
+            oid_list (list[int]): The original list of Object IDs to delete
+            numeric_oids (list[int]): The cast-to-int Object IDs
+
+        Raises:
+            ValueError: If numeric_oids is empty
+        &#34;&#34;&#34;
+
+        if not numeric_oids:
+            raise ValueError(f&#39;No OBJECTIDs found in {oid_list}&#39;)
+
+    @staticmethod
+    def check_delete_oids_are_in_live_data(oid_string, numeric_oids, feature_layer):
+        &#34;&#34;&#34;Warn if a delete Object ID doesn&#39;t exist in the live data, return number missing
+
+        Args:
+            oid_string (str): Comma-separated string of delete Object IDs
+            numeric_oids (list[int]): The parsed and cast-to-int Object IDs
+            feature_layer (arcgis.features.FeatureLayer): Live FeatureLayer item
+
+        Raises:
+            UserWarning: If any of the Object IDs in numeric_oids don&#39;t exist in the live data.
+
+        Returns:
+            int: Number of Object IDs missing from live data
+        &#34;&#34;&#34;
+
+        query_results = feature_layer.query(object_ids=oid_string, return_ids_only=True)
+        query_oids = query_results[&#39;objectIds&#39;]
+        oids_not_in_layer = set(numeric_oids) - set(query_oids)
+
+        if oids_not_in_layer:
+            warnings.warn(f&#39;OBJECTIDs {oids_not_in_layer} were not found in the live data&#39;)
+
+        return len(oids_not_in_layer)
+
+
+class Chunking:
+    &#34;&#34;&#34;Divide a dataframe into chunks to satisfy upload size requirements for append operation.
+    &#34;&#34;&#34;
+
+    @staticmethod
+    def _ceildiv(num, denom):
+        &#34;&#34;&#34;Perform ceiling division: 5/4 = 2
+
+        Args:
+            num (int or float): Numerator
+            denom (int or float): Denominator
+
+        Returns:
+            int: Ceiling divisor
+        &#34;&#34;&#34;
+
+        return -(num // -denom)
+
+    @staticmethod
+    def _chunk_dataframe(dataframe, chunk_size):
+        &#34;&#34;&#34;Divide up a dataframe into a list of dataframes of chunk_size rows
+
+        The DataFrames are returned in a list. Elements [:-1] are as large as possible for the number of chunks needed,
+        while the last gets however many rows of the dataframe are left over. eg, a 10-row dataframe broken into 3
+        chunks would result in dataframes with 3, 3, and 1 rows.
+
+        Args:
+            dataframe (pd.DataFrame): Input DataFrame
+            chunk_size (int): The max number of rows for each sub dataframe
+
+        Returns:
+            list[pd.DataFrame]: A list of dataframes with at most chunk_size rows per dataframe
+        &#34;&#34;&#34;
+
+        df_length = len(dataframe)
+
+        starts = range(0, df_length, chunk_size)
+        ends = [start + chunk_size if start + chunk_size &lt; df_length else df_length for start in starts]
+        list_of_dataframes = [dataframe.iloc[start:end] for start, end in zip(starts, ends)]
+
+        return list_of_dataframes
+
+    @staticmethod
+    def build_upload_json(dataframe, feature_layer_fields, max_bytes=100_000_000):
+        &#34;&#34;&#34;Create list of geojson strings of spatially-enabled DataFrame, divided into chunks if it exceeds max_bytes
+
+        Recursively chunks dataframe to ensure no one chunk is larger than max_bytes. Converts all empty strings in
+        nullable numeric fields in feature sets created from individual chunks to None prior to converting to geojson to
+        ensure the field stays numeric.
+
+        Args:
+            dataframe (pd.DataFrame.spatial): Spatially-enabled dataframe to be converted to geojson
+            feature_layer_fields: All the fields from the feature layer (feature_layer.properties.fields)
+            max_bytes (int, optional): Maximum size in bytes any one geojson string can be. Defaults to 100000000 (AGOL
+                text uploads are limited to 100 MB?)
+
+        Returns:
+            list[str]: A list of the dataframe chunks converted to geojson
+        &#34;&#34;&#34;
+
+        geojson_size = sys.getsizeof(dataframe.spatial.to_featureset().to_geojson.encode(&#39;utf-16&#39;))
+        module_logger.debug(&#39;Initial file size: %s&#39;, geojson_size)
+
+        chunked_dataframes = Chunking._recursive_dataframe_chunking(dataframe, max_bytes)
+
+        chunked_geojsons = [
+            fix_numeric_empty_strings(chunk.spatial.to_featureset(), feature_layer_fields).to_geojson
+            for chunk in chunked_dataframes
+        ]
+
+        return chunked_geojsons
+
+    @staticmethod
+    def _recursive_dataframe_chunking(dataframe, max_bytes):
+        &#34;&#34;&#34;Break a dataframe into chunks such that their utf-16 encoded geojson sizes don&#39;t exceed max_bytes
+
+        Divides the dataframe into chunks based on the geojson representation&#39;s utf-16-encoded size by calculating the
+        number of chunks of size &gt; max_bytes needed for the entire file size. It uses this number of chunks to chunk the
+        dataframe based on rows. Because there can be variability in geojson file size due to attribute lengths
+        (especially line and polygon geometry sizes), it uses recursion to again chunk each smaller dataframe if needed.
+
+        The chunks should (but not definitely proven to) maintain the sequential order of the features of the original
+        dataframe. Suppose an initial 10 rows gives us chunks for rows [1, 2, 3], [4, 5, 6], [7, 8, 9], [10]. However,
+        the second chunk [4, 5, 6] turns out to be too large, so it gets divided into [4, 5] and [6]. The resulting
+        list of chunks should be [1, 2, 3], [4, 5], [6], [7, 8, 9], [10]
+
+        Args:
+            dataframe (pd.DataFrame.spatial): A spatially-enabled dataframe to divide
+            max_bytes (int): The max utf-16 encoded geojson size for any one chunk
+        &#34;&#34;&#34;
+
+        #: Calculate number of chunks needed and the guesstimate max number of rows to achieve that size
+        geojson_size = sys.getsizeof(dataframe.spatial.to_featureset().to_geojson.encode(&#39;utf-16&#39;))
+        chunks_needed = Chunking._ceildiv(geojson_size, max_bytes)
+        max_rows = Chunking._ceildiv(len(dataframe), chunks_needed)
+
+        #: Chunk the dataframe and then check if the resulting chunks are now within the proper size, calling again on
+        #: the offending chunks if not
+        list_of_dataframes = Chunking._chunk_dataframe(dataframe, max_rows)
+        return_dataframes = []  #: Holds result of valid and recursive chunks
+        for chunk_dataframe in list_of_dataframes:
+            chunk_geojson_size = sys.getsizeof(chunk_dataframe.spatial.to_featureset().to_geojson.encode(&#39;utf-16&#39;))
+            if chunk_geojson_size &gt; max_bytes:
+                return_dataframes.extend(Chunking._recursive_dataframe_chunking(chunk_dataframe, max_bytes))
+            else:
+                return_dataframes.append(chunk_dataframe)
+
+        return return_dataframes
+
+
+def fix_numeric_empty_strings(feature_set, feature_layer_fields):
+    &#34;&#34;&#34;Replace empty strings with None for numeric fields that allow nulls
+    Args:
+        feature_set (arcgis.features.FeatureSet): Feature set to clean
+        fields (Dict): fields from feature layer
+    &#34;&#34;&#34;
+
+    fields_to_fix = {
+        field[&#39;name&#39;]
+        for field in feature_layer_fields
+        if field[&#39;type&#39;] in [&#39;esriFieldTypeDouble&#39;, &#39;esriFieldTypeInteger&#39;, &#39;esriFieldTypeDate&#39;] and field[&#39;nullable&#39;]
+    }
+    fields_to_fix -= {&#39;Shape__Length&#39;, &#39;Shape__Area&#39;}
+
+    for feature in feature_set.features:
+        for field_name in fields_to_fix:
+            if feature.attributes[field_name] == &#39;&#39;:
+                feature.attributes[field_name] = None
+
+    return feature_set</code></pre>
+</details>
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+<h2 class="section-title" id="header-functions">Functions</h2>
+<dl>
+<dt id="palletjack.utils.authorize_pygsheets"><code class="name flex">
+<span>def <span class="ident">authorize_pygsheets</span></span>(<span>credentials)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Authenticate pygsheets using either a service file or google.auth.credentials.Credentials object.</p>
+<p>Requires either the path to a service account .json file that has access to the files in question or
+a <code>google.
+auth.credentials.Credentials&lt;code&gt; object. Calling &lt;/code&gt;google.auth.default()</code> in a Google Cloud Function will give you a
+tuple of a <code>Credentials</code> object and the project id. You can use this <code>Credentials</code> object to authorize pygsheets as
+the same account the Cloud Function is running under.</p>
+<p>Tries first to load credentials from file; if this fails tries credentials directly as a custom_credential.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>credentials</code></strong> :&ensp;<code>str</code> or <code>google.auth.credentials.Credentials</code></dt>
+<dd>Path to the service file OR credentials object
+obtained from google.auth.default() within a cloud function.</dd>
+</dl>
+<h2 id="raises">Raises</h2>
+<dl>
+<dt><code>RuntimeError</code></dt>
+<dd>If both authorization method attempts fail</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>pygsheets.Client</code></dt>
+<dd>Authorized pygsheets client</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def authorize_pygsheets(credentials):
+    &#34;&#34;&#34;Authenticate pygsheets using either a service file or google.auth.credentials.Credentials object.
+
+    Requires either the path to a service account .json file that has access to the files in question or  a `google.
+    auth.credentials.Credentials` object. Calling `google.auth.default()` in a Google Cloud Function will give you a
+    tuple of a `Credentials` object and the project id. You can use this `Credentials` object to authorize pygsheets as
+    the same account the Cloud Function is running under.
+
+    Tries first to load credentials from file; if this fails tries credentials directly as a custom_credential.
+
+    Args:
+        credentials (str or google.auth.credentials.Credentials): Path to the service file OR credentials object
+            obtained from google.auth.default() within a cloud function.
+
+    Raises:
+        RuntimeError: If both authorization method attempts fail
+
+    Returns:
+        pygsheets.Client: Authorized pygsheets client
+    &#34;&#34;&#34;
+
+    try:
+        return pygsheets.authorize(service_file=credentials)
+    except (FileNotFoundError, TypeError) as err:
+        module_logger.debug(err)
+        module_logger.debug(&#39;Credentials file not found, trying as environment variable&#39;)
+    try:
+        return pygsheets.authorize(custom_credentials=credentials)
+    except Exception as err:
+        raise RuntimeError(&#39;Could not authenticate to Google API&#39;) from err</code></pre>
+</details>
+</dd>
+<dt id="palletjack.utils.build_sql_in_list"><code class="name flex">
+<span>def <span class="ident">build_sql_in_list</span></span>(<span>series)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Generate a properly formatted list to be a target for a SQL 'IN' clause</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>series</code></strong> :&ensp;<code>pd.Series</code></dt>
+<dd>Series of values to be included in the 'IN' list</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>str</code></dt>
+<dd>Values formatted as (1, 2, 3) for numbers or ('a', 'b', 'c') for anything else</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def build_sql_in_list(series):
+    &#34;&#34;&#34;Generate a properly formatted list to be a target for a SQL &#39;IN&#39; clause
+
+    Args:
+        series (pd.Series): Series of values to be included in the &#39;IN&#39; list
+
+    Returns:
+        str: Values formatted as (1, 2, 3) for numbers or (&#39;a&#39;, &#39;b&#39;, &#39;c&#39;) for anything else
+    &#34;&#34;&#34;
+    if pd.api.types.is_numeric_dtype(series):
+        return f&#39;({&#34;, &#34;.join(series.astype(str))})&#39;
+    else:
+        quoted_values = [f&#34;&#39;{value}&#39;&#34; for value in series]
+        return f&#39;({&#34;, &#34;.join(quoted_values)})&#39;</code></pre>
+</details>
+</dd>
+<dt id="palletjack.utils.calc_modulus_for_reporting_interval"><code class="name flex">
+<span>def <span class="ident">calc_modulus_for_reporting_interval</span></span>(<span>n, split_value=500)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Calculate a number that can be used as a modulus for splitting n up into 10 or 20 intervals, depending on
+split_value.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>n</code></strong> :&ensp;<code>int</code></dt>
+<dd>The number to divide into intervals</dd>
+<dt><strong><code>split_value</code></strong> :&ensp;<code>int</code>, optional</dt>
+<dd>The point at which it should create 20 intervals instead of 10. Defaults to 500.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>int</code></dt>
+<dd>Number to be used as modulus to compare to 0 in reporting code</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def calc_modulus_for_reporting_interval(n, split_value=500):
+    &#34;&#34;&#34;Calculate a number that can be used as a modulus for splitting n up into 10 or 20 intervals, depending on
+    split_value.
+
+    Args:
+        n (int): The number to divide into intervals
+        split_value (int, optional): The point at which it should create 20 intervals instead of 10. Defaults to 500.
+
+    Returns:
+        int: Number to be used as modulus to compare to 0 in reporting code
+    &#34;&#34;&#34;
+
+    if n &lt;= 10:
+        return 1
+
+    if n &lt; split_value:
+        return floor(n / 10)
+
+    return floor(n / 20)</code></pre>
+</details>
+</dd>
+<dt id="palletjack.utils.check_field_set_to_unique"><code class="name flex">
+<span>def <span class="ident">check_field_set_to_unique</span></span>(<span>featurelayer, field_name)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Makes sure field_name has a "unique constraint" in AGOL, which allows it to be used for .append upserts</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>featurelayer</code></strong> :&ensp;<code>arcgis.features.FeatureLayer</code></dt>
+<dd>The target feature layer</dd>
+<dt><strong><code>field_name</code></strong> :&ensp;<code>str</code></dt>
+<dd>The AGOL-valid field name to check</dd>
+</dl>
+<h2 id="raises">Raises</h2>
+<dl>
+<dt><code>RuntimeError</code></dt>
+<dd>If the field is not unique (or if it's indexed but not unique)</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def check_field_set_to_unique(featurelayer, field_name):
+    &#34;&#34;&#34;Makes sure field_name has a &#34;unique constraint&#34; in AGOL, which allows it to be used for .append upserts
+
+    Args:
+        featurelayer (arcgis.features.FeatureLayer): The target feature layer
+        field_name (str): The AGOL-valid field name to check
+
+    Raises:
+        RuntimeError: If the field is not unique (or if it&#39;s indexed but not unique)
+    &#34;&#34;&#34;
+
+    fields = [field[&#39;fields&#39;] for field in featurelayer.properties.indexes]
+    if field_name not in fields:
+        raise RuntimeError(f&#39;{field_name} does not have a &#34;unique constraint&#34; set within the feature layer&#39;)
+    for field in featurelayer.properties.indexes:
+        if field[&#39;fields&#39;] == field_name:
+            if not field[&#39;isUnique&#39;]:
+                raise RuntimeError(f&#39;{field_name} does not have a &#34;unique constraint&#34; set within the feature layer&#39;)</code></pre>
+</details>
+</dd>
+<dt id="palletjack.utils.check_fields_match"><code class="name flex">
+<span>def <span class="ident">check_fields_match</span></span>(<span>featurelayer, new_dataframe)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Make sure new data doesn't have any extra fields, warn if it doesn't contain all live fields</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>featurelayer</code></strong> :&ensp;<code>arcgis.features.FeatureLayer</code></dt>
+<dd>Live data</dd>
+<dt><strong><code>new_dataframe</code></strong> :&ensp;<code>pd.DataFrame</code></dt>
+<dd>New data</dd>
+</dl>
+<h2 id="raises">Raises</h2>
+<dl>
+<dt><code>RuntimeError</code></dt>
+<dd>If new data contains a field not present in the live data</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def check_fields_match(featurelayer, new_dataframe):
+    &#34;&#34;&#34;Make sure new data doesn&#39;t have any extra fields, warn if it doesn&#39;t contain all live fields
+
+    Args:
+        featurelayer (arcgis.features.FeatureLayer): Live data
+        new_dataframe (pd.DataFrame): New data
+
+    Raises:
+        RuntimeError: If new data contains a field not present in the live data
+    &#34;&#34;&#34;
+
+    live_fields = {field[&#39;name&#39;] for field in featurelayer.properties.fields}
+    new_fields = set(new_dataframe.columns)
+    #: Remove SHAPE field from set (live &#34;featurelayer.properties[&#39;fields&#39;]&#34; does not expose the &#39;SHAPE&#39; field)
+    try:
+        new_fields.remove(&#39;SHAPE&#39;)
+    except KeyError:
+        pass
+    new_dif = new_fields - live_fields
+    live_dif = live_fields - new_fields
+    if new_dif:
+        raise RuntimeError(
+            f&#39;New dataset contains the following fields that are not present in the live dataset: {new_dif}&#39;
+        )
+    if live_dif:
+        module_logger.warning(
+            &#39;New dataset does not contain the following fields that are present in the live dataset: %s&#39;, live_dif
+        )</code></pre>
+</details>
+</dd>
+<dt id="palletjack.utils.check_index_column_in_feature_layer"><code class="name flex">
+<span>def <span class="ident">check_index_column_in_feature_layer</span></span>(<span>featurelayer, index_column)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Ensure index_column is present for any future operations</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>featurelayer</code></strong> :&ensp;<code>arcgis.features.FeatureLayer</code></dt>
+<dd>The live feature layer</dd>
+<dt><strong><code>index_column</code></strong> :&ensp;<code>str</code></dt>
+<dd>The index column meant to link new and live data</dd>
+</dl>
+<h2 id="raises">Raises</h2>
+<dl>
+<dt><code>RuntimeError</code></dt>
+<dd>If index_column is not in featurelayer's fields</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def check_index_column_in_feature_layer(featurelayer, index_column):
+    &#34;&#34;&#34;Ensure index_column is present for any future operations
+
+    Args:
+        featurelayer (arcgis.features.FeatureLayer): The live feature layer
+        index_column (str): The index column meant to link new and live data
+
+    Raises:
+        RuntimeError: If index_column is not in featurelayer&#39;s fields
+    &#34;&#34;&#34;
+
+    featurelayer_fields = [field[&#39;name&#39;] for field in featurelayer.properties.fields]
+    if index_column not in featurelayer_fields:
+        raise RuntimeError(f&#39;Index column {index_column} not found in feature layer fields {featurelayer_fields}&#39;)</code></pre>
+</details>
+</dd>
+<dt id="palletjack.utils.fix_numeric_empty_strings"><code class="name flex">
+<span>def <span class="ident">fix_numeric_empty_strings</span></span>(<span>feature_set, feature_layer_fields)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Replace empty strings with None for numeric fields that allow nulls</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>feature_set</code></strong> :&ensp;<code>arcgis.features.FeatureSet</code></dt>
+<dd>Feature set to clean</dd>
+<dt><strong><code>fields</code></strong> :&ensp;<code>Dict</code></dt>
+<dd>fields from feature layer</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def fix_numeric_empty_strings(feature_set, feature_layer_fields):
+    &#34;&#34;&#34;Replace empty strings with None for numeric fields that allow nulls
+    Args:
+        feature_set (arcgis.features.FeatureSet): Feature set to clean
+        fields (Dict): fields from feature layer
+    &#34;&#34;&#34;
+
+    fields_to_fix = {
+        field[&#39;name&#39;]
+        for field in feature_layer_fields
+        if field[&#39;type&#39;] in [&#39;esriFieldTypeDouble&#39;, &#39;esriFieldTypeInteger&#39;, &#39;esriFieldTypeDate&#39;] and field[&#39;nullable&#39;]
+    }
+    fields_to_fix -= {&#39;Shape__Length&#39;, &#39;Shape__Area&#39;}
+
+    for feature in feature_set.features:
+        for field_name in fields_to_fix:
+            if feature.attributes[field_name] == &#39;&#39;:
+                feature.attributes[field_name] = None
+
+    return feature_set</code></pre>
+</details>
+</dd>
+<dt id="palletjack.utils.get_null_geometries"><code class="name flex">
+<span>def <span class="ident">get_null_geometries</span></span>(<span>feature_layer_properties)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Generate placeholder geometries near 0, 0 with type based on provided feature layer properties dictionary.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>feature_layer_properties</code></strong> :&ensp;<code>dict</code></dt>
+<dd>.properties from a feature layer item, contains 'geometryType' key</dd>
+</dl>
+<h2 id="raises">Raises</h2>
+<dl>
+<dt><code>NotImplementedError</code></dt>
+<dd>If we get a geometryType we haven't implemented a null-geometry generator for</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>arcgis.geometry.Geometry</code></dt>
+<dd>A geometry object of the corresponding type centered around null island.</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_null_geometries(feature_layer_properties):
+    &#34;&#34;&#34;Generate placeholder geometries near 0, 0 with type based on provided feature layer properties dictionary.
+
+    Args:
+        feature_layer_properties (dict): .properties from a feature layer item, contains &#39;geometryType&#39; key
+
+    Raises:
+        NotImplementedError: If we get a geometryType we haven&#39;t implemented a null-geometry generator for
+
+    Returns:
+        arcgis.geometry.Geometry: A geometry object of the corresponding type centered around null island.
+    &#34;&#34;&#34;
+
+    # esri_to_sedf_geometry_mapping = {
+    #     &#39;esriGeometryPoint&#39;: &#39;point&#39;,
+    #     &#39;esriGeometryMultipoint&#39;: &#39;multipoint&#39;,
+    #     &#39;esriGeometryPolyline&#39;: &#39;polyline&#39;,
+    #     &#39;esriGeometryPolygon&#39;: &#39;polygon&#39;,
+    #     &#39;esriGeometryEnvelope&#39;: &#39;envelope&#39;,
+    # }
+
+    live_geometry_type = feature_layer_properties.geometryType
+
+    if live_geometry_type == &#39;esriGeometryPoint&#39;:
+        return arcgis.geometry.Point({&#39;x&#39;: 0, &#39;y&#39;: 0, &#39;spatialReference&#39;: {&#39;wkid&#39;: 4326}}).JSON
+
+    if live_geometry_type == &#39;esriGeometryPolyline&#39;:
+        return arcgis.geometry.Polyline({
+            &#39;paths&#39;: [[[0, 0], [.1, .1], [.2, .2]]],
+            &#39;spatialReference&#39;: {
+                &#39;wkid&#39;: 4326
+            }
+        }).JSON
+
+    if live_geometry_type == &#39;esriGeometryPolygon&#39;:
+        return arcgis.geometry.Polygon({
+            &#39;rings&#39;: [[[0, .1], [.1, .1], [.1, 0], [0, 0]]],
+            &#39;spatialReference&#39;: {
+                &#39;wkid&#39;: 4326
+            }
+        }).JSON
+
+    raise NotImplementedError(f&#39;Null value generator for live geometry type {live_geometry_type} not yet implemented&#39;)</code></pre>
+</details>
+</dd>
+<dt id="palletjack.utils.rename_columns_for_agol"><code class="name flex">
+<span>def <span class="ident">rename_columns_for_agol</span></span>(<span>columns)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Replace special characters and spaces with '_' to match AGOL field names</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>columns</code></strong> :&ensp;<code>iter</code></dt>
+<dd>The new columns to be renamed</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>Dict</code></dt>
+<dd>Mapping {'original name': 'cleaned_name'}</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def rename_columns_for_agol(columns):
+    &#34;&#34;&#34;Replace special characters and spaces with &#39;_&#39; to match AGOL field names
+
+    Args:
+        columns (iter): The new columns to be renamed
+
+    Returns:
+        Dict: Mapping {&#39;original name&#39;: &#39;cleaned_name&#39;}
+    &#34;&#34;&#34;
+
+    rename_dict = {}
+    for column in columns:
+        no_specials = re.sub(r&#39;[^a-zA-Z0-9_]&#39;, &#39;_&#39;, column)
+        match = re.match(r&#39;(^[0-9_]+)&#39;, no_specials)
+        if match:
+            number = match.groups()[0]
+            rename_dict[column] = no_specials.removeprefix(number) + number
+            continue
+        rename_dict[column] = no_specials
+    return rename_dict</code></pre>
+</details>
+</dd>
+<dt id="palletjack.utils.rename_fields"><code class="name flex">
+<span>def <span class="ident">rename_fields</span></span>(<span>dataframe, field_mapping)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Rename fields based on field_mapping</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>dataframe</code></strong> :&ensp;<code>pd.DataFrame</code></dt>
+<dd>Dataframe with columns to be renamed</dd>
+<dt><strong><code>field_mapping</code></strong> :&ensp;<code>dict</code></dt>
+<dd>Mapping of existing field names to new names</dd>
+</dl>
+<h2 id="raises">Raises</h2>
+<dl>
+<dt><code>ValueError</code></dt>
+<dd>If an existing name from field_mapping is not found in dataframe.columns</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>pd.DataFrame</code></dt>
+<dd>Dataframe with renamed fields</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def rename_fields(dataframe, field_mapping):
+    &#34;&#34;&#34;Rename fields based on field_mapping
+
+    Args:
+        dataframe (pd.DataFrame): Dataframe with columns to be renamed
+        field_mapping (dict): Mapping of existing field names to new names
+
+    Raises:
+        ValueError: If an existing name from field_mapping is not found in dataframe.columns
+
+    Returns:
+        pd.DataFrame: Dataframe with renamed fields
+    &#34;&#34;&#34;
+
+    for original_name in field_mapping.keys():
+        if original_name not in dataframe.columns:
+            raise ValueError(f&#39;Field {original_name} not found in dataframe.&#39;)
+
+    renamed_df = dataframe.rename(columns=field_mapping)
+
+    return renamed_df</code></pre>
+</details>
+</dd>
+<dt id="palletjack.utils.retry"><code class="name flex">
+<span>def <span class="ident">retry</span></span>(<span>worker_method, *args, **kwargs)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Allows you to retry a function/method three times to overcome network jitters</p>
+<p>Retries worker_method three times (for a total of four tries, including the initial attempt), pausing 2^trycount
+seconds between each retry. Any arguments for worker_method can be passed in as additional parameters to retry()
+following worker_method: retry(foo_method, arg1, arg2, keyword_arg=3)</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>worker_method</code></strong> :&ensp;<code>callable</code></dt>
+<dd>The name of the method to be retried (minus the calling parens)</dd>
+</dl>
+<h2 id="raises">Raises</h2>
+<dl>
+<dt><code>error</code></dt>
+<dd>The final error that causes worker_method to fail after 3 retries</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>various</code></dt>
+<dd>The value(s) returned by worked_method</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def retry(worker_method, *args, **kwargs):
+    &#34;&#34;&#34;Allows you to retry a function/method three times to overcome network jitters
+
+    Retries worker_method three times (for a total of four tries, including the initial attempt), pausing 2^trycount
+    seconds between each retry. Any arguments for worker_method can be passed in as additional parameters to retry()
+    following worker_method: retry(foo_method, arg1, arg2, keyword_arg=3)
+
+    Args:
+        worker_method (callable): The name of the method to be retried (minus the calling parens)
+
+    Raises:
+        error: The final error that causes worker_method to fail after 3 retries
+
+    Returns:
+        various: The value(s) returned by worked_method
+    &#34;&#34;&#34;
+    tries = 1
+    max_tries = 3
+    delay = 2  #: in seconds
+
+    #: this inner function (closure? almost-closure?) allows us to keep track of tries without passing it as an arg
+    def _inner_retry(worker_method, *args, **kwargs):
+        nonlocal tries
+
+        try:
+            return worker_method(*args, **kwargs)
+
+        #: ArcGIS API for Python loves throwing bog-standard Exceptions, so we can&#39;t narrow this down further
+        except Exception as error:
+            if tries &lt;= max_tries:  #pylint: disable=no-else-return
+                wait_time = delay**tries
+                module_logger.debug(
+                    &#39;Exception &#34;%s&#34; thrown on &#34;%s&#34;. Retrying after %s seconds...&#39;, error, worker_method, wait_time
+                )
+                sleep(wait_time)
+                tries += 1
+                return _inner_retry(worker_method, *args, **kwargs)
+            else:
+                raise error
+
+    return _inner_retry(worker_method, *args, **kwargs)</code></pre>
+</details>
+</dd>
+<dt id="palletjack.utils.save_feature_layer_to_json"><code class="name flex">
+<span>def <span class="ident">save_feature_layer_to_json</span></span>(<span>feature_layer, directory)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Save a feature_layer to directory for safety as {layer name}_{todays date}.json</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>feature_layer</code></strong> :&ensp;<code>arcgis.features.FeatureLayer</code></dt>
+<dd>The FeatureLayer object to save to disk.</dd>
+<dt><strong><code>directory</code></strong> :&ensp;<code>str</code> or <code>Path</code></dt>
+<dd>The directory to save the data to.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>Path</code></dt>
+<dd>The full path to the output file, named with the layer name and today's date.</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def save_feature_layer_to_json(feature_layer, directory):
+    &#34;&#34;&#34;Save a feature_layer to directory for safety as {layer name}_{todays date}.json
+
+    Args:
+        feature_layer (arcgis.features.FeatureLayer): The FeatureLayer object to save to disk.
+        directory (str or Path): The directory to save the data to.
+
+    Returns:
+        Path: The full path to the output file, named with the layer name and today&#39;s date.
+    &#34;&#34;&#34;
+
+    module_logger.debug(&#39;Downloading existing data...&#39;)
+    dataframe = feature_layer.query().sdf
+
+    if dataframe.empty:
+        return f&#39;No data to save in feature layer {feature_layer.properties.name}&#39;
+
+    out_path = Path(directory, f&#39;{feature_layer.properties.name}_{datetime.date.today()}.json&#39;)
+    module_logger.debug(&#39;Saving existing data to %s&#39;, out_path)
+    out_path.write_text(dataframe.spatial.to_featureset().to_json, encoding=&#39;utf-8&#39;)
+
+    return out_path</code></pre>
+</details>
+</dd>
+</dl>
+</section>
+<section>
+<h2 class="section-title" id="header-classes">Classes</h2>
+<dl>
+<dt id="palletjack.utils.Chunking"><code class="flex name class">
+<span>class <span class="ident">Chunking</span></span>
+</code></dt>
+<dd>
+<div class="desc"><p>Divide a dataframe into chunks to satisfy upload size requirements for append operation.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class Chunking:
+    &#34;&#34;&#34;Divide a dataframe into chunks to satisfy upload size requirements for append operation.
+    &#34;&#34;&#34;
+
+    @staticmethod
+    def _ceildiv(num, denom):
+        &#34;&#34;&#34;Perform ceiling division: 5/4 = 2
+
+        Args:
+            num (int or float): Numerator
+            denom (int or float): Denominator
+
+        Returns:
+            int: Ceiling divisor
+        &#34;&#34;&#34;
+
+        return -(num // -denom)
+
+    @staticmethod
+    def _chunk_dataframe(dataframe, chunk_size):
+        &#34;&#34;&#34;Divide up a dataframe into a list of dataframes of chunk_size rows
+
+        The DataFrames are returned in a list. Elements [:-1] are as large as possible for the number of chunks needed,
+        while the last gets however many rows of the dataframe are left over. eg, a 10-row dataframe broken into 3
+        chunks would result in dataframes with 3, 3, and 1 rows.
+
+        Args:
+            dataframe (pd.DataFrame): Input DataFrame
+            chunk_size (int): The max number of rows for each sub dataframe
+
+        Returns:
+            list[pd.DataFrame]: A list of dataframes with at most chunk_size rows per dataframe
+        &#34;&#34;&#34;
+
+        df_length = len(dataframe)
+
+        starts = range(0, df_length, chunk_size)
+        ends = [start + chunk_size if start + chunk_size &lt; df_length else df_length for start in starts]
+        list_of_dataframes = [dataframe.iloc[start:end] for start, end in zip(starts, ends)]
+
+        return list_of_dataframes
+
+    @staticmethod
+    def build_upload_json(dataframe, feature_layer_fields, max_bytes=100_000_000):
+        &#34;&#34;&#34;Create list of geojson strings of spatially-enabled DataFrame, divided into chunks if it exceeds max_bytes
+
+        Recursively chunks dataframe to ensure no one chunk is larger than max_bytes. Converts all empty strings in
+        nullable numeric fields in feature sets created from individual chunks to None prior to converting to geojson to
+        ensure the field stays numeric.
+
+        Args:
+            dataframe (pd.DataFrame.spatial): Spatially-enabled dataframe to be converted to geojson
+            feature_layer_fields: All the fields from the feature layer (feature_layer.properties.fields)
+            max_bytes (int, optional): Maximum size in bytes any one geojson string can be. Defaults to 100000000 (AGOL
+                text uploads are limited to 100 MB?)
+
+        Returns:
+            list[str]: A list of the dataframe chunks converted to geojson
+        &#34;&#34;&#34;
+
+        geojson_size = sys.getsizeof(dataframe.spatial.to_featureset().to_geojson.encode(&#39;utf-16&#39;))
+        module_logger.debug(&#39;Initial file size: %s&#39;, geojson_size)
+
+        chunked_dataframes = Chunking._recursive_dataframe_chunking(dataframe, max_bytes)
+
+        chunked_geojsons = [
+            fix_numeric_empty_strings(chunk.spatial.to_featureset(), feature_layer_fields).to_geojson
+            for chunk in chunked_dataframes
+        ]
+
+        return chunked_geojsons
+
+    @staticmethod
+    def _recursive_dataframe_chunking(dataframe, max_bytes):
+        &#34;&#34;&#34;Break a dataframe into chunks such that their utf-16 encoded geojson sizes don&#39;t exceed max_bytes
+
+        Divides the dataframe into chunks based on the geojson representation&#39;s utf-16-encoded size by calculating the
+        number of chunks of size &gt; max_bytes needed for the entire file size. It uses this number of chunks to chunk the
+        dataframe based on rows. Because there can be variability in geojson file size due to attribute lengths
+        (especially line and polygon geometry sizes), it uses recursion to again chunk each smaller dataframe if needed.
+
+        The chunks should (but not definitely proven to) maintain the sequential order of the features of the original
+        dataframe. Suppose an initial 10 rows gives us chunks for rows [1, 2, 3], [4, 5, 6], [7, 8, 9], [10]. However,
+        the second chunk [4, 5, 6] turns out to be too large, so it gets divided into [4, 5] and [6]. The resulting
+        list of chunks should be [1, 2, 3], [4, 5], [6], [7, 8, 9], [10]
+
+        Args:
+            dataframe (pd.DataFrame.spatial): A spatially-enabled dataframe to divide
+            max_bytes (int): The max utf-16 encoded geojson size for any one chunk
+        &#34;&#34;&#34;
+
+        #: Calculate number of chunks needed and the guesstimate max number of rows to achieve that size
+        geojson_size = sys.getsizeof(dataframe.spatial.to_featureset().to_geojson.encode(&#39;utf-16&#39;))
+        chunks_needed = Chunking._ceildiv(geojson_size, max_bytes)
+        max_rows = Chunking._ceildiv(len(dataframe), chunks_needed)
+
+        #: Chunk the dataframe and then check if the resulting chunks are now within the proper size, calling again on
+        #: the offending chunks if not
+        list_of_dataframes = Chunking._chunk_dataframe(dataframe, max_rows)
+        return_dataframes = []  #: Holds result of valid and recursive chunks
+        for chunk_dataframe in list_of_dataframes:
+            chunk_geojson_size = sys.getsizeof(chunk_dataframe.spatial.to_featureset().to_geojson.encode(&#39;utf-16&#39;))
+            if chunk_geojson_size &gt; max_bytes:
+                return_dataframes.extend(Chunking._recursive_dataframe_chunking(chunk_dataframe, max_bytes))
+            else:
+                return_dataframes.append(chunk_dataframe)
+
+        return return_dataframes</code></pre>
+</details>
+<h3>Static methods</h3>
+<dl>
+<dt id="palletjack.utils.Chunking.build_upload_json"><code class="name flex">
+<span>def <span class="ident">build_upload_json</span></span>(<span>dataframe, feature_layer_fields, max_bytes=100000000)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Create list of geojson strings of spatially-enabled DataFrame, divided into chunks if it exceeds max_bytes</p>
+<p>Recursively chunks dataframe to ensure no one chunk is larger than max_bytes. Converts all empty strings in
+nullable numeric fields in feature sets created from individual chunks to None prior to converting to geojson to
+ensure the field stays numeric.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>dataframe</code></strong> :&ensp;<code>pd.DataFrame.spatial</code></dt>
+<dd>Spatially-enabled dataframe to be converted to geojson</dd>
+<dt><strong><code>feature_layer_fields</code></strong></dt>
+<dd>All the fields from the feature layer (feature_layer.properties.fields)</dd>
+<dt><strong><code>max_bytes</code></strong> :&ensp;<code>int</code>, optional</dt>
+<dd>Maximum size in bytes any one geojson string can be. Defaults to 100000000 (AGOL
+text uploads are limited to 100 MB?)</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>list[str]</code></dt>
+<dd>A list of the dataframe chunks converted to geojson</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@staticmethod
+def build_upload_json(dataframe, feature_layer_fields, max_bytes=100_000_000):
+    &#34;&#34;&#34;Create list of geojson strings of spatially-enabled DataFrame, divided into chunks if it exceeds max_bytes
+
+    Recursively chunks dataframe to ensure no one chunk is larger than max_bytes. Converts all empty strings in
+    nullable numeric fields in feature sets created from individual chunks to None prior to converting to geojson to
+    ensure the field stays numeric.
+
+    Args:
+        dataframe (pd.DataFrame.spatial): Spatially-enabled dataframe to be converted to geojson
+        feature_layer_fields: All the fields from the feature layer (feature_layer.properties.fields)
+        max_bytes (int, optional): Maximum size in bytes any one geojson string can be. Defaults to 100000000 (AGOL
+            text uploads are limited to 100 MB?)
+
+    Returns:
+        list[str]: A list of the dataframe chunks converted to geojson
+    &#34;&#34;&#34;
+
+    geojson_size = sys.getsizeof(dataframe.spatial.to_featureset().to_geojson.encode(&#39;utf-16&#39;))
+    module_logger.debug(&#39;Initial file size: %s&#39;, geojson_size)
+
+    chunked_dataframes = Chunking._recursive_dataframe_chunking(dataframe, max_bytes)
+
+    chunked_geojsons = [
+        fix_numeric_empty_strings(chunk.spatial.to_featureset(), feature_layer_fields).to_geojson
+        for chunk in chunked_dataframes
+    ]
+
+    return chunked_geojsons</code></pre>
+</details>
+</dd>
+</dl>
+</dd>
+<dt id="palletjack.utils.DeleteUtils"><code class="flex name class">
+<span>class <span class="ident">DeleteUtils</span></span>
+</code></dt>
+<dd>
+<div class="desc"><p>Verify Object IDs used for delete operations</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class DeleteUtils:
+    &#34;&#34;&#34;Verify Object IDs used for delete operations
+    &#34;&#34;&#34;
+
+    @staticmethod
+    def check_delete_oids_are_ints(oid_list):
+        &#34;&#34;&#34;Raise an error if a list of strings can&#39;t be parsed as ints
+
+        Args:
+            oid_list (list[int]): List of Object IDs to delete
+
+        Raises:
+            TypeError: If any of the items in oid_list can&#39;t be cast to ints
+
+        Returns:
+            list[int]: oid_list converted to ints
+        &#34;&#34;&#34;
+
+        numeric_oids = []
+        bad_oids = []
+        for oid in oid_list:
+            try:
+                numeric_oids.append(int(oid))
+            except ValueError:
+                bad_oids.append(oid)
+        if bad_oids:
+            raise TypeError(f&#39;Couldn\&#39;t convert OBJECTID(s) `{bad_oids}` to integer&#39;)
+        return numeric_oids
+
+    @staticmethod
+    def check_for_empty_oid_list(oid_list, numeric_oids):
+        &#34;&#34;&#34;Raise an error if the parsed Object ID list is empty
+
+        Args:
+            oid_list (list[int]): The original list of Object IDs to delete
+            numeric_oids (list[int]): The cast-to-int Object IDs
+
+        Raises:
+            ValueError: If numeric_oids is empty
+        &#34;&#34;&#34;
+
+        if not numeric_oids:
+            raise ValueError(f&#39;No OBJECTIDs found in {oid_list}&#39;)
+
+    @staticmethod
+    def check_delete_oids_are_in_live_data(oid_string, numeric_oids, feature_layer):
+        &#34;&#34;&#34;Warn if a delete Object ID doesn&#39;t exist in the live data, return number missing
+
+        Args:
+            oid_string (str): Comma-separated string of delete Object IDs
+            numeric_oids (list[int]): The parsed and cast-to-int Object IDs
+            feature_layer (arcgis.features.FeatureLayer): Live FeatureLayer item
+
+        Raises:
+            UserWarning: If any of the Object IDs in numeric_oids don&#39;t exist in the live data.
+
+        Returns:
+            int: Number of Object IDs missing from live data
+        &#34;&#34;&#34;
+
+        query_results = feature_layer.query(object_ids=oid_string, return_ids_only=True)
+        query_oids = query_results[&#39;objectIds&#39;]
+        oids_not_in_layer = set(numeric_oids) - set(query_oids)
+
+        if oids_not_in_layer:
+            warnings.warn(f&#39;OBJECTIDs {oids_not_in_layer} were not found in the live data&#39;)
+
+        return len(oids_not_in_layer)</code></pre>
+</details>
+<h3>Static methods</h3>
+<dl>
+<dt id="palletjack.utils.DeleteUtils.check_delete_oids_are_in_live_data"><code class="name flex">
+<span>def <span class="ident">check_delete_oids_are_in_live_data</span></span>(<span>oid_string, numeric_oids, feature_layer)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Warn if a delete Object ID doesn't exist in the live data, return number missing</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>oid_string</code></strong> :&ensp;<code>str</code></dt>
+<dd>Comma-separated string of delete Object IDs</dd>
+<dt><strong><code>numeric_oids</code></strong> :&ensp;<code>list[int]</code></dt>
+<dd>The parsed and cast-to-int Object IDs</dd>
+<dt><strong><code>feature_layer</code></strong> :&ensp;<code>arcgis.features.FeatureLayer</code></dt>
+<dd>Live FeatureLayer item</dd>
+</dl>
+<h2 id="raises">Raises</h2>
+<dl>
+<dt><code>UserWarning</code></dt>
+<dd>If any of the Object IDs in numeric_oids don't exist in the live data.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>int</code></dt>
+<dd>Number of Object IDs missing from live data</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@staticmethod
+def check_delete_oids_are_in_live_data(oid_string, numeric_oids, feature_layer):
+    &#34;&#34;&#34;Warn if a delete Object ID doesn&#39;t exist in the live data, return number missing
+
+    Args:
+        oid_string (str): Comma-separated string of delete Object IDs
+        numeric_oids (list[int]): The parsed and cast-to-int Object IDs
+        feature_layer (arcgis.features.FeatureLayer): Live FeatureLayer item
+
+    Raises:
+        UserWarning: If any of the Object IDs in numeric_oids don&#39;t exist in the live data.
+
+    Returns:
+        int: Number of Object IDs missing from live data
+    &#34;&#34;&#34;
+
+    query_results = feature_layer.query(object_ids=oid_string, return_ids_only=True)
+    query_oids = query_results[&#39;objectIds&#39;]
+    oids_not_in_layer = set(numeric_oids) - set(query_oids)
+
+    if oids_not_in_layer:
+        warnings.warn(f&#39;OBJECTIDs {oids_not_in_layer} were not found in the live data&#39;)
+
+    return len(oids_not_in_layer)</code></pre>
+</details>
+</dd>
+<dt id="palletjack.utils.DeleteUtils.check_delete_oids_are_ints"><code class="name flex">
+<span>def <span class="ident">check_delete_oids_are_ints</span></span>(<span>oid_list)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Raise an error if a list of strings can't be parsed as ints</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>oid_list</code></strong> :&ensp;<code>list[int]</code></dt>
+<dd>List of Object IDs to delete</dd>
+</dl>
+<h2 id="raises">Raises</h2>
+<dl>
+<dt><code>TypeError</code></dt>
+<dd>If any of the items in oid_list can't be cast to ints</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>list[int]</code></dt>
+<dd>oid_list converted to ints</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@staticmethod
+def check_delete_oids_are_ints(oid_list):
+    &#34;&#34;&#34;Raise an error if a list of strings can&#39;t be parsed as ints
+
+    Args:
+        oid_list (list[int]): List of Object IDs to delete
+
+    Raises:
+        TypeError: If any of the items in oid_list can&#39;t be cast to ints
+
+    Returns:
+        list[int]: oid_list converted to ints
+    &#34;&#34;&#34;
+
+    numeric_oids = []
+    bad_oids = []
+    for oid in oid_list:
+        try:
+            numeric_oids.append(int(oid))
+        except ValueError:
+            bad_oids.append(oid)
+    if bad_oids:
+        raise TypeError(f&#39;Couldn\&#39;t convert OBJECTID(s) `{bad_oids}` to integer&#39;)
+    return numeric_oids</code></pre>
+</details>
+</dd>
+<dt id="palletjack.utils.DeleteUtils.check_for_empty_oid_list"><code class="name flex">
+<span>def <span class="ident">check_for_empty_oid_list</span></span>(<span>oid_list, numeric_oids)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Raise an error if the parsed Object ID list is empty</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>oid_list</code></strong> :&ensp;<code>list[int]</code></dt>
+<dd>The original list of Object IDs to delete</dd>
+<dt><strong><code>numeric_oids</code></strong> :&ensp;<code>list[int]</code></dt>
+<dd>The cast-to-int Object IDs</dd>
+</dl>
+<h2 id="raises">Raises</h2>
+<dl>
+<dt><code>ValueError</code></dt>
+<dd>If numeric_oids is empty</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@staticmethod
+def check_for_empty_oid_list(oid_list, numeric_oids):
+    &#34;&#34;&#34;Raise an error if the parsed Object ID list is empty
+
+    Args:
+        oid_list (list[int]): The original list of Object IDs to delete
+        numeric_oids (list[int]): The cast-to-int Object IDs
+
+    Raises:
+        ValueError: If numeric_oids is empty
+    &#34;&#34;&#34;
+
+    if not numeric_oids:
+        raise ValueError(f&#39;No OBJECTIDs found in {oid_list}&#39;)</code></pre>
+</details>
+</dd>
+</dl>
+</dd>
+<dt id="palletjack.utils.FieldChecker"><code class="flex name class">
+<span>class <span class="ident">FieldChecker</span></span>
+<span>(</span><span>live_data_properties, new_dataframe)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Check the fields of a new dataframe against live data. Each method will raise errors if its checks fail.
+Provides the check_fields class method to run all the checks in one call with having to create an object.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>live_data_properties</code></strong> :&ensp;<code>dict</code></dt>
+<dd>FeatureLayer.properties of live data</dd>
+<dt><strong><code>new_dataframe</code></strong> :&ensp;<code>pd.DataFrame</code></dt>
+<dd>New data to be checked</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class FieldChecker:
+    &#34;&#34;&#34;Check the fields of a new dataframe against live data. Each method will raise errors if its checks fail.
+    Provides the check_fields class method to run all the checks in one call with having to create an object.
+    &#34;&#34;&#34;
+
+    @classmethod
+    def check_fields(cls, live_data_properties, new_dataframe, fields, add_oid):
+        &#34;&#34;&#34;Run all the field checks, raising errors and warnings where they fail.
+
+        Check individual method docstrings for details and specific errors raised.
+
+        Args:
+            live_data_properties (dict): FeatureLayer.properties of live data
+            new_dataframe (pd.DataFrame): New data to be checked
+            fields (List[str]): Fields to check
+            add_oid (bool): Add OBJECTID to fields if its not already present (for operations that are dependent on
+                OBJECTID, such as upsert)
+        &#34;&#34;&#34;
+
+        field_checker = cls(live_data_properties, new_dataframe)
+        field_checker.check_live_and_new_field_types_match(fields)
+        field_checker.check_for_non_null_fields(fields)
+        field_checker.check_field_length(fields)
+        field_checker.check_fields_present(fields, add_oid=add_oid)
+        field_checker.check_srs_wgs84()
+        field_checker.check_nullable_ints_shapely()
+
+    def __init__(self, live_data_properties, new_dataframe):
+        &#34;&#34;&#34;
+        Args:
+            live_data_properties (dict): FeatureLayer.properties of live data
+            new_dataframe (pd.DataFrame): New data to be checked
+        &#34;&#34;&#34;
+
+        self.live_data_properties = live_data_properties
+        self.fields_dataframe = pd.DataFrame(live_data_properties.fields)
+        self.new_dataframe = new_dataframe
+
+    def check_live_and_new_field_types_match(self, fields):
+        &#34;&#34;&#34;Raise an error if the field types of the live and new data don&#39;t match.
+
+        Uses a dictionary mapping Esri field types to pandas dtypes. If &#39;SHAPE&#39; is included in the fields, it calls
+        _check_geometry_types to verify the spatial types are compatible.
+
+        Args:
+            fields (List[str]): Fields to be updated
+
+        Raises:
+            ValueError: If the field types or spatial types are incompatible, the new data has multiple geometry types,
+                or the new data is not a valid spatially-enabled dataframe.
+            NotImplementedError: If the live data has a field that has not yet been mapped to a pandas dtype.
+        &#34;&#34;&#34;
+
+        #: Converting dtypes to str and comparing seems to be the only way to break out into shorts and longs, singles
+        #: and doubles. Otherwise, checking subclass is probably more pythonic.
+        short_ints = [&#39;uint8&#39;, &#39;uint16&#39;, &#39;int8&#39;, &#39;int16&#39;]
+        long_ints = [&#39;int&#39;, &#39;uint32&#39;, &#39;uint64&#39;, &#39;int32&#39;, &#39;int64&#39;]
+
+        #: Leaving the commented types here for future implementation if necessary
+        esri_to_pandas_types_mapping = {
+            &#39;esriFieldTypeInteger&#39;: [&#39;int&#39;] + short_ints + long_ints,
+            &#39;esriFieldTypeSmallInteger&#39;: short_ints,
+            &#39;esriFieldTypeDouble&#39;: [&#39;float&#39;, &#39;float32&#39;, &#39;float64&#39;],
+            &#39;esriFieldTypeSingle&#39;: [&#39;float32&#39;],
+            &#39;esriFieldTypeString&#39;: [&#39;str&#39;, &#39;object&#39;, &#39;string&#39;],
+            &#39;esriFieldTypeDate&#39;: [&#39;datetime64[ns]&#39;],
+            &#39;esriFieldTypeGeometry&#39;: [&#39;geometry&#39;],
+            &#39;esriFieldTypeOID&#39;: [&#39;int&#39;] + short_ints + long_ints,
+            #  &#39;esriFieldTypeBlob&#39;: [],
+            &#39;esriFieldTypeGlobalID&#39;: [&#39;str&#39;, &#39;object&#39;, &#39;string&#39;],
+            #  &#39;esriFieldTypeRaster&#39;: [],
+            &#39;esriFieldTypeGUID&#39;: [&#39;str&#39;, &#39;object&#39;, &#39;string&#39;],
+            #  &#39;esriFieldTypeXML&#39;: [],
+        }
+
+        #: geometry checking gets its own function
+        if &#39;SHAPE&#39; in fields:
+            self._check_geometry_types()
+            fields.remove(&#39;SHAPE&#39;)
+
+        fields_to_check = self.fields_dataframe[self.fields_dataframe[&#39;name&#39;].isin(fields)].set_index(&#39;name&#39;)
+
+        invalid_fields = []
+        int_fields_as_floats = []
+        datetime_fields_with_timezone = []
+        for field in fields:
+            #: check against the str.lower to catch normal dtypes (int64) and the new, pd.NA-aware dtypes (Int64)
+            new_dtype = str(self.new_dataframe[field].dtype).lower()
+            live_type = fields_to_check.loc[field, &#39;type&#39;]
+
+            try:
+                if new_dtype not in esri_to_pandas_types_mapping[live_type]:
+                    invalid_fields.append((field, live_type, str(self.new_dataframe[field].dtype)))
+                if new_dtype in [&#39;float&#39;, &#39;float32&#39;, &#39;float64&#39;
+                                ] and live_type in [&#39;esriFieldTypeInteger&#39;, &#39;esriFieldTypeSmallInteger&#39;]:
+                    int_fields_as_floats.append(field)
+                if &#39;datetime64&#39; in new_dtype and new_dtype != &#39;datetime64[ns]&#39; and live_type == &#39;esriFieldTypeDate&#39;:
+                    datetime_fields_with_timezone.append(field)
+            except KeyError:
+                # pylint: disable-next=raise-missing-from
+                raise NotImplementedError(f&#39;Live field &#34;{field}&#34; type &#34;{live_type}&#34; not yet mapped to a pandas dtype&#39;)
+
+        if invalid_fields:
+            if int_fields_as_floats:
+                raise IntFieldAsFloatError(
+                    f&#39;Field type incompatibilities (field, live type, new type): {invalid_fields}\n&#39; \
+                    &#39;Check the following int fields for null/np.nan values and convert to panda\&#39;s nullable int &#39;\
+                    f&#39;dtype: {&#34;, &#34;.join(int_fields_as_floats)}&#39;
+                )
+            if datetime_fields_with_timezone:
+                raise TimezoneAwareDatetimeError(
+                    f&#39;Field type incompatibilities (field, live type, new type): {invalid_fields}\n&#39; \
+                    &#39;Check the following datetime fields for timezone aware dtypes values and convert to &#39;\
+                    &#39;timezone-naive dtypes using pd.to_datetime(df[\&#39;field\&#39;]).dt.tz_localize(None): &#39;\
+                    f&#39;{&#34;, &#34;.join(datetime_fields_with_timezone)}&#39;
+                )
+            raise ValueError(f&#39;Field type incompatibilities (field, live type, new type): {invalid_fields}&#39;)
+
+    def _check_geometry_types(self):
+        &#34;&#34;&#34;Raise an error if the live and new data geometry types are incompatible.
+
+        Args:
+            live_data_properties (dict): FeatureLayer.properties of live data
+            new_dataframe (pd.DataFrame): New data to be added/updated
+
+        Raises:
+            ValueError: If the new data is not a valid spatially-enabled dataframe, has multiple geometry types, or has
+                a geometry type that doesn&#39;t match the live data.
+        &#34;&#34;&#34;
+
+        esri_to_sedf_geometry_mapping = {
+            &#39;esriGeometryPoint&#39;: &#39;point&#39;,
+            &#39;esriGeometryMultipoint&#39;: &#39;multipoint&#39;,
+            &#39;esriGeometryPolyline&#39;: &#39;polyline&#39;,
+            &#39;esriGeometryPolygon&#39;: &#39;polygon&#39;,
+            &#39;esriGeometryEnvelope&#39;: &#39;envelope&#39;,
+        }
+
+        if &#39;SHAPE&#39; not in self.new_dataframe.columns:
+            raise ValueError(&#39;New dataframe does not have a SHAPE column&#39;)
+
+        live_geometry_type = self.live_data_properties.geometryType
+        new_geometry_types = self.new_dataframe.spatial.geometry_type
+        if len(new_geometry_types) &gt; 1:
+            raise ValueError(&#39;New dataframe has multiple geometry types&#39;)
+        if esri_to_sedf_geometry_mapping[live_geometry_type] != new_geometry_types[0].lower():
+            raise ValueError(
+                f&#39;New dataframe geometry type &#34;{new_geometry_types[0]}&#34; incompatible with live geometry type &#34;{live_geometry_type}&#34;&#39;
+            )
+
+    def check_for_non_null_fields(self, fields):
+        &#34;&#34;&#34;Raise an error if the new data contains nulls in a field that the live data says is not nullable.
+
+        If this error occurs, the client should use pandas fillna() method to replace NaNs/Nones with empty strings or
+        appropriate nodata values.
+
+        Args:
+            fields (List[str]): Fields to check
+
+        Raises:
+            ValueError: If the new data contains nulls in a field that the live data says is not nullable and doesn&#39;t
+                have a default value.
+        &#34;&#34;&#34;
+
+        columns_with_nulls = self.new_dataframe.columns[self.new_dataframe.isna().any()].tolist()
+        # fields_dataframe = pd.DataFrame(self.live_data_properties[&#39;fields&#39;])
+        non_nullable_live_columns = self.fields_dataframe[
+            ~(self.fields_dataframe[&#39;nullable&#39;]) &amp;
+            ~(self.fields_dataframe[&#39;defaultValue&#39;].astype(bool))][&#39;name&#39;].tolist()
+
+        columns_to_check = [column for column in columns_with_nulls if column in fields]
+
+        #: If none of the columns have nulls, we don&#39;t need to check further
+        if not columns_to_check:
+            return
+
+        problem_fields = []
+        for column in columns_to_check:
+            if column in non_nullable_live_columns:
+                problem_fields.append(column)
+
+        if problem_fields:
+            raise ValueError(
+                f&#39;The following fields cannot have null values in the live data but one or more nulls exist in the new data: {&#34;, &#34;.join(problem_fields)}&#39;
+            )
+
+    def check_field_length(self, fields):
+        &#34;&#34;&#34;Raise an error if a new data string value is longer than allowed in the live data.
+
+        Args:
+            fields (List[str]): Fields to check
+
+        Raises:
+            ValueError: If the string fields in the new data contain a value longer than the corresponding field in the
+                live data allows.
+        &#34;&#34;&#34;
+
+        if &#39;length&#39; not in self.fields_dataframe.columns:
+            module_logger.debug(&#39;No fields with length property&#39;)
+            return
+
+        length_limited_fields = self.fields_dataframe[
+            (self.fields_dataframe[&#39;type&#39;].isin([&#39;esriFieldTypeString&#39;, &#39;esriFieldTypeGlobalID&#39;])) &amp;
+            (self.fields_dataframe[&#39;length&#39;].astype(bool))]
+
+        columns_to_check = length_limited_fields[length_limited_fields[&#39;name&#39;].isin(fields)]
+
+        for field, live_max_length in columns_to_check[[&#39;name&#39;, &#39;length&#39;]].to_records(index=False):
+            new_data_lengths = self.new_dataframe[field].str.len()
+            new_max_length = new_data_lengths.max()
+            if new_max_length &gt; live_max_length:
+                raise ValueError(
+                    f&#39;Row {new_data_lengths.argmax()}, column {field} in new data exceeds the live data max length of {live_max_length}&#39;
+                )
+
+    def check_fields_present(self, fields, add_oid):
+        &#34;&#34;&#34;Raise an error if the fields to be operated on aren&#39;t present in either the live or new data.
+
+        Args:
+            fields (List[str]): The fields to be operated on.
+            add_oid (bool): Add OBJECTID to fields if its not already present (for operations that are dependent on
+                OBJECTID, such as upsert)
+
+        Raises:
+            RuntimeError: If any of fields are not in live or new data.
+        &#34;&#34;&#34;
+
+        live_fields = set(self.fields_dataframe[&#39;name&#39;])
+        new_fields = set(self.new_dataframe.columns)
+        working_fields = set(fields)
+        if add_oid:
+            working_fields.add(&#39;OBJECTID&#39;)
+
+        live_dif = working_fields - live_fields
+        new_dif = working_fields - new_fields
+
+        error_message = []
+        if live_dif:
+            error_message.append(f&#39;Fields missing in live data: {&#34;, &#34;.join(live_dif)}&#39;)
+        if new_dif:
+            error_message.append(f&#39;Fields missing in new data: {&#34;, &#34;.join(new_dif)}&#39;)
+
+        if error_message:
+            raise RuntimeError(&#39;. &#39;.join(error_message))
+
+    def check_srs_wgs84(self):
+        &#34;&#34;&#34;Raise an error if the new spatial reference system isn&#39;t WGS84 as required by geojson.
+
+        Raises:
+            ValueError: If the new SRS value can&#39;t be cast to an int (please log an issue if this occurs)
+            ValueError: If the new SRS value isn&#39;t 4326.
+        &#34;&#34;&#34;
+
+        #: If we modify a spatial data frame, sometimes the .sr.wkid property/dictionary becomes {0:number} instead
+        #: of {&#39;wkid&#39;: number}
+        try:
+            new_srs = self.new_dataframe.spatial.sr.wkid
+        except AttributeError:
+            new_srs = self.new_dataframe.spatial.sr[0]
+
+        try:
+            new_srs = int(new_srs)
+        except ValueError as error:
+            raise ValueError(&#39;Could not cast new SRS to int&#39;) from error
+        if new_srs != 4326:
+            raise ValueError(
+                f&#39;New dataframe SRS {new_srs} is not wkid 4326. Reproject with appropriate transformation.&#39;
+            )
+
+    def check_nullable_ints_shapely(self):
+        &#34;&#34;&#34;Raise a warning if null values occur within nullable integer fields of the dataframe
+
+        Apparently due to a convention within shapely, any null values in an integer field are converted to 0.
+
+        Raises:
+            UserWarning: If we&#39;re using shapely instead of arcpy, the new dataframe uses nullable int dtypes, and there
+                is one or more pd.NA values within a nullable int column.
+        &#34;&#34;&#34;
+
+        #: Only occurs if client is using shapely instead of arcpy
+        if importlib.util.find_spec(&#39;arcpy&#39;):
+            return
+
+        nullable_ints = {&#39;Int8&#39;, &#39;Int16&#39;, &#39;Int32&#39;, &#39;Int64&#39;, &#39;UInt8&#39;, &#39;UInt16&#39;, &#39;UInt32&#39;, &#39;UInt64&#39;}
+        nullable_int_columns = [
+            column for column in self.new_dataframe.columns if str(self.new_dataframe[column].dtype) in nullable_ints
+        ]
+        columns_with_nulls = [column for column in nullable_int_columns if self.new_dataframe[column].isnull().any()]
+
+        if columns_with_nulls:
+            warnings.warn(
+                &#39;The following columns have null values that will be replaced by 0 due to shapely conventions: &#39;\
+                    f&#39;{&#34;, &#34;.join(columns_with_nulls)}&#39;
+            )</code></pre>
+</details>
+<h3>Static methods</h3>
+<dl>
+<dt id="palletjack.utils.FieldChecker.check_fields"><code class="name flex">
+<span>def <span class="ident">check_fields</span></span>(<span>live_data_properties, new_dataframe, fields, add_oid)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Run all the field checks, raising errors and warnings where they fail.</p>
+<p>Check individual method docstrings for details and specific errors raised.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>live_data_properties</code></strong> :&ensp;<code>dict</code></dt>
+<dd>FeatureLayer.properties of live data</dd>
+<dt><strong><code>new_dataframe</code></strong> :&ensp;<code>pd.DataFrame</code></dt>
+<dd>New data to be checked</dd>
+<dt><strong><code>fields</code></strong> :&ensp;<code>List[str]</code></dt>
+<dd>Fields to check</dd>
+<dt><strong><code>add_oid</code></strong> :&ensp;<code>bool</code></dt>
+<dd>Add OBJECTID to fields if its not already present (for operations that are dependent on
+OBJECTID, such as upsert)</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@classmethod
+def check_fields(cls, live_data_properties, new_dataframe, fields, add_oid):
+    &#34;&#34;&#34;Run all the field checks, raising errors and warnings where they fail.
+
+    Check individual method docstrings for details and specific errors raised.
+
+    Args:
+        live_data_properties (dict): FeatureLayer.properties of live data
+        new_dataframe (pd.DataFrame): New data to be checked
+        fields (List[str]): Fields to check
+        add_oid (bool): Add OBJECTID to fields if its not already present (for operations that are dependent on
+            OBJECTID, such as upsert)
+    &#34;&#34;&#34;
+
+    field_checker = cls(live_data_properties, new_dataframe)
+    field_checker.check_live_and_new_field_types_match(fields)
+    field_checker.check_for_non_null_fields(fields)
+    field_checker.check_field_length(fields)
+    field_checker.check_fields_present(fields, add_oid=add_oid)
+    field_checker.check_srs_wgs84()
+    field_checker.check_nullable_ints_shapely()</code></pre>
+</details>
+</dd>
+</dl>
+<h3>Methods</h3>
+<dl>
+<dt id="palletjack.utils.FieldChecker.check_field_length"><code class="name flex">
+<span>def <span class="ident">check_field_length</span></span>(<span>self, fields)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Raise an error if a new data string value is longer than allowed in the live data.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>fields</code></strong> :&ensp;<code>List[str]</code></dt>
+<dd>Fields to check</dd>
+</dl>
+<h2 id="raises">Raises</h2>
+<dl>
+<dt><code>ValueError</code></dt>
+<dd>If the string fields in the new data contain a value longer than the corresponding field in the
+live data allows.</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def check_field_length(self, fields):
+    &#34;&#34;&#34;Raise an error if a new data string value is longer than allowed in the live data.
+
+    Args:
+        fields (List[str]): Fields to check
+
+    Raises:
+        ValueError: If the string fields in the new data contain a value longer than the corresponding field in the
+            live data allows.
+    &#34;&#34;&#34;
+
+    if &#39;length&#39; not in self.fields_dataframe.columns:
+        module_logger.debug(&#39;No fields with length property&#39;)
+        return
+
+    length_limited_fields = self.fields_dataframe[
+        (self.fields_dataframe[&#39;type&#39;].isin([&#39;esriFieldTypeString&#39;, &#39;esriFieldTypeGlobalID&#39;])) &amp;
+        (self.fields_dataframe[&#39;length&#39;].astype(bool))]
+
+    columns_to_check = length_limited_fields[length_limited_fields[&#39;name&#39;].isin(fields)]
+
+    for field, live_max_length in columns_to_check[[&#39;name&#39;, &#39;length&#39;]].to_records(index=False):
+        new_data_lengths = self.new_dataframe[field].str.len()
+        new_max_length = new_data_lengths.max()
+        if new_max_length &gt; live_max_length:
+            raise ValueError(
+                f&#39;Row {new_data_lengths.argmax()}, column {field} in new data exceeds the live data max length of {live_max_length}&#39;
+            )</code></pre>
+</details>
+</dd>
+<dt id="palletjack.utils.FieldChecker.check_fields_present"><code class="name flex">
+<span>def <span class="ident">check_fields_present</span></span>(<span>self, fields, add_oid)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Raise an error if the fields to be operated on aren't present in either the live or new data.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>fields</code></strong> :&ensp;<code>List[str]</code></dt>
+<dd>The fields to be operated on.</dd>
+<dt><strong><code>add_oid</code></strong> :&ensp;<code>bool</code></dt>
+<dd>Add OBJECTID to fields if its not already present (for operations that are dependent on
+OBJECTID, such as upsert)</dd>
+</dl>
+<h2 id="raises">Raises</h2>
+<dl>
+<dt><code>RuntimeError</code></dt>
+<dd>If any of fields are not in live or new data.</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def check_fields_present(self, fields, add_oid):
+    &#34;&#34;&#34;Raise an error if the fields to be operated on aren&#39;t present in either the live or new data.
+
+    Args:
+        fields (List[str]): The fields to be operated on.
+        add_oid (bool): Add OBJECTID to fields if its not already present (for operations that are dependent on
+            OBJECTID, such as upsert)
+
+    Raises:
+        RuntimeError: If any of fields are not in live or new data.
+    &#34;&#34;&#34;
+
+    live_fields = set(self.fields_dataframe[&#39;name&#39;])
+    new_fields = set(self.new_dataframe.columns)
+    working_fields = set(fields)
+    if add_oid:
+        working_fields.add(&#39;OBJECTID&#39;)
+
+    live_dif = working_fields - live_fields
+    new_dif = working_fields - new_fields
+
+    error_message = []
+    if live_dif:
+        error_message.append(f&#39;Fields missing in live data: {&#34;, &#34;.join(live_dif)}&#39;)
+    if new_dif:
+        error_message.append(f&#39;Fields missing in new data: {&#34;, &#34;.join(new_dif)}&#39;)
+
+    if error_message:
+        raise RuntimeError(&#39;. &#39;.join(error_message))</code></pre>
+</details>
+</dd>
+<dt id="palletjack.utils.FieldChecker.check_for_non_null_fields"><code class="name flex">
+<span>def <span class="ident">check_for_non_null_fields</span></span>(<span>self, fields)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Raise an error if the new data contains nulls in a field that the live data says is not nullable.</p>
+<p>If this error occurs, the client should use pandas fillna() method to replace NaNs/Nones with empty strings or
+appropriate nodata values.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>fields</code></strong> :&ensp;<code>List[str]</code></dt>
+<dd>Fields to check</dd>
+</dl>
+<h2 id="raises">Raises</h2>
+<dl>
+<dt><code>ValueError</code></dt>
+<dd>If the new data contains nulls in a field that the live data says is not nullable and doesn't
+have a default value.</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def check_for_non_null_fields(self, fields):
+    &#34;&#34;&#34;Raise an error if the new data contains nulls in a field that the live data says is not nullable.
+
+    If this error occurs, the client should use pandas fillna() method to replace NaNs/Nones with empty strings or
+    appropriate nodata values.
+
+    Args:
+        fields (List[str]): Fields to check
+
+    Raises:
+        ValueError: If the new data contains nulls in a field that the live data says is not nullable and doesn&#39;t
+            have a default value.
+    &#34;&#34;&#34;
+
+    columns_with_nulls = self.new_dataframe.columns[self.new_dataframe.isna().any()].tolist()
+    # fields_dataframe = pd.DataFrame(self.live_data_properties[&#39;fields&#39;])
+    non_nullable_live_columns = self.fields_dataframe[
+        ~(self.fields_dataframe[&#39;nullable&#39;]) &amp;
+        ~(self.fields_dataframe[&#39;defaultValue&#39;].astype(bool))][&#39;name&#39;].tolist()
+
+    columns_to_check = [column for column in columns_with_nulls if column in fields]
+
+    #: If none of the columns have nulls, we don&#39;t need to check further
+    if not columns_to_check:
+        return
+
+    problem_fields = []
+    for column in columns_to_check:
+        if column in non_nullable_live_columns:
+            problem_fields.append(column)
+
+    if problem_fields:
+        raise ValueError(
+            f&#39;The following fields cannot have null values in the live data but one or more nulls exist in the new data: {&#34;, &#34;.join(problem_fields)}&#39;
+        )</code></pre>
+</details>
+</dd>
+<dt id="palletjack.utils.FieldChecker.check_live_and_new_field_types_match"><code class="name flex">
+<span>def <span class="ident">check_live_and_new_field_types_match</span></span>(<span>self, fields)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Raise an error if the field types of the live and new data don't match.</p>
+<p>Uses a dictionary mapping Esri field types to pandas dtypes. If 'SHAPE' is included in the fields, it calls
+_check_geometry_types to verify the spatial types are compatible.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>fields</code></strong> :&ensp;<code>List[str]</code></dt>
+<dd>Fields to be updated</dd>
+</dl>
+<h2 id="raises">Raises</h2>
+<dl>
+<dt><code>ValueError</code></dt>
+<dd>If the field types or spatial types are incompatible, the new data has multiple geometry types,
+or the new data is not a valid spatially-enabled dataframe.</dd>
+<dt><code>NotImplementedError</code></dt>
+<dd>If the live data has a field that has not yet been mapped to a pandas dtype.</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def check_live_and_new_field_types_match(self, fields):
+    &#34;&#34;&#34;Raise an error if the field types of the live and new data don&#39;t match.
+
+    Uses a dictionary mapping Esri field types to pandas dtypes. If &#39;SHAPE&#39; is included in the fields, it calls
+    _check_geometry_types to verify the spatial types are compatible.
+
+    Args:
+        fields (List[str]): Fields to be updated
+
+    Raises:
+        ValueError: If the field types or spatial types are incompatible, the new data has multiple geometry types,
+            or the new data is not a valid spatially-enabled dataframe.
+        NotImplementedError: If the live data has a field that has not yet been mapped to a pandas dtype.
+    &#34;&#34;&#34;
+
+    #: Converting dtypes to str and comparing seems to be the only way to break out into shorts and longs, singles
+    #: and doubles. Otherwise, checking subclass is probably more pythonic.
+    short_ints = [&#39;uint8&#39;, &#39;uint16&#39;, &#39;int8&#39;, &#39;int16&#39;]
+    long_ints = [&#39;int&#39;, &#39;uint32&#39;, &#39;uint64&#39;, &#39;int32&#39;, &#39;int64&#39;]
+
+    #: Leaving the commented types here for future implementation if necessary
+    esri_to_pandas_types_mapping = {
+        &#39;esriFieldTypeInteger&#39;: [&#39;int&#39;] + short_ints + long_ints,
+        &#39;esriFieldTypeSmallInteger&#39;: short_ints,
+        &#39;esriFieldTypeDouble&#39;: [&#39;float&#39;, &#39;float32&#39;, &#39;float64&#39;],
+        &#39;esriFieldTypeSingle&#39;: [&#39;float32&#39;],
+        &#39;esriFieldTypeString&#39;: [&#39;str&#39;, &#39;object&#39;, &#39;string&#39;],
+        &#39;esriFieldTypeDate&#39;: [&#39;datetime64[ns]&#39;],
+        &#39;esriFieldTypeGeometry&#39;: [&#39;geometry&#39;],
+        &#39;esriFieldTypeOID&#39;: [&#39;int&#39;] + short_ints + long_ints,
+        #  &#39;esriFieldTypeBlob&#39;: [],
+        &#39;esriFieldTypeGlobalID&#39;: [&#39;str&#39;, &#39;object&#39;, &#39;string&#39;],
+        #  &#39;esriFieldTypeRaster&#39;: [],
+        &#39;esriFieldTypeGUID&#39;: [&#39;str&#39;, &#39;object&#39;, &#39;string&#39;],
+        #  &#39;esriFieldTypeXML&#39;: [],
+    }
+
+    #: geometry checking gets its own function
+    if &#39;SHAPE&#39; in fields:
+        self._check_geometry_types()
+        fields.remove(&#39;SHAPE&#39;)
+
+    fields_to_check = self.fields_dataframe[self.fields_dataframe[&#39;name&#39;].isin(fields)].set_index(&#39;name&#39;)
+
+    invalid_fields = []
+    int_fields_as_floats = []
+    datetime_fields_with_timezone = []
+    for field in fields:
+        #: check against the str.lower to catch normal dtypes (int64) and the new, pd.NA-aware dtypes (Int64)
+        new_dtype = str(self.new_dataframe[field].dtype).lower()
+        live_type = fields_to_check.loc[field, &#39;type&#39;]
+
+        try:
+            if new_dtype not in esri_to_pandas_types_mapping[live_type]:
+                invalid_fields.append((field, live_type, str(self.new_dataframe[field].dtype)))
+            if new_dtype in [&#39;float&#39;, &#39;float32&#39;, &#39;float64&#39;
+                            ] and live_type in [&#39;esriFieldTypeInteger&#39;, &#39;esriFieldTypeSmallInteger&#39;]:
+                int_fields_as_floats.append(field)
+            if &#39;datetime64&#39; in new_dtype and new_dtype != &#39;datetime64[ns]&#39; and live_type == &#39;esriFieldTypeDate&#39;:
+                datetime_fields_with_timezone.append(field)
+        except KeyError:
+            # pylint: disable-next=raise-missing-from
+            raise NotImplementedError(f&#39;Live field &#34;{field}&#34; type &#34;{live_type}&#34; not yet mapped to a pandas dtype&#39;)
+
+    if invalid_fields:
+        if int_fields_as_floats:
+            raise IntFieldAsFloatError(
+                f&#39;Field type incompatibilities (field, live type, new type): {invalid_fields}\n&#39; \
+                &#39;Check the following int fields for null/np.nan values and convert to panda\&#39;s nullable int &#39;\
+                f&#39;dtype: {&#34;, &#34;.join(int_fields_as_floats)}&#39;
+            )
+        if datetime_fields_with_timezone:
+            raise TimezoneAwareDatetimeError(
+                f&#39;Field type incompatibilities (field, live type, new type): {invalid_fields}\n&#39; \
+                &#39;Check the following datetime fields for timezone aware dtypes values and convert to &#39;\
+                &#39;timezone-naive dtypes using pd.to_datetime(df[\&#39;field\&#39;]).dt.tz_localize(None): &#39;\
+                f&#39;{&#34;, &#34;.join(datetime_fields_with_timezone)}&#39;
+            )
+        raise ValueError(f&#39;Field type incompatibilities (field, live type, new type): {invalid_fields}&#39;)</code></pre>
+</details>
+</dd>
+<dt id="palletjack.utils.FieldChecker.check_nullable_ints_shapely"><code class="name flex">
+<span>def <span class="ident">check_nullable_ints_shapely</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Raise a warning if null values occur within nullable integer fields of the dataframe</p>
+<p>Apparently due to a convention within shapely, any null values in an integer field are converted to 0.</p>
+<h2 id="raises">Raises</h2>
+<dl>
+<dt><code>UserWarning</code></dt>
+<dd>If we're using shapely instead of arcpy, the new dataframe uses nullable int dtypes, and there
+is one or more pd.NA values within a nullable int column.</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def check_nullable_ints_shapely(self):
+    &#34;&#34;&#34;Raise a warning if null values occur within nullable integer fields of the dataframe
+
+    Apparently due to a convention within shapely, any null values in an integer field are converted to 0.
+
+    Raises:
+        UserWarning: If we&#39;re using shapely instead of arcpy, the new dataframe uses nullable int dtypes, and there
+            is one or more pd.NA values within a nullable int column.
+    &#34;&#34;&#34;
+
+    #: Only occurs if client is using shapely instead of arcpy
+    if importlib.util.find_spec(&#39;arcpy&#39;):
+        return
+
+    nullable_ints = {&#39;Int8&#39;, &#39;Int16&#39;, &#39;Int32&#39;, &#39;Int64&#39;, &#39;UInt8&#39;, &#39;UInt16&#39;, &#39;UInt32&#39;, &#39;UInt64&#39;}
+    nullable_int_columns = [
+        column for column in self.new_dataframe.columns if str(self.new_dataframe[column].dtype) in nullable_ints
+    ]
+    columns_with_nulls = [column for column in nullable_int_columns if self.new_dataframe[column].isnull().any()]
+
+    if columns_with_nulls:
+        warnings.warn(
+            &#39;The following columns have null values that will be replaced by 0 due to shapely conventions: &#39;\
+                f&#39;{&#34;, &#34;.join(columns_with_nulls)}&#39;
+        )</code></pre>
+</details>
+</dd>
+<dt id="palletjack.utils.FieldChecker.check_srs_wgs84"><code class="name flex">
+<span>def <span class="ident">check_srs_wgs84</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Raise an error if the new spatial reference system isn't WGS84 as required by geojson.</p>
+<h2 id="raises">Raises</h2>
+<dl>
+<dt><code>ValueError</code></dt>
+<dd>If the new SRS value can't be cast to an int (please log an issue if this occurs)</dd>
+<dt><code>ValueError</code></dt>
+<dd>If the new SRS value isn't 4326.</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def check_srs_wgs84(self):
+    &#34;&#34;&#34;Raise an error if the new spatial reference system isn&#39;t WGS84 as required by geojson.
+
+    Raises:
+        ValueError: If the new SRS value can&#39;t be cast to an int (please log an issue if this occurs)
+        ValueError: If the new SRS value isn&#39;t 4326.
+    &#34;&#34;&#34;
+
+    #: If we modify a spatial data frame, sometimes the .sr.wkid property/dictionary becomes {0:number} instead
+    #: of {&#39;wkid&#39;: number}
+    try:
+        new_srs = self.new_dataframe.spatial.sr.wkid
+    except AttributeError:
+        new_srs = self.new_dataframe.spatial.sr[0]
+
+    try:
+        new_srs = int(new_srs)
+    except ValueError as error:
+        raise ValueError(&#39;Could not cast new SRS to int&#39;) from error
+    if new_srs != 4326:
+        raise ValueError(
+            f&#39;New dataframe SRS {new_srs} is not wkid 4326. Reproject with appropriate transformation.&#39;
+        )</code></pre>
+</details>
+</dd>
+</dl>
+</dd>
+<dt id="palletjack.utils.Geocoding"><code class="flex name class">
+<span>class <span class="ident">Geocoding</span></span>
+</code></dt>
+<dd>
+<div class="desc"><p>Methods for geocoding an address</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class Geocoding:
+    &#34;&#34;&#34;Methods for geocoding an address
+    &#34;&#34;&#34;
+
+    @staticmethod
+    def geocode_addr(street, zone, api_key, rate_limits, **api_args):
+        &#34;&#34;&#34;Geocode an address through the UGRC Web API geocoder
+
+        Invalid results are returned with an x,y of 0,0, a score of 0.0, and a match address of &#39;No Match&#39;
+
+        Args:
+            street (str): The street address
+            zone (str): The zip code or city
+            api_key (str): API key obtained from developer.mapserv.utah.gov
+            rate_limits (Tuple &lt;float&gt;): A lower and upper bound in seconds for pausing between API calls. Defaults to
+                (0.015, 0.03)
+            **api_args (dict): Keyword arguments to be passed as parameters in the API GET call. The API key will be
+                added to this dict.
+
+        Returns:
+            tuple[int]: The match&#39;s x coordinate, y coordinate, score, and match address
+        &#34;&#34;&#34;
+
+        sleep(random.uniform(rate_limits[0], rate_limits[1]))
+        url = f&#39;https://api.mapserv.utah.gov/api/v1/geocode/{street}/{zone}&#39;
+        api_args[&#39;apiKey&#39;] = api_key
+
+        try:
+            geocode_result_dict = retry(Geocoding._geocode_api_call, url, api_args)
+        except Exception as error:
+            module_logger.error(error)
+            return (0, 0, 0., &#39;No API response&#39;)
+
+        return (
+            geocode_result_dict[&#39;location&#39;][&#39;x&#39;],
+            geocode_result_dict[&#39;location&#39;][&#39;y&#39;],
+            geocode_result_dict[&#39;score&#39;],
+            geocode_result_dict[&#39;matchAddress&#39;],
+        )
+
+    @staticmethod
+    def _geocode_api_call(url, api_args):
+        &#34;&#34;&#34;Makes a requests.get call to the geocoding API.
+
+        Meant to be called through a retry wrapper so that the RuntimeErrors get tried again a couple times before
+            finally raising the error.
+
+        Args:
+            url (str): Base url for GET request
+            api_args (dict): Dictionary of URL parameters
+
+        Raises:
+            RuntimeError: If the server does not return response and request.get returns a falsy object.
+            RuntimeError: If the server returns a status code other than 200 or 404
+
+        Returns:
+            dict: The &#39;results&#39; dictionary of the response json (location, score, and matchAddress)
+        &#34;&#34;&#34;
+
+        response = requests.get(url, params=api_args)
+
+        #: The server times out and doesn&#39;t respond
+        if response is None:
+            module_logger.debug(&#39;GET call did not return a response&#39;)
+            raise RuntimeError(&#39;No response from GET; request timeout?&#39;)
+
+        #: The point does geocode
+        if response.status_code == 200:
+            return response.json()[&#39;result&#39;]
+
+        #: The point doesn&#39;t geocode
+        if response.status_code == 404:
+            return {
+                &#39;location&#39;: {
+                    &#39;x&#39;: 0,
+                    &#39;y&#39;: 0
+                },
+                &#39;score&#39;: 0.,
+                &#39;matchAddress&#39;: &#39;No Match&#39;,
+            }
+
+        #: If we haven&#39;t returned, raise an error to trigger _retry
+        raise RuntimeError(f&#39;Did not receive a valid geocoding response; status code: {response.status_code}&#39;)
+
+    @staticmethod
+    def validate_api_key(api_key):
+        &#34;&#34;&#34;Check to see if a Web API key is valid by geocoding a single, known address point
+
+        Args:
+            api_key (str): API Key
+
+        Raises:
+            RuntimeError: If there was a network or other error attempting to geocode the known point
+            ValueError: If the API responds with an invalid key message
+            UserWarning: If the API responds with some other abnormal result
+        &#34;&#34;&#34;
+
+        url = &#39;https://api.mapserv.utah.gov/api/v1/geocode/326 east south temple street/slc&#39;
+
+        try:
+            response = retry(requests.get, url=url, params={&#39;apiKey&#39;: api_key})
+        except Exception as error:
+            raise RuntimeError(
+                &#39;Could not determine key validity; check your API key and/or network connection&#39;
+            ) from error
+        response_json = response.json()
+        if response_json[&#39;status&#39;] == 200:
+            return
+        if response_json[&#39;status&#39;] == 400 and &#39;Invalid API key&#39; in response_json[&#39;message&#39;]:
+            raise ValueError(f&#39;API key validation failed: {response_json[&#34;message&#34;]}&#39;)
+
+        warnings.warn(f&#39;Unhandled API key validation response {response_json[&#34;status&#34;]}: {response_json[&#34;message&#34;]}&#39;)</code></pre>
+</details>
+<h3>Static methods</h3>
+<dl>
+<dt id="palletjack.utils.Geocoding.geocode_addr"><code class="name flex">
+<span>def <span class="ident">geocode_addr</span></span>(<span>street, zone, api_key, rate_limits, **api_args)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Geocode an address through the UGRC Web API geocoder</p>
+<p>Invalid results are returned with an x,y of 0,0, a score of 0.0, and a match address of 'No Match'</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>street</code></strong> :&ensp;<code>str</code></dt>
+<dd>The street address</dd>
+<dt><strong><code>zone</code></strong> :&ensp;<code>str</code></dt>
+<dd>The zip code or city</dd>
+<dt><strong><code>api_key</code></strong> :&ensp;<code>str</code></dt>
+<dd>API key obtained from developer.mapserv.utah.gov</dd>
+<dt>rate_limits (Tuple <float>): A lower and upper bound in seconds for pausing between API calls. Defaults to</dt>
+<dt>(0.015, 0.03)</dt>
+<dt><strong><code>**api_args</code></strong> :&ensp;<code>dict</code></dt>
+<dd>Keyword arguments to be passed as parameters in the API GET call. The API key will be
+added to this dict.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>tuple[int]</code></dt>
+<dd>The match's x coordinate, y coordinate, score, and match address</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@staticmethod
+def geocode_addr(street, zone, api_key, rate_limits, **api_args):
+    &#34;&#34;&#34;Geocode an address through the UGRC Web API geocoder
+
+    Invalid results are returned with an x,y of 0,0, a score of 0.0, and a match address of &#39;No Match&#39;
+
+    Args:
+        street (str): The street address
+        zone (str): The zip code or city
+        api_key (str): API key obtained from developer.mapserv.utah.gov
+        rate_limits (Tuple &lt;float&gt;): A lower and upper bound in seconds for pausing between API calls. Defaults to
+            (0.015, 0.03)
+        **api_args (dict): Keyword arguments to be passed as parameters in the API GET call. The API key will be
+            added to this dict.
+
+    Returns:
+        tuple[int]: The match&#39;s x coordinate, y coordinate, score, and match address
+    &#34;&#34;&#34;
+
+    sleep(random.uniform(rate_limits[0], rate_limits[1]))
+    url = f&#39;https://api.mapserv.utah.gov/api/v1/geocode/{street}/{zone}&#39;
+    api_args[&#39;apiKey&#39;] = api_key
+
+    try:
+        geocode_result_dict = retry(Geocoding._geocode_api_call, url, api_args)
+    except Exception as error:
+        module_logger.error(error)
+        return (0, 0, 0., &#39;No API response&#39;)
+
+    return (
+        geocode_result_dict[&#39;location&#39;][&#39;x&#39;],
+        geocode_result_dict[&#39;location&#39;][&#39;y&#39;],
+        geocode_result_dict[&#39;score&#39;],
+        geocode_result_dict[&#39;matchAddress&#39;],
+    )</code></pre>
+</details>
+</dd>
+<dt id="palletjack.utils.Geocoding.validate_api_key"><code class="name flex">
+<span>def <span class="ident">validate_api_key</span></span>(<span>api_key)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Check to see if a Web API key is valid by geocoding a single, known address point</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>api_key</code></strong> :&ensp;<code>str</code></dt>
+<dd>API Key</dd>
+</dl>
+<h2 id="raises">Raises</h2>
+<dl>
+<dt><code>RuntimeError</code></dt>
+<dd>If there was a network or other error attempting to geocode the known point</dd>
+<dt><code>ValueError</code></dt>
+<dd>If the API responds with an invalid key message</dd>
+<dt><code>UserWarning</code></dt>
+<dd>If the API responds with some other abnormal result</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@staticmethod
+def validate_api_key(api_key):
+    &#34;&#34;&#34;Check to see if a Web API key is valid by geocoding a single, known address point
+
+    Args:
+        api_key (str): API Key
+
+    Raises:
+        RuntimeError: If there was a network or other error attempting to geocode the known point
+        ValueError: If the API responds with an invalid key message
+        UserWarning: If the API responds with some other abnormal result
+    &#34;&#34;&#34;
+
+    url = &#39;https://api.mapserv.utah.gov/api/v1/geocode/326 east south temple street/slc&#39;
+
+    try:
+        response = retry(requests.get, url=url, params={&#39;apiKey&#39;: api_key})
+    except Exception as error:
+        raise RuntimeError(
+            &#39;Could not determine key validity; check your API key and/or network connection&#39;
+        ) from error
+    response_json = response.json()
+    if response_json[&#39;status&#39;] == 200:
+        return
+    if response_json[&#39;status&#39;] == 400 and &#39;Invalid API key&#39; in response_json[&#39;message&#39;]:
+        raise ValueError(f&#39;API key validation failed: {response_json[&#34;message&#34;]}&#39;)
+
+    warnings.warn(f&#39;Unhandled API key validation response {response_json[&#34;status&#34;]}: {response_json[&#34;message&#34;]}&#39;)</code></pre>
+</details>
+</dd>
+</dl>
+</dd>
+</dl>
+</section>
+</article>
+<nav id="sidebar">
+<h1>Index</h1>
+<div class="toc">
+<ul></ul>
+</div>
+<ul id="index">
+<li><h3>Super-module</h3>
+<ul>
+<li><code><a title="palletjack" href="index.html">palletjack</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-functions">Functions</a></h3>
+<ul class="">
+<li><code><a title="palletjack.utils.authorize_pygsheets" href="#palletjack.utils.authorize_pygsheets">authorize_pygsheets</a></code></li>
+<li><code><a title="palletjack.utils.build_sql_in_list" href="#palletjack.utils.build_sql_in_list">build_sql_in_list</a></code></li>
+<li><code><a title="palletjack.utils.calc_modulus_for_reporting_interval" href="#palletjack.utils.calc_modulus_for_reporting_interval">calc_modulus_for_reporting_interval</a></code></li>
+<li><code><a title="palletjack.utils.check_field_set_to_unique" href="#palletjack.utils.check_field_set_to_unique">check_field_set_to_unique</a></code></li>
+<li><code><a title="palletjack.utils.check_fields_match" href="#palletjack.utils.check_fields_match">check_fields_match</a></code></li>
+<li><code><a title="palletjack.utils.check_index_column_in_feature_layer" href="#palletjack.utils.check_index_column_in_feature_layer">check_index_column_in_feature_layer</a></code></li>
+<li><code><a title="palletjack.utils.fix_numeric_empty_strings" href="#palletjack.utils.fix_numeric_empty_strings">fix_numeric_empty_strings</a></code></li>
+<li><code><a title="palletjack.utils.get_null_geometries" href="#palletjack.utils.get_null_geometries">get_null_geometries</a></code></li>
+<li><code><a title="palletjack.utils.rename_columns_for_agol" href="#palletjack.utils.rename_columns_for_agol">rename_columns_for_agol</a></code></li>
+<li><code><a title="palletjack.utils.rename_fields" href="#palletjack.utils.rename_fields">rename_fields</a></code></li>
+<li><code><a title="palletjack.utils.retry" href="#palletjack.utils.retry">retry</a></code></li>
+<li><code><a title="palletjack.utils.save_feature_layer_to_json" href="#palletjack.utils.save_feature_layer_to_json">save_feature_layer_to_json</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-classes">Classes</a></h3>
+<ul>
+<li>
+<h4><code><a title="palletjack.utils.Chunking" href="#palletjack.utils.Chunking">Chunking</a></code></h4>
+<ul class="">
+<li><code><a title="palletjack.utils.Chunking.build_upload_json" href="#palletjack.utils.Chunking.build_upload_json">build_upload_json</a></code></li>
+</ul>
+</li>
+<li>
+<h4><code><a title="palletjack.utils.DeleteUtils" href="#palletjack.utils.DeleteUtils">DeleteUtils</a></code></h4>
+<ul class="">
+<li><code><a title="palletjack.utils.DeleteUtils.check_delete_oids_are_in_live_data" href="#palletjack.utils.DeleteUtils.check_delete_oids_are_in_live_data">check_delete_oids_are_in_live_data</a></code></li>
+<li><code><a title="palletjack.utils.DeleteUtils.check_delete_oids_are_ints" href="#palletjack.utils.DeleteUtils.check_delete_oids_are_ints">check_delete_oids_are_ints</a></code></li>
+<li><code><a title="palletjack.utils.DeleteUtils.check_for_empty_oid_list" href="#palletjack.utils.DeleteUtils.check_for_empty_oid_list">check_for_empty_oid_list</a></code></li>
+</ul>
+</li>
+<li>
+<h4><code><a title="palletjack.utils.FieldChecker" href="#palletjack.utils.FieldChecker">FieldChecker</a></code></h4>
+<ul class="">
+<li><code><a title="palletjack.utils.FieldChecker.check_field_length" href="#palletjack.utils.FieldChecker.check_field_length">check_field_length</a></code></li>
+<li><code><a title="palletjack.utils.FieldChecker.check_fields" href="#palletjack.utils.FieldChecker.check_fields">check_fields</a></code></li>
+<li><code><a title="palletjack.utils.FieldChecker.check_fields_present" href="#palletjack.utils.FieldChecker.check_fields_present">check_fields_present</a></code></li>
+<li><code><a title="palletjack.utils.FieldChecker.check_for_non_null_fields" href="#palletjack.utils.FieldChecker.check_for_non_null_fields">check_for_non_null_fields</a></code></li>
+<li><code><a title="palletjack.utils.FieldChecker.check_live_and_new_field_types_match" href="#palletjack.utils.FieldChecker.check_live_and_new_field_types_match">check_live_and_new_field_types_match</a></code></li>
+<li><code><a title="palletjack.utils.FieldChecker.check_nullable_ints_shapely" href="#palletjack.utils.FieldChecker.check_nullable_ints_shapely">check_nullable_ints_shapely</a></code></li>
+<li><code><a title="palletjack.utils.FieldChecker.check_srs_wgs84" href="#palletjack.utils.FieldChecker.check_srs_wgs84">check_srs_wgs84</a></code></li>
+</ul>
+</li>
+<li>
+<h4><code><a title="palletjack.utils.Geocoding" href="#palletjack.utils.Geocoding">Geocoding</a></code></h4>
+<ul class="">
+<li><code><a title="palletjack.utils.Geocoding.geocode_addr" href="#palletjack.utils.Geocoding.geocode_addr">geocode_addr</a></code></li>
+<li><code><a title="palletjack.utils.Geocoding.validate_api_key" href="#palletjack.utils.Geocoding.validate_api_key">validate_api_key</a></code></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</nav>
+</main>
+<footer id="footer">
+<p>Generated by <a href="https://pdoc3.github.io/pdoc" title="pdoc: Python API documentation generator"><cite>pdoc</cite> 0.10.0</a>.</p>
+</footer>
+</body>
+</html>
