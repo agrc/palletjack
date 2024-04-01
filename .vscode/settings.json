@@ -97,16 +97,15 @@
   "coverage-gutters.showLineCoverage": true,
   "coverage-gutters.showRulerCoverage": false,
   "editor.codeActionsOnSave": {
-    "source.organizeImports": true
+    "source.organizeImports": "explicit"
   },
   "editor.formatOnSave": true,
-  "editor.rulers": [
-    120
-  ],
+  "editor.rulers": [120],
   "files.insertFinalNewline": true,
   "python.testing.pytestEnabled": true,
   "python.testing.unittestEnabled": false,
   "[python]": {
-    "editor.defaultFormatter": "eeyore.yapf"
+    "editor.defaultFormatter": "ms-python.black-formatter",
+    "editor.formatOnSave": true
   }
 }

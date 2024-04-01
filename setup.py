@@ -9,63 +9,63 @@ from pathlib import Path
 from setuptools import find_packages, setup
 
 version = {}
-with open('src/palletjack/version.py', encoding='utf-8') as fp:
+with open("src/palletjack/version.py", encoding="utf-8") as fp:
     exec(fp.read(), version)
 
 setup(
-    name='ugrc-palletjack',
-    version=version['__version__'],
-    description='Updating AGOL feature services with data from external tables.',
-    long_description=(Path(__file__).parent / 'README.md').read_text(),
-    long_description_content_type='text/markdown',
-    author='Jake Adams, UGRC',
-    author_email='jdadams@utah.gov',
-    url='https://github.com/agrc/palletjack',
-    packages=find_packages('src'),
-    package_dir={'': 'src'},
+    name="ugrc-palletjack",
+    version=version["__version__"],
+    description="Updating AGOL feature services with data from external tables.",
+    long_description=(Path(__file__).parent / "README.md").read_text(),
+    long_description_content_type="text/markdown",
+    author="Jake Adams, UGRC",
+    author_email="jdadams@utah.gov",
+    url="https://github.com/agrc/palletjack",
+    packages=find_packages("src"),
+    package_dir={"": "src"},
     include_package_data=True,
     zip_safe=True,
     classifiers=[
         # complete classifier list: http://pypi.python.org/pypi?%3Aaction=list_classifiers
-        'Development Status :: 5 - Production/Stable',
-        'Intended Audience :: Developers',
-        'License :: OSI Approved :: MIT License',
-        'Topic :: Utilities',
+        "Development Status :: 5 - Production/Stable",
+        "Intended Audience :: Developers",
+        "License :: OSI Approved :: MIT License",
+        "Topic :: Utilities",
     ],
     project_urls={
-        'Issue Tracker': 'https://github.com/agrc/palletjack/issues',
+        "Issue Tracker": "https://github.com/agrc/palletjack/issues",
     },
-    keywords=['gis'],
+    keywords=["gis"],
     install_requires=[
-        'arcgis==2.2.*',
-        'geopandas==0.14.*',
-        'pg8000>=1.29,<1.31',
-        'psycopg2-binary==2.9.*',
-        'pygsheets==2.0.*',
-        'pyogrio>=0.6,<0.8',
-        'pysftp==0.2.9',
-        'SQLAlchemy>=1.4,<2.1',
+        "arcgis==2.2.*",
+        "geopandas==0.14.*",
+        "pg8000>=1.29,<1.31",
+        "psycopg2-binary==2.9.*",
+        "pygsheets==2.0.*",
+        "pyogrio>=0.6,<0.8",
+        "pysftp==0.2.9",
+        "SQLAlchemy>=1.4,<2.1",
     ],
     extras_require={
-        'tests': [
-            'pdoc3==0.10.*',
-            'pylint-quotes==0.2.*',
-            'pylint>=2.15,<3.1',
-            'pytest-cov>=4.0,<4.2',
-            'pytest-instafail>=0.4,<0.6',
-            'pytest-isort==3.1.*',
-            'pytest-mock>=3.10,<3.13',
-            'pytest-pylint>=0.20,<0.22',
-            'pytest-watch==4.2.*',
-            'pytest==7.*',
-            'requests-mock==1.*',
-            'yapf>=0.32,<0.41',
+        "tests": [
+            "pdoc3==0.10.*",
+            "pytest-cov>=3,<5",
+            "pytest-instafail~=0.4",
+            "pytest-mock>=3.10,<3.13",
+            "pytest-ruff==0.*",
+            "pytest-watch~=4.2",
+            "pytest>=6,<8",
+            "black>=23.3,<23.12",
+            "requests-mock==1.*",
+            "ruff==0.0.*",
         ]
     },
     setup_requires=[
-        'pytest-runner',
+        "pytest-runner",
     ],
-    entry_points={'console_scripts': [
-        'palletjack = palletjack.example:process',
-    ]},
+    entry_points={
+        "console_scripts": [
+            "palletjack = palletjack.example:process",
+        ]
+    },
 )

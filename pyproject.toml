@@ -1,0 +1,8 @@
+[tool.black]
+line-length = 120
+[tool.pytest.ini_options]
+minversion = "6.0"
+testpaths = [ "tests", "src" ]
+norecursedirs = [".env", "data", "maps", ".github", ".vscode"]
+console_output_style = "count"
+addopts = "--ruff --cov-branch --cov=palletjack --cov-report term --cov-report xml:cov.xml --instafail"
