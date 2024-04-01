@@ -1,5 +1,6 @@
 """Transform pandas dataframes in preparation for loading to AGOL.
 """
+
 import locale
 import logging
 import warnings
@@ -59,18 +60,18 @@ class APIGeocoder:
 
         #: Should this return? Should it raise an error instead?
         if dataframe.empty:
-            warnings.warn('No records to geocode (empty dataframe)', RuntimeWarning)
+            warnings.warn("No records to geocode (empty dataframe)", RuntimeWarning)
 
         dataframe_length = len(dataframe.index)
         reporting_interval = utils.calc_modulus_for_reporting_interval(dataframe_length)
-        self._class_logger.info('Geocoding %s rows...', dataframe_length)
+        self._class_logger.info("Geocoding %s rows...", dataframe_length)
 
         street_col_index = dataframe.columns.get_loc(street_col)
         zone_col_index = dataframe.columns.get_loc(zone_col)
         new_rows = []
         for i, row in enumerate(dataframe.itertuples(index=False)):
             if i % reporting_interval == 0:
-                self._class_logger.info('Geocoding row %s of %s, %s%%', i, dataframe_length, i / dataframe_length * 100)
+                self._class_logger.info("Geocoding row %s of %s, %s%%", i, dataframe_length, i / dataframe_length * 100)
             row_dict = row._asdict()
             results = utils.Geocoding.geocode_addr(
                 row[street_col_index],
@@ -78,28 +79,27 @@ class APIGeocoder:
                 self.api_key,
                 rate_limits,
                 spatialReference=str(wkid),
-                **api_args
+                **api_args,
             )
             self._class_logger.debug(
-                '%s of %s: %s, %s = %s', i, dataframe_length, row[street_col_index], row[zone_col_index], results
+                "%s of %s: %s, %s = %s", i, dataframe_length, row[street_col_index], row[zone_col_index], results
             )
-            row_dict['x'], row_dict['y'], row_dict['score'], row_dict['matchAddress'] = results
+            row_dict["x"], row_dict["y"], row_dict["score"], row_dict["matchAddress"] = results
             new_rows.append(row_dict)
 
-        spatial_dataframe = pd.DataFrame.spatial.from_xy(pd.DataFrame(new_rows), 'x', 'y', sr=int(wkid))
+        spatial_dataframe = pd.DataFrame.spatial.from_xy(pd.DataFrame(new_rows), "x", "y", sr=int(wkid))
 
         end = datetime.now()
-        self._class_logger.info('%s Records geocoded in %s', len(spatial_dataframe.index), (end - start))
+        self._class_logger.info("%s Records geocoded in %s", len(spatial_dataframe.index), (end - start))
         try:
-            self._class_logger.debug('Average time per record: %s', (end - start) / len(spatial_dataframe.index))
+            self._class_logger.debug("Average time per record: %s", (end - start) / len(spatial_dataframe.index))
         except ZeroDivisionError:
-            warnings.warn('Empty spatial dataframe after geocoding', RuntimeWarning)
+            warnings.warn("Empty spatial dataframe after geocoding", RuntimeWarning)
         return spatial_dataframe
 
 
 class FeatureServiceMerging:
-    """Get the live dataframe from a feature service and update it from another dataframe
-    """
+    """Get the live dataframe from a feature service and update it from another dataframe"""
 
     @staticmethod
     def update_live_data_with_new_data(live_dataframe, new_dataframe, join_column):
@@ -123,19 +123,19 @@ class FeatureServiceMerging:
             live_dataframe.set_index(join_column, inplace=True)
             new_dataframe.set_index(join_column, inplace=True)
         except KeyError as error:
-            raise ValueError('Join column not found in live or new dataframes') from error
+            raise ValueError("Join column not found in live or new dataframes") from error
 
-        indicator_dataframe = live_dataframe.merge(new_dataframe, on=join_column, how='outer', indicator=True)
-        new_only_dataframe = indicator_dataframe[indicator_dataframe['_merge'] == 'right_only']
+        indicator_dataframe = live_dataframe.merge(new_dataframe, on=join_column, how="outer", indicator=True)
+        new_only_dataframe = indicator_dataframe[indicator_dataframe["_merge"] == "right_only"]
         if not new_only_dataframe.empty:
             keys_not_found = list(new_only_dataframe.index)
             warnings.warn(
-                f'The following keys from the new data were not found in the existing dataset: {keys_not_found}',
-                RuntimeWarning
+                f"The following keys from the new data were not found in the existing dataset: {keys_not_found}",
+                RuntimeWarning,
             )
 
         live_dataframe.update(new_dataframe)
-        return (live_dataframe.reset_index().convert_dtypes())
+        return live_dataframe.reset_index().convert_dtypes()
 
     @staticmethod
     def get_live_dataframe(gis, feature_service_itemid, layer_index=0):
@@ -159,14 +159,13 @@ class FeatureServiceMerging:
             )
             live_dataframe = feature_layer.query(as_df=True)
         except Exception as error:
-            raise RuntimeError('Failed to load live dataframe') from error
+            raise RuntimeError("Failed to load live dataframe") from error
 
         return live_dataframe
 
 
 class DataCleaning:
-    """Static methods for cleaning dataframes prior to uploading to AGOL
-    """
+    """Static methods for cleaning dataframes prior to uploading to AGOL"""
 
     @staticmethod
     def switch_to_nullable_int(dataframe, fields_that_should_be_ints):
@@ -187,10 +186,10 @@ class DataCleaning:
         retyped = dataframe.copy()
         try:
             for field in fields_that_should_be_ints:
-                retyped[field] = DataCleaning._switch_series_to_numeric_dtype(retyped[field], 'Int64')
+                retyped[field] = DataCleaning._switch_series_to_numeric_dtype(retyped[field], "Int64")
         except (TypeError, ValueError) as error:
             raise TypeError(
-                'Cannot convert one or more fields to nullable ints. Check for non-int/non-np.nan values.'
+                "Cannot convert one or more fields to nullable ints. Check for non-int/non-np.nan values."
             ) from error
         return retyped
 
@@ -213,10 +212,10 @@ class DataCleaning:
         retyped = dataframe.copy()
         try:
             for field in fields_that_should_be_floats:
-                retyped[field] = DataCleaning._switch_series_to_numeric_dtype(retyped[field], 'float')
+                retyped[field] = DataCleaning._switch_series_to_numeric_dtype(retyped[field], "float")
         except (TypeError, ValueError) as error:
             raise TypeError(
-                'Cannot convert one or more fields to floats. Check for non-float/non-null values.'
+                "Cannot convert one or more fields to floats. Check for non-float/non-null values."
             ) from error
         return retyped
 
@@ -235,9 +234,9 @@ class DataCleaning:
             pd.Series: The converted series
         """
 
-        if series.dtype == 'object':
+        if series.dtype == "object":
             series = series.astype(str).apply(locale.delocalize)
-            series.replace('', None, inplace=True)
+            series.replace("", None, inplace=True)
         return series.astype(dtype)
 
     @staticmethod
@@ -254,9 +253,9 @@ class DataCleaning:
         """
 
         for field in date_fields:
-            dataframe[field] = pd.to_datetime(dataframe[field], **to_datetime_kwargs) \
-                                    .dt.as_unit('ns') \
-                                    .dt.tz_localize(None)
+            dataframe[field] = (
+                pd.to_datetime(dataframe[field], **to_datetime_kwargs).dt.as_unit("ns").dt.tz_localize(None)
+            )
 
         return dataframe
 

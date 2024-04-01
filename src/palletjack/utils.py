@@ -59,7 +59,7 @@ def retry(worker_method, *args, **kwargs):
 
         #: ArcGIS API for Python loves throwing bog-standard Exceptions, so we can't narrow this down further
         except Exception as error:
-            if tries <= max_tries:  #pylint: disable=no-else-return
+            if tries <= max_tries:  # pylint: disable=no-else-return
                 wait_time = delay**tries
                 module_logger.debug(
                     'Exception "%s" thrown on "%s". Retrying after %s seconds...', error, worker_method, wait_time
@@ -85,8 +85,8 @@ def rename_columns_for_agol(columns):
 
     rename_dict = {}
     for column in columns:
-        no_specials = re.sub(r'[^a-zA-Z0-9_]', '_', column)
-        match = re.match(r'(^[0-9_]+)', no_specials)
+        no_specials = re.sub(r"[^a-zA-Z0-9_]", "_", column)
+        match = re.match(r"(^[0-9_]+)", no_specials)
         if match:
             number = match.groups()[0]
             rename_dict[column] = no_specials.removeprefix(number) + number
@@ -107,22 +107,22 @@ def check_fields_match(featurelayer, new_dataframe):
         RuntimeError: If new data contains a field not present in the live data
     """
 
-    live_fields = {field['name'] for field in featurelayer.properties.fields}
+    live_fields = {field["name"] for field in featurelayer.properties.fields}
     new_fields = set(new_dataframe.columns)
     #: Remove SHAPE field from set (live "featurelayer.properties['fields']" does not expose the 'SHAPE' field)
     try:
-        new_fields.remove('SHAPE')
+        new_fields.remove("SHAPE")
     except KeyError:
         pass
     new_dif = new_fields - live_fields
     live_dif = live_fields - new_fields
     if new_dif:
         raise RuntimeError(
-            f'New dataset contains the following fields that are not present in the live dataset: {new_dif}'
+            f"New dataset contains the following fields that are not present in the live dataset: {new_dif}"
         )
     if live_dif:
         module_logger.warning(
-            'New dataset does not contain the following fields that are present in the live dataset: %s', live_dif
+            "New dataset does not contain the following fields that are present in the live dataset: %s", live_dif
         )
 
 
@@ -138,9 +138,9 @@ def check_index_column_in_feature_layer(featurelayer, index_column):
         RuntimeError: If index_column is not in featurelayer's fields
     """
 
-    featurelayer_fields = [field['name'] for field in featurelayer.properties.fields]
+    featurelayer_fields = [field["name"] for field in featurelayer.properties.fields]
     if index_column not in featurelayer_fields:
-        raise RuntimeError(f'Index column {index_column} not found in feature layer fields {featurelayer_fields}')
+        raise RuntimeError(f"Index column {index_column} not found in feature layer fields {featurelayer_fields}")
 
 
 #: unused?
@@ -160,7 +160,7 @@ def rename_fields(dataframe, field_mapping):
 
     for original_name in field_mapping.keys():
         if original_name not in dataframe.columns:
-            raise ValueError(f'Field {original_name} not found in dataframe.')
+            raise ValueError(f"Field {original_name} not found in dataframe.")
 
     renamed_df = dataframe.rename(columns=field_mapping)
 
@@ -196,18 +196,17 @@ def check_field_set_to_unique(featurelayer, field_name):
         RuntimeError: If the field is not unique (or if it's indexed but not unique)
     """
 
-    fields = [field['fields'] for field in featurelayer.properties.indexes]
+    fields = [field["fields"] for field in featurelayer.properties.indexes]
     if field_name not in fields:
         raise RuntimeError(f'{field_name} does not have a "unique constraint" set within the feature layer')
     for field in featurelayer.properties.indexes:
-        if field['fields'] == field_name:
-            if not field['isUnique']:
+        if field["fields"] == field_name:
+            if not field["isUnique"]:
                 raise RuntimeError(f'{field_name} does not have a "unique constraint" set within the feature layer')
 
 
 class Geocoding:
-    """Methods for geocoding an address
-    """
+    """Methods for geocoding an address"""
 
     @staticmethod
     def geocode_addr(street, zone, api_key, rate_limits, **api_args):
@@ -229,20 +228,20 @@ class Geocoding:
         """
 
         sleep(random.uniform(rate_limits[0], rate_limits[1]))
-        url = f'https://api.mapserv.utah.gov/api/v1/geocode/{street}/{zone}'
-        api_args['apiKey'] = api_key
+        url = f"https://api.mapserv.utah.gov/api/v1/geocode/{street}/{zone}"
+        api_args["apiKey"] = api_key
 
         try:
             geocode_result_dict = retry(Geocoding._geocode_api_call, url, api_args)
         except Exception as error:
             module_logger.error(error)
-            return (0, 0, 0., 'No API response')
+            return (0, 0, 0.0, "No API response")
 
         return (
-            geocode_result_dict['location']['x'],
-            geocode_result_dict['location']['y'],
-            geocode_result_dict['score'],
-            geocode_result_dict['matchAddress'],
+            geocode_result_dict["location"]["x"],
+            geocode_result_dict["location"]["y"],
+            geocode_result_dict["score"],
+            geocode_result_dict["matchAddress"],
         )
 
     @staticmethod
@@ -268,26 +267,23 @@ class Geocoding:
 
         #: The server times out and doesn't respond
         if response is None:
-            module_logger.debug('GET call did not return a response')
-            raise RuntimeError('No response from GET; request timeout?')
+            module_logger.debug("GET call did not return a response")
+            raise RuntimeError("No response from GET; request timeout?")
 
         #: The point does geocode
         if response.status_code == 200:
-            return response.json()['result']
+            return response.json()["result"]
 
         #: The point doesn't geocode
         if response.status_code == 404:
             return {
-                'location': {
-                    'x': 0,
-                    'y': 0
-                },
-                'score': 0.,
-                'matchAddress': 'No Match',
+                "location": {"x": 0, "y": 0},
+                "score": 0.0,
+                "matchAddress": "No Match",
             }
 
         #: If we haven't returned, raise an error to trigger _retry
-        raise RuntimeError(f'Did not receive a valid geocoding response; status code: {response.status_code}')
+        raise RuntimeError(f"Did not receive a valid geocoding response; status code: {response.status_code}")
 
     @staticmethod
     def validate_api_key(api_key):
@@ -302,18 +298,18 @@ class Geocoding:
             UserWarning: If the API responds with some other abnormal result
         """
 
-        url = 'https://api.mapserv.utah.gov/api/v1/geocode/326 east south temple street/slc'
+        url = "https://api.mapserv.utah.gov/api/v1/geocode/326 east south temple street/slc"
 
         try:
-            response = retry(requests.get, url=url, params={'apiKey': api_key})
+            response = retry(requests.get, url=url, params={"apiKey": api_key})
         except Exception as error:
             raise RuntimeError(
-                'Could not determine key validity; check your API key and/or network connection'
+                "Could not determine key validity; check your API key and/or network connection"
             ) from error
         response_json = response.json()
-        if response_json['status'] == 200:
+        if response_json["status"] == 200:
             return
-        if response_json['status'] == 400 and 'Invalid API key' in response_json['message']:
+        if response_json["status"] == 400 and "Invalid API key" in response_json["message"]:
             raise ValueError(f'API key validation failed: {response_json["message"]}')
 
         warnings.warn(f'Unhandled API key validation response {response_json["status"]}: {response_json["message"]}')
@@ -365,11 +361,11 @@ def authorize_pygsheets(credentials):
         return pygsheets.authorize(service_file=credentials)
     except (FileNotFoundError, TypeError) as err:
         module_logger.debug(err)
-        module_logger.debug('Credentials file not found, trying as environment variable')
+        module_logger.debug("Credentials file not found, trying as environment variable")
     try:
         return pygsheets.authorize(custom_credentials=credentials)
     except Exception as err:
-        raise RuntimeError('Could not authenticate to Google API') from err
+        raise RuntimeError("Could not authenticate to Google API") from err
 
 
 def sedf_to_gdf(dataframe):
@@ -384,9 +380,9 @@ def sedf_to_gdf(dataframe):
 
     gdf = gpd.GeoDataFrame(dataframe, geometry=dataframe.spatial.name)
     try:
-        gdf.set_crs(dataframe.spatial.sr['latestWkid'], inplace=True)
+        gdf.set_crs(dataframe.spatial.sr["latestWkid"], inplace=True)
     except KeyError:
-        gdf.set_crs(dataframe.spatial.sr['wkid'], inplace=True)
+        gdf.set_crs(dataframe.spatial.sr["wkid"], inplace=True)
 
     return gdf
 
@@ -402,22 +398,22 @@ def save_feature_layer_to_gdb(feature_layer, directory):
         Path: The full path to the output file, named with the layer name and today's date.
     """
 
-    module_logger.debug('Downloading existing data...')
+    module_logger.debug("Downloading existing data...")
     dataframe = feature_layer.query().sdf
 
     if dataframe.empty:
-        return f'No data to save in feature layer {feature_layer.properties.name}'
+        return f"No data to save in feature layer {feature_layer.properties.name}"
 
     gdf = sedf_to_gdf(dataframe)
 
-    out_path = Path(directory, 'backup.gdb')
+    out_path = Path(directory, "backup.gdb")
     out_layer = f'{feature_layer.properties.name}_{datetime.date.today().strftime("%Y_%m_%d")}'
-    module_logger.debug('Saving existing data to %s', out_path)
+    module_logger.debug("Saving existing data to %s", out_path)
     try:
-        gdf.to_file(out_path, layer=out_layer, engine='pyogrio', driver='OpenFileGDB')
+        gdf.to_file(out_path, layer=out_layer, engine="pyogrio", driver="OpenFileGDB")
     except pyogrio.errors.DataSourceError as error:
         raise ValueError(
-            f'Error writing {out_layer} to {out_path}. Verify {Path(directory)} exists and is writable.'
+            f"Error writing {out_layer} to {out_path}. Verify {Path(directory)} exists and is writable."
         ) from error
 
     return out_path
@@ -478,32 +474,32 @@ class FieldChecker:
 
         #: Converting dtypes to str and comparing seems to be the only way to break out into shorts and longs, singles
         #: and doubles. Otherwise, checking subclass is probably more pythonic.
-        short_ints = ['uint8', 'uint16', 'int8', 'int16']
-        long_ints = ['int', 'uint32', 'uint64', 'int32', 'int64']
+        short_ints = ["uint8", "uint16", "int8", "int16"]
+        long_ints = ["int", "uint32", "uint64", "int32", "int64"]
 
         #: Leaving the commented types here for future implementation if necessary
         esri_to_pandas_types_mapping = {
-            'esriFieldTypeInteger': ['int'] + short_ints + long_ints,
-            'esriFieldTypeSmallInteger': short_ints,
-            'esriFieldTypeDouble': ['float', 'float32', 'float64'],
-            'esriFieldTypeSingle': ['float32'],
-            'esriFieldTypeString': ['str', 'object', 'string'],
-            'esriFieldTypeDate': ['datetime64[ns]'],
-            'esriFieldTypeGeometry': ['geometry'],
-            'esriFieldTypeOID': ['int'] + short_ints + long_ints,
+            "esriFieldTypeInteger": ["int"] + short_ints + long_ints,
+            "esriFieldTypeSmallInteger": short_ints,
+            "esriFieldTypeDouble": ["float", "float32", "float64"],
+            "esriFieldTypeSingle": ["float32"],
+            "esriFieldTypeString": ["str", "object", "string"],
+            "esriFieldTypeDate": ["datetime64[ns]"],
+            "esriFieldTypeGeometry": ["geometry"],
+            "esriFieldTypeOID": ["int"] + short_ints + long_ints,
             #  'esriFieldTypeBlob': [],
-            'esriFieldTypeGlobalID': ['str', 'object', 'string'],
+            "esriFieldTypeGlobalID": ["str", "object", "string"],
             #  'esriFieldTypeRaster': [],
-            'esriFieldTypeGUID': ['str', 'object', 'string'],
+            "esriFieldTypeGUID": ["str", "object", "string"],
             #  'esriFieldTypeXML': [],
         }
 
         #: geometry checking gets its own function
-        if 'SHAPE' in fields:
+        if "SHAPE" in fields:
             self._check_geometry_types()
-            fields.remove('SHAPE')
+            fields.remove("SHAPE")
 
-        fields_to_check = self.fields_dataframe[self.fields_dataframe['name'].isin(fields)].set_index('name')
+        fields_to_check = self.fields_dataframe[self.fields_dataframe["name"].isin(fields)].set_index("name")
 
         invalid_fields = []
         int_fields_as_floats = []
@@ -511,15 +507,17 @@ class FieldChecker:
         for field in fields:
             #: check against the str.lower to catch normal dtypes (int64) and the new, pd.NA-aware dtypes (Int64)
             new_dtype = str(self.new_dataframe[field].dtype).lower()
-            live_type = fields_to_check.loc[field, 'type']
+            live_type = fields_to_check.loc[field, "type"]
 
             try:
                 if new_dtype not in esri_to_pandas_types_mapping[live_type]:
                     invalid_fields.append((field, live_type, str(self.new_dataframe[field].dtype)))
-                if new_dtype in ['float', 'float32', 'float64'
-                                ] and live_type in ['esriFieldTypeInteger', 'esriFieldTypeSmallInteger']:
+                if new_dtype in ["float", "float32", "float64"] and live_type in [
+                    "esriFieldTypeInteger",
+                    "esriFieldTypeSmallInteger",
+                ]:
                     int_fields_as_floats.append(field)
-                if 'datetime64' in new_dtype and new_dtype != 'datetime64[ns]' and live_type == 'esriFieldTypeDate':
+                if "datetime64" in new_dtype and new_dtype != "datetime64[ns]" and live_type == "esriFieldTypeDate":
                     datetime_fields_with_timezone.append(field)
             except KeyError:
                 # pylint: disable-next=raise-missing-from
@@ -528,18 +526,18 @@ class FieldChecker:
         if invalid_fields:
             if int_fields_as_floats:
                 raise IntFieldAsFloatError(
-                    f'Field type incompatibilities (field, live type, new type): {invalid_fields}\n' \
-                    'Check the following int fields for null/np.nan values and convert to panda\'s nullable int '\
+                    f"Field type incompatibilities (field, live type, new type): {invalid_fields}\n"
+                    "Check the following int fields for null/np.nan values and convert to panda's nullable int "
                     f'dtype: {", ".join(int_fields_as_floats)}'
                 )
             if datetime_fields_with_timezone:
                 raise TimezoneAwareDatetimeError(
-                    f'Field type incompatibilities (field, live type, new type): {invalid_fields}\n' \
-                    'Check the following datetime fields for timezone aware dtypes values and convert to '\
-                    'timezone-naive dtypes using pd.to_datetime(df[\'field\']).dt.tz_localize(None): '\
+                    f"Field type incompatibilities (field, live type, new type): {invalid_fields}\n"
+                    "Check the following datetime fields for timezone aware dtypes values and convert to "
+                    "timezone-naive dtypes using pd.to_datetime(df['field']).dt.tz_localize(None): "
                     f'{", ".join(datetime_fields_with_timezone)}'
                 )
-            raise ValueError(f'Field type incompatibilities (field, live type, new type): {invalid_fields}')
+            raise ValueError(f"Field type incompatibilities (field, live type, new type): {invalid_fields}")
 
     def _check_geometry_types(self):
         """Raise an error if the live and new data geometry types are incompatible.
@@ -554,17 +552,17 @@ class FieldChecker:
         """
 
         esri_to_sedf_geometry_mapping = {
-            'esriGeometryPoint': 'point',
-            'esriGeometryMultipoint': 'multipoint',
-            'esriGeometryPolyline': 'polyline',
-            'esriGeometryPolygon': 'polygon',
-            'esriGeometryEnvelope': 'envelope',
+            "esriGeometryPoint": "point",
+            "esriGeometryMultipoint": "multipoint",
+            "esriGeometryPolyline": "polyline",
+            "esriGeometryPolygon": "polygon",
+            "esriGeometryEnvelope": "envelope",
         }
 
-        if 'SHAPE' not in self.new_dataframe.columns:
-            raise ValueError('New dataframe does not have a SHAPE column')
+        if "SHAPE" not in self.new_dataframe.columns:
+            raise ValueError("New dataframe does not have a SHAPE column")
 
-        if self.new_dataframe['SHAPE'].isna().any():
+        if self.new_dataframe["SHAPE"].isna().any():
             raise ValueError(
                 f'New dataframe has missing geometries at index {list(self.new_dataframe[self.new_dataframe["SHAPE"].isna()].index)}'
             )
@@ -572,7 +570,7 @@ class FieldChecker:
         live_geometry_type = self.live_data_properties.geometryType
         new_geometry_types = self.new_dataframe.spatial.geometry_type
         if len(new_geometry_types) > 1:
-            raise ValueError('New dataframe has multiple geometry types')
+            raise ValueError("New dataframe has multiple geometry types")
         if esri_to_sedf_geometry_mapping[live_geometry_type] != new_geometry_types[0].lower():
             raise ValueError(
                 f'New dataframe geometry type "{new_geometry_types[0]}" incompatible with live geometry type "{live_geometry_type}"'
@@ -595,8 +593,8 @@ class FieldChecker:
         columns_with_nulls = self.new_dataframe.columns[self.new_dataframe.isna().any()].tolist()
         # fields_dataframe = pd.DataFrame(self.live_data_properties['fields'])
         non_nullable_live_columns = self.fields_dataframe[
-            ~(self.fields_dataframe['nullable']) &
-            ~(self.fields_dataframe['defaultValue'].astype(bool))]['name'].tolist()
+            ~(self.fields_dataframe["nullable"]) & ~(self.fields_dataframe["defaultValue"].astype(bool))
+        ]["name"].tolist()
 
         columns_to_check = [column for column in columns_with_nulls if column in fields]
 
@@ -625,22 +623,23 @@ class FieldChecker:
                 live data allows.
         """
 
-        if 'length' not in self.fields_dataframe.columns:
-            module_logger.debug('No fields with length property')
+        if "length" not in self.fields_dataframe.columns:
+            module_logger.debug("No fields with length property")
             return
 
         length_limited_fields = self.fields_dataframe[
-            (self.fields_dataframe['type'].isin(['esriFieldTypeString', 'esriFieldTypeGlobalID'])) &
-            (self.fields_dataframe['length'].astype(bool))]
+            (self.fields_dataframe["type"].isin(["esriFieldTypeString", "esriFieldTypeGlobalID"]))
+            & (self.fields_dataframe["length"].astype(bool))
+        ]
 
-        columns_to_check = length_limited_fields[length_limited_fields['name'].isin(fields)]
+        columns_to_check = length_limited_fields[length_limited_fields["name"].isin(fields)]
 
-        for field, live_max_length in columns_to_check[['name', 'length']].to_records(index=False):
+        for field, live_max_length in columns_to_check[["name", "length"]].to_records(index=False):
             new_data_lengths = self.new_dataframe[field].str.len()
             new_max_length = new_data_lengths.max()
             if new_max_length > live_max_length:
                 raise ValueError(
-                    f'Row {new_data_lengths.argmax()}, column {field} in new data exceeds the live data max length of {live_max_length}'
+                    f"Row {new_data_lengths.argmax()}, column {field} in new data exceeds the live data max length of {live_max_length}"
                 )
 
     def check_fields_present(self, fields, add_oid):
@@ -655,12 +654,12 @@ class FieldChecker:
             RuntimeError: If any of fields are not in live or new data.
         """
 
-        live_fields = set(self.fields_dataframe['name'])
+        live_fields = set(self.fields_dataframe["name"])
         new_fields = set(self.new_dataframe.columns)
         working_fields = set(fields)
-        working_fields.discard('SHAPE')  #: The fields from the feature layer properties don't include the SHAPE field.
+        working_fields.discard("SHAPE")  #: The fields from the feature layer properties don't include the SHAPE field.
         if add_oid:
-            working_fields.add('OBJECTID')
+            working_fields.add("OBJECTID")
 
         live_dif = working_fields - live_fields
         new_dif = working_fields - new_fields
@@ -672,7 +671,7 @@ class FieldChecker:
             error_message.append(f'Fields missing in new data: {", ".join(new_dif)}')
 
         if error_message:
-            raise RuntimeError('. '.join(error_message))
+            raise RuntimeError(". ".join(error_message))
 
     def check_srs_wgs84(self):
         """Raise an error if the new spatial reference system isn't WGS84 as required by geojson.
@@ -692,10 +691,10 @@ class FieldChecker:
         try:
             new_srs = int(new_srs)
         except ValueError as error:
-            raise ValueError('Could not cast new SRS to int') from error
+            raise ValueError("Could not cast new SRS to int") from error
         if new_srs != 4326:
             raise ValueError(
-                f'New dataframe SRS {new_srs} is not wkid 4326. Reproject with appropriate transformation.'
+                f"New dataframe SRS {new_srs} is not wkid 4326. Reproject with appropriate transformation."
             )
 
     def check_nullable_ints_shapely(self):
@@ -709,10 +708,10 @@ class FieldChecker:
         """
 
         #: Only occurs if client is using shapely instead of arcpy
-        if importlib.util.find_spec('arcpy'):
+        if importlib.util.find_spec("arcpy"):
             return
 
-        nullable_ints = {'Int8', 'Int16', 'Int32', 'Int64', 'UInt8', 'UInt16', 'UInt32', 'UInt64'}
+        nullable_ints = {"Int8", "Int16", "Int32", "Int64", "UInt8", "UInt16", "UInt32", "UInt64"}
         nullable_int_columns = [
             column for column in self.new_dataframe.columns if str(self.new_dataframe[column].dtype) in nullable_ints
         ]
@@ -720,8 +719,8 @@ class FieldChecker:
 
         if columns_with_nulls:
             warnings.warn(
-                'The following columns have null values that will be replaced by 0 due to shapely conventions: '\
-                    f'{", ".join(columns_with_nulls)}'
+                "The following columns have null values that will be replaced by 0 due to shapely conventions: "
+                f'{", ".join(columns_with_nulls)}'
             )
 
 
@@ -748,31 +747,24 @@ def get_null_geometries(feature_layer_properties):
 
     live_geometry_type = feature_layer_properties.geometryType
 
-    if live_geometry_type == 'esriGeometryPoint':
-        return arcgis.geometry.Point({'x': 0, 'y': 0, 'spatialReference': {'wkid': 4326}}).JSON
+    if live_geometry_type == "esriGeometryPoint":
+        return arcgis.geometry.Point({"x": 0, "y": 0, "spatialReference": {"wkid": 4326}}).JSON
 
-    if live_geometry_type == 'esriGeometryPolyline':
-        return arcgis.geometry.Polyline({
-            'paths': [[[0, 0], [.1, .1], [.2, .2]]],
-            'spatialReference': {
-                'wkid': 4326
-            }
-        }).JSON
+    if live_geometry_type == "esriGeometryPolyline":
+        return arcgis.geometry.Polyline(
+            {"paths": [[[0, 0], [0.1, 0.1], [0.2, 0.2]]], "spatialReference": {"wkid": 4326}}
+        ).JSON
 
-    if live_geometry_type == 'esriGeometryPolygon':
-        return arcgis.geometry.Polygon({
-            'rings': [[[0, .1], [.1, .1], [.1, 0], [0, 0]]],
-            'spatialReference': {
-                'wkid': 4326
-            }
-        }).JSON
+    if live_geometry_type == "esriGeometryPolygon":
+        return arcgis.geometry.Polygon(
+            {"rings": [[[0, 0.1], [0.1, 0.1], [0.1, 0], [0, 0]]], "spatialReference": {"wkid": 4326}}
+        ).JSON
 
-    raise NotImplementedError(f'Null value generator for live geometry type {live_geometry_type} not yet implemented')
+    raise NotImplementedError(f"Null value generator for live geometry type {live_geometry_type} not yet implemented")
 
 
 class DeleteUtils:
-    """Verify Object IDs used for delete operations
-    """
+    """Verify Object IDs used for delete operations"""
 
     @staticmethod
     def check_delete_oids_are_ints(oid_list):
@@ -796,7 +788,7 @@ class DeleteUtils:
             except ValueError:
                 bad_oids.append(oid)
         if bad_oids:
-            raise TypeError(f'Couldn\'t convert OBJECTID(s) `{bad_oids}` to integer')
+            raise TypeError(f"Couldn't convert OBJECTID(s) `{bad_oids}` to integer")
         return numeric_oids
 
     @staticmethod
@@ -812,7 +804,7 @@ class DeleteUtils:
         """
 
         if not numeric_oids:
-            raise ValueError(f'No OBJECTIDs found in {oid_list}')
+            raise ValueError(f"No OBJECTIDs found in {oid_list}")
 
     @staticmethod
     def check_delete_oids_are_in_live_data(oid_string, numeric_oids, feature_layer):
@@ -831,18 +823,17 @@ class DeleteUtils:
         """
 
         query_results = feature_layer.query(object_ids=oid_string, return_ids_only=True)
-        query_oids = query_results['objectIds']
+        query_oids = query_results["objectIds"]
         oids_not_in_layer = set(numeric_oids) - set(query_oids)
 
         if oids_not_in_layer:
-            warnings.warn(f'OBJECTIDs {oids_not_in_layer} were not found in the live data')
+            warnings.warn(f"OBJECTIDs {oids_not_in_layer} were not found in the live data")
 
         return len(oids_not_in_layer)
 
 
 class Chunking:
-    """Divide a dataframe into chunks to satisfy upload size requirements for append operation.
-    """
+    """Divide a dataframe into chunks to satisfy upload size requirements for append operation."""
 
     @staticmethod
     def _ceildiv(num, denom):
@@ -881,7 +872,7 @@ class Chunking:
 
         if df_length == 1:
             raise ValueError(
-                f'Dataframe chunk is only one row (index {dataframe.index[0]}), further chunking impossible'
+                f"Dataframe chunk is only one row (index {dataframe.index[0]}), further chunking impossible"
             )
 
         starts = range(0, df_length, chunk_size)
@@ -908,8 +899,8 @@ class Chunking:
             list[str]: A list of the dataframe chunks converted to geojson
         """
 
-        geojson_size = sys.getsizeof(dataframe.spatial.to_featureset().to_geojson.encode('utf-16'))
-        module_logger.debug('Initial file size: %s', geojson_size)
+        geojson_size = sys.getsizeof(dataframe.spatial.to_featureset().to_geojson.encode("utf-16"))
+        module_logger.debug("Initial file size: %s", geojson_size)
 
         chunked_dataframes = Chunking._recursive_dataframe_chunking(dataframe, max_bytes)
 
@@ -943,7 +934,7 @@ class Chunking:
         """
 
         #: Calculate number of chunks needed and the guesstimate max number of rows to achieve that size
-        geojson_size = sys.getsizeof(dataframe.spatial.to_featureset().to_geojson.encode('utf-16'))
+        geojson_size = sys.getsizeof(dataframe.spatial.to_featureset().to_geojson.encode("utf-16"))
         chunks_needed = Chunking._ceildiv(geojson_size, max_bytes)
         max_rows = Chunking._ceildiv(len(dataframe), chunks_needed)
 
@@ -952,7 +943,7 @@ class Chunking:
         list_of_dataframes = Chunking._chunk_dataframe(dataframe, max_rows)
         return_dataframes = []  #: Holds result of valid and recursive chunks
         for chunk_dataframe in list_of_dataframes:
-            chunk_geojson_size = sys.getsizeof(chunk_dataframe.spatial.to_featureset().to_geojson.encode('utf-16'))
+            chunk_geojson_size = sys.getsizeof(chunk_dataframe.spatial.to_featureset().to_geojson.encode("utf-16"))
             if chunk_geojson_size > max_bytes:
                 return_dataframes.extend(Chunking._recursive_dataframe_chunking(chunk_dataframe, max_bytes))
             else:
@@ -969,15 +960,15 @@ def fix_numeric_empty_strings(feature_set, feature_layer_fields):
     """
 
     fields_to_fix = {
-        field['name']
+        field["name"]
         for field in feature_layer_fields
-        if field['type'] in ['esriFieldTypeDouble', 'esriFieldTypeInteger', 'esriFieldTypeDate'] and field['nullable']
+        if field["type"] in ["esriFieldTypeDouble", "esriFieldTypeInteger", "esriFieldTypeDate"] and field["nullable"]
     }
-    fields_to_fix -= {'Shape__Length', 'Shape__Area'}
+    fields_to_fix -= {"Shape__Length", "Shape__Area"}
 
     for feature in feature_set.features:
         for field_name in fields_to_fix:
-            if feature.attributes[field_name] == '':
+            if feature.attributes[field_name] == "":
                 feature.attributes[field_name] = None
 
     return feature_set
@@ -994,4 +985,4 @@ def chunker(sequence, chunk_size):
         generator: Generator of original sequence broken into chunk_size lists
     """
 
-    return (sequence[position:position + chunk_size] for position in range(0, len(sequence), chunk_size))
+    return (sequence[position : position + chunk_size] for position in range(0, len(sequence), chunk_size))
