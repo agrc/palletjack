@@ -5,18 +5,15 @@ service data, modifying the attachments on a hosted feature service, or modifyin
 import json
 import logging
 import shutil
-import sys
 import warnings
 from datetime import datetime
 from pathlib import Path
-from tempfile import TemporaryDirectory
 
 import arcgis
-import geopandas as gpd
 import numpy as np
 import pandas as pd
 import pyogrio
-from arcgis.features import GeoAccessor, GeoSeriesAccessor
+from arcgis.features import GeoAccessor, GeoSeriesAccessor  # noqa: F401
 
 from palletjack import utils
 

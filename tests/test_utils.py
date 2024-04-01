@@ -5,13 +5,12 @@ from collections import namedtuple
 from pathlib import Path
 
 import numpy as np
+import palletjack
 import pandas as pd
 import pyogrio
 import pytest
 from arcgis import geometry
 from pandas import testing as tm
-
-import palletjack
 
 
 @pytest.fixture(scope="module")  #: only call this once per module
@@ -83,61 +82,6 @@ class TestRenameColumns:
         renamed = palletjack.utils.rename_columns_for_agol(cols)
 
         assert renamed == {"_1TestName:": "TestName__1"}
-
-
-class TestCheckFieldsMatch:
-
-    def test_check_fields_match_normal(self, mocker):
-        mock_fl = mocker.Mock()
-        mock_fl.properties.fields = [
-            {"name": "Foo"},
-            {"name": "Bar"},
-        ]
-        df = pd.DataFrame(columns=["Foo", "Bar"])
-
-        palletjack.utils.check_fields_match(mock_fl, df)
-
-    def test_check_fields_match_raises_error_on_extra_new_field(self, mocker):
-        mock_fl = mocker.Mock()
-        mock_fl.properties.fields = [
-            {"name": "Foo"},
-            {"name": "Bar"},
-        ]
-        df = pd.DataFrame(columns=["Foo", "Bar", "Baz"])
-
-        with pytest.raises(RuntimeError) as exc_info:
-            palletjack.utils.check_fields_match(mock_fl, df)
-
-        assert (
-            exc_info.value.args[0]
-            == "New dataset contains the following fields that are not present in the live dataset: {'Baz'}"
-        )
-
-    def test_check_fields_match_ignores_new_shape_field(self, mocker):
-        mock_fl = mocker.Mock()
-        mock_fl.properties.fields = [
-            {"name": "Foo"},
-            {"name": "Bar"},
-        ]
-        df = pd.DataFrame(columns=["Foo", "Bar", "SHAPE"])
-
-        palletjack.utils.check_fields_match(mock_fl, df)
-
-    def test_check_fields_match_warns_on_missing_new_field(self, mocker, caplog):
-        mock_fl = mocker.Mock()
-        mock_fl.properties.fields = [
-            {"name": "Foo"},
-            {"name": "Bar"},
-            {"name": "Baz"},
-        ]
-        df = pd.DataFrame(columns=["Foo", "Bar"])
-
-        palletjack.utils.check_fields_match(mock_fl, df)
-
-        assert (
-            "New dataset does not contain the following fields that are present in the live dataset: {'Baz'}"
-            in caplog.text
-        )
 
 
 class TestRetry:
@@ -794,6 +738,58 @@ class TestEmptyStringsAsNulls:
 
 
 class TestCheckFieldsMatch:
+
+    def test_check_fields_match_normal(self, mocker):
+        mock_fl = mocker.Mock()
+        mock_fl.properties.fields = [
+            {"name": "Foo"},
+            {"name": "Bar"},
+        ]
+        df = pd.DataFrame(columns=["Foo", "Bar"])
+
+        palletjack.utils.check_fields_match(mock_fl, df)
+
+    def test_check_fields_match_raises_error_on_extra_new_field(self, mocker):
+        mock_fl = mocker.Mock()
+        mock_fl.properties.fields = [
+            {"name": "Foo"},
+            {"name": "Bar"},
+        ]
+        df = pd.DataFrame(columns=["Foo", "Bar", "Baz"])
+
+        with pytest.raises(RuntimeError) as exc_info:
+            palletjack.utils.check_fields_match(mock_fl, df)
+
+        assert (
+            exc_info.value.args[0]
+            == "New dataset contains the following fields that are not present in the live dataset: {'Baz'}"
+        )
+
+    def test_check_fields_match_ignores_new_shape_field(self, mocker):
+        mock_fl = mocker.Mock()
+        mock_fl.properties.fields = [
+            {"name": "Foo"},
+            {"name": "Bar"},
+        ]
+        df = pd.DataFrame(columns=["Foo", "Bar", "SHAPE"])
+
+        palletjack.utils.check_fields_match(mock_fl, df)
+
+    def test_check_fields_match_warns_on_missing_new_field(self, mocker, caplog):
+        mock_fl = mocker.Mock()
+        mock_fl.properties.fields = [
+            {"name": "Foo"},
+            {"name": "Bar"},
+            {"name": "Baz"},
+        ]
+        df = pd.DataFrame(columns=["Foo", "Bar"])
+
+        palletjack.utils.check_fields_match(mock_fl, df)
+
+        assert (
+            "New dataset does not contain the following fields that are present in the live dataset: {'Baz'}"
+            in caplog.text
+        )
 
     def test_check_live_and_new_field_types_match_normal(self, mocker):
         new_df = pd.DataFrame(
