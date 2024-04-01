@@ -37,9 +37,9 @@ setup(
     },
     keywords=["gis"],
     install_requires=[
-        "arcgis==2.2.*",
+        "arcgis>=2.2,<2.1",
         "geopandas==0.14.*",
-        "pg8000>=1.29,<1.31",
+        "pg8000>=1.29,<1.32",
         "psycopg2-binary==2.9.*",
         "pygsheets==2.0.*",
         "pyogrio>=0.6,<0.8",
@@ -49,13 +49,13 @@ setup(
     extras_require={
         "tests": [
             "pdoc3==0.10.*",
-            "pytest-cov>=3,<5",
+            "pytest-cov>=3,<6",
             "pytest-instafail~=0.4",
-            "pytest-mock>=3.10,<3.13",
+            "pytest-mock>=3.10,<3.15",
             "pytest-ruff==0.*",
             "pytest-watch~=4.2",
-            "pytest>=6,<8",
-            "black>=23.3,<23.12",
+            "pytest>=6,<9",
+            "black>=23.3,<24.4",
             "requests-mock==1.*",
             "ruff==0.0.*",
         ]
