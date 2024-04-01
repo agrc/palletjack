@@ -2,6 +2,7 @@ import json
 import logging
 import re
 import urllib
+import warnings
 from pathlib import Path
 
 import numpy as np
@@ -739,7 +740,7 @@ class TestAttachments:
         updater_mock = mocker.Mock()
         updater_mock.feature_layer.attachments.add.side_effect = result_dict
 
-        with pytest.warns(None) as warning:
+        with warnings.catch_warnings() as warning:
             count = load.FeatureServiceAttachmentsUpdater._add_attachments_by_oid(updater_mock, action_df, "path")
 
         assert count == 2
@@ -836,7 +837,7 @@ class TestAttachments:
         updater_mock = mocker.Mock()
         updater_mock.feature_layer.attachments.update.side_effect = result_dict
 
-        with pytest.warns(None) as warning:
+        with warnings.catch_warnings() as warning:
             count = load.FeatureServiceAttachmentsUpdater._overwrite_attachments_by_oid(updater_mock, action_df, "path")
 
         assert count == 2
