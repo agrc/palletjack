@@ -976,7 +976,7 @@ class Test_ServiceLayer:
         class_mock.envelope_params = None
         class_mock.where_clause = "1=1"
 
-        with pytest.raises(RuntimeError, match=re.escape(f"Could not get object IDs from foo.bar")):
+        with pytest.raises(RuntimeError, match=re.escape("Could not get object IDs from foo.bar")):
             record_count = extract.ServiceLayer.get_object_ids(class_mock)
 
     def test_get_object_ids_returns_empty_list_on_no_oids(self, mocker):
@@ -1239,8 +1239,8 @@ class TestSalesForceLoader:
 
         assert loader.client_secret == "1"
         assert loader.client_id == "2"
-        assert loader.username == None
-        assert loader.password == None
+        assert loader.username is None
+        assert loader.password is None
 
     @pytest.mark.parametrize("is_sandbox,access_token_url,query_url", url_template_test_data)
     def test_url_template_substitutions(self, is_sandbox, access_token_url, query_url):

@@ -1,8 +1,6 @@
-import datetime
 import json
 import logging
 import re
-import sys
 import urllib
 from pathlib import Path
 
@@ -11,7 +9,7 @@ import pandas as pd
 import pandas.testing as tm
 import pyogrio
 import pytest
-from arcgis import GeoAccessor, GeoSeriesAccessor
+from arcgis import GeoAccessor, GeoSeriesAccessor  # noqa: F401
 from palletjack import load
 
 
@@ -384,7 +382,7 @@ class TestTruncateAndLoadLayer:
             )
 
         updater_mock._upload_data.assert_called_once_with(new_dataframe, upsert=False)
-        assert f"Append failed. Data saved to bar_path" in caplog.text
+        assert "Append failed. Data saved to bar_path" in caplog.text
 
     def test_truncate_and_load_append_fails_save_old_false(self, mocker, caplog):
         caplog.set_level(logging.DEBUG)
@@ -407,7 +405,7 @@ class TestTruncateAndLoadLayer:
 
         updater_mock._upload_data.assert_called_once_with(new_dataframe, upsert=False)
 
-        assert f"Append failed. Old data not saved (save_old set to False)" in caplog.text
+        assert "Append failed. Old data not saved (save_old set to False)" in caplog.text
 
     def test_truncate_and_load_calls_field_checkers(self, mocker, caplog):
 
