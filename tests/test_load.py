@@ -1220,22 +1220,43 @@ class TestGDBStuff:
 
         assert exc_info.value.__cause__.args[0] == expected_inner_error
 
-    def test__upload_gdb_calls_add(self, mocker):
+    def test__upload_gdb_calls_add_default_name(self, mocker):
         gdb_path = Path("/foo/bar/upload.gdb")
         expected_call_kwargs = {
             "item_properties": {
                 "type": "File Geodatabase",
-                "title": "Temporary gdb upload",
+                "title": "palletjack Temporary gdb upload",
                 "snippet": "Temporary gdb upload from palletjack",
             },
             "data": gdb_path,
         }
 
-        updater_mock = mocker.Mock()
+        mocker.patch("palletjack.load.arcgis")
+        gis_mock = mocker.Mock()
+        updater = load.FeatureServiceUpdater(gis_mock, "abc")
 
-        foo = load.FeatureServiceUpdater._upload_gdb(updater_mock, gdb_path)
+        foo = updater._upload_gdb(gdb_path)
 
-        updater_mock.gis.content.add.assert_called_once_with(**expected_call_kwargs)
+        gis_mock.content.add.assert_called_once_with(**expected_call_kwargs)
+
+    def test__upload_gdb_calls_add_custom_name(self, mocker):
+        gdb_path = Path("/foo/bar/upload.gdb")
+        expected_call_kwargs = {
+            "item_properties": {
+                "type": "File Geodatabase",
+                "title": "foo Temporary gdb upload",
+                "snippet": "Temporary gdb upload from palletjack",
+            },
+            "data": gdb_path,
+        }
+
+        mocker.patch("palletjack.load.arcgis")
+        gis_mock = mocker.Mock()
+        updater = load.FeatureServiceUpdater(gis_mock, "abc", gdb_item_prefix="foo")
+
+        foo = updater._upload_gdb(gdb_path)
+
+        gis_mock.content.add.assert_called_once_with(**expected_call_kwargs)
 
     def test__upload_gdb_raises_on_agol_error(self, mocker):
         gdb_path = Path("/foo/bar/upload.gdb")

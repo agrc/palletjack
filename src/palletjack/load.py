@@ -35,18 +35,20 @@ class FeatureServiceUpdater:
     three different methods with dataframes containing only the respective records for each operation.
 
     The method used to upload the data to AGOL saves the updated data as a new layer named upload in working_dir/upload.
-    gdb, zips the gdb, uploads it to AGOL, and then uses this as the source data for a call to the feature layer's
-    .append() method. The geodatabase upload.gdb will be created in working_dir if it doesn't already exist. Ideally,
-    working_dir should be a TemporaryDirectory unless persistent access to the gdb is desired.
+    gdb, zips the gdb, uploads it to AGOL (with the item name `gdb_item_prefix Temporary gdb upload`), and then uses
+    this as the source data for a call to the feature layer's .append() method. The geodatabase upload.gdb will be
+    created in working_dir if it doesn't already exist. Ideally, working_dir should be a TemporaryDirectory unless
+    persistent access to the gdb is desired.
     """
 
-    def __init__(self, gis, feature_service_itemid, working_dir=None, layer_index=0):
+    def __init__(self, gis, feature_service_itemid, working_dir=None, layer_index=0, gdb_item_prefix="palletjack"):
         self._class_logger = logging.getLogger(__name__).getChild(self.__class__.__name__)
         self.gis = gis
         self.feature_service_itemid = feature_service_itemid
         self.feature_layer = arcgis.features.FeatureLayer.fromitem(gis.content.get(feature_service_itemid))
         self.working_dir = working_dir if working_dir else None
         self.layer_index = layer_index
+        self.gdb_item_prefix = gdb_item_prefix
 
     def add_features(self, dataframe):
         """Adds new features to existing hosted feature layer from new dataframe.
@@ -378,7 +380,7 @@ class FeatureServiceUpdater:
                 self.gis.content.add,
                 item_properties={
                     "type": "File Geodatabase",
-                    "title": "Temporary gdb upload",
+                    "title": f"{self.gdb_item_prefix} Temporary gdb upload",
                     "snippet": "Temporary gdb upload from palletjack",
                 },
                 data=zipped_gdb_path,
