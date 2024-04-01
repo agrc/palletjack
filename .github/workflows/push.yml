@@ -31,8 +31,8 @@ jobs:
       - name: 🧪 Run pytest
         run: pytest
 
-    - name: ⬆️ Upload coverage to Codecov
-      uses: codecov/codecov-action@v4
-      with:
-        file: ./cov.xml
-        verbose: true
+      - name: ⬆️ Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          file: ./cov.xml
+          verbose: true
