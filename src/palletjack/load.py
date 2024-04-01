@@ -70,10 +70,10 @@ class FeatureServiceUpdater:
         """
 
         self._class_logger.info(
-            'Adding items to layer `%s` in itemid `%s` in-place', self.layer_index, self.feature_service_itemid
+            "Adding items to layer `%s` in itemid `%s` in-place", self.layer_index, self.feature_service_itemid
         )
         fields = FeatureServiceUpdater._get_fields_from_dataframe(dataframe)
-        self._class_logger.debug('Using fields %s', fields)
+        self._class_logger.debug("Using fields %s", fields)
 
         #: Field checks to prevent various AGOL errors
         utils.FieldChecker.check_fields(self.feature_layer.properties, dataframe, fields, add_oid=False)
@@ -109,14 +109,14 @@ class FeatureServiceUpdater:
         """
 
         self._class_logger.info(
-            'Deleting features from layer `%s` in itemid `%s`', self.layer_index, self.feature_service_itemid
+            "Deleting features from layer `%s` in itemid `%s`", self.layer_index, self.feature_service_itemid
         )
-        self._class_logger.debug('Delete string: %s', delete_oids)
+        self._class_logger.debug("Delete string: %s", delete_oids)
 
         #: Verify delete list
         oid_numeric = utils.DeleteUtils.check_delete_oids_are_ints(delete_oids)
         utils.DeleteUtils.check_for_empty_oid_list(oid_numeric, delete_oids)
-        delete_string = ','.join([str(oid) for oid in oid_numeric])
+        delete_string = ",".join([str(oid) for oid in oid_numeric])
         num_missing_oids = utils.DeleteUtils.check_delete_oids_are_in_live_data(
             delete_string, oid_numeric, self.feature_layer
         )
@@ -129,12 +129,12 @@ class FeatureServiceUpdater:
             rollback_on_failure=True,
         )
 
-        failed_deletes = [result['objectId'] for result in deletes['deleteResults'] if not result['success']]
+        failed_deletes = [result["objectId"] for result in deletes["deleteResults"] if not result["success"]]
         if failed_deletes:
-            raise RuntimeError(f'The following Object IDs failed to delete: {failed_deletes}')
+            raise RuntimeError(f"The following Object IDs failed to delete: {failed_deletes}")
 
         #: The REST API still returns success: True on missing OIDs, so we have to track this ourselves
-        actual_delete_count = len(deletes['deleteResults']) - num_missing_oids
+        actual_delete_count = len(deletes["deleteResults"]) - num_missing_oids
 
         return actual_delete_count
 
@@ -169,17 +169,17 @@ class FeatureServiceUpdater:
         """
 
         self._class_logger.info(
-            'Updating layer `%s` in itemid `%s` in-place', self.layer_index, self.feature_service_itemid
+            "Updating layer `%s` in itemid `%s` in-place", self.layer_index, self.feature_service_itemid
         )
 
         fields = FeatureServiceUpdater._get_fields_from_dataframe(dataframe)
-        self._class_logger.debug('Updating fields %s', fields)
+        self._class_logger.debug("Updating fields %s", fields)
 
         #: Add null geometries if update_geometry==False so that we can create a featureset from the dataframe
         #: (geometries will be ignored by upsert call)
         if not update_geometry:
-            self._class_logger.debug('Attribute-only update; inserting null geometries')
-            dataframe['SHAPE'] = utils.get_null_geometries(self.feature_layer.properties)
+            self._class_logger.debug("Attribute-only update; inserting null geometries")
+            dataframe["SHAPE"] = utils.get_null_geometries(self.feature_layer.properties)
 
         #: Field checks to prevent various AGOL errors
         utils.FieldChecker.check_fields(self.feature_layer.properties, dataframe, fields, add_oid=True)
@@ -188,9 +188,9 @@ class FeatureServiceUpdater:
         append_count = self._upload_data(
             dataframe,
             upsert=True,
-            upsert_matching_field='OBJECTID',
+            upsert_matching_field="OBJECTID",
             append_fields=fields,  #: Apparently this works if append_fields is all the fields, but not a subset?
-            update_geometry=update_geometry
+            update_geometry=update_geometry,
         )
         return append_count
 
@@ -217,13 +217,13 @@ class FeatureServiceUpdater:
         """
 
         self._class_logger.info(
-            'Truncating and loading layer `%s` in itemid `%s`', self.layer_index, self.feature_service_itemid
+            "Truncating and loading layer `%s` in itemid `%s`", self.layer_index, self.feature_service_itemid
         )
         start = datetime.now()
 
         #: Save the data to disk if desired
         if save_old:
-            self._class_logger.info('Saving existing data to %s', self.working_dir)
+            self._class_logger.info("Saving existing data to %s", self.working_dir)
             saved_layer_path = utils.save_feature_layer_to_gdb(self.feature_layer, self.working_dir)
 
         fields = FeatureServiceUpdater._get_fields_from_dataframe(dataframe)
@@ -231,18 +231,18 @@ class FeatureServiceUpdater:
         #: Field checks to prevent various AGOL errors
         utils.FieldChecker.check_fields(self.feature_layer.properties, dataframe, fields, add_oid=False)
 
-        self._class_logger.info('Truncating existing features...')
+        self._class_logger.info("Truncating existing features...")
         self._truncate_existing_data()
 
         try:
-            self._class_logger.info('Loading new data...')
+            self._class_logger.info("Loading new data...")
             append_count = self._upload_data(dataframe, upsert=False)
-            self._class_logger.debug('Total truncate and load time: %s', datetime.now() - start)
+            self._class_logger.debug("Total truncate and load time: %s", datetime.now() - start)
         except Exception:
             if save_old:
-                self._class_logger.error('Append failed. Data saved to %s', saved_layer_path)
+                self._class_logger.error("Append failed. Data saved to %s", saved_layer_path)
                 raise
-            self._class_logger.error('Append failed. Old data not saved (save_old set to False)')
+            self._class_logger.error("Append failed. Old data not saved (save_old set to False)")
             raise
 
         return append_count
@@ -259,7 +259,7 @@ class FeatureServiceUpdater:
         """
 
         fields = list(dataframe.columns)
-        for auto_gen_field in ['Shape_Area', 'Shape_Length']:
+        for auto_gen_field in ["Shape_Area", "Shape_Length"]:
             try:
                 fields.remove(auto_gen_field)
             except ValueError:
@@ -288,42 +288,40 @@ class FeatureServiceUpdater:
             int: The number of records upserted
         """
         try:
-            if append_kwargs['upsert'] \
-                and (
-                        append_kwargs['upsert_matching_field'] not in append_kwargs['append_fields']
-                        or
-                        append_kwargs['upsert_matching_field'] not in dataframe.columns
-                    ):
+            if append_kwargs["upsert"] and (
+                append_kwargs["upsert_matching_field"] not in append_kwargs["append_fields"]
+                or append_kwargs["upsert_matching_field"] not in dataframe.columns
+            ):
                 raise ValueError(
                     f'Upsert matching field {append_kwargs["upsert_matching_field"]} not found in either append fields or existing fields.'
                 )
         except KeyError:
             pass
-        self._class_logger.debug('Saving data to gdb and zipping...')
+        self._class_logger.debug("Saving data to gdb and zipping...")
         zipped_gdb_path = self._save_to_gdb_and_zip(dataframe)
 
-        self._class_logger.debug('Uploading gdb to AGOL...')
+        self._class_logger.debug("Uploading gdb to AGOL...")
         gdb_item = self._upload_gdb(zipped_gdb_path)
 
-        self._class_logger.debug('Appending data from gdb to feature layer...')
+        self._class_logger.debug("Appending data from gdb to feature layer...")
         try:
             result, messages = utils.retry(
                 self.feature_layer.append,
                 item_id=gdb_item.id,
-                upload_format='filegdb',
-                source_table_name='upload',
+                upload_format="filegdb",
+                source_table_name="upload",
                 return_messages=True,
                 rollback=True,
-                **append_kwargs
+                **append_kwargs,
             )
             if not result:
-                raise RuntimeError('Append failed but did not error')
+                raise RuntimeError("Append failed but did not error")
         except Exception as error:
-            raise RuntimeError('Failed to append data from gdb, changes should have been rolled back') from error
+            raise RuntimeError("Failed to append data from gdb, changes should have been rolled back") from error
 
         self._cleanup(gdb_item, zipped_gdb_path)
 
-        return messages['recordCount']
+        return messages["recordCount"]
 
     def _save_to_gdb_and_zip(self, dataframe):
         """Save a spatially-enabled dataframe to a gdb, zip it, and return path to the zipped file.
@@ -343,22 +341,22 @@ class FeatureServiceUpdater:
         """
 
         try:
-            gdb_path = Path(self.working_dir) / 'upload.gdb'
+            gdb_path = Path(self.working_dir) / "upload.gdb"
         except TypeError as error:
-            raise AttributeError('working_dir not specified on FeatureServiceUpdater') from error
+            raise AttributeError("working_dir not specified on FeatureServiceUpdater") from error
 
         gdf = utils.sedf_to_gdf(dataframe)
 
         try:
-            gdf.to_file(gdb_path, layer='upload', engine='pyogrio', driver='OpenFileGDB')
+            gdf.to_file(gdb_path, layer="upload", engine="pyogrio", driver="OpenFileGDB")
         except pyogrio.errors.DataSourceError as error:
             raise ValueError(
-                f'Error writing layer to {gdb_path}. Verify {self.working_dir} exists and is writable.'
+                f"Error writing layer to {gdb_path}. Verify {self.working_dir} exists and is writable."
             ) from error
         try:
-            zipped_gdb_path = shutil.make_archive(gdb_path, 'zip', root_dir=gdb_path.parent, base_dir=gdb_path.name)
+            zipped_gdb_path = shutil.make_archive(gdb_path, "zip", root_dir=gdb_path.parent, base_dir=gdb_path.name)
         except OSError as error:
-            raise ValueError(f'Error zipping {gdb_path}') from error
+            raise ValueError(f"Error zipping {gdb_path}") from error
 
         return zipped_gdb_path
 
@@ -379,14 +377,14 @@ class FeatureServiceUpdater:
             gdb_item = utils.retry(
                 self.gis.content.add,
                 item_properties={
-                    'type': 'File Geodatabase',
-                    'title': 'Temporary gdb upload',
-                    'snippet': 'Temporary gdb upload from palletjack'
+                    "type": "File Geodatabase",
+                    "title": "Temporary gdb upload",
+                    "snippet": "Temporary gdb upload from palletjack",
                 },
-                data=zipped_gdb_path
+                data=zipped_gdb_path,
             )
         except Exception as error:
-            raise RuntimeError(f'Error uploading {zipped_gdb_path} to AGOL') from error
+            raise RuntimeError(f"Error uploading {zipped_gdb_path} to AGOL") from error
         return gdb_item
 
     def _cleanup(self, gdb_item, zipped_gdb_path):
@@ -403,13 +401,13 @@ class FeatureServiceUpdater:
         try:
             gdb_item.delete()
         except Exception as error:
-            warnings.warn(f'Error deleting gdb item {gdb_item.id} from AGOL')
+            warnings.warn(f"Error deleting gdb item {gdb_item.id} from AGOL")
             warnings.warn(repr(error))
 
         try:
             Path(zipped_gdb_path).unlink()
         except Exception as error:
-            warnings.warn(f'Error deleting zipped gdb {zipped_gdb_path}')
+            warnings.warn(f"Error deleting zipped gdb {zipped_gdb_path}")
             warnings.warn(repr(error))
 
     def _truncate_existing_data(self):
@@ -422,12 +420,12 @@ class FeatureServiceUpdater:
             pd.DataFrame: The feature layer's data as a spatially-enabled dataframe prior to truncating
         """
 
-        self._class_logger.debug('Truncating...')
+        self._class_logger.debug("Truncating...")
         truncate_result = utils.retry(self.feature_layer.manager.truncate, asynchronous=True, wait=True)
         self._class_logger.debug(truncate_result)
-        if truncate_result['status'] != 'Completed':
+        if truncate_result["status"] != "Completed":
             raise RuntimeError(
-                f'Failed to truncate existing data from layer id {self.layer_index} in itemid {self.feature_service_itemid}'
+                f"Failed to truncate existing data from layer id {self.layer_index} in itemid {self.feature_service_itemid}"
             )
 
 
@@ -466,10 +464,10 @@ class FeatureServiceAttachmentsUpdater:
             pd.DataFrame: Attachments dataframe with corresponding live OIDs and GUIDs.
         """
 
-        self._class_logger.debug('Using %s as the join field between live and new data', attachment_join_field)
-        subset_df = live_features_as_df.reindex(columns=['OBJECTID', 'GlobalID', attachment_join_field])
-        merged_df = subset_df.merge(attachments_df, on=attachment_join_field, how='inner')
-        self._class_logger.debug('%s features common to both live and new data', len(merged_df.index))
+        self._class_logger.debug("Using %s as the join field between live and new data", attachment_join_field)
+        subset_df = live_features_as_df.reindex(columns=["OBJECTID", "GlobalID", attachment_join_field])
+        merged_df = subset_df.merge(attachments_df, on=attachment_join_field, how="inner")
+        self._class_logger.debug("%s features common to both live and new data", len(merged_df.index))
 
         return merged_df
 
@@ -484,12 +482,12 @@ class FeatureServiceAttachmentsUpdater:
         """
 
         live_attachments_df = pd.DataFrame(self.feature_layer.attachments.search())
-        live_attachments_subset_df = live_attachments_df.reindex(columns=['PARENTOBJECTID', 'NAME', 'ID'])
+        live_attachments_subset_df = live_attachments_df.reindex(columns=["PARENTOBJECTID", "NAME", "ID"])
         merged_df = live_data_subset_df.merge(
-            live_attachments_subset_df, left_on='OBJECTID', right_on='PARENTOBJECTID', how='left'
+            live_attachments_subset_df, left_on="OBJECTID", right_on="PARENTOBJECTID", how="left"
         )
         #: Cast ID field to nullable int to avoid conversion to float for np.nans
-        merged_df['ID'] = merged_df['ID'].astype('Int64')
+        merged_df["ID"] = merged_df["ID"].astype("Int64")
 
         return merged_df
 
@@ -509,23 +507,26 @@ class FeatureServiceAttachmentsUpdater:
         """
 
         #: Get the file name from the full path
-        attachment_eval_df['new_filename'] = attachment_eval_df[attachment_path_field].apply(
+        attachment_eval_df["new_filename"] = attachment_eval_df[attachment_path_field].apply(
             lambda path: Path(path).name
         )
 
         #: Overwrite if different names, add if no existing name, do nothing if names are the same
-        attachment_eval_df['operation'] = np.nan
-        attachment_eval_df.loc[attachment_eval_df['NAME'] != attachment_eval_df['new_filename'],
-                               'operation'] = 'overwrite'
-        attachment_eval_df.loc[attachment_eval_df['NAME'].isna(), 'operation'] = 'add'
+        attachment_eval_df["operation"] = np.nan
+        attachment_eval_df.loc[attachment_eval_df["NAME"] != attachment_eval_df["new_filename"], "operation"] = (
+            "overwrite"
+        )
+        attachment_eval_df.loc[attachment_eval_df["NAME"].isna(), "operation"] = "add"
 
-        value_counts = attachment_eval_df['operation'].value_counts(dropna=False)
-        for operation in ['add', 'overwrite', np.nan]:
+        value_counts = attachment_eval_df["operation"].value_counts(dropna=False)
+        for operation in ["add", "overwrite", np.nan]:
             if operation not in value_counts:
                 value_counts[operation] = 0
         self._class_logger.debug(
-            'Calculated attachment operations: adds: %s, overwrites: %s, none: %s', value_counts['add'],
-            value_counts['overwrite'], value_counts[np.nan]
+            "Calculated attachment operations: adds: %s, overwrites: %s, none: %s",
+            value_counts["add"],
+            value_counts["overwrite"],
+            value_counts[np.nan],
         )
 
         return attachment_eval_df
@@ -542,25 +543,25 @@ class FeatureServiceAttachmentsUpdater:
             int: The number of features that successfully have attachments added.
         """
 
-        adds_dict = attachment_action_df[attachment_action_df['operation'] == 'add'].to_dict(orient='index')
+        adds_dict = attachment_action_df[attachment_action_df["operation"] == "add"].to_dict(orient="index")
         adds_count = 0
 
         for row in adds_dict.values():
-            target_oid = row['OBJECTID']
+            target_oid = row["OBJECTID"]
             filepath = row[attachment_path_field]
 
-            self._class_logger.debug('Add %s to OID %s', filepath, target_oid)
+            self._class_logger.debug("Add %s to OID %s", filepath, target_oid)
             try:
                 result = self.feature_layer.attachments.add(target_oid, filepath)
             except Exception:
-                self._class_logger.error('AGOL error while adding %s to OID %s', filepath, target_oid, exc_info=True)
-                self.failed_dict[target_oid] = ('add', filepath)
+                self._class_logger.error("AGOL error while adding %s to OID %s", filepath, target_oid, exc_info=True)
+                self.failed_dict[target_oid] = ("add", filepath)
                 continue
 
-            self._class_logger.debug('%s', result)
-            if not result['addAttachmentResult']['success']:
-                warnings.warn(f'Failed to attach {filepath} to OID {target_oid}')
-                self.failed_dict[target_oid] = ('add', filepath)
+            self._class_logger.debug("%s", result)
+            if not result["addAttachmentResult"]["success"]:
+                warnings.warn(f"Failed to attach {filepath} to OID {target_oid}")
+                self.failed_dict[target_oid] = ("add", filepath)
                 continue
 
             adds_count += 1
@@ -579,37 +580,37 @@ class FeatureServiceAttachmentsUpdater:
             int: The number of features that successfully have their attachments overwritten.
         """
 
-        overwrites_dict = attachment_action_df[attachment_action_df['operation'] == 'overwrite'].to_dict(orient='index')
+        overwrites_dict = attachment_action_df[attachment_action_df["operation"] == "overwrite"].to_dict(orient="index")
         overwrites_count = 0
 
         for row in overwrites_dict.values():
-            target_oid = row['OBJECTID']
+            target_oid = row["OBJECTID"]
             filepath = row[attachment_path_field]
-            attachment_id = row['ID']
-            old_name = row['NAME']
+            attachment_id = row["ID"]
+            old_name = row["NAME"]
 
             self._class_logger.debug(
-                'Overwriting %s (attachment ID %s) on OID %s with %s', old_name, attachment_id, target_oid, filepath
+                "Overwriting %s (attachment ID %s) on OID %s with %s", old_name, attachment_id, target_oid, filepath
             )
             try:
                 result = self.feature_layer.attachments.update(target_oid, attachment_id, filepath)
             except Exception:
                 self._class_logger.error(
-                    'AGOL error while overwriting %s (attachment ID %s) on OID %s with %s',
+                    "AGOL error while overwriting %s (attachment ID %s) on OID %s with %s",
                     old_name,
                     attachment_id,
                     target_oid,
                     filepath,
-                    exc_info=True
+                    exc_info=True,
                 )
-                self.failed_dict[target_oid] = ('update', filepath)
+                self.failed_dict[target_oid] = ("update", filepath)
                 continue
 
-            if not result['updateAttachmentResult']['success']:
+            if not result["updateAttachmentResult"]["success"]:
                 warnings.warn(
-                    f'Failed to update {old_name}, attachment ID {attachment_id}, on OID {target_oid} with {filepath}'
+                    f"Failed to update {old_name}, attachment ID {attachment_id}, on OID {target_oid} with {filepath}"
                 )
-                self.failed_dict[target_oid] = ('update', filepath)
+                self.failed_dict[target_oid] = ("update", filepath)
                 continue
 
             overwrites_count += 1
@@ -621,7 +622,7 @@ class FeatureServiceAttachmentsUpdater:
         invalid_names_index = pd.Index(invalid_names)
         intersection = attachment_dataframe.columns.intersection(invalid_names_index)
         if not intersection.empty:
-            raise RuntimeError(f'Attachment dataframe contains the following invalid names: {list(intersection)}')
+            raise RuntimeError(f"Attachment dataframe contains the following invalid names: {list(intersection)}")
 
     def update_attachments(
         self, feature_layer_itemid, attachment_join_field, attachment_path_field, attachments_df, layer_number=0
@@ -646,14 +647,14 @@ class FeatureServiceAttachmentsUpdater:
             (int, int): Tuple of counts of successful overwrites and adds.
         """
 
-        self._class_logger.info('Updating attachments...')
+        self._class_logger.info("Updating attachments...")
         #: These names are present in the live attachment data downloaded from AGOL. Because we merge the dataframes
         #: later, we need to make sure they're not the same. There may be better ways of handling this that allows the
         #: client names to be preserved, but for now force them to fix this.
         self._check_attachment_dataframe_for_invalid_column_names(
-            attachments_df, invalid_names=['OBJECTID', 'PARENTOBJECTID', 'NAME', 'ID']
+            attachments_df, invalid_names=["OBJECTID", "PARENTOBJECTID", "NAME", "ID"]
         )
-        self._class_logger.debug('Using layer %s from item ID %s', layer_number, feature_layer_itemid)
+        self._class_logger.debug("Using layer %s from item ID %s", layer_number, feature_layer_itemid)
         self.feature_layer = self.gis.content.get(feature_layer_itemid).layers[layer_number]
         live_features_as_df = pd.DataFrame.spatial.from_layer(self.feature_layer)
         live_data_subset_df = self._get_live_oid_and_guid_from_join_field_values(
@@ -666,7 +667,7 @@ class FeatureServiceAttachmentsUpdater:
 
         overwrites_count = self._overwrite_attachments_by_oid(attachment_action_df, attachment_path_field)
         adds_count = self._add_attachments_by_oid(attachment_action_df, attachment_path_field)
-        self._class_logger.info('%s attachments added, %s attachments overwritten', adds_count, overwrites_count)
+        self._class_logger.info("%s attachments added, %s attachments overwritten", adds_count, overwrites_count)
 
         return overwrites_count, adds_count
 
@@ -685,12 +686,14 @@ class FeatureServiceAttachmentsUpdater:
             pd.DataFrame: Dataframe with join key, attachment name, and full attachment paths
         """
 
-        input_dataframe[attachment_column].replace('', np.nan, inplace=True)  #: pandas doesn't see empty strings as NAs
-        attachments_dataframe = input_dataframe[[join_column, attachment_column]] \
-                                            .copy().dropna(subset=[attachment_column])
+        input_dataframe[attachment_column].replace("", np.nan, inplace=True)  #: pandas doesn't see empty strings as NAs
+        attachments_dataframe = (
+            input_dataframe[[join_column, attachment_column]].copy().dropna(subset=[attachment_column])
+        )
         #: Create the full path by prepending the output directory using .apply and a lambda function
-        attachments_dataframe['full_file_path'] = attachments_dataframe[attachment_column] \
-                                                    .apply(lambda filename: str(Path(out_dir, filename)))
+        attachments_dataframe["full_file_path"] = attachments_dataframe[attachment_column].apply(
+            lambda filename: str(Path(out_dir, filename))
+        )
 
         return attachments_dataframe
 
@@ -725,10 +728,10 @@ class ColorRampReclassifier:
             spatially-enabled data frame: The layer's data, including geometries.
         """
 
-        self._class_logger.info('Getting dataframe from `%s` on `%s`', layer_name, self.webmap_item.title)
+        self._class_logger.info("Getting dataframe from `%s` on `%s`", layer_name, self.webmap_item.title)
         webmap_object = arcgis.mapping.WebMap(self.webmap_item)
         layer = webmap_object.get_layer(title=layer_name)
-        feature_layer = self.gis.content.get(layer['itemId'])
+        feature_layer = self.gis.content.get(layer["itemId"])
         layer_dataframe = pd.DataFrame.spatial.from_layer(feature_layer.layers[feature_layer_number])
 
         return layer_dataframe
@@ -747,9 +750,9 @@ class ColorRampReclassifier:
         """
 
         data = self.webmap_item.get_data()
-        for layer_id, layer in enumerate(data['operationalLayers']):
-            if layer['title'] == layer_name:
-                self._class_logger.debug('Layer `%s` has id `%s`', layer_name, layer_id)
+        for layer_id, layer in enumerate(data["operationalLayers"]):
+            if layer["title"] == layer_name:
+                self._class_logger.debug("Layer `%s` has id `%s`", layer_name, layer_id)
                 return layer_id
 
         #: If we haven't matched the title and returned a valid id, raise an error.
@@ -769,7 +772,7 @@ class ColorRampReclassifier:
         """
 
         if column not in dataframe.columns:
-            raise ValueError(f'Column `{column}` not in dataframe')
+            raise ValueError(f"Column `{column}` not in dataframe")
         minval = dataframe[column].min()
         mean = dataframe[column].mean()
         std_dev = dataframe[column].std()
@@ -793,17 +796,17 @@ class ColorRampReclassifier:
 
         #: Get short reference to the stops dictionary from the webmap's data json
         data = self.webmap_item.get_data()
-        renderer = data['operationalLayers'][layer_number]['layerDefinition']['drawingInfo']['renderer']
-        stops = renderer['visualVariables'][0]['stops']
+        renderer = data["operationalLayers"][layer_number]["layerDefinition"]["drawingInfo"]["renderer"]
+        stops = renderer["visualVariables"][0]["stops"]
 
         #: Overwrite the value, update the webmap item
         for stop, new_value in zip(stops, new_stops):
-            stop['value'] = new_value
+            stop["value"] = new_value
         self._class_logger.info(
-            'Updating stop values on layer number `%s` in `%s`', layer_number, self.webmap_item.title
+            "Updating stop values on layer number `%s` in `%s`", layer_number, self.webmap_item.title
         )
-        result = self.webmap_item.update(item_properties={'text': json.dumps(data)})
-        self._class_logger.debug('Update result: %s', result)
+        result = self.webmap_item.update(item_properties={"text": json.dumps(data)})
+        self._class_logger.debug("Update result: %s", result)
 
         return result
 

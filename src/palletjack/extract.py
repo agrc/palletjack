@@ -62,15 +62,15 @@ class GSheetLoader:
             pd.DataFrame: The specified worksheet as a data frame.
         """
 
-        self._class_logger.debug('Loading sheet ID %s', sheet_id)
+        self._class_logger.debug("Loading sheet ID %s", sheet_id)
         sheet = self.gsheets_client.open_by_key(sheet_id)
 
         if by_title:
-            self._class_logger.debug('Loading worksheet by title %s', worksheet)
+            self._class_logger.debug("Loading worksheet by title %s", worksheet)
             return sheet.worksheet_by_title(worksheet).get_as_df()
         else:
-            self._class_logger.debug('Loading worksheet by index %s', worksheet)
-            return sheet.worksheet('index', worksheet).get_as_df()
+            self._class_logger.debug("Loading worksheet by index %s", worksheet)
+            return sheet.worksheet("index", worksheet).get_as_df()
 
     def load_all_worksheets_into_dataframes(self, sheet_id):
         """Load all worksheets into a dictionary of dataframes. Keys are the worksheet.
@@ -82,7 +82,7 @@ class GSheetLoader:
             dict: {'worksheet_name': Worksheet as a dataframe}
         """
 
-        self._class_logger.debug('Loading sheet ID %s', sheet_id)
+        self._class_logger.debug("Loading sheet ID %s", sheet_id)
         sheet = self.gsheets_client.open_by_key(sheet_id)
 
         worksheet_dfs = {worksheet.title: worksheet.get_as_df() for worksheet in sheet.worksheets()}
@@ -109,11 +109,11 @@ class GSheetLoader:
 
         #: Make sure all the dataframes have the same columns
         if not all([set(dataframes[0].columns) == set(df.columns) for df in dataframes]):
-            raise ValueError('Columns do not match; cannot create multi-index dataframe')
+            raise ValueError("Columns do not match; cannot create multi-index dataframe")
 
-        self._class_logger.debug('Concatting worksheet dataframes %s into a single dataframe', worksheet_dfs.keys())
-        concatted_df = pd.concat(dataframes, keys=worksheet_dfs.keys(), names=['worksheet', 'row'])
-        return concatted_df.reset_index(level='worksheet')
+        self._class_logger.debug("Concatting worksheet dataframes %s into a single dataframe", worksheet_dfs.keys())
+        concatted_df = pd.concat(dataframes, keys=worksheet_dfs.keys(), names=["worksheet", "row"])
+        return concatted_df.reset_index(level="worksheet")
 
 
 class GoogleDriveDownloader:
@@ -131,11 +131,11 @@ class GoogleDriveDownloader:
             out_dir (str or Path): Directory to save downloaded files. Can be reassigned later to change the directory.
         """
         self._class_logger = logging.getLogger(__name__).getChild(self.__class__.__name__)
-        self._class_logger.debug('Initializing GoogleDriveDownloader')
-        self._class_logger.debug('Output directory: %s', out_dir)
+        self._class_logger.debug("Initializing GoogleDriveDownloader")
+        self._class_logger.debug("Output directory: %s", out_dir)
         self.out_dir = Path(out_dir)
-        regex_pattern = '(\/|=)([-\w]{25,})'  # pylint:disable=anomalous-backslash-in-string
-        self._class_logger.debug('Regex pattern: %s', regex_pattern)
+        regex_pattern = "(\/|=)([-\w]{25,})"  # pylint:disable=anomalous-backslash-in-string
+        self._class_logger.debug("Regex pattern: %s", regex_pattern)
         self.regex = re.compile(regex_pattern)
 
     @staticmethod
@@ -148,12 +148,12 @@ class GoogleDriveDownloader:
             chunk_size (int, optional): Download the file in chunks of this size. Defaults to 32768.
         """
 
-        with destination.open(mode='wb') as out_file:
+        with destination.open(mode="wb") as out_file:
             for chunk in response.iter_content(chunk_size):
                 if chunk:  # filter out keep-alive new chunks
                     out_file.write(chunk)
 
-    def _get_http_response(self, file_id, base_url='https://docs.google.com/uc?export=download'):
+    def _get_http_response(self, file_id, base_url="https://docs.google.com/uc?export=download"):
         """Performs the HTTP GET request and checks the response
 
         Args:
@@ -169,11 +169,11 @@ class GoogleDriveDownloader:
             request.response: The requests response object.
         """
 
-        response = requests.get(base_url, params={'id': file_id}, stream=True)
+        response = requests.get(base_url, params={"id": file_id}, stream=True)
 
-        if 'text/html' in response.headers['Content-Type']:
+        if "text/html" in response.headers["Content-Type"]:
             self._class_logger.error(response.headers)
-            raise RuntimeError(f'Cannot access {file_id} (is it publicly shared?). Response header in log.')
+            raise RuntimeError(f"Cannot access {file_id} (is it publicly shared?). Response header in log.")
 
         return response
 
@@ -191,14 +191,16 @@ class GoogleDriveDownloader:
             str: Filename as defined in the header
         """
 
-        content = response.headers['Content-Disposition']
-        all_filenames = re.findall('filename\*?=([^;]+)', content, flags=re.IGNORECASE)  # pylint:disable=anomalous-backslash-in-string
+        content = response.headers["Content-Disposition"]
+        all_filenames = re.findall(
+            "filename\*?=([^;]+)", content, flags=re.IGNORECASE
+        )  # pylint:disable=anomalous-backslash-in-string
         if all_filenames:
             #: Remove spurious whitespace and "s
             return all_filenames[0].strip().strip('"')
 
         #: If we don't return a filename, raise an error instead
-        raise ValueError('filename not found in response header')
+        raise ValueError("filename not found in response header")
 
     def _get_file_id_from_sharing_link(self, sharing_link):
         """Use regex to parse out the unique Google id from the sharing link
@@ -220,10 +222,10 @@ class GoogleDriveDownloader:
                 return match.group(2)
             #: Not sure how this would happen (can't even figure out a test), but leaving in for safety.
             except IndexError as err:
-                raise IndexError(f'Regex could not extract the file id from sharing link {sharing_link}') from err
-        raise RuntimeError(f'Regex could not match sharing link {sharing_link}')
+                raise IndexError(f"Regex could not extract the file id from sharing link {sharing_link}") from err
+        raise RuntimeError(f"Regex could not match sharing link {sharing_link}")
 
-    def download_file_from_google_drive(self, sharing_link, join_id, pause=0.):
+    def download_file_from_google_drive(self, sharing_link, join_id, pause=0.0):
         """Download a publicly-shared image from Google Drive using it's sharing link
 
         Uses an anonymous HTTP request with support for sleeping between downloads to try to get around Google's
@@ -243,23 +245,23 @@ class GoogleDriveDownloader:
         """
 
         if pause:
-            self._class_logger.debug('Sleeping for %s', pause)
+            self._class_logger.debug("Sleeping for %s", pause)
         sleep(pause)
         if not sharing_link:
-            self._class_logger.debug('Row %s has no attachment info', join_id)
+            self._class_logger.debug("Row %s has no attachment info", join_id)
             return None
-        self._class_logger.debug('Row %s: downloading shared file %s', join_id, sharing_link)
+        self._class_logger.debug("Row %s: downloading shared file %s", join_id, sharing_link)
         try:
             file_id = self._get_file_id_from_sharing_link(sharing_link)
-            self._class_logger.debug('Row %s: extracted file id %s', join_id, file_id)
+            self._class_logger.debug("Row %s: extracted file id %s", join_id, file_id)
             response = self._get_http_response(file_id)
             filename = self._get_filename_from_response(response)
             out_file_path = self.out_dir / filename
-            self._class_logger.debug('Row %s: writing to %s', join_id, out_file_path)
+            self._class_logger.debug("Row %s: writing to %s", join_id, out_file_path)
             self._save_response_content(response, out_file_path)
             return out_file_path
         except Exception as err:
-            self._class_logger.warning('Row %s: Couldn\'t download %s', join_id, sharing_link)
+            self._class_logger.warning("Row %s: Couldn't download %s", join_id, sharing_link)
             self._class_logger.warning(err)
             return None
 
@@ -276,15 +278,15 @@ class GoogleDriveDownloader:
 
         get_media_request = client.drive.service.files().get_media(fileId=file_id)  # pylint:disable=no-member
         metadata = client.drive.service.files().get(fileId=file_id).execute()  # pylint:disable=no-member
-        filename = metadata['name']
+        filename = metadata["name"]
         if not Path(filename).suffix:
             try:
-                filename = filename + mimetypes.guess_extension(metadata['mimeType'])
+                filename = filename + mimetypes.guess_extension(metadata["mimeType"])
             except KeyError:
-                self._class_logger.warning('%s: No MIME type in drive info, file extension not set', file_id)
+                self._class_logger.warning("%s: No MIME type in drive info, file extension not set", file_id)
             except TypeError:
                 self._class_logger.warning(
-                    '%s: Unable to determine file extension from MIME type, file extension not set', file_id
+                    "%s: Unable to determine file extension from MIME type, file extension not set", file_id
                 )
 
         return get_media_request, filename
@@ -305,7 +307,7 @@ class GoogleDriveDownloader:
         out_file_path.write_bytes(in_memory.getbuffer())
 
     def download_file_from_google_drive_using_api(self, gsheets_client, sharing_link, join_id):
-        """ Download a file using the Google API via pygsheets authentication.
+        """Download a file using the Google API via pygsheets authentication.
 
         Requires a pygsheets client object that handles authentication.
 
@@ -322,21 +324,21 @@ class GoogleDriveDownloader:
             Path: Path of downloaded file or None if download fails/is not possible
         """
         if not sharing_link:
-            self._class_logger.debug('Row %s has no attachment info', join_id)
+            self._class_logger.debug("Row %s has no attachment info", join_id)
             return None
-        self._class_logger.debug('Row %s: downloading file %s', join_id, sharing_link)
+        self._class_logger.debug("Row %s: downloading file %s", join_id, sharing_link)
         try:
             file_id = self._get_file_id_from_sharing_link(sharing_link)
-            self._class_logger.debug('Row %s: extracted file id %s', join_id, file_id)
+            self._class_logger.debug("Row %s: extracted file id %s", join_id, file_id)
             get_media_request, filename = utils.retry(
                 self._get_request_and_filename_from_drive_api, gsheets_client, file_id
             )
             out_file_path = self.out_dir / filename
-            self._class_logger.debug('Row %s: writing to %s', join_id, out_file_path)
+            self._class_logger.debug("Row %s: writing to %s", join_id, out_file_path)
             utils.retry(self._save_get_media_content, get_media_request, out_file_path)
             return out_file_path
         except Exception as err:
-            self._class_logger.warning('Row %s: Couldn\'t download %s', join_id, sharing_link)
+            self._class_logger.warning("Row %s: Couldn't download %s", join_id, sharing_link)
             self._class_logger.warning(err)
             return None
 
@@ -382,14 +384,13 @@ class GoogleDriveDownloader:
 
         dataframe[output_path_column] = dataframe.apply(
             lambda x: self.download_file_from_google_drive_using_api(client, x[sharing_link_column], x[join_id_column]),
-            axis=1
+            axis=1,
         )
         return dataframe
 
 
 class SFTPLoader:
-    """Loads data from an SFTP share into a pandas DataFrame
-    """
+    """Loads data from an SFTP share into a pandas DataFrame"""
 
     def __init__(self, host, username, password, knownhosts_file, download_dir):
         """
@@ -408,16 +409,16 @@ class SFTPLoader:
         self.download_dir = download_dir
         self._class_logger = logging.getLogger(__name__).getChild(self.__class__.__name__)
 
-    def download_sftp_folder_contents(self, sftp_folder='upload'):
+    def download_sftp_folder_contents(self, sftp_folder="upload"):
         """Download all files in sftp_folder to the SFTPLoader's download_dir
 
         Args:
             sftp_folder (str, optional): Path of remote folder, relative to sftp home directory. Defaults to 'upload'.
         """
 
-        self._class_logger.info('Downloading files from `%s:%s` to `%s`', self.host, sftp_folder, self.download_dir)
+        self._class_logger.info("Downloading files from `%s:%s` to `%s`", self.host, sftp_folder, self.download_dir)
         starting_file_count = len(list(self.download_dir.iterdir()))
-        self._class_logger.debug('SFTP Username: %s', self.username)
+        self._class_logger.debug("SFTP Username: %s", self.username)
         connection_opts = pysftp.CnOpts(knownhosts=self.knownhosts_file)
         with pysftp.Connection(
             self.host, username=self.username, password=self.password, cnopts=connection_opts
@@ -425,13 +426,13 @@ class SFTPLoader:
             try:
                 sftp.get_d(sftp_folder, self.download_dir, preserve_mtime=True)
             except FileNotFoundError as error:
-                raise FileNotFoundError(f'Folder `{sftp_folder}` not found on SFTP server') from error
+                raise FileNotFoundError(f"Folder `{sftp_folder}` not found on SFTP server") from error
         downloaded_file_count = len(list(self.download_dir.iterdir())) - starting_file_count
         if not downloaded_file_count:
-            raise ValueError('No files downloaded')
+            raise ValueError("No files downloaded")
         return downloaded_file_count
 
-    def download_sftp_single_file(self, filename, sftp_folder='upload'):
+    def download_sftp_single_file(self, filename, sftp_folder="upload"):
         """Download filename into SFTPLoader's download_dir
 
         Args:
@@ -447,8 +448,8 @@ class SFTPLoader:
 
         outfile = Path(self.download_dir, filename)
 
-        self._class_logger.info('Downloading %s from `%s:%s` to `%s`', filename, self.host, sftp_folder, outfile)
-        self._class_logger.debug('SFTP Username: %s', self.username)
+        self._class_logger.info("Downloading %s from `%s:%s` to `%s`", filename, self.host, sftp_folder, outfile)
+        self._class_logger.debug("SFTP Username: %s", self.username)
         connection_opts = pysftp.CnOpts(knownhosts=self.knownhosts_file)
         try:
             with pysftp.Connection(
@@ -460,7 +461,7 @@ class SFTPLoader:
             ) as sftp:
                 sftp.get(filename, localpath=outfile, preserve_mtime=True)
         except FileNotFoundError as error:
-            raise FileNotFoundError(f'File `{filename}` or folder `{sftp_folder}`` not found on SFTP server') from error
+            raise FileNotFoundError(f"File `{filename}` or folder `{sftp_folder}`` not found on SFTP server") from error
 
         return outfile
 
@@ -475,15 +476,15 @@ class SFTPLoader:
             pd.DataFrame: CSV as a pandas dataframe
         """
 
-        self._class_logger.info('Reading `%s` into dataframe', filename)
+        self._class_logger.info("Reading `%s` into dataframe", filename)
         filepath = Path(self.download_dir, filename)
         column_names = None
         if column_types:
             column_names = list(column_types.keys())
         dataframe = pd.read_csv(filepath, names=column_names, dtype=column_types)
-        self._class_logger.debug('Dataframe shape: %s', dataframe.shape)
+        self._class_logger.debug("Dataframe shape: %s", dataframe.shape)
         if len(dataframe.index) == 0:
-            self._class_logger.warning('Dataframe contains no rows. Shape: %s', dataframe.shape)
+            self._class_logger.warning("Dataframe contains no rows. Shape: %s", dataframe.shape)
         return dataframe
 
 
@@ -501,22 +502,22 @@ class PostgresLoader:
         """
 
         self._class_logger = logging.getLogger(__name__).getChild(self.__class__.__name__)
-        if os.environ.get('FUNCTION_TARGET') is not None:  #: this is an env var specific to cloud functions
-            self._class_logger.info('running in GCF, using unix socket')
+        if os.environ.get("FUNCTION_TARGET") is not None:  #: this is an env var specific to cloud functions
+            self._class_logger.info("running in GCF, using unix socket")
             self.engine = sqlalchemy.create_engine(
                 sqlalchemy.engine.url.URL.create(
-                    drivername='postgresql+pg8000',
+                    drivername="postgresql+pg8000",
                     username=username,
                     password=password,
                     database=database,
-                    query={'unix_sock': f'/cloudsql/{host}/.s.PGSQL.{port}'},  #: requires the pg8000 package
+                    query={"unix_sock": f"/cloudsql/{host}/.s.PGSQL.{port}"},  #: requires the pg8000 package
                 )
             )
         else:
-            self._class_logger.info('running locally, using traditional host connection')
+            self._class_logger.info("running locally, using traditional host connection")
             self.engine = sqlalchemy.create_engine(
                 sqlalchemy.engine.url.URL.create(
-                    drivername='postgresql',
+                    drivername="postgresql",
                     username=username,
                     password=password,
                     database=database,
@@ -538,20 +539,20 @@ class PostgresLoader:
             pd.DataFrame.spatial: Table as a spatially enabled dataframe
         """
 
-        self._class_logger.info('Reading `%s` into dataframe', table_name)
+        self._class_logger.info("Reading `%s` into dataframe", table_name)
 
         dataframe = gpd.read_postgis(
-            f'select * from {table_name}', self.engine, index_col=index_column, crs=crs, geom_col=spatial_column
+            f"select * from {table_name}", self.engine, index_col=index_column, crs=crs, geom_col=spatial_column
         )
 
         spatial_dataframe = pd.DataFrame.spatial.from_geodataframe(dataframe, column_name=spatial_column)
-        for column in spatial_dataframe.select_dtypes(include=['datetime64[ns, UTC]']):
-            self._class_logger.debug('Converting column `%s` to ISO string format', column)
+        for column in spatial_dataframe.select_dtypes(include=["datetime64[ns, UTC]"]):
+            self._class_logger.debug("Converting column `%s` to ISO string format", column)
             spatial_dataframe[column] = spatial_dataframe[column].apply(pd.Timestamp.isoformat)
 
-        self._class_logger.debug('Dataframe shape: %s', spatial_dataframe.shape)
+        self._class_logger.debug("Dataframe shape: %s", spatial_dataframe.shape)
         if len(spatial_dataframe.index) == 0:
-            self._class_logger.warning('Dataframe contains no rows. Shape: %s', spatial_dataframe.shape)
+            self._class_logger.warning("Dataframe contains no rows. Shape: %s", spatial_dataframe.shape)
 
         return spatial_dataframe
 
@@ -575,7 +576,7 @@ class RESTServiceLoader:
             timeout (int, optional): Timeout for HTTP requests in seconds. Defaults to 5.
         """
 
-        if service_url[-1] == '/':
+        if service_url[-1] == "/":
             service_url = service_url[:-1]
         self.url = service_url
         self.timeout = timeout
@@ -602,30 +603,32 @@ class RESTServiceLoader:
             pd.DataFrame.spatial: The service's features as a spatially-enabled dataframe
         """
 
-        self._class_logger.info('Getting features from %s...', service_layer.layer_url)
-        self._class_logger.debug('Checking for query capability...')
-        service_layer.check_capabilities('query')
+        self._class_logger.info("Getting features from %s...", service_layer.layer_url)
+        self._class_logger.debug("Checking for query capability...")
+        service_layer.check_capabilities("query")
         max_record_count = chunk_size
         if not max_record_count:
-            self._class_logger.debug('Getting max record count...')
+            self._class_logger.debug("Getting max record count...")
             max_record_count = service_layer.max_record_count
-        self._class_logger.debug('Getting object ids...')
+        self._class_logger.debug("Getting object ids...")
         oids = utils.retry(service_layer.get_object_ids)
 
         if len(oids) == 0:
-            warnings.warn(f'Layer {service_layer.layer_url} has no features')
+            warnings.warn(f"Layer {service_layer.layer_url} has no features")
             return None
 
-        self._class_logger.debug('Downloading %s features in chunks of %s...', len(oids), max_record_count)
+        self._class_logger.debug("Downloading %s features in chunks of %s...", len(oids), max_record_count)
         all_features_df = pd.DataFrame()
         for oid_subset in utils.chunker(oids, max_record_count):
             # sleep between 1.5 and 3 s to be friendly
             time.sleep(random.randint(150, 300) / 100)
-            all_features_df = pd.concat([
-                all_features_df,
-                utils.retry(service_layer.get_unique_id_list_as_dataframe, service_layer.oid_field, oid_subset)
-            ],
-                                        ignore_index=True)
+            all_features_df = pd.concat(
+                [
+                    all_features_df,
+                    utils.retry(service_layer.get_unique_id_list_as_dataframe, service_layer.oid_field, oid_subset),
+                ],
+                ignore_index=True,
+            )
         #: if you don't do ignore_index=True, the index won't be unique and this will trip up esri's spatial dataframe
         #: which tries calling [geom_col][0] to determine the geometry type, which then returns a series instead of a
         #: single value because the index isn't unique
@@ -649,15 +652,15 @@ class RESTServiceLoader:
 
         try:
             response_json = response.json()
-        except (json.JSONDecodeError) as error:
-            raise RuntimeError(f'Could not parse response from {self.url}') from error
+        except json.JSONDecodeError as error:
+            raise RuntimeError(f"Could not parse response from {self.url}") from error
 
         try:
-            layers = [layer for layer in response_json['layers'] if layer['type'] in ['Feature Layer', 'Table']]
+            layers = [layer for layer in response_json["layers"] if layer["type"] in ["Feature Layer", "Table"]]
         except KeyError as error:
-            if 'layers' in str(error):
-                raise RuntimeError(f'Response from {self.url} does not contain layer information') from error
-            raise RuntimeError('Layer info did not contain layer type') from error
+            if "layers" in str(error):
+                raise RuntimeError(f"Response from {self.url} does not contain layer information") from error
+            raise RuntimeError("Layer info did not contain layer type") from error
 
         return layers
 
@@ -670,8 +673,8 @@ class RESTServiceLoader:
         Returns:
             requests.Response: Raw response object from a /query request.
         """
-        self._class_logger.debug('Getting service information...')
-        response = requests.get(f'{self.url}/query', params={'f': 'json'}, timeout=self.timeout)
+        self._class_logger.debug("Getting service information...")
+        response = requests.get(f"{self.url}/query", params={"f": "json"}, timeout=self.timeout)
 
         response.raise_for_status()
 
@@ -688,7 +691,7 @@ class ServiceLayer:
     all of these steps and should be used instead of calling the methods in this class directly.
     """
 
-    def __init__(self, layer_url, timeout=5, envelope_params=None, feature_params=None, where_clause='1=1'):
+    def __init__(self, layer_url, timeout=5, envelope_params=None, feature_params=None, where_clause="1=1"):
         """Create an object representing a single layer
 
         Args:
@@ -705,28 +708,28 @@ class ServiceLayer:
 
         self._class_logger = logging.getLogger(__name__).getChild(self.__class__.__name__)
 
-        if layer_url[-1] == '/':
+        if layer_url[-1] == "/":
             layer_url = layer_url[:-1]
         self.layer_url = layer_url
         self.timeout = timeout
 
         self.layer_properties_json = self._get_layer_info()
-        self.max_record_count = self.layer_properties_json['maxRecordCount']
+        self.max_record_count = self.layer_properties_json["maxRecordCount"]
         self.oid_field = self._get_object_id_field()
         self._check_layer_type()
 
         self.envelope_params = None
         if envelope_params:
             try:
-                envelope_params['geometry'] and envelope_params['inSR']
+                envelope_params["geometry"] and envelope_params["inSR"]
             except KeyError as error:
                 raise ValueError(
-                    'envelope_params must contain both the envelope geometry and its spatial reference'
+                    "envelope_params must contain both the envelope geometry and its spatial reference"
                 ) from error
-            self.envelope_params = {'geometryType': 'esriGeometryEnvelope'}
+            self.envelope_params = {"geometryType": "esriGeometryEnvelope"}
             self.envelope_params.update(envelope_params)
 
-        self.feature_params = {'outFields': '*', 'returnGeometry': 'true'}
+        self.feature_params = {"outFields": "*", "returnGeometry": "true"}
         if feature_params:
             self.feature_params.update(feature_params)
 
@@ -742,20 +745,20 @@ class ServiceLayer:
             dict: The query's json response as a dictionary
         """
 
-        response_json = utils.retry(requests.get, self.layer_url, params={'f': 'json'}, timeout=self.timeout).json()
+        response_json = utils.retry(requests.get, self.layer_url, params={"f": "json"}, timeout=self.timeout).json()
         try:
             #: bogus boolean to make sure the keys exist
-            response_json['capabilities'] and response_json['type']  # and response_json['maxRecordCount']
+            response_json["capabilities"] and response_json["type"]  # and response_json['maxRecordCount']
         except KeyError as error:
             raise RuntimeError(
-                'Response does not contain layer information; ensure URL points to a valid layer'
+                "Response does not contain layer information; ensure URL points to a valid layer"
             ) from error
 
         try:
-            response_json['maxRecordCount']
+            response_json["maxRecordCount"]
         except KeyError as error:
             raise RuntimeError(
-                'Response does not contain maxRecordCount; ensure URL points to a valid layer and is not a Group Layer'
+                "Response does not contain maxRecordCount; ensure URL points to a valid layer and is not a Group Layer"
             ) from error
 
         return response_json
@@ -769,11 +772,9 @@ class ServiceLayer:
         Raises:
             RuntimeError: if the casefolded capability is not present in the layer's capabilities.
         """
-        layer_capabilities = self.layer_properties_json['capabilities'].casefold().split(',')
+        layer_capabilities = self.layer_properties_json["capabilities"].casefold().split(",")
         if capability.casefold() not in layer_capabilities:
-            raise RuntimeError(
-                f'{capability.casefold()} capability not in layer\'s capabilities ({layer_capabilities})'
-            )
+            raise RuntimeError(f"{capability.casefold()} capability not in layer's capabilities ({layer_capabilities})")
 
     def _check_layer_type(self):
         """Make sure the layer is a feature layer or table (and thus we can extract features from it)
@@ -785,7 +786,7 @@ class ServiceLayer:
             RuntimeError: If the REST response type is not Feature Layer or Table
         """
 
-        if self.layer_properties_json['type'] not in ['Feature Layer', 'Table']:
+        if self.layer_properties_json["type"] not in ["Feature Layer", "Table"]:
             raise RuntimeError(
                 f'Layer {self.layer_url} is a {self.layer_properties_json["type"]}, not a feature layer or table'
             )
@@ -801,10 +802,10 @@ class ServiceLayer:
         """
 
         try:
-            unique_id_field = self.layer_properties_json['objectIdField']
+            unique_id_field = self.layer_properties_json["objectIdField"]
         except KeyError:
-            self._class_logger.debug('No objectIdField found in %s, using OBJECTID instead', self.layer_url)
-            unique_id_field = 'OBJECTID'
+            self._class_logger.debug("No objectIdField found in %s, using OBJECTID instead", self.layer_url)
+            unique_id_field = "OBJECTID"
 
         return unique_id_field
 
@@ -818,19 +819,19 @@ class ServiceLayer:
             list(int): The Object IDs
         """
 
-        objectid_params = {'returnIdsOnly': 'true', 'f': 'json', 'where': self.where_clause}
+        objectid_params = {"returnIdsOnly": "true", "f": "json", "where": self.where_clause}
         if self.envelope_params is not None:
             objectid_params.update(self.envelope_params)
-        self._class_logger.debug('OID params: %s', objectid_params)
+        self._class_logger.debug("OID params: %s", objectid_params)
 
-        response = utils.retry(requests.get, f'{self.layer_url}/query', params=objectid_params, timeout=self.timeout)
+        response = utils.retry(requests.get, f"{self.layer_url}/query", params=objectid_params, timeout=self.timeout)
         oids = []
         try:
-            oids = sorted(response.json()['objectIds'])
+            oids = sorted(response.json()["objectIds"])
         except KeyError as error:
-            raise RuntimeError(f'Could not get object IDs from {self.layer_url}') from error
+            raise RuntimeError(f"Could not get object IDs from {self.layer_url}") from error
         except TypeError as error:
-            if '\'NoneType\' object is not iterable' in str(error):
+            if "'NoneType' object is not iterable" in str(error):
                 oids = []
 
         return oids
@@ -852,26 +853,26 @@ class ServiceLayer:
         Returns:
             pd.DataFrame.spatial: Spatially-enabled dataframe of the service layer's features
         """
-        unique_id_params = {'f': 'json'}
+        unique_id_params = {"f": "json"}
         unique_id_params.update(self.feature_params)
-        unique_id_params.update({'where': f'{unique_id_field} in ({",".join([str(oid) for oid in unique_id_list])})'})
+        unique_id_params.update({"where": f'{unique_id_field} in ({",".join([str(oid) for oid in unique_id_list])})'})
 
-        self._class_logger.debug('OID range params: %s', unique_id_params)
-        response = requests.get(f'{self.layer_url}/query', params=unique_id_params, timeout=self.timeout)
+        self._class_logger.debug("OID range params: %s", unique_id_params)
+        response = requests.get(f"{self.layer_url}/query", params=unique_id_params, timeout=self.timeout)
 
         if response.status_code != 200:
-            raise RuntimeError(f'Bad chunk response HTTP status code ({response.status_code})')
+            raise RuntimeError(f"Bad chunk response HTTP status code ({response.status_code})")
 
         try:
             fs = arcgis.features.FeatureSet.from_json(response.text)
             features_df = fs.sdf.sort_values(by=unique_id_field)
 
         except ujson.JSONDecodeError as error:
-            raise RuntimeError('Could not parse chunk features from response') from error
+            raise RuntimeError("Could not parse chunk features from response") from error
 
         if len(features_df) != len(unique_id_list):
             raise RuntimeError(
-                f'Missing features. {len(unique_id_list)} OIDs requested, but {len(features_df)} features downloaded'
+                f"Missing features. {len(unique_id_list)} OIDs requested, but {len(features_df)} features downloaded"
             )
 
         return features_df
