@@ -12,7 +12,6 @@ import pandas.testing as tm
 import pyogrio
 import pytest
 from arcgis import GeoAccessor, GeoSeriesAccessor
-
 from palletjack import load
 
 
@@ -20,43 +19,43 @@ class TestFields:
 
     def test_get_fields_from_dataframe_returns_all_fields_in_order(self, mocker):
         df_mock = mocker.Mock()
-        df_mock.columns = ['Foo', 'Bar', 'Baz']
+        df_mock.columns = ["Foo", "Bar", "Baz"]
 
         fields = load.FeatureServiceUpdater._get_fields_from_dataframe(df_mock)
 
-        assert fields == ['Foo', 'Bar', 'Baz']
+        assert fields == ["Foo", "Bar", "Baz"]
 
     def test_get_fields_from_dataframe_strips_shape_length(self, mocker):
         df_mock = mocker.Mock()
-        df_mock.columns = ['Foo', 'Bar', 'Baz', 'Shape_Length']
+        df_mock.columns = ["Foo", "Bar", "Baz", "Shape_Length"]
 
         fields = load.FeatureServiceUpdater._get_fields_from_dataframe(df_mock)
 
-        assert fields == ['Foo', 'Bar', 'Baz']
+        assert fields == ["Foo", "Bar", "Baz"]
 
     def test_get_fields_from_dataframe_strips_shape_area(self, mocker):
         df_mock = mocker.Mock()
-        df_mock.columns = ['Foo', 'Bar', 'Baz', 'Shape_Area']
+        df_mock.columns = ["Foo", "Bar", "Baz", "Shape_Area"]
 
         fields = load.FeatureServiceUpdater._get_fields_from_dataframe(df_mock)
 
-        assert fields == ['Foo', 'Bar', 'Baz']
+        assert fields == ["Foo", "Bar", "Baz"]
 
     def test_get_fields_from_dataframe_strips_both_shape_fields(self, mocker):
         df_mock = mocker.Mock()
-        df_mock.columns = ['Foo', 'Bar', 'Baz', 'Shape_Length', 'Shape_Area']
+        df_mock.columns = ["Foo", "Bar", "Baz", "Shape_Length", "Shape_Area"]
 
         fields = load.FeatureServiceUpdater._get_fields_from_dataframe(df_mock)
 
-        assert fields == ['Foo', 'Bar', 'Baz']
+        assert fields == ["Foo", "Bar", "Baz"]
 
 
 class TestFeatureServiceUpdaterInit:
 
     def test_init_calls_get_feature_layer(self, mocker):
-        arcgis_mock = mocker.patch('palletjack.load.arcgis')
+        arcgis_mock = mocker.patch("palletjack.load.arcgis")
 
-        updater = load.FeatureServiceUpdater(mocker.Mock(), 'itemid')
+        updater = load.FeatureServiceUpdater(mocker.Mock(), "itemid")
 
         arcgis_mock.features.FeatureLayer.fromitem.assert_called_once()
 
@@ -70,59 +69,63 @@ class TestFeatureServiceUpdaterInit:
     #     assert set(updater.fields) == {'Foo field', 'Bar'}
 
     def test_init_sets_working_dir(self, mocker):
-        mocker.patch('palletjack.load.arcgis')
+        mocker.patch("palletjack.load.arcgis")
 
-        updater = load.FeatureServiceUpdater(mocker.Mock(), 'itemid', working_dir=r'c:\foo')
+        updater = load.FeatureServiceUpdater(mocker.Mock(), "itemid", working_dir=r"c:\foo")
 
-        assert updater.working_dir == r'c:\foo'
+        assert updater.working_dir == r"c:\foo"
 
 
 class TestUpdateLayer:
 
     def test_update_features_calls_upsert_correctly(self, mocker):
-        new_dataframe = pd.DataFrame({
-            'foo': [1, 2],
-            'bar': [3, 4],
-            'OBJECTID': [11, 12],
-            'SHAPE': ['s1', 's2'],
-        })
+        new_dataframe = pd.DataFrame(
+            {
+                "foo": [1, 2],
+                "bar": [3, 4],
+                "OBJECTID": [11, 12],
+                "SHAPE": ["s1", "s2"],
+            }
+        )
         updater_mock = mocker.Mock()
-        updater_mock.feature_service_itemid = 'foo123'
+        updater_mock.feature_service_itemid = "foo123"
         fl_mock = mocker.Mock()
         updater_mock.feature_layer = fl_mock
-        updater_mock.join_column = 'OBJECTID'
+        updater_mock.join_column = "OBJECTID"
         updater_mock.layer_index = 0
 
-        updater_mock._upload_data.return_value = {'recordCount': 1}
+        updater_mock._upload_data.return_value = {"recordCount": 1}
 
-        field_checker_mock = mocker.patch('palletjack.utils.FieldChecker')
+        field_checker_mock = mocker.patch("palletjack.utils.FieldChecker")
 
         load.FeatureServiceUpdater.update_features(updater_mock, new_dataframe, update_geometry=True)
 
         updater_mock._upload_data.assert_called_once_with(
             new_dataframe,
             upsert=True,
-            upsert_matching_field='OBJECTID',
-            append_fields=['foo', 'bar', 'OBJECTID', 'SHAPE'],
-            update_geometry=True
+            upsert_matching_field="OBJECTID",
+            append_fields=["foo", "bar", "OBJECTID", "SHAPE"],
+            update_geometry=True,
         )
 
     def test_update_features_calls_field_checkers(self, mocker):
-        new_dataframe = pd.DataFrame({
-            'foo': [1, 2],
-            'bar': [3, 4],
-            'OBJECTID': [11, 12],
-        })
+        new_dataframe = pd.DataFrame(
+            {
+                "foo": [1, 2],
+                "bar": [3, 4],
+                "OBJECTID": [11, 12],
+            }
+        )
         updater_mock = mocker.Mock()
-        updater_mock.feature_service_itemid = 'foo123'
-        updater_mock.feature_layer.properties.fields = {'a': [1], 'b': [2]}
-        updater_mock.join_column = 'OBJECTID'
+        updater_mock.feature_service_itemid = "foo123"
+        updater_mock.feature_layer.properties.fields = {"a": [1], "b": [2]}
+        updater_mock.join_column = "OBJECTID"
         updater_mock.layer_index = 0
 
-        updater_mock._upload_data.return_value = {'recordCount': 1}
+        updater_mock._upload_data.return_value = {"recordCount": 1}
 
         mocker.patch.multiple(
-            'palletjack.utils.FieldChecker',
+            "palletjack.utils.FieldChecker",
             check_live_and_new_field_types_match=mocker.DEFAULT,
             check_for_non_null_fields=mocker.DEFAULT,
             check_field_length=mocker.DEFAULT,
@@ -132,78 +135,84 @@ class TestUpdateLayer:
 
         load.FeatureServiceUpdater.update_features(updater_mock, new_dataframe, update_geometry=True)
 
-        load.utils.FieldChecker.check_live_and_new_field_types_match.assert_called_once_with(['foo', 'bar', 'OBJECTID'])
-        load.utils.FieldChecker.check_for_non_null_fields.assert_called_once_with(['foo', 'bar', 'OBJECTID'])
-        load.utils.FieldChecker.check_field_length.assert_called_once_with(['foo', 'bar', 'OBJECTID'])
-        load.utils.FieldChecker.check_fields_present.assert_called_once_with(['foo', 'bar', 'OBJECTID'], add_oid=True)
+        load.utils.FieldChecker.check_live_and_new_field_types_match.assert_called_once_with(["foo", "bar", "OBJECTID"])
+        load.utils.FieldChecker.check_for_non_null_fields.assert_called_once_with(["foo", "bar", "OBJECTID"])
+        load.utils.FieldChecker.check_field_length.assert_called_once_with(["foo", "bar", "OBJECTID"])
+        load.utils.FieldChecker.check_fields_present.assert_called_once_with(["foo", "bar", "OBJECTID"], add_oid=True)
         load.utils.FieldChecker.check_nullable_ints_shapely.assert_called_once()
 
     def test_update_features_no_geometry_calls_null_geometry_generator(self, mocker):
-        new_dataframe = pd.DataFrame({
-            'foo': [1, 2],
-            'bar': [3, 4],
-            'OBJECTID': [11, 12],
-        })
+        new_dataframe = pd.DataFrame(
+            {
+                "foo": [1, 2],
+                "bar": [3, 4],
+                "OBJECTID": [11, 12],
+            }
+        )
         updater_mock = mocker.Mock()
-        updater_mock.feature_service_itemid = 'foo123'
+        updater_mock.feature_service_itemid = "foo123"
         updater_mock.feature_layer = mocker.Mock()
-        updater_mock.feature_layer.properties = {'geometryType': 'esriGeometryPoint'}
-        updater_mock.join_column = 'OBJECTID'
+        updater_mock.feature_layer.properties = {"geometryType": "esriGeometryPoint"}
+        updater_mock.join_column = "OBJECTID"
         updater_mock.layer_index = 0
 
-        updater_mock._upload_data.return_value = {'recordCount': 1}
+        updater_mock._upload_data.return_value = {"recordCount": 1}
 
-        field_checker_mock = mocker.patch('palletjack.utils.FieldChecker')
-        null_generator_mock = mocker.patch('palletjack.utils.get_null_geometries', return_value='Nullo')
+        field_checker_mock = mocker.patch("palletjack.utils.FieldChecker")
+        null_generator_mock = mocker.patch("palletjack.utils.get_null_geometries", return_value="Nullo")
 
         load.FeatureServiceUpdater.update_features(updater_mock, new_dataframe, update_geometry=False)
 
-        null_generator_mock.assert_called_once_with({'geometryType': 'esriGeometryPoint'})
+        null_generator_mock.assert_called_once_with({"geometryType": "esriGeometryPoint"})
 
     def test_update_features_no_geometry_calls_upsert_correctly(self, mocker):
-        new_dataframe = pd.DataFrame({
-            'foo': [1, 2],
-            'bar': [3, 4],
-            'OBJECTID': [11, 12],
-        })
+        new_dataframe = pd.DataFrame(
+            {
+                "foo": [1, 2],
+                "bar": [3, 4],
+                "OBJECTID": [11, 12],
+            }
+        )
         updater_mock = mocker.Mock()
-        updater_mock.feature_service_itemid = 'foo123'
+        updater_mock.feature_service_itemid = "foo123"
         updater_mock.feature_layer = mocker.Mock()
-        updater_mock.feature_layer.properties = {'geometryType': 'esriGeometryPoint'}
-        updater_mock.join_column = 'OBJECTID'
+        updater_mock.feature_layer.properties = {"geometryType": "esriGeometryPoint"}
+        updater_mock.join_column = "OBJECTID"
         updater_mock.layer_index = 0
 
-        updater_mock._upload_data.return_value = {'recordCount': 1}
+        updater_mock._upload_data.return_value = {"recordCount": 1}
 
-        field_checker_mock = mocker.patch('palletjack.utils.FieldChecker')
-        null_generator_mock = mocker.patch('palletjack.utils.get_null_geometries', return_value='Nullo')
+        field_checker_mock = mocker.patch("palletjack.utils.FieldChecker")
+        null_generator_mock = mocker.patch("palletjack.utils.get_null_geometries", return_value="Nullo")
 
         load.FeatureServiceUpdater.update_features(updater_mock, new_dataframe, update_geometry=False)
 
         updater_mock._upload_data.assert_called_once_with(
             new_dataframe,
             upsert=True,
-            upsert_matching_field='OBJECTID',
-            append_fields=['foo', 'bar', 'OBJECTID'],
-            update_geometry=False
+            upsert_matching_field="OBJECTID",
+            append_fields=["foo", "bar", "OBJECTID"],
+            update_geometry=False,
         )
 
 
 class TestAddToLayer:
 
     def test_add_features_calls_upsert(self, mocker):
-        new_dataframe = pd.DataFrame({
-            'foo': [1, 2],
-            'bar': [3, 4],
-        })
+        new_dataframe = pd.DataFrame(
+            {
+                "foo": [1, 2],
+                "bar": [3, 4],
+            }
+        )
         updater_mock = mocker.Mock()
-        updater_mock.feature_service_itemid = 'foo123'
+        updater_mock.feature_service_itemid = "foo123"
         updater_mock.feature_layer = mocker.Mock()
         updater_mock.layer_index = 0
 
-        updater_mock._upload_data.return_value = {'recordCount': 1}
+        updater_mock._upload_data.return_value = {"recordCount": 1}
 
-        field_checker_mock = mocker.patch('palletjack.utils.FieldChecker')
+        field_checker_mock = mocker.patch("palletjack.utils.FieldChecker")
 
         load.FeatureServiceUpdater.add_features(updater_mock, new_dataframe)
 
@@ -213,19 +222,21 @@ class TestAddToLayer:
         )
 
     def test_add_features_calls_field_checkers(self, mocker):
-        new_dataframe = pd.DataFrame({
-            'foo': [1, 2],
-            'bar': [3, 4],
-        })
+        new_dataframe = pd.DataFrame(
+            {
+                "foo": [1, 2],
+                "bar": [3, 4],
+            }
+        )
         updater_mock = mocker.Mock()
-        updater_mock.feature_service_itemid = 'foo123'
-        updater_mock.feature_layer.properties.fields = {'a': [1], 'b': [2]}
+        updater_mock.feature_service_itemid = "foo123"
+        updater_mock.feature_layer.properties.fields = {"a": [1], "b": [2]}
         updater_mock.layer_index = 0
 
-        updater_mock._upload_data.return_value = {'recordCount': 1}
+        updater_mock._upload_data.return_value = {"recordCount": 1}
 
         mocker.patch.multiple(
-            'palletjack.utils.FieldChecker',
+            "palletjack.utils.FieldChecker",
             check_live_and_new_field_types_match=mocker.DEFAULT,
             check_for_non_null_fields=mocker.DEFAULT,
             check_field_length=mocker.DEFAULT,
@@ -234,10 +245,10 @@ class TestAddToLayer:
         )
         load.FeatureServiceUpdater.add_features(updater_mock, new_dataframe)
 
-        load.utils.FieldChecker.check_live_and_new_field_types_match.assert_called_once_with(['foo', 'bar'])
-        load.utils.FieldChecker.check_for_non_null_fields.assert_called_once_with(['foo', 'bar'])
-        load.utils.FieldChecker.check_field_length.assert_called_once_with(['foo', 'bar'])
-        load.utils.FieldChecker.check_fields_present.assert_called_once_with(['foo', 'bar'], add_oid=False)
+        load.utils.FieldChecker.check_live_and_new_field_types_match.assert_called_once_with(["foo", "bar"])
+        load.utils.FieldChecker.check_for_non_null_fields.assert_called_once_with(["foo", "bar"])
+        load.utils.FieldChecker.check_field_length.assert_called_once_with(["foo", "bar"])
+        load.utils.FieldChecker.check_fields_present.assert_called_once_with(["foo", "bar"], add_oid=False)
         load.utils.FieldChecker.check_nullable_ints_shapely.assert_called_once()
 
 
@@ -245,16 +256,16 @@ class TestDeleteFromLayer:
 
     def test_remove_features_returns_number_of_deleted_features(self, mocker):
         updater_mock = mocker.Mock()
-        updater_mock.feature_service_itemid = 'foo123'
+        updater_mock.feature_service_itemid = "foo123"
         updater_mock.layer_index = 0
         updater_mock.feature_layer.delete_features.return_value = {
-            'deleteResults': [
-                {'objectId': 11, 'uniqueId': 11, 'globalId': None, 'success': True},
-                {'objectId': 17, 'uniqueId': 17, 'globalId': None, 'success': True},
+            "deleteResults": [
+                {"objectId": 11, "uniqueId": 11, "globalId": None, "success": True},
+                {"objectId": 17, "uniqueId": 17, "globalId": None, "success": True},
             ]
         }  # yapf: disable
 
-        delete_utils_mock = mocker.patch('palletjack.utils.DeleteUtils')
+        delete_utils_mock = mocker.patch("palletjack.utils.DeleteUtils")
         delete_utils_mock.check_delete_oids_are_in_live_data.return_value = 0
 
         deleted = load.FeatureServiceUpdater.remove_features(updater_mock, [11, 17])
@@ -263,28 +274,28 @@ class TestDeleteFromLayer:
 
     def test_remove_features_raises_on_failed_delete(self, mocker):
         updater_mock = mocker.Mock()
-        updater_mock.feature_service_itemid = 'foo123'
+        updater_mock.feature_service_itemid = "foo123"
         updater_mock.layer_index = 0
         updater_mock.feature_layer.delete_features.return_value = {
-            'deleteResults': [
-                {'objectId': 11, 'uniqueId': 11, 'globalId': None, 'success': True},
-                {'objectId': 17, 'uniqueId': 17, 'globalId': None, 'success': False},
+            "deleteResults": [
+                {"objectId": 11, "uniqueId": 11, "globalId": None, "success": True},
+                {"objectId": 17, "uniqueId": 17, "globalId": None, "success": False},
             ]
         }  # yapf: disable
 
-        mocker.patch('palletjack.utils.DeleteUtils')
+        mocker.patch("palletjack.utils.DeleteUtils")
 
-        with pytest.raises(RuntimeError, match=re.escape('The following Object IDs failed to delete: [17]')):
+        with pytest.raises(RuntimeError, match=re.escape("The following Object IDs failed to delete: [17]")):
             deleted = load.FeatureServiceUpdater.remove_features(updater_mock, [11, 17])
 
     def test_remove_features_runs_proper_check_sequence(self, mocker):
         updater_mock = mocker.Mock()
-        updater_mock.feature_service_itemid = 'foo123'
+        updater_mock.feature_service_itemid = "foo123"
         updater_mock.layer_index = 0
-        updater_mock.feature_layer.query.return_value = {'objectIdFieldName': 'OBJECTID', 'objectIds': [11, 17]}
+        updater_mock.feature_layer.query.return_value = {"objectIdFieldName": "OBJECTID", "objectIds": [11, 17]}
         updater_mock.feature_layer.delete_features.return_value = {
-            'deleteResults': [
-                {'objectId': 11, 'uniqueId': 11, 'globalId': None, 'success': True},
+            "deleteResults": [
+                {"objectId": 11, "uniqueId": 11, "globalId": None, "success": True},
             ]
         }  # yapf: disable
 
@@ -297,53 +308,54 @@ class TestTruncateAndLoadLayer:
 
     def test_truncate_existing_data_normal(self, mocker):
         updater_mock = mocker.Mock()
-        updater_mock.feature_service_itemid = 'foo123'
+        updater_mock.feature_service_itemid = "foo123"
         updater_mock.layer_index = 0
 
         updater_mock.feature_layer.manager.truncate.return_value = {
-            'submissionTime': 123,
-            'lastUpdatedTime': 124,
-            'status': 'Completed',
+            "submissionTime": 123,
+            "lastUpdatedTime": 124,
+            "status": "Completed",
         }
 
         load.FeatureServiceUpdater._truncate_existing_data(updater_mock)
 
     def test_truncate_existing_raises_error_on_failure(self, mocker):
         updater_mock = mocker.Mock()
-        updater_mock.feature_service_itemid = 'foo123'
+        updater_mock.feature_service_itemid = "foo123"
         updater_mock.layer_index = 0
         updater_mock.feature_layer.manager.truncate.return_value = {
-            'submissionTime': 123,
-            'lastUpdatedTime': 124,
-            'status': 'Foo',
+            "submissionTime": 123,
+            "lastUpdatedTime": 124,
+            "status": "Foo",
         }
 
-        with pytest.raises(RuntimeError, match='Failed to truncate existing data from layer id 0 in itemid foo123'):
+        with pytest.raises(RuntimeError, match="Failed to truncate existing data from layer id 0 in itemid foo123"):
             load.FeatureServiceUpdater._truncate_existing_data(updater_mock)
 
     def test_truncate_existing_retries_on_HTTPError(self, mocker):
         updater_mock = mocker.Mock()
-        updater_mock.feature_service_itemid = 'foo123'
+        updater_mock.feature_service_itemid = "foo123"
         updater_mock.layer_index = 0
         updater_mock.feature_layer.manager.truncate.side_effect = [
-            urllib.error.HTTPError('url', 'code', 'msg', 'hdrs', 'fp'), {
-                'submissionTime': 123,
-                'lastUpdatedTime': 124,
-                'status': 'Completed',
-            }
+            urllib.error.HTTPError("url", "code", "msg", "hdrs", "fp"),
+            {
+                "submissionTime": 123,
+                "lastUpdatedTime": 124,
+                "status": "Completed",
+            },
         ]
 
         load.FeatureServiceUpdater._truncate_existing_data(updater_mock)
 
     def test_truncate_and_load_feature_service_normal(self, mocker):
         updater_mock = mocker.Mock()
-        updater_mock.feature_service_itemid = 'foo123'
+        updater_mock.feature_service_itemid = "foo123"
         updater_mock.layer_index = 0
-        updater_mock.failsafe_dir = ''
+        updater_mock.failsafe_dir = ""
 
-        new_dataframe = pd.DataFrame(columns=['Foo', 'Bar'])
+        new_dataframe = pd.DataFrame(columns=["Foo", "Bar"])
 
-        mocker.patch('palletjack.utils.FieldChecker')
+        mocker.patch("palletjack.utils.FieldChecker")
 
         updater_mock._upload_data.return_value = 42
 
@@ -355,66 +367,68 @@ class TestTruncateAndLoadLayer:
         caplog.set_level(logging.DEBUG)
 
         updater_mock = mocker.Mock()
-        updater_mock._class_logger = logging.getLogger('mock logger')
-        new_dataframe = pd.DataFrame(columns=['Foo', 'Bar'])
+        updater_mock._class_logger = logging.getLogger("mock logger")
+        new_dataframe = pd.DataFrame(columns=["Foo", "Bar"])
 
-        mocker.patch('palletjack.utils.FieldChecker')
-        mocker.patch('palletjack.utils.sleep')
-        mocker.patch('palletjack.utils.save_feature_layer_to_gdb', return_value='bar_path')
+        mocker.patch("palletjack.utils.FieldChecker")
+        mocker.patch("palletjack.utils.sleep")
+        mocker.patch("palletjack.utils.save_feature_layer_to_gdb", return_value="bar_path")
 
         updater_mock._upload_data.side_effect = RuntimeError(
-            'Failed to append data. Append operation should have been rolled back.'
+            "Failed to append data. Append operation should have been rolled back."
         )
 
-        with pytest.raises(RuntimeError, match='Failed to append data. Append operation should have been rolled back.'):
+        with pytest.raises(RuntimeError, match="Failed to append data. Append operation should have been rolled back."):
             uploaded_features = load.FeatureServiceUpdater.truncate_and_load_features(
                 updater_mock, new_dataframe, save_old=True
             )
 
         updater_mock._upload_data.assert_called_once_with(new_dataframe, upsert=False)
-        assert f'Append failed. Data saved to bar_path' in caplog.text
+        assert f"Append failed. Data saved to bar_path" in caplog.text
 
     def test_truncate_and_load_append_fails_save_old_false(self, mocker, caplog):
         caplog.set_level(logging.DEBUG)
 
         updater_mock = mocker.Mock()
-        updater_mock._class_logger = logging.getLogger('mock logger')
+        updater_mock._class_logger = logging.getLogger("mock logger")
 
-        new_dataframe = pd.DataFrame(columns=['Foo', 'Bar'])
+        new_dataframe = pd.DataFrame(columns=["Foo", "Bar"])
 
-        mocker.patch('palletjack.utils.FieldChecker')
-        mocker.patch('palletjack.utils.sleep')
-        mocker.patch('palletjack.utils.save_feature_layer_to_gdb', return_value='bar_path')
+        mocker.patch("palletjack.utils.FieldChecker")
+        mocker.patch("palletjack.utils.sleep")
+        mocker.patch("palletjack.utils.save_feature_layer_to_gdb", return_value="bar_path")
 
         updater_mock._upload_data.side_effect = RuntimeError(
-            'Failed to append data. Append operation should have been rolled back.'
+            "Failed to append data. Append operation should have been rolled back."
         )
 
-        with pytest.raises(RuntimeError, match='Failed to append data. Append operation should have been rolled back.'):
+        with pytest.raises(RuntimeError, match="Failed to append data. Append operation should have been rolled back."):
             uploaded_features = load.FeatureServiceUpdater.truncate_and_load_features(updater_mock, new_dataframe)
 
         updater_mock._upload_data.assert_called_once_with(new_dataframe, upsert=False)
 
-        assert f'Append failed. Old data not saved (save_old set to False)' in caplog.text
+        assert f"Append failed. Old data not saved (save_old set to False)" in caplog.text
 
     def test_truncate_and_load_calls_field_checkers(self, mocker, caplog):
 
         caplog.set_level(logging.DEBUG)
 
         updater_mock = mocker.Mock()
-        updater_mock._class_logger = logging.getLogger('mock logger')
-        updater_mock.feature_service_itemid = 'foo123'
-        updater_mock.feature_layer.properties.fields = {'a': [1], 'b': [2]}
+        updater_mock._class_logger = logging.getLogger("mock logger")
+        updater_mock.feature_service_itemid = "foo123"
+        updater_mock.feature_layer.properties.fields = {"a": [1], "b": [2]}
         updater_mock.layer_index = 0
 
-        new_dataframe = pd.DataFrame({
-            'Foo': [1, 2],
-            'Bar': [3, 4],
-        })
+        new_dataframe = pd.DataFrame(
+            {
+                "Foo": [1, 2],
+                "Bar": [3, 4],
+            }
+        )
 
-        mocker.patch('palletjack.utils.sleep')
+        mocker.patch("palletjack.utils.sleep")
         mocker.patch.multiple(
-            'palletjack.utils.FieldChecker',
+            "palletjack.utils.FieldChecker",
             check_live_and_new_field_types_match=mocker.DEFAULT,
             check_for_non_null_fields=mocker.DEFAULT,
             check_field_length=mocker.DEFAULT,
@@ -426,10 +440,10 @@ class TestTruncateAndLoadLayer:
 
         uploaded_features = load.FeatureServiceUpdater.truncate_and_load_features(updater_mock, new_dataframe)
 
-        load.utils.FieldChecker.check_live_and_new_field_types_match.assert_called_once_with(['Foo', 'Bar'])
-        load.utils.FieldChecker.check_for_non_null_fields.assert_called_once_with(['Foo', 'Bar'])
-        load.utils.FieldChecker.check_field_length.assert_called_once_with(['Foo', 'Bar'])
-        load.utils.FieldChecker.check_fields_present.assert_called_once_with(['Foo', 'Bar'], add_oid=False)
+        load.utils.FieldChecker.check_live_and_new_field_types_match.assert_called_once_with(["Foo", "Bar"])
+        load.utils.FieldChecker.check_for_non_null_fields.assert_called_once_with(["Foo", "Bar"])
+        load.utils.FieldChecker.check_field_length.assert_called_once_with(["Foo", "Bar"])
+        load.utils.FieldChecker.check_fields_present.assert_called_once_with(["Foo", "Bar"], add_oid=False)
         load.utils.FieldChecker.check_nullable_ints_shapely.assert_called_once()
 
         assert uploaded_features == 42
@@ -438,51 +452,48 @@ class TestTruncateAndLoadLayer:
 
         caplog.set_level(logging.DEBUG)
 
-        new_dataframe = pd.DataFrame({
-            'id': [0, 1, 2],
-            'floats': [np.nan, np.nan, np.nan],
-            'x': [21, 22, 23],
-            'y': [31, 32, 33]
-        })
-        spatial_df = pd.DataFrame.spatial.from_xy(new_dataframe, 'x', 'y')
+        new_dataframe = pd.DataFrame(
+            {"id": [0, 1, 2], "floats": [np.nan, np.nan, np.nan], "x": [21, 22, 23], "y": [31, 32, 33]}
+        )
+        spatial_df = pd.DataFrame.spatial.from_xy(new_dataframe, "x", "y")
 
         updater_mock = mocker.Mock()
-        updater_mock._class_logger = logging.getLogger('mock logger')
-        updater_mock.feature_service_itemid = 'foo123'
+        updater_mock._class_logger = logging.getLogger("mock logger")
+        updater_mock.feature_service_itemid = "foo123"
         updater_mock.layer_index = 0
 
         updater_mock.feature_layer.properties.fields = [
             {
-                'name': 'id',
-                'type': 'esriFieldTypeInteger',
-                'nullable': True,
-                'defaultValue': None,
+                "name": "id",
+                "type": "esriFieldTypeInteger",
+                "nullable": True,
+                "defaultValue": None,
             },
             {
-                'name': 'floats',
-                'type': 'esriFieldTypeDouble',
-                'nullable': True,
-                'defaultValue': None,
+                "name": "floats",
+                "type": "esriFieldTypeDouble",
+                "nullable": True,
+                "defaultValue": None,
             },
             {
-                'name': 'x',
-                'type': 'esriFieldTypeInteger',
-                'nullable': True,
-                'defaultValue': None,
+                "name": "x",
+                "type": "esriFieldTypeInteger",
+                "nullable": True,
+                "defaultValue": None,
             },
             {
-                'name': 'y',
-                'type': 'esriFieldTypeInteger',
-                'nullable': True,
-                'defaultValue': None,
+                "name": "y",
+                "type": "esriFieldTypeInteger",
+                "nullable": True,
+                "defaultValue": None,
             },
         ]
-        updater_mock.feature_layer.properties.geometryType = 'esriGeometryPoint'
+        updater_mock.feature_layer.properties.geometryType = "esriGeometryPoint"
         updater_mock.feature_layer.properties.extent.spatialReference.latestWkid = 4326
 
-        mocker.patch('palletjack.utils.sleep')
+        mocker.patch("palletjack.utils.sleep")
 
-        updater_mock._upload_data.return_value = {'recordCount': 42}
+        updater_mock._upload_data.return_value = {"recordCount": 42}
 
         #: Should not raise
         uploaded_features = load.FeatureServiceUpdater.truncate_and_load_features(updater_mock, spatial_df)
@@ -491,114 +502,140 @@ class TestTruncateAndLoadLayer:
 class TestAttachments:
 
     def test_create_attachment_action_df_adds_for_blank_existing_name(self, mocker):
-        input_df = pd.DataFrame({
-            'NAME': [np.nan],
-            'new_path': ['bee/foo.png'],
-        })
+        input_df = pd.DataFrame(
+            {
+                "NAME": [np.nan],
+                "new_path": ["bee/foo.png"],
+            }
+        )
 
-        ops_df = load.FeatureServiceAttachmentsUpdater._create_attachment_action_df(mocker.Mock(), input_df, 'new_path')
+        ops_df = load.FeatureServiceAttachmentsUpdater._create_attachment_action_df(mocker.Mock(), input_df, "new_path")
 
-        test_df = pd.DataFrame({
-            'NAME': [np.nan],
-            'new_path': ['bee/foo.png'],
-            'new_filename': ['foo.png'],
-            'operation': ['add'],
-        })
+        test_df = pd.DataFrame(
+            {
+                "NAME": [np.nan],
+                "new_path": ["bee/foo.png"],
+                "new_filename": ["foo.png"],
+                "operation": ["add"],
+            }
+        )
 
         tm.assert_frame_equal(ops_df, test_df)
 
     def test_create_attachment_action_df_overwrites_for_different_existing_name(self, mocker):
-        input_df = pd.DataFrame({
-            'NAME': ['bar.png'],
-            'new_path': ['bee/foo.png'],
-        })
+        input_df = pd.DataFrame(
+            {
+                "NAME": ["bar.png"],
+                "new_path": ["bee/foo.png"],
+            }
+        )
 
-        ops_df = load.FeatureServiceAttachmentsUpdater._create_attachment_action_df(mocker.Mock(), input_df, 'new_path')
+        ops_df = load.FeatureServiceAttachmentsUpdater._create_attachment_action_df(mocker.Mock(), input_df, "new_path")
 
-        test_df = pd.DataFrame({
-            'NAME': ['bar.png'],
-            'new_path': ['bee/foo.png'],
-            'new_filename': ['foo.png'],
-            'operation': ['overwrite'],
-        })
+        test_df = pd.DataFrame(
+            {
+                "NAME": ["bar.png"],
+                "new_path": ["bee/foo.png"],
+                "new_filename": ["foo.png"],
+                "operation": ["overwrite"],
+            }
+        )
 
         tm.assert_frame_equal(ops_df, test_df)
 
     def test_create_attachment_action_df_does_nothing_for_same_name(self, mocker):
-        input_df = pd.DataFrame({
-            'NAME': ['foo.png'],
-            'new_path': ['bee/foo.png'],
-        })
+        input_df = pd.DataFrame(
+            {
+                "NAME": ["foo.png"],
+                "new_path": ["bee/foo.png"],
+            }
+        )
 
-        ops_df = load.FeatureServiceAttachmentsUpdater._create_attachment_action_df(mocker.Mock(), input_df, 'new_path')
+        ops_df = load.FeatureServiceAttachmentsUpdater._create_attachment_action_df(mocker.Mock(), input_df, "new_path")
 
-        test_df = pd.DataFrame({
-            'NAME': ['foo.png'],
-            'new_path': ['bee/foo.png'],
-            'new_filename': ['foo.png'],
-            'operation': [np.nan],
-        })
-        test_df['operation'] = test_df['operation'].astype(object)
+        test_df = pd.DataFrame(
+            {
+                "NAME": ["foo.png"],
+                "new_path": ["bee/foo.png"],
+                "new_filename": ["foo.png"],
+                "operation": [np.nan],
+            }
+        )
+        test_df["operation"] = test_df["operation"].astype(object)
 
         tm.assert_frame_equal(ops_df, test_df)
 
     def test_create_attachment_action_df_does_all_three_ops(self, mocker):
-        input_df = pd.DataFrame({
-            'NAME': ['foo.png', 'bar.png', np.nan],
-            'new_path': ['bee/foo.png', 'bee/baz.png', 'bee/bin.png'],
-        })
+        input_df = pd.DataFrame(
+            {
+                "NAME": ["foo.png", "bar.png", np.nan],
+                "new_path": ["bee/foo.png", "bee/baz.png", "bee/bin.png"],
+            }
+        )
 
-        ops_df = load.FeatureServiceAttachmentsUpdater._create_attachment_action_df(mocker.Mock(), input_df, 'new_path')
+        ops_df = load.FeatureServiceAttachmentsUpdater._create_attachment_action_df(mocker.Mock(), input_df, "new_path")
 
-        test_df = pd.DataFrame({
-            'NAME': ['foo.png', 'bar.png', np.nan],
-            'new_path': ['bee/foo.png', 'bee/baz.png', 'bee/bin.png'],
-            'new_filename': ['foo.png', 'baz.png', 'bin.png'],
-            'operation': [np.nan, 'overwrite', 'add'],
-        })
+        test_df = pd.DataFrame(
+            {
+                "NAME": ["foo.png", "bar.png", np.nan],
+                "new_path": ["bee/foo.png", "bee/baz.png", "bee/bin.png"],
+                "new_filename": ["foo.png", "baz.png", "bin.png"],
+                "operation": [np.nan, "overwrite", "add"],
+            }
+        )
 
         tm.assert_frame_equal(ops_df, test_df)
 
     def test_create_attachment_action_df_do_nothing_after_others(self, mocker):
-        input_df = pd.DataFrame({
-            'NAME': ['bar.png', np.nan, 'foo.png'],
-            'new_path': ['bee/baz.png', 'bee/bin.png', 'bee/foo.png'],
-        })
+        input_df = pd.DataFrame(
+            {
+                "NAME": ["bar.png", np.nan, "foo.png"],
+                "new_path": ["bee/baz.png", "bee/bin.png", "bee/foo.png"],
+            }
+        )
 
-        ops_df = load.FeatureServiceAttachmentsUpdater._create_attachment_action_df(mocker.Mock(), input_df, 'new_path')
+        ops_df = load.FeatureServiceAttachmentsUpdater._create_attachment_action_df(mocker.Mock(), input_df, "new_path")
 
-        test_df = pd.DataFrame({
-            'NAME': ['bar.png', np.nan, 'foo.png'],
-            'new_path': ['bee/baz.png', 'bee/bin.png', 'bee/foo.png'],
-            'new_filename': ['baz.png', 'bin.png', 'foo.png'],
-            'operation': ['overwrite', 'add', np.nan],
-        })
+        test_df = pd.DataFrame(
+            {
+                "NAME": ["bar.png", np.nan, "foo.png"],
+                "new_path": ["bee/baz.png", "bee/bin.png", "bee/foo.png"],
+                "new_filename": ["baz.png", "bin.png", "foo.png"],
+                "operation": ["overwrite", "add", np.nan],
+            }
+        )
 
         tm.assert_frame_equal(ops_df, test_df)
 
     def test_get_live_data_from_join_field_values_only_gets_matching_data(self, mocker):
-        live_features_df = pd.DataFrame({
-            'OBJECTID': [1, 2, 3],
-            'GlobalID': ['guid1', 'guid2', 'guid3'],
-            'attachment_key': [11, 12, 13],
-            'deleted': ['a', 'b', 'c'],
-        })
-
-        attachments_df = pd.DataFrame({
-            'attachment_key': [12, 13],
-            'attachments': ['foo', 'bar'],
-        })
-
-        live_data_subset = load.FeatureServiceAttachmentsUpdater._get_live_oid_and_guid_from_join_field_values(
-            mocker.Mock(), live_features_df, 'attachment_key', attachments_df
+        live_features_df = pd.DataFrame(
+            {
+                "OBJECTID": [1, 2, 3],
+                "GlobalID": ["guid1", "guid2", "guid3"],
+                "attachment_key": [11, 12, 13],
+                "deleted": ["a", "b", "c"],
+            }
         )
 
-        test_df = pd.DataFrame({
-            'OBJECTID': [2, 3],
-            'GlobalID': ['guid2', 'guid3'],
-            'attachment_key': [12, 13],
-            'attachments': ['foo', 'bar'],
-        })
+        attachments_df = pd.DataFrame(
+            {
+                "attachment_key": [12, 13],
+                "attachments": ["foo", "bar"],
+            }
+        )
+
+        live_data_subset = load.FeatureServiceAttachmentsUpdater._get_live_oid_and_guid_from_join_field_values(
+            mocker.Mock(), live_features_df, "attachment_key", attachments_df
+        )
+
+        test_df = pd.DataFrame(
+            {
+                "OBJECTID": [2, 3],
+                "GlobalID": ["guid2", "guid3"],
+                "attachment_key": [12, 13],
+                "attachments": ["foo", "bar"],
+            }
+        )
 
         tm.assert_frame_equal(live_data_subset, test_df)
 
@@ -606,135 +643,123 @@ class TestAttachments:
 
         live_attachments = [
             {
-                'PARENTOBJECTID': 1,
-                'PARENTGLOBALID': 'parentguid1',
-                'ID': 111,
-                'NAME': 'foo.png',
-                'CONTENTTYPE': 'image/png',
-                'SIZE': 42,
-                'KEYWORDS': '',
-                'IMAGE_PREVIEW': 'preview1',
-                'GLOBALID': 'guid1',
-                'DOWNLOAD_URL': 'url1'
+                "PARENTOBJECTID": 1,
+                "PARENTGLOBALID": "parentguid1",
+                "ID": 111,
+                "NAME": "foo.png",
+                "CONTENTTYPE": "image/png",
+                "SIZE": 42,
+                "KEYWORDS": "",
+                "IMAGE_PREVIEW": "preview1",
+                "GLOBALID": "guid1",
+                "DOWNLOAD_URL": "url1",
             },
             {
-                'PARENTOBJECTID': 2,
-                'PARENTGLOBALID': 'parentguid2',
-                'ID': 222,
-                'NAME': 'bar.png',
-                'CONTENTTYPE': 'image/png',
-                'SIZE': 42,
-                'KEYWORDS': '',
-                'IMAGE_PREVIEW': 'preview2',
-                'GLOBALID': 'guid2',
-                'DOWNLOAD_URL': 'url2'
+                "PARENTOBJECTID": 2,
+                "PARENTGLOBALID": "parentguid2",
+                "ID": 222,
+                "NAME": "bar.png",
+                "CONTENTTYPE": "image/png",
+                "SIZE": 42,
+                "KEYWORDS": "",
+                "IMAGE_PREVIEW": "preview2",
+                "GLOBALID": "guid2",
+                "DOWNLOAD_URL": "url2",
             },
         ]
 
         updater_mock = mocker.Mock()
         updater_mock.feature_layer.attachments.search.return_value = live_attachments
 
-        live_data_subset_df = pd.DataFrame({
-            'OBJECTID': [1, 2, 3],
-            'GlobalID': ['guid1', 'guid2', 'guid3'],
-            'attachment_key': [11, 12, 13],
-            'attachments': ['fee', 'ber', 'boo'],
-        })
+        live_data_subset_df = pd.DataFrame(
+            {
+                "OBJECTID": [1, 2, 3],
+                "GlobalID": ["guid1", "guid2", "guid3"],
+                "attachment_key": [11, 12, 13],
+                "attachments": ["fee", "ber", "boo"],
+            }
+        )
 
         current_attachments_df = load.FeatureServiceAttachmentsUpdater._get_current_attachment_info_by_oid(
             updater_mock, live_data_subset_df
         )
 
-        test_df = pd.DataFrame({
-            'OBJECTID': [1, 2, 3],
-            'GlobalID': ['guid1', 'guid2', 'guid3'],
-            'attachment_key': [11, 12, 13],
-            'attachments': ['fee', 'ber', 'boo'],
-            'PARENTOBJECTID': [1., 2., np.nan],
-            'NAME': ['foo.png', 'bar.png', np.nan],
-            'ID': [111, 222, pd.NA],
-        })
-        test_df['ID'] = test_df['ID'].astype('Int64')
+        test_df = pd.DataFrame(
+            {
+                "OBJECTID": [1, 2, 3],
+                "GlobalID": ["guid1", "guid2", "guid3"],
+                "attachment_key": [11, 12, 13],
+                "attachments": ["fee", "ber", "boo"],
+                "PARENTOBJECTID": [1.0, 2.0, np.nan],
+                "NAME": ["foo.png", "bar.png", np.nan],
+                "ID": [111, 222, pd.NA],
+            }
+        )
+        test_df["ID"] = test_df["ID"].astype("Int64")
 
         tm.assert_frame_equal(current_attachments_df, test_df)
 
     def test_check_attachment_dataframe_for_invalid_column_names_doesnt_raise_with_valid_names(self, mocker):
-        dataframe = pd.DataFrame(columns=['foo', 'bar'])
-        invalid_names = ['baz', 'boo']
+        dataframe = pd.DataFrame(columns=["foo", "bar"])
+        invalid_names = ["baz", "boo"]
         load.FeatureServiceAttachmentsUpdater._check_attachment_dataframe_for_invalid_column_names(
             dataframe, invalid_names
         )
 
     def test_check_attachment_dataframe_for_invalid_column_names_raises_with_one_invalid(self, mocker):
-        dataframe = pd.DataFrame(columns=['foo', 'bar'])
-        invalid_names = ['foo', 'boo']
+        dataframe = pd.DataFrame(columns=["foo", "bar"])
+        invalid_names = ["foo", "boo"]
         with pytest.raises(RuntimeError) as exc_info:
             load.FeatureServiceAttachmentsUpdater._check_attachment_dataframe_for_invalid_column_names(
                 dataframe, invalid_names
             )
-        assert exc_info.value.args[0] == 'Attachment dataframe contains the following invalid names: [\'foo\']'
+        assert exc_info.value.args[0] == "Attachment dataframe contains the following invalid names: ['foo']"
 
     def test_check_attachment_dataframe_for_invalid_column_names_raises_with_all_invalid(self, mocker):
-        dataframe = pd.DataFrame(columns=['foo', 'bar'])
-        invalid_names = ['foo', 'bar']
+        dataframe = pd.DataFrame(columns=["foo", "bar"])
+        invalid_names = ["foo", "bar"]
         with pytest.raises(RuntimeError) as exc_info:
             load.FeatureServiceAttachmentsUpdater._check_attachment_dataframe_for_invalid_column_names(
                 dataframe, invalid_names
             )
-        assert exc_info.value.args[0] == 'Attachment dataframe contains the following invalid names: [\'foo\', \'bar\']'
+        assert exc_info.value.args[0] == "Attachment dataframe contains the following invalid names: ['foo', 'bar']"
 
     def test_add_attachments_by_oid_adds_and_doesnt_warn(self, mocker):
-        action_df = pd.DataFrame({
-            'OBJECTID': [1, 2],
-            'operation': ['add', 'add'],
-            'path': ['path1', 'path2'],
-        })
+        action_df = pd.DataFrame(
+            {
+                "OBJECTID": [1, 2],
+                "operation": ["add", "add"],
+                "path": ["path1", "path2"],
+            }
+        )
 
         result_dict = [
-            {
-                'addAttachmentResult': {
-                    'success': True
-                }
-            },
-            {
-                'addAttachmentResult': {
-                    'success': True
-                }
-            },
+            {"addAttachmentResult": {"success": True}},
+            {"addAttachmentResult": {"success": True}},
         ]
 
         updater_mock = mocker.Mock()
         updater_mock.feature_layer.attachments.add.side_effect = result_dict
 
         with pytest.warns(None) as warning:
-            count = load.FeatureServiceAttachmentsUpdater._add_attachments_by_oid(updater_mock, action_df, 'path')
+            count = load.FeatureServiceAttachmentsUpdater._add_attachments_by_oid(updater_mock, action_df, "path")
 
         assert count == 2
         assert not warning
 
     def test_add_attachments_by_oid_warns_on_failure_and_doesnt_count_that_one_and_continues(self, mocker):
-        action_df = pd.DataFrame({
-            'OBJECTID': [1, 2, 3],
-            'operation': ['add', 'add', 'add'],
-            'path': ['path1', 'path2', 'path3'],
-        })
+        action_df = pd.DataFrame(
+            {
+                "OBJECTID": [1, 2, 3],
+                "operation": ["add", "add", "add"],
+                "path": ["path1", "path2", "path3"],
+            }
+        )
 
         result_dict = [
-            {
-                'addAttachmentResult': {
-                    'success': True
-                }
-            },
-            {
-                'addAttachmentResult': {
-                    'success': False
-                }
-            },
-            {
-                'addAttachmentResult': {
-                    'success': True
-                }
-            },
+            {"addAttachmentResult": {"success": True}},
+            {"addAttachmentResult": {"success": False}},
+            {"addAttachmentResult": {"success": True}},
         ]
 
         feature_layer_mock = mocker.Mock()
@@ -743,117 +768,97 @@ class TestAttachments:
         updater = load.FeatureServiceAttachmentsUpdater(mocker.Mock())
         updater.feature_layer = feature_layer_mock
 
-        with pytest.warns(UserWarning, match='Failed to attach path2 to OID 2'):
-            count = updater._add_attachments_by_oid(action_df, 'path')
+        with pytest.warns(UserWarning, match="Failed to attach path2 to OID 2"):
+            count = updater._add_attachments_by_oid(action_df, "path")
 
         assert count == 2
-        assert updater.failed_dict == {2: ('add', 'path2')}
+        assert updater.failed_dict == {2: ("add", "path2")}
 
     def test_add_attachments_by_oid_handles_internal_agol_errors(self, mocker, caplog):
-        action_df = pd.DataFrame({
-            'OBJECTID': [1, 2],
-            'operation': ['add', 'add'],
-            'path': ['path1', 'path2'],
-        })
+        action_df = pd.DataFrame(
+            {
+                "OBJECTID": [1, 2],
+                "operation": ["add", "add"],
+                "path": ["path1", "path2"],
+            }
+        )
 
         feature_layer_mock = mocker.Mock()
         feature_layer_mock.attachments.add.side_effect = [
-            RuntimeError('foo'),
-            {
-                'addAttachmentResult': {
-                    'success': True
-                }
-            },
+            RuntimeError("foo"),
+            {"addAttachmentResult": {"success": True}},
         ]
 
         updater = load.FeatureServiceAttachmentsUpdater(mocker.Mock())
         updater.feature_layer = feature_layer_mock
 
-        count = updater._add_attachments_by_oid(action_df, 'path')
+        count = updater._add_attachments_by_oid(action_df, "path")
         assert count == 1
-        assert 'AGOL error while adding path1 to OID 1' in caplog.text
-        assert 'foo' in caplog.text
-        assert updater.failed_dict == {1: ('add', 'path1')}
+        assert "AGOL error while adding path1 to OID 1" in caplog.text
+        assert "foo" in caplog.text
+        assert updater.failed_dict == {1: ("add", "path1")}
 
     def test_add_attachments_by_oid_skips_overwrite_and_nan(self, mocker):
-        action_df = pd.DataFrame({
-            'OBJECTID': [1, 2, 3],
-            'operation': ['add', 'overwrite', np.nan],
-            'path': ['path1', 'path2', 'path3'],
-        })
+        action_df = pd.DataFrame(
+            {
+                "OBJECTID": [1, 2, 3],
+                "operation": ["add", "overwrite", np.nan],
+                "path": ["path1", "path2", "path3"],
+            }
+        )
 
         result_dict = [
-            {
-                'addAttachmentResult': {
-                    'success': True
-                }
-            },
+            {"addAttachmentResult": {"success": True}},
         ]
 
         updater_mock = mocker.Mock()
         updater_mock.feature_layer.attachments.add.side_effect = result_dict
 
-        count = load.FeatureServiceAttachmentsUpdater._add_attachments_by_oid(updater_mock, action_df, 'path')
+        count = load.FeatureServiceAttachmentsUpdater._add_attachments_by_oid(updater_mock, action_df, "path")
 
         assert updater_mock.feature_layer.attachments.add.call_count == 1
         assert count == 1
 
     def test_overwrite_attachments_by_oid_overwrites_and_doesnt_warn(self, mocker):
-        action_df = pd.DataFrame({
-            'OBJECTID': [1, 2],
-            'operation': ['overwrite', 'overwrite'],
-            'path': ['path1', 'path2'],
-            'ID': ['existing1', 'existing2'],
-            'NAME': ['oldname1', 'oldname2'],
-        })
+        action_df = pd.DataFrame(
+            {
+                "OBJECTID": [1, 2],
+                "operation": ["overwrite", "overwrite"],
+                "path": ["path1", "path2"],
+                "ID": ["existing1", "existing2"],
+                "NAME": ["oldname1", "oldname2"],
+            }
+        )
 
         result_dict = [
-            {
-                'updateAttachmentResult': {
-                    'success': True
-                }
-            },
-            {
-                'updateAttachmentResult': {
-                    'success': True
-                }
-            },
+            {"updateAttachmentResult": {"success": True}},
+            {"updateAttachmentResult": {"success": True}},
         ]
 
         updater_mock = mocker.Mock()
         updater_mock.feature_layer.attachments.update.side_effect = result_dict
 
         with pytest.warns(None) as warning:
-            count = load.FeatureServiceAttachmentsUpdater._overwrite_attachments_by_oid(updater_mock, action_df, 'path')
+            count = load.FeatureServiceAttachmentsUpdater._overwrite_attachments_by_oid(updater_mock, action_df, "path")
 
         assert count == 2
         assert not warning
 
     def test_overwrite_attachments_by_oid_warns_on_failure_and_doesnt_count_that_one_and_continues(self, mocker):
-        action_df = pd.DataFrame({
-            'OBJECTID': [1, 2, 3],
-            'operation': ['overwrite', 'overwrite', 'overwrite'],
-            'path': ['path1', 'path2', 'path3'],
-            'ID': [11, 22, 33],
-            'NAME': ['oldname1', 'oldname2', 'oldname3'],
-        })
+        action_df = pd.DataFrame(
+            {
+                "OBJECTID": [1, 2, 3],
+                "operation": ["overwrite", "overwrite", "overwrite"],
+                "path": ["path1", "path2", "path3"],
+                "ID": [11, 22, 33],
+                "NAME": ["oldname1", "oldname2", "oldname3"],
+            }
+        )
 
         result_dict = [
-            {
-                'updateAttachmentResult': {
-                    'success': True
-                }
-            },
-            {
-                'updateAttachmentResult': {
-                    'success': False
-                }
-            },
-            {
-                'updateAttachmentResult': {
-                    'success': True
-                }
-            },
+            {"updateAttachmentResult": {"success": True}},
+            {"updateAttachmentResult": {"success": False}},
+            {"updateAttachmentResult": {"success": True}},
         ]
 
         feature_layer_mock = mocker.Mock()
@@ -862,129 +867,133 @@ class TestAttachments:
         updater = load.FeatureServiceAttachmentsUpdater(mocker.Mock())
         updater.feature_layer = feature_layer_mock
 
-        with pytest.warns(UserWarning, match='Failed to update oldname2, attachment ID 22, on OID 2 with path2'):
-            count = updater._overwrite_attachments_by_oid(action_df, 'path')
+        with pytest.warns(UserWarning, match="Failed to update oldname2, attachment ID 22, on OID 2 with path2"):
+            count = updater._overwrite_attachments_by_oid(action_df, "path")
 
         assert count == 2
-        assert updater.failed_dict == {2: ('update', 'path2')}
+        assert updater.failed_dict == {2: ("update", "path2")}
 
     def test_overwrite_attachments_by_oid_handles_internal_agol_errors(self, mocker, caplog):
-        action_df = pd.DataFrame({
-            'OBJECTID': [1, 2],
-            'operation': ['overwrite', 'overwrite'],
-            'path': ['path1', 'path2'],
-            'ID': [11, 22],
-            'NAME': ['oldname1', 'oldname2'],
-        })
+        action_df = pd.DataFrame(
+            {
+                "OBJECTID": [1, 2],
+                "operation": ["overwrite", "overwrite"],
+                "path": ["path1", "path2"],
+                "ID": [11, 22],
+                "NAME": ["oldname1", "oldname2"],
+            }
+        )
 
         feature_layer_mock = mocker.Mock()
         feature_layer_mock.attachments.update.side_effect = [
-            RuntimeError('foo'),
-            {
-                'updateAttachmentResult': {
-                    'success': True
-                }
-            },
+            RuntimeError("foo"),
+            {"updateAttachmentResult": {"success": True}},
         ]
 
         updater = load.FeatureServiceAttachmentsUpdater(mocker.Mock())
         updater.feature_layer = feature_layer_mock
 
-        count = updater._overwrite_attachments_by_oid(action_df, 'path')
+        count = updater._overwrite_attachments_by_oid(action_df, "path")
         assert count == 1
-        assert 'AGOL error while overwriting oldname1 (attachment ID 11) on OID 1 with path1' in caplog.text
-        assert 'foo' in caplog.text
-        assert updater.failed_dict == {1: ('update', 'path1')}
+        assert "AGOL error while overwriting oldname1 (attachment ID 11) on OID 1 with path1" in caplog.text
+        assert "foo" in caplog.text
+        assert updater.failed_dict == {1: ("update", "path1")}
 
     def test_overwrite_attachments_by_oid_skips_add_and_nan(self, mocker):
-        action_df = pd.DataFrame({
-            'OBJECTID': [1, 2, 3],
-            'operation': ['add', 'overwrite', np.nan],
-            'path': ['path1', 'path2', 'path3'],
-            'ID': [np.nan, 'existing2', 'existing3'],
-            'NAME': ['oldname1', 'oldname2', 'oldname3'],
-        })
+        action_df = pd.DataFrame(
+            {
+                "OBJECTID": [1, 2, 3],
+                "operation": ["add", "overwrite", np.nan],
+                "path": ["path1", "path2", "path3"],
+                "ID": [np.nan, "existing2", "existing3"],
+                "NAME": ["oldname1", "oldname2", "oldname3"],
+            }
+        )
 
         result_dict = [
-            {
-                'updateAttachmentResult': {
-                    'success': True
-                }
-            },
+            {"updateAttachmentResult": {"success": True}},
         ]
 
         updater_mock = mocker.Mock()
         updater_mock.feature_layer.attachments.update.side_effect = result_dict
 
-        count = load.FeatureServiceAttachmentsUpdater._overwrite_attachments_by_oid(updater_mock, action_df, 'path')
+        count = load.FeatureServiceAttachmentsUpdater._overwrite_attachments_by_oid(updater_mock, action_df, "path")
 
         assert updater_mock.feature_layer.attachments.update.call_count == 1
         assert count == 1
 
     def test_create_attachments_dataframe_subsets_and_crafts_paths_properly(self, mocker):
-        input_df = pd.DataFrame({
-            'join': [1, 2, 3],
-            'pic': ['foo.png', 'bar.png', 'baz.png'],
-            'data': [11., 12., 13.],
-        })
-
-        attachment_df = load.FeatureServiceAttachmentsUpdater.build_attachments_dataframe(
-            input_df, 'join', 'pic', '/foo/bar'
+        input_df = pd.DataFrame(
+            {
+                "join": [1, 2, 3],
+                "pic": ["foo.png", "bar.png", "baz.png"],
+                "data": [11.0, 12.0, 13.0],
+            }
         )
 
-        test_df = pd.DataFrame({
-            'join': [1, 2, 3],
-            'pic': ['foo.png', 'bar.png', 'baz.png'],
-            'full_file_path': [Path('/foo/bar/foo.png'),
-                               Path('/foo/bar/bar.png'),
-                               Path('/foo/bar/baz.png')]
-        })
+        attachment_df = load.FeatureServiceAttachmentsUpdater.build_attachments_dataframe(
+            input_df, "join", "pic", "/foo/bar"
+        )
+
+        test_df = pd.DataFrame(
+            {
+                "join": [1, 2, 3],
+                "pic": ["foo.png", "bar.png", "baz.png"],
+                "full_file_path": [Path("/foo/bar/foo.png"), Path("/foo/bar/bar.png"), Path("/foo/bar/baz.png")],
+            }
+        )
 
         #: Column of path objects won't test equal in assert_frame_equal, so we make lists of their str representations
         #: and compare those separately from the rest of the dataframe
-        other_fields = ['join', 'pic']
+        other_fields = ["join", "pic"]
         tm.assert_frame_equal(attachment_df[other_fields], test_df[other_fields])
-        assert [str(path) for path in attachment_df['full_file_path']
-               ] == [str(path) for path in test_df['full_file_path']]
+        assert [str(path) for path in attachment_df["full_file_path"]] == [
+            str(path) for path in test_df["full_file_path"]
+        ]
 
     def test_create_attachments_dataframe_drops_missing_attachments(self, mocker):
-        input_df = pd.DataFrame({
-            'join': [1, 2, 3],
-            'pic': ['foo.png', None, ''],
-        })
-
-        attachment_df = load.FeatureServiceAttachmentsUpdater.build_attachments_dataframe(
-            input_df, 'join', 'pic', '/foo/bar'
+        input_df = pd.DataFrame(
+            {
+                "join": [1, 2, 3],
+                "pic": ["foo.png", None, ""],
+            }
         )
 
-        test_df = pd.DataFrame({
-            'join': [1],
-            'pic': ['foo.png'],
-            'full_file_path': [Path('/foo/bar/foo.png')],
-        })
+        attachment_df = load.FeatureServiceAttachmentsUpdater.build_attachments_dataframe(
+            input_df, "join", "pic", "/foo/bar"
+        )
+
+        test_df = pd.DataFrame(
+            {
+                "join": [1],
+                "pic": ["foo.png"],
+                "full_file_path": [Path("/foo/bar/foo.png")],
+            }
+        )
 
         #: Column of path objects won't test equal in assert_frame_equal, so we make lists of their str representations
         #: and compare those separately from the rest of the dataframe
-        other_fields = ['join', 'pic']
+        other_fields = ["join", "pic"]
         tm.assert_frame_equal(attachment_df[other_fields], test_df[other_fields])
-        assert [str(path) for path in attachment_df['full_file_path']
-               ] == [str(path) for path in test_df['full_file_path']]
+        assert [str(path) for path in attachment_df["full_file_path"]] == [
+            str(path) for path in test_df["full_file_path"]
+        ]
 
 
 class TestUploadData:
 
     def test_upload_data_calls_append_with_proper_args(self, mocker):
         expected_kwargs = {
-            'item_id': '1234',
-            'upload_format': 'filegdb',
-            'source_table_name': 'upload',
-            'upsert': True,
-            'rollback': True,
-            'return_messages': True,
+            "item_id": "1234",
+            "upload_format": "filegdb",
+            "source_table_name": "upload",
+            "upsert": True,
+            "rollback": True,
+            "return_messages": True,
         }
         updater_mock = mocker.Mock()
-        updater_mock._upload_gdb.return_value.id = '1234'
-        updater_mock.feature_layer.append.return_value = (True, {'recordCount': 42})
+        updater_mock._upload_gdb.return_value.id = "1234"
+        updater_mock.feature_layer.append.return_value = (True, {"recordCount": 42})
 
         load.FeatureServiceUpdater._upload_data(updater_mock, mocker.Mock(), upsert=True)
 
@@ -992,20 +1001,20 @@ class TestUploadData:
 
     def test_upload_data_retries_on_exception(self, mocker):
         updater_mock = mocker.Mock()
-        updater_mock._upload_gdb.return_value.id = '1234'
-        updater_mock.feature_layer.append.side_effect = [Exception, (True, {'recordCount': 42})]
-        mocker.patch('palletjack.utils.sleep')
+        updater_mock._upload_gdb.return_value.id = "1234"
+        updater_mock.feature_layer.append.side_effect = [Exception, (True, {"recordCount": 42})]
+        mocker.patch("palletjack.utils.sleep")
 
         load.FeatureServiceUpdater._upload_data(updater_mock, mocker.Mock(), upsert=True)
 
         assert updater_mock.feature_layer.append.call_count == 2
 
     def test_upload_data_raises_on_False_result(self, mocker):
-        expected_inner_error = 'Append failed but did not error'
-        expected_outer_error = 'Failed to append data from gdb, changes should have been rolled back'
+        expected_inner_error = "Append failed but did not error"
+        expected_outer_error = "Failed to append data from gdb, changes should have been rolled back"
         updater_mock = mocker.Mock()
-        updater_mock._upload_gdb.return_value.id = '1234'
-        updater_mock.feature_layer.append.return_value = (False, {'message': 'foo'})
+        updater_mock._upload_gdb.return_value.id = "1234"
+        updater_mock.feature_layer.append.return_value = (False, {"message": "foo"})
 
         with pytest.raises(RuntimeError) as exc_info:
             load.FeatureServiceUpdater._upload_data(updater_mock, mocker.Mock(), upsert=True)
@@ -1014,198 +1023,174 @@ class TestUploadData:
         assert exc_info.value.__cause__.args[0] == expected_inner_error
 
     def test_upload_data_raises_on_upsert_field_not_in_append_fields(self, mocker):
-        append_kwargs = {'upsert_matching_field': 'foo', 'append_fields': ['bar', 'baz'], 'upsert': True}
+        append_kwargs = {"upsert_matching_field": "foo", "append_fields": ["bar", "baz"], "upsert": True}
         with pytest.raises(ValueError) as exc_info:
             load.FeatureServiceUpdater._upload_data(mocker.Mock(), mocker.Mock(), **append_kwargs)
 
-        assert exc_info.value.args[0
-                                  ] == 'Upsert matching field foo not found in either append fields or existing fields.'
+        assert (
+            exc_info.value.args[0] == "Upsert matching field foo not found in either append fields or existing fields."
+        )
 
     def test_upload_data_raises_on_upsert_field_not_in_dataframe_columns(self, mocker):
-        append_kwargs = {'upsert_matching_field': 'foo', 'append_fields': ['foo', 'bar'], 'upsert': True}
-        df = pd.DataFrame(columns=['bar', 'baz'])
+        append_kwargs = {"upsert_matching_field": "foo", "append_fields": ["foo", "bar"], "upsert": True}
+        df = pd.DataFrame(columns=["bar", "baz"])
         with pytest.raises(ValueError) as exc_info:
             load.FeatureServiceUpdater._upload_data(mocker.Mock(), df, **append_kwargs)
 
-        assert exc_info.value.args[0
-                                  ] == 'Upsert matching field foo not found in either append fields or existing fields.'
+        assert (
+            exc_info.value.args[0] == "Upsert matching field foo not found in either append fields or existing fields."
+        )
 
     def test_upload_data_raises_on_upsert_field_not_in_dataframe_columns_and_append_fields(self, mocker):
-        append_kwargs = {'upsert_matching_field': 'foo', 'append_fields': ['bar', 'baz'], 'upsert': True}
-        df = pd.DataFrame(columns=['bar', 'baz'])
+        append_kwargs = {"upsert_matching_field": "foo", "append_fields": ["bar", "baz"], "upsert": True}
+        df = pd.DataFrame(columns=["bar", "baz"])
         with pytest.raises(ValueError) as exc_info:
             load.FeatureServiceUpdater._upload_data(mocker.Mock(), df, **append_kwargs)
 
-        assert exc_info.value.args[0
-                                  ] == 'Upsert matching field foo not found in either append fields or existing fields.'
+        assert (
+            exc_info.value.args[0] == "Upsert matching field foo not found in either append fields or existing fields."
+        )
 
 
 class TestColorRampReclassifier:
 
     def test_get_layer_id_returns_match_single_layer(self, mocker):
         layers = {
-            'operationalLayers': [
-                {
-                    'title': 'foo'
-                },
+            "operationalLayers": [
+                {"title": "foo"},
             ],
         }
         get_data_mock = mocker.Mock(return_value=layers)
         webmap_item_mock = mocker.Mock()
         webmap_item_mock.get_data = get_data_mock
-        reclassifier = load.ColorRampReclassifier(webmap_item_mock, 'gis')
+        reclassifier = load.ColorRampReclassifier(webmap_item_mock, "gis")
 
-        layer_id = reclassifier._get_layer_id('foo')
+        layer_id = reclassifier._get_layer_id("foo")
         assert layer_id == 0
 
     def test_get_layer_id_returns_match_many_layers(self, mocker):
         layers = {
-            'operationalLayers': [
-                {
-                    'title': 'foo'
-                },
-                {
-                    'title': 'bar'
-                },
-                {
-                    'title': 'baz'
-                },
+            "operationalLayers": [
+                {"title": "foo"},
+                {"title": "bar"},
+                {"title": "baz"},
             ],
         }
         get_data_mock = mocker.Mock(return_value=layers)
         webmap_item_mock = mocker.Mock()
         webmap_item_mock.get_data = get_data_mock
-        reclassifier = load.ColorRampReclassifier(webmap_item_mock, 'gis')
+        reclassifier = load.ColorRampReclassifier(webmap_item_mock, "gis")
 
-        layer_id = reclassifier._get_layer_id('bar')
+        layer_id = reclassifier._get_layer_id("bar")
         assert layer_id == 1
 
     def test_get_layer_id_returns_first_match(self, mocker):
         layers = {
-            'operationalLayers': [
-                {
-                    'title': 'foo'
-                },
-                {
-                    'title': 'bar'
-                },
-                {
-                    'title': 'bar'
-                },
+            "operationalLayers": [
+                {"title": "foo"},
+                {"title": "bar"},
+                {"title": "bar"},
             ],
         }
         get_data_mock = mocker.Mock(return_value=layers)
         webmap_item_mock = mocker.Mock()
         webmap_item_mock.get_data = get_data_mock
-        reclassifier = load.ColorRampReclassifier(webmap_item_mock, 'gis')
+        reclassifier = load.ColorRampReclassifier(webmap_item_mock, "gis")
 
-        layer_id = reclassifier._get_layer_id('bar')
+        layer_id = reclassifier._get_layer_id("bar")
         assert layer_id == 1
 
     def test_get_layer_id_raises_error_when_not_found(self, mocker):
         layers = {
-            'operationalLayers': [
-                {
-                    'title': 'bar'
-                },
+            "operationalLayers": [
+                {"title": "bar"},
             ],
         }
         get_data_mock = mocker.Mock(return_value=layers)
         webmap_item_mock = mocker.Mock()
-        webmap_item_mock.title = 'test map'
+        webmap_item_mock.title = "test map"
         webmap_item_mock.get_data = get_data_mock
-        reclassifier = load.ColorRampReclassifier(webmap_item_mock, 'gis')
+        reclassifier = load.ColorRampReclassifier(webmap_item_mock, "gis")
 
         with pytest.raises(ValueError) as error_info:
-            layer_id = reclassifier._get_layer_id('foo')
+            layer_id = reclassifier._get_layer_id("foo")
 
         assert 'Could not find "foo" in test map' in str(error_info.value)
 
     def test_calculate_new_stops_with_manual_numbers(self):
-        dataframe = pd.DataFrame({'numbers': [100, 300, 500, 700, 900]})
+        dataframe = pd.DataFrame({"numbers": [100, 300, 500, 700, 900]})
 
-        stops = load.ColorRampReclassifier._calculate_new_stops(dataframe, 'numbers', 5)
+        stops = load.ColorRampReclassifier._calculate_new_stops(dataframe, "numbers", 5)
 
         assert stops == [100, 279, 458, 637, 816]
 
     def test_calculate_new_stops_mismatched_column_raises_error(self):
-        dataframe = pd.DataFrame({'numbers': [100, 300, 500, 700, 900]})
+        dataframe = pd.DataFrame({"numbers": [100, 300, 500, 700, 900]})
 
         with pytest.raises(ValueError) as error_info:
-            stops = load.ColorRampReclassifier._calculate_new_stops(dataframe, 'foo', 5)
-            assert 'Column `foo` not in dataframe`' in str(error_info)
+            stops = load.ColorRampReclassifier._calculate_new_stops(dataframe, "foo", 5)
+            assert "Column `foo` not in dataframe`" in str(error_info)
 
     def test_update_stops_values(self, mocker):
         # renderer = data['operationalLayers'][layer_number]['layerDefinition']['drawingInfo']['renderer']
         # stops = renderer['visualVariables'][0]['stops']
 
         data = {
-            'operationalLayers': [{
-                'layerDefinition': {
-                    'drawingInfo': {
-                        'renderer': {
-                            'visualVariables': [{
-                                'stops': [{
-                                    'value': 0
-                                }, {
-                                    'value': 1
-                                }, {
-                                    'value': 2
-                                }, {
-                                    'value': 3
-                                }]
-                            }]
+            "operationalLayers": [
+                {
+                    "layerDefinition": {
+                        "drawingInfo": {
+                            "renderer": {
+                                "visualVariables": [{"stops": [{"value": 0}, {"value": 1}, {"value": 2}, {"value": 3}]}]
+                            }
                         }
                     }
                 }
-            }],
+            ],
         }
         get_data_mock = mocker.Mock(return_value=data)
         webmap_item_mock = mocker.Mock()
         webmap_item_mock.get_data = get_data_mock
         update_mock = mocker.Mock()
         webmap_item_mock.update = update_mock
-        reclassifier = load.ColorRampReclassifier(webmap_item_mock, 'gis')
+        reclassifier = load.ColorRampReclassifier(webmap_item_mock, "gis")
 
         reclassifier._update_stop_values(0, [100, 200, 300, 400])
 
-        data['operationalLayers'][0]['layerDefinition']['drawingInfo']['renderer']['visualVariables'][0]['stops'] = [{
-            'value': 100
-        }, {
-            'value': 200
-        }, {
-            'value': 300
-        }, {
-            'value': 400
-        }]
+        data["operationalLayers"][0]["layerDefinition"]["drawingInfo"]["renderer"]["visualVariables"][0]["stops"] = [
+            {"value": 100},
+            {"value": 200},
+            {"value": 300},
+            {"value": 400},
+        ]
 
-        assert update_mock.called_with(item_properties={'text': json.dumps(data)})
+        assert update_mock.called_with(item_properties={"text": json.dumps(data)})
 
 
 class TestGDBStuff:
 
     def test__save_to_gdb_and_zip_uses_correct_directories(self, mocker):
-        expected_call_args = [Path('/foo/bar/upload.gdb'), 'zip']
-        expected_call_kwargs = {'root_dir': Path('/foo/bar'), 'base_dir': 'upload.gdb'}
+        expected_call_args = [Path("/foo/bar/upload.gdb"), "zip"]
+        expected_call_kwargs = {"root_dir": Path("/foo/bar"), "base_dir": "upload.gdb"}
 
         updater_mock = mocker.Mock()
-        updater_mock.working_dir = '/foo/bar'
+        updater_mock.working_dir = "/foo/bar"
 
-        mocker.patch('palletjack.utils.sedf_to_gdf')
-        shutil_mock = mocker.patch('palletjack.load.shutil')
+        mocker.patch("palletjack.utils.sedf_to_gdf")
+        shutil_mock = mocker.patch("palletjack.load.shutil")
 
         foo = load.FeatureServiceUpdater._save_to_gdb_and_zip(updater_mock, mocker.Mock())
 
         shutil_mock.make_archive.assert_called_once_with(*expected_call_args, **expected_call_kwargs)
 
     def test__save_to_gdb_and_zip_raises_on_gdf_write_error(self, mocker):
-        gdb_path = Path('/foo/bar/upload.gdb')
-        expected_error = f'Error writing layer to {gdb_path}. Verify /foo/bar exists and is writable.'
+        gdb_path = Path("/foo/bar/upload.gdb")
+        expected_error = f"Error writing layer to {gdb_path}. Verify /foo/bar exists and is writable."
 
         updater_mock = mocker.Mock()
-        updater_mock.working_dir = '/foo/bar'
+        updater_mock.working_dir = "/foo/bar"
 
-        gdf_mock = mocker.patch('palletjack.utils.sedf_to_gdf').return_value
+        gdf_mock = mocker.patch("palletjack.utils.sedf_to_gdf").return_value
         gdf_mock.to_file.side_effect = pyogrio.errors.DataSourceError
 
         with pytest.raises(ValueError, match=re.escape(expected_error)):
@@ -1213,19 +1198,19 @@ class TestGDBStuff:
 
     def test__save_to_gdb_and_zip_raises_on_zip_error(self, mocker):
         updater_mock = mocker.Mock()
-        updater_mock.working_dir = '/foo/bar'
-        mocker.patch('palletjack.utils.sedf_to_gdf')
-        mocker.patch('palletjack.load.shutil.make_archive', side_effect=OSError('io error'))
+        updater_mock.working_dir = "/foo/bar"
+        mocker.patch("palletjack.utils.sedf_to_gdf")
+        mocker.patch("palletjack.load.shutil.make_archive", side_effect=OSError("io error"))
 
-        gdb_path = Path('/foo/bar/upload.gdb')
-        with pytest.raises(ValueError, match=re.escape(f'Error zipping {gdb_path}')) as exc_info:
+        gdb_path = Path("/foo/bar/upload.gdb")
+        with pytest.raises(ValueError, match=re.escape(f"Error zipping {gdb_path}")) as exc_info:
             foo = load.FeatureServiceUpdater._save_to_gdb_and_zip(updater_mock, mocker.Mock())
 
-        assert exc_info.value.__cause__.args[0] == 'io error'
+        assert exc_info.value.__cause__.args[0] == "io error"
 
     def test__save_to_gdb_and_zip_raises_missing_working_dir_attribute(self, mocker):
-        expected_outer_error = 'working_dir not specified on FeatureServiceUpdater'
-        expected_inner_error = 'expected str, bytes or os.PathLike object, not NoneType'
+        expected_outer_error = "working_dir not specified on FeatureServiceUpdater"
+        expected_inner_error = "expected str, bytes or os.PathLike object, not NoneType"
 
         updater_mock = mocker.Mock()
         updater_mock.working_dir = None
@@ -1236,14 +1221,14 @@ class TestGDBStuff:
         assert exc_info.value.__cause__.args[0] == expected_inner_error
 
     def test__upload_gdb_calls_add(self, mocker):
-        gdb_path = Path('/foo/bar/upload.gdb')
+        gdb_path = Path("/foo/bar/upload.gdb")
         expected_call_kwargs = {
-            'item_properties': {
-                'type': 'File Geodatabase',
-                'title': 'Temporary gdb upload',
-                'snippet': 'Temporary gdb upload from palletjack'
+            "item_properties": {
+                "type": "File Geodatabase",
+                "title": "Temporary gdb upload",
+                "snippet": "Temporary gdb upload from palletjack",
             },
-            'data': gdb_path
+            "data": gdb_path,
         }
 
         updater_mock = mocker.Mock()
@@ -1253,21 +1238,21 @@ class TestGDBStuff:
         updater_mock.gis.content.add.assert_called_once_with(**expected_call_kwargs)
 
     def test__upload_gdb_raises_on_agol_error(self, mocker):
-        gdb_path = Path('/foo/bar/upload.gdb')
+        gdb_path = Path("/foo/bar/upload.gdb")
         updater_mock = mocker.Mock()
-        updater_mock.gis.content.add.side_effect = [Exception('foo')] * 4
-        mocker.patch('palletjack.utils.sleep')
+        updater_mock.gis.content.add.side_effect = [Exception("foo")] * 4
+        mocker.patch("palletjack.utils.sleep")
 
         with pytest.raises(RuntimeError) as exc_info:
             load.FeatureServiceUpdater._upload_gdb(updater_mock, gdb_path)
 
-        assert exc_info.value.args[0] == f'Error uploading {gdb_path} to AGOL'
+        assert exc_info.value.args[0] == f"Error uploading {gdb_path} to AGOL"
         assert updater_mock.gis.content.add.call_count == 4  #: retries
 
     def test__cleanup_deletes_agol_and_file(self, mocker):
-        zipped_path = Path('/foo/bar/upload.gdb.zip')
+        zipped_path = Path("/foo/bar/upload.gdb.zip")
         gdb_item_mock = mocker.Mock()
-        path_mock = mocker.patch('palletjack.load.Path')
+        path_mock = mocker.patch("palletjack.load.Path")
 
         load.FeatureServiceUpdater._cleanup(mocker.Mock(), gdb_item_mock, zipped_path)
 
@@ -1276,11 +1261,11 @@ class TestGDBStuff:
         path_mock.return_value.unlink.assert_called_once()
 
     def test__cleanup_warns_on_agol_error_and_continues(self, mocker):
-        expected_warning = 'Error deleting gdb item 1234 from AGOL'
-        gdb_item_mock = mocker.Mock(id='1234')
-        gdb_item_mock.delete.side_effect = [RuntimeError('Unable to delete item.')]
-        zipped_path = Path('/foo/bar/upload.gdb.zip')
-        path_mock = mocker.patch('palletjack.load.Path')
+        expected_warning = "Error deleting gdb item 1234 from AGOL"
+        gdb_item_mock = mocker.Mock(id="1234")
+        gdb_item_mock.delete.side_effect = [RuntimeError("Unable to delete item.")]
+        zipped_path = Path("/foo/bar/upload.gdb.zip")
+        path_mock = mocker.patch("palletjack.load.Path")
 
         with pytest.warns(UserWarning, match=re.escape(expected_warning)):
             load.FeatureServiceUpdater._cleanup(mocker.Mock(), gdb_item_mock, zipped_path)
@@ -1289,21 +1274,21 @@ class TestGDBStuff:
         path_mock.return_value.unlink.assert_called_once()
 
     def test__cleanup_warns_on_file_error(self, mocker):
-        expected_warning = 'Error deleting zipped gdb /foo/bar/upload.gdb.zip'
+        expected_warning = "Error deleting zipped gdb /foo/bar/upload.gdb.zip"
         gdb_item_mock = mocker.Mock()
-        path_mock = mocker.patch('palletjack.load.Path')
+        path_mock = mocker.patch("palletjack.load.Path")
         path_mock.return_value.unlink.side_effect = [IOError]
 
         with pytest.warns(UserWarning, match=re.escape(expected_warning)):
-            load.FeatureServiceUpdater._cleanup(mocker.Mock(), gdb_item_mock, '/foo/bar/upload.gdb.zip')
+            load.FeatureServiceUpdater._cleanup(mocker.Mock(), gdb_item_mock, "/foo/bar/upload.gdb.zip")
 
     def test__cleanup_warns_on_both_agol_and_file_errors(self, mocker):
-        expected_agol_warning = 'Error deleting gdb item 1234 from AGOL'
+        expected_agol_warning = "Error deleting gdb item 1234 from AGOL"
         expected_file_warning = f'Error deleting zipped gdb {Path("/foo/bar/upload.gdb.zip")}'
-        gdb_item_mock = mocker.Mock(id='1234')
-        gdb_item_mock.delete.side_effect = [RuntimeError('Unable to delete item.')]
-        zipped_path = Path('/foo/bar/upload.gdb.zip')
-        path_mock = mocker.patch('palletjack.load.Path')
+        gdb_item_mock = mocker.Mock(id="1234")
+        gdb_item_mock.delete.side_effect = [RuntimeError("Unable to delete item.")]
+        zipped_path = Path("/foo/bar/upload.gdb.zip")
+        path_mock = mocker.patch("palletjack.load.Path")
         path_mock.return_value.unlink.side_effect = [IOError]
 
         with pytest.warns(UserWarning) as record:
