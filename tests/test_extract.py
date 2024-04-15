@@ -1277,6 +1277,45 @@ class TestSalesForceLoader:
 
         assert loader._get_token() == loader.access_token
 
+    def test_get_token_uses_client_credentials(self, loader, mocker):
+        mocker.patch.object(loader, "_is_token_valid", return_value=False)
+        requests_mock = mocker.patch("palletjack.extract.requests.post")
+
+        loader._get_token()
+
+        requests_mock.assert_called_once_with(
+            loader.access_token_url,
+            data={
+                "grant_type": "client_credentials",
+                "client_id": "id",
+                "client_secret": "secret",
+            },
+            headers={"Content-Type": "application/x-www-form-urlencoded"},
+            timeout=10,
+        )
+
+    def test_get_token_uses_sandbox_credentials(self, loader, mocker):
+        mocker.patch.object(loader, "_is_token_valid", return_value=False)
+        requests_mock = mocker.patch("palletjack.extract.requests.post")
+        loader.sandbox = True
+        loader.username = "user"
+        loader.password = "pass"
+
+        loader._get_token()
+
+        requests_mock.assert_called_once_with(
+            loader.access_token_url,
+            data={
+                "grant_type": "password",
+                "client_id": "id",
+                "client_secret": "secret",
+                "username": "user",
+                "password": "pass",
+            },
+            headers={"Content-Type": "application/x-www-form-urlencoded"},
+            timeout=10,
+        )
+
     def test_get_token_returns_new_token_if_cached_token_is_expired(self, loader):
         issued_at = datetime.now() - timedelta(days=31)
         token = {"issued_at": self.ticks(issued_at), "access_token": "token"}

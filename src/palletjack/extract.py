@@ -986,12 +986,13 @@ class SalesforceRestLoader:
             return self.access_token
 
         form_data = {
-            "grant_type": "password",
+            "grant_type": "client_credentials",
             "client_id": self.client_id,
             "client_secret": self.client_secret,
         }
 
         if self.sandbox:
+            form_data["grant_type"] = "password"
             form_data["username"] = self.username
             form_data["password"] = self.password
 
