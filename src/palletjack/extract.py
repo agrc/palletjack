@@ -1050,7 +1050,8 @@ class SalesforceRestLoader:
         """
         token = self._get_token()
 
-        response = requests.get(
+        response = utils.retry(
+            requests.get,
             f"{self.org_url}/{query_endpoint}",
             params=query_params,
             headers={
