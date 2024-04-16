@@ -11,8 +11,9 @@ import pytest
 import requests
 import requests_mock
 import ujson
-from palletjack import extract
 from pandas import testing as tm
+
+from palletjack import extract
 
 
 class TestGSheetsLoader:
@@ -1209,12 +1210,12 @@ class TestSalesForceLoader:
         (
             True,
             "https://ugrc.sandbox.my.salesforce.com/services/oauth2/token",
-            "https://ugrc.sandbox.my.salesforce.com/services/data/v58.0/query",
+            "https://ugrc.sandbox.my.salesforce.com",
         ),
         (
             False,
             "https://ugrc.my.salesforce.com/services/oauth2/token",
-            "https://ugrc.my.salesforce.com/services/data/v58.0/query",
+            "https://ugrc.my.salesforce.com",
         ),
     ]
 
@@ -1242,14 +1243,14 @@ class TestSalesForceLoader:
         assert loader.username is None
         assert loader.password is None
 
-    @pytest.mark.parametrize("is_sandbox,access_token_url,query_url", url_template_test_data)
-    def test_url_template_substitutions(self, is_sandbox, access_token_url, query_url):
+    @pytest.mark.parametrize("is_sandbox,access_token_url,org_url", url_template_test_data)
+    def test_url_template_substitutions(self, is_sandbox, access_token_url, org_url):
         loader = extract.SalesforceRestLoader(
             ORG, credentials=extract.SalesforceSandboxCredentials("", "", "", "", ""), sandbox=is_sandbox
         )
 
         assert loader.access_token_url == access_token_url
-        assert loader.query_url == query_url
+        assert loader.org_url == org_url
 
     def test_is_token_valid_returns_false_if_issued_at_not_in_token(self, loader):
         assert not loader._is_token_valid({})
@@ -1326,25 +1327,54 @@ class TestSalesForceLoader:
             m.post(loader.access_token_url, json={"access_token": "new_token", "issued_at": "now"})
             assert loader._get_token() == {"access_token": "new_token", "issued_at": "now"}
 
-    def test_get_records_returns_dataframe(self, loader):
+    def test_query_records_raises_error_on_failed_request(self, loader):
         issued_at = datetime.now() - timedelta(days=1)
         token = {"issued_at": self.ticks(issued_at), "access_token": "token"}
 
         loader.access_token = token
 
-        with requests_mock.Mocker() as m:
-            m.get(loader.query_url, json={"records": [{"Id": "1", "Name": "Test"}]})
-
-            assert isinstance(loader.get_records("SELECT Id, Name FROM Account"), pd.DataFrame)
-
-    def test_get_records_raises_error_on_failed_request(self, loader):
-        issued_at = datetime.now() - timedelta(days=1)
-        token = {"issued_at": self.ticks(issued_at), "access_token": "token"}
-
-        loader.access_token = token
+        query_endpoint = "services/data/v60.0/query"
 
         with requests_mock.Mocker() as m:
-            m.get(loader.query_url, status_code=400, json={"message": "Error"})
+            m.get(f"{loader.org_url}/{query_endpoint}", status_code=400, json={"message": "Error"})
 
             with pytest.raises(ValueError):
-                loader.get_records("SELECT Id, Name FROM Account")
+                loader._query_records(query_endpoint, {"q": "SELECT Id, Name FROM Account"})
+
+    def test_get_records_returns_dataframe_on_single_query(self, loader, mocker):
+        query_mock = mocker.patch.object(
+            loader, "_query_records", return_value={"records": [{"Id": "1", "Name": "Test"}], "done": True}
+        )
+
+        output_df = loader.get_records("foo", "bar")
+
+        test_df = pd.DataFrame(
+            {
+                "Id": ["1"],
+                "Name": ["Test"],
+            },
+        )
+
+        tm.assert_frame_equal(output_df, test_df)
+        query_mock.assert_called_once()
+
+    def test_get_records_returns_dataframe_on_multiple_queries(self, loader, mocker):
+        query_responses = [
+            {"records": [{"Id": "1", "Name": "Test1"}], "done": False, "nextRecordsUrl": "next"},
+            {"records": [{"Id": "2", "Name": "Test2"}], "done": False, "nextRecordsUrl": "next"},
+            {"records": [{"Id": "3", "Name": "Test3"}], "done": True},
+        ]
+
+        query_mock = mocker.patch.object(loader, "_query_records", side_effect=query_responses)
+
+        output_df = loader.get_records("foo", "bar")
+
+        test_df = pd.DataFrame(
+            {
+                "Id": ["1", "2", "3"],
+                "Name": ["Test1", "Test2", "Test3"],
+            },
+        )
+
+        tm.assert_frame_equal(output_df, test_df)
+        assert query_mock.call_count == 3

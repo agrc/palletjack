@@ -911,8 +911,8 @@ class SalesforceRestLoader:
     access_token_url = ""
     access_token = {}
 
-    query_template = Template("https://$org.my.salesforce.com/services/data/v58.0/query")
-    query_url = ""
+    org_template = Template("https://$org.my.salesforce.com")
+    org_url = ""
 
     client_secret = None
     client_id = None
@@ -947,7 +947,7 @@ class SalesforceRestLoader:
             org = org + ".sandbox"
 
         self.access_token_url = self.access_token_template.substitute(org=org)
-        self.query_url = self.query_template.substitute(org=org)
+        self.org_url = self.org_template.substitute(org=org)
 
         self.sandbox = sandbox
 
@@ -1011,11 +1011,12 @@ class SalesforceRestLoader:
 
         return self.access_token
 
-    def get_records(self, query) -> pd.DataFrame:
+    def get_records(self, query_endpoint, query_string) -> pd.DataFrame:
         """Queries the Salesforce API and returns the results as a dataframe.
 
         Args:
-            query (str): A SOQL query string.
+            query_endpoint (str): The REST endpoint to use for the query. Usually "/services/data/vXX.X/query".
+            query_string (str): A SOQL query string.
 
         Raises:
             ValueError: If the query fails.
@@ -1023,11 +1024,35 @@ class SalesforceRestLoader:
         Returns:
             pd.Dataframe: A dataframe of the results.
         """
+
+        response_data = self._query_records(query_endpoint, {"q": query_string})
+
+        df = pd.DataFrame(response_data["records"])
+
+        while response_data["done"] is False:
+            response_data = self._query_records(response_data["nextRecordsUrl"])
+            df = pd.concat([df, pd.DataFrame(response_data["records"])])
+
+        return df.reset_index(drop=True)  #: the concatted index is just a repeat of 0:2000
+
+    def _query_records(self, query_endpoint, query_params=None) -> dict:
+        """Queries the Salesforce API and returns the results as a dictionary.
+
+        Args:
+            query_endpoint (str): The REST endpoint to use for the query, either 'query' or the nextRecordsUrl.
+            query_params (dict): A dictionary of params holding the SOQL query. Defaults to None for paged queries.
+
+        Raises:
+            ValueError: If the query fails.
+
+        Returns:
+            dict: A dictionary of the results.
+        """
         token = self._get_token()
 
         response = requests.get(
-            self.query_url,
-            params={"q": query},
+            f"{self.org_url}/{query_endpoint}",
+            params=query_params,
             headers={
                 "Authorization": f"Bearer {token['access_token']}",
             },
@@ -1041,6 +1066,4 @@ class SalesforceRestLoader:
 
             raise ValueError(f"Error getting records from Salesforce {response.json()}") from error
 
-        data = response.json()
-
-        return pd.DataFrame(data["records"])
+        return response.json()
