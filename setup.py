@@ -55,7 +55,7 @@ setup(
             "pytest-ruff==0.*",
             "pytest-watch~=4.2",
             "pytest>=6,<9",
-            "black>=23.3,<24.4",
+            "black>=23.3,<24.5",
             "requests-mock==1.*",
             "ruff==0.0.*",
         ]
