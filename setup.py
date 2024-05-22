@@ -37,7 +37,7 @@ setup(
     },
     keywords=["gis"],
     install_requires=[
-        "arcgis>=2.2,<2.3",
+        "arcgis==2.3.*",
         "geopandas==0.14.*",
         "pg8000>=1.29,<1.32",
         "psycopg2-binary==2.9.*",
