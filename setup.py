@@ -42,7 +42,7 @@ setup(
         "pg8000>=1.29,<1.32",
         "psycopg2-binary==2.9.*",
         "pygsheets==2.0.*",
-        "pyogrio>=0.6,<0.8",
+        "pyogrio>=0.6,<0.9",
         "pysftp==0.2.9",
         "SQLAlchemy>=1.4,<2.1",
     ],
