@@ -460,6 +460,18 @@ class TestValidateAPIKey:
         with pytest.raises(ValueError, match=re.escape("API key validation failed: Invalid API key")):
             palletjack.utils.Geocoding.validate_api_key("foo")
 
+    def test_validate_api_key_bad_key_logs(self, mocker, caplog):
+        req_mock = mocker.patch("palletjack.utils.requests", autospec=True)
+        response_mock = mocker.Mock()
+        response_mock.json.return_value = {"status": 400, "message": "Invalid API key"}
+        req_mock.get.return_value = response_mock
+
+        with pytest.raises(ValueError, match=re.escape("API key validation failed: Invalid API key")):
+            palletjack.utils.Geocoding.validate_api_key("foo")
+
+        caplog.set_level(logging.ERROR, logger="utils")
+        assert "API key validation failed: Invalid API key" in caplog.text
+
     def test_validate_api_key_handles_network_exception(self, mocker, caplog):
         req_mock = mocker.patch("palletjack.utils.requests", autospec=True)
         mocker.patch("palletjack.utils.sleep")
