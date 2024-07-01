@@ -42,13 +42,13 @@ setup(
         "pg8000>=1.29,<1.32",
         "psycopg2-binary==2.9.*",
         "pygsheets==2.0.*",
-        "pyogrio>=0.6,<0.9",
+        "pyogrio>=0.9.0,<0.10",
         "pysftp==0.2.9",
         "SQLAlchemy>=1.4,<2.1",
     ],
     extras_require={
         "tests": [
-            "pdoc3==0.10.*",
+            "pdoc3>=0.10,<0.12",
             "pytest-cov>=3,<6",
             "pytest-instafail~=0.4",
             "pytest-mock>=3.10,<3.15",
