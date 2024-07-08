@@ -4,6 +4,7 @@ import re
 from datetime import datetime, timedelta
 from pathlib import Path
 
+import geodatasets
 import geopandas as gpd
 import numpy as np
 import pandas as pd
@@ -11,9 +12,8 @@ import pytest
 import requests
 import requests_mock
 import ujson
-from pandas import testing as tm
-
 from palletjack import extract
+from pandas import testing as tm
 
 
 class TestGSheetsLoader:
@@ -622,9 +622,8 @@ class TestPostgresLoader:
     def test_get_postgres_connection(self, mocker):
 
         mocker.patch.object(
-            gpd, "read_postgis", return_value=gpd.read_file(gpd.datasets.get_path("naturalearth_lowres"))
+            gpd, "read_postgis", return_value=gpd.read_file(geodatasets.get_path("naturalearth land"))
         )
-
         loader = extract.PostgresLoader("host", "app", "user", "password")
         dataframe = loader.read_table_into_dataframe("table", "name", "4326", "geometry")
 
