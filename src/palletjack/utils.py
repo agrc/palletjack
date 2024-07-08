@@ -310,6 +310,7 @@ class Geocoding:
         if response_json["status"] == 200:
             return
         if response_json["status"] == 400 and "Invalid API key" in response_json["message"]:
+            module_logger.error(f'API key validation failed: {response_json["message"]}')
             raise ValueError(f'API key validation failed: {response_json["message"]}')
 
         warnings.warn(f'Unhandled API key validation response {response_json["status"]}: {response_json["message"]}')
