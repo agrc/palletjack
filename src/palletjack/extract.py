@@ -192,9 +192,7 @@ class GoogleDriveDownloader:
         """
 
         content = response.headers["Content-Disposition"]
-        all_filenames = re.findall(
-            "filename\*?=([^;]+)", content, flags=re.IGNORECASE
-        )  # pylint:disable=anomalous-backslash-in-string
+        all_filenames = re.findall("filename\*?=([^;]+)", content, flags=re.IGNORECASE)  # pylint:disable=anomalous-backslash-in-string
         if all_filenames:
             #: Remove spurious whitespace and "s
             return all_filenames[0].strip().strip('"')

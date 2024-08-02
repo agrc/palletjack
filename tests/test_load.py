@@ -15,7 +15,6 @@ from palletjack import load
 
 
 class TestFields:
-
     def test_get_fields_from_dataframe_returns_all_fields_in_order(self, mocker):
         df_mock = mocker.Mock()
         df_mock.columns = ["Foo", "Bar", "Baz"]
@@ -50,7 +49,6 @@ class TestFields:
 
 
 class TestFeatureServiceUpdaterInit:
-
     def test_init_calls_get_feature_layer(self, mocker):
         arcgis_mock = mocker.patch("palletjack.load.arcgis")
 
@@ -76,7 +74,6 @@ class TestFeatureServiceUpdaterInit:
 
 
 class TestUpdateLayer:
-
     def test_update_features_calls_upsert_correctly(self, mocker):
         new_dataframe = pd.DataFrame(
             {
@@ -196,7 +193,6 @@ class TestUpdateLayer:
 
 
 class TestAddToLayer:
-
     def test_add_features_calls_upsert(self, mocker):
         new_dataframe = pd.DataFrame(
             {
@@ -252,7 +248,6 @@ class TestAddToLayer:
 
 
 class TestDeleteFromLayer:
-
     def test_remove_features_returns_number_of_deleted_features(self, mocker):
         updater_mock = mocker.Mock()
         updater_mock.feature_service_itemid = "foo123"
@@ -304,7 +299,6 @@ class TestDeleteFromLayer:
 
 
 class TestTruncateAndLoadLayer:
-
     def test_truncate_existing_data_normal(self, mocker):
         updater_mock = mocker.Mock()
         updater_mock.feature_service_itemid = "foo123"
@@ -409,7 +403,6 @@ class TestTruncateAndLoadLayer:
         assert "Append failed. Old data not saved (save_old set to False)" in caplog.text
 
     def test_truncate_and_load_calls_field_checkers(self, mocker, caplog):
-
         caplog.set_level(logging.DEBUG)
 
         updater_mock = mocker.Mock()
@@ -448,7 +441,6 @@ class TestTruncateAndLoadLayer:
         assert uploaded_features == 42
 
     def test_truncate_and_load_doesnt_raise_on_empty_column(self, mocker, caplog):
-
         caplog.set_level(logging.DEBUG)
 
         new_dataframe = pd.DataFrame(
@@ -499,7 +491,6 @@ class TestTruncateAndLoadLayer:
 
 
 class TestAttachments:
-
     def test_create_attachment_action_df_adds_for_blank_existing_name(self, mocker):
         input_df = pd.DataFrame(
             {
@@ -639,7 +630,6 @@ class TestAttachments:
         tm.assert_frame_equal(live_data_subset, test_df)
 
     def test_get_current_attachment_info_by_oid_includes_nans_for_features_wo_attachments(self, mocker):
-
         live_attachments = [
             {
                 "PARENTOBJECTID": 1,
@@ -980,7 +970,6 @@ class TestAttachments:
 
 
 class TestUploadData:
-
     def test_upload_data_calls_append_with_proper_args(self, mocker):
         expected_kwargs = {
             "item_id": "1234",
@@ -1052,7 +1041,6 @@ class TestUploadData:
 
 
 class TestColorRampReclassifier:
-
     def test_get_layer_id_returns_match_single_layer(self, mocker):
         layers = {
             "operationalLayers": [
@@ -1167,7 +1155,6 @@ class TestColorRampReclassifier:
 
 
 class TestGDBStuff:
-
     def test__save_to_gdb_and_zip_uses_correct_directories(self, mocker):
         expected_call_args = [Path("/foo/bar/upload.gdb"), "zip"]
         expected_call_kwargs = {"root_dir": Path("/foo/bar"), "base_dir": "upload.gdb"}
