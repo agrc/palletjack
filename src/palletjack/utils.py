@@ -387,7 +387,7 @@ def sedf_to_gdf(dataframe):
     return gdf
 
 
-def save_feature_layer_to_gdb(feature_layer, directory):
+def save_to_gdb(table_or_layer, directory):
     """Save a feature_layer to a gdb for safety as backup.gdb/{layer name}_{todays date}
 
     Args:
@@ -399,15 +399,18 @@ def save_feature_layer_to_gdb(feature_layer, directory):
     """
 
     module_logger.debug("Downloading existing data...")
-    dataframe = feature_layer.query().sdf
+    dataframe = table_or_layer.query().sdf
 
     if dataframe.empty:
-        return f"No data to save in feature layer {feature_layer.properties.name}"
+        return f"No data to save in feature layer {table_or_layer.properties.name}"
 
-    gdf = sedf_to_gdf(dataframe)
+    if table_or_layer.properties.type == "Feature Layer":
+        gdf = sedf_to_gdf(dataframe)
+    else:
+        gdf = gpd.GeoDataFrame(dataframe)
 
     out_path = Path(directory, "backup.gdb")
-    out_layer = f'{feature_layer.properties.name}_{datetime.date.today().strftime("%Y_%m_%d")}'
+    out_layer = f'{table_or_layer.properties.name}_{datetime.date.today().strftime("%Y_%m_%d")}'
     module_logger.debug("Saving existing data to %s", out_path)
     try:
         gdf.to_file(out_path, layer=out_layer, engine="pyogrio", driver="OpenFileGDB")

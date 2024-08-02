@@ -10,6 +10,7 @@ import pandas as pd
 import pyogrio
 import pytest
 from arcgis import geometry
+from arcgis.features import FeatureLayer, Table
 from pandas import testing as tm
 
 
@@ -1588,46 +1589,63 @@ class TestDeleteUtils:
 
 
 class TestSaveDataframeToGDF:
-    def test_save_feature_layer_to_gdb_calls_to_file_with_right_path(self, mocker):
+    def test_save_to_gdb_calls_to_file_with_right_path(self, mocker):
         expected_out_path = Path("foo", "backup.gdb")
         expected_out_layer = f'flayer_{datetime.date.today().strftime("%Y_%m_%d")}'
 
-        mock_fl = mocker.Mock()
+        mock_fl = mocker.Mock(spec=FeatureLayer)
         mock_fl.properties.name = "flayer"
+        mock_fl.properties.type = "Feature Layer"
         mock_fl.query.return_value.sdf.empty = False
         gdf_mock = mocker.patch("palletjack.utils.sedf_to_gdf").return_value
 
-        out_path = palletjack.utils.save_feature_layer_to_gdb(mock_fl, "foo")
+        out_path = palletjack.utils.save_to_gdb(mock_fl, "foo")
 
         assert out_path == expected_out_path
         gdf_mock.to_file.assert_called_once_with(
             expected_out_path, layer=expected_out_layer, engine="pyogrio", driver="OpenFileGDB"
         )
 
-    def test_save_feature_layer_to_gdb_doesnt_save_empty_data(self, mocker):
+    def test_save_to_gdb_uses_gdb_for_tables(self, mocker):
+        expected_out_path = Path("foo", "backup.gdb")
+        expected_out_layer = f'table_{datetime.date.today().strftime("%Y_%m_%d")}'
+
+        mock_tb = mocker.Mock(spec=Table)
+        mock_tb.properties.name = "table"
+        mock_tb.properties.type = "Table"
+        mock_tb.query.return_value.sdf.empty = False
+        gdf_mock = mocker.patch("palletjack.utils.gpd.GeoDataFrame").return_value
+
+        out_path = palletjack.utils.save_to_gdb(mock_tb, "foo")
+
+        assert out_path == expected_out_path
+        gdf_mock.to_file.assert_called_once()
+
+    def test_save_to_gdb_doesnt_save_empty_data(self, mocker):
         mock_fl = mocker.Mock()
         mock_fl.properties.name = "flayer"
         mock_fl.query.return_value.sdf.empty = True
         gdf_mock = mocker.patch("palletjack.utils.sedf_to_gdf").return_value
 
-        out_path = palletjack.utils.save_feature_layer_to_gdb(mock_fl, "foo")
+        out_path = palletjack.utils.save_to_gdb(mock_fl, "foo")
 
         gdf_mock.to_file.assert_not_called()
         assert out_path == "No data to save in feature layer flayer"
 
-    def test_save_feature_layer_to_gdb_raises_on_gdb_write_error(self, mocker):
+    def test_save_to_gdb_raises_on_gdb_write_error(self, mocker):
         gdb_path = Path("/foo/bar/backup.gdb")
         date = datetime.date.today().strftime("%Y_%m_%d")
         expected_error = f"Error writing flayer_{date} to {gdb_path}. Verify {gdb_path.parent} exists and is writable."
 
-        mock_fl = mocker.Mock()
+        mock_fl = mocker.Mock(spec=FeatureLayer)
         mock_fl.properties.name = "flayer"
+        mock_fl.properties.type = "Feature Layer"
         mock_fl.query.return_value.sdf.empty = False
         gdf_mock = mocker.patch("palletjack.utils.sedf_to_gdf").return_value
         gdf_mock.to_file.side_effect = pyogrio.errors.DataSourceError
 
         with pytest.raises(ValueError, match=re.escape(expected_error)):
-            out_path = palletjack.utils.save_feature_layer_to_gdb(mock_fl, "/foo/bar")
+            out_path = palletjack.utils.save_to_gdb(mock_fl, "/foo/bar")
 
 
 class TestDataFrameChunking:

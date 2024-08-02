@@ -107,9 +107,8 @@ def download_from_sftp_update_agol_reclassify_map():
     update_df = transform.FeatureServiceMerging.update_live_data_with_new_data(live_df, dataframe, join_key_column)
 
     #: Update the AGOL data
-    number_of_rows_updated = load.FeatureServiceUpdater.update_features(
-        gis, feature_layer_itemid, update_df, update_geometry=False
-    )
+    updater = load.ServiceUpdater(gis, feature_layer_itemid)
+    number_of_rows_updated = updater.update(update_df, update_geometry=False)
 
     #: Reclassify the break values on the webmap's color ramp
     reclassifier = load.ColorRampReclassifier(webmap_item, gis)
