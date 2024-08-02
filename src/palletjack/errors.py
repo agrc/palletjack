@@ -1,5 +1,4 @@
-"""Errors specific to palletjack
-"""
+"""Errors specific to palletjack"""
 
 
 class IntFieldAsFloatError(Exception):

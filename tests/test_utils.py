@@ -33,7 +33,6 @@ def set_delay_time():
 
 
 class TestRenameColumns:
-
     def test_rename_columns_for_agol_handles_special_and_space(self):
         cols = ["Test Name:"]
 
@@ -85,7 +84,6 @@ class TestRenameColumns:
 
 
 class TestRetry:
-
     def test_retry_returns_on_first_success(self, mocker):
         mock = mocker.Mock()
         mock.function.return_value = 42
@@ -160,7 +158,6 @@ class TestRetry:
 
 
 class TestCheckIndexColumnInFL:
-
     def test_check_index_column_in_feature_layer_doesnt_raise_on_normal(self, mocker):
         fl_mock = mocker.Mock()
         fl_mock.properties.fields = [
@@ -184,7 +181,6 @@ class TestCheckIndexColumnInFL:
 
 
 class TestCheckFieldUnique:
-
     def test_check_field_set_to_unique_doesnt_raise_on_normal(self, mocker):
         mock_fl = mocker.Mock()
         mock_fl.properties.indexes = [
@@ -217,7 +213,6 @@ class TestCheckFieldUnique:
 
 
 class TestGeocodeAddr:
-
     def test_geocode_addr_builds_url_correctly(self, mocker):
         mocker.patch("palletjack.utils.requests", autospec=True)
         mocker.patch("palletjack.utils.sleep")
@@ -422,26 +417,20 @@ class TestGeocodeAddr:
 
 
 class TestReportingIntervalModulus:
-
     def test_calc_modulus_for_reporting_interval_handles_less_than_ten(self):
-
         assert palletjack.utils.calc_modulus_for_reporting_interval(9) == 1
 
     def test_calc_modulus_for_reporting_interval_handles_ten(self):
-
         assert palletjack.utils.calc_modulus_for_reporting_interval(10) == 1
 
     def test_calc_modulus_for_reporting_interval_handles_less_than_split_value(self):
-
         assert palletjack.utils.calc_modulus_for_reporting_interval(100, split_value=500) == 10
 
     def test_calc_modulus_for_reporting_interval_handles_more_than_split_value(self):
-
         assert palletjack.utils.calc_modulus_for_reporting_interval(1000, split_value=500) == 50
 
 
 class TestValidateAPIKey:
-
     def test_validate_api_key_good_key(self, mocker):
         req_mock = mocker.patch("palletjack.utils.requests", autospec=True)
         response_mock = mocker.Mock()
@@ -498,7 +487,6 @@ class TestValidateAPIKey:
 
 
 class TestFieldRenaming:
-
     def test_rename_fields_renames_all_fields(self):
         parcels_df = pd.DataFrame(
             {
@@ -552,7 +540,6 @@ class TestFieldRenaming:
 
 
 class TestAuthorization:
-
     def test_authorize_pygsheets_auths_from_file(self, mocker):
         pygsheets_mock = mocker.patch.object(palletjack.utils, "pygsheets")
         pygsheets_mock.authorize.return_value = "authed"
@@ -618,7 +605,6 @@ class TestAuthorization:
 
 
 class TestEmptyStringsAsNulls:
-
     def test_converts_empty_strings_to_null(self):
         FeatureSet = namedtuple("FeatureSet", ["features"])
         Feature = namedtuple("Feature", ["attributes"])
@@ -750,7 +736,6 @@ class TestEmptyStringsAsNulls:
 
 
 class TestCheckFieldsMatch:
-
     def test_check_fields_match_normal(self, mocker):
         mock_fl = mocker.Mock()
         mock_fl.properties.fields = [
@@ -1079,7 +1064,6 @@ class TestCheckFieldsMatch:
 
 
 class TestNullableIntWarning:
-
     def test_check_nullable_ints_shapely_warns_with_na(self, mocker):
         new_df = pd.DataFrame(
             {
@@ -1142,7 +1126,6 @@ class TestNullableIntWarning:
 
 
 class TestFieldNullChecker:
-
     def test_check_for_non_null_fields_raises_on_null_data_in_nonnullable_field(self, mocker):
         properties_mock = mocker.Mock()
         properties_mock.fields = [
@@ -1246,7 +1229,6 @@ class TestFieldNullChecker:
 
 
 class TestFieldLength:
-
     def test_check_field_length_normal_string(self, mocker):
         properties_mock = mocker.Mock()
         properties_mock.fields = [
@@ -1392,7 +1374,6 @@ class TestFieldLength:
 
 
 class TestFieldsPresent:
-
     def test_check_fields_present_normal_in_both(self, mocker):
         properties_mock = mocker.Mock()
         properties_mock.fields = [{"name": "foo"}, {"name": "bar"}]
@@ -1453,7 +1434,6 @@ class TestFieldsPresent:
 
 
 class TestSRSCheck:
-
     def test_check_srs_wgs84_good_match(self, mocker):
         checker_mock = mocker.Mock()
         checker_mock.new_dataframe.spatial.sr.wkid = 4326
@@ -1498,7 +1478,6 @@ class TestSRSCheck:
 
 
 class TestNullGeometryGenerators:
-
     def test_get_null_geometries_point(self, mocker):
         properties_mock = mocker.Mock()
         properties_mock.geometryType = "esriGeometryPoint"
@@ -1534,7 +1513,6 @@ class TestNullGeometryGenerators:
 
 
 class TestDeleteUtils:
-
     def test_check_delete_oids_are_ints_casts_string_list_with_spaces(self):
         oid_list = [" 1", " 2", "3"]
 
@@ -1610,7 +1588,6 @@ class TestDeleteUtils:
 
 
 class TestSaveDataframeToGDF:
-
     def test_save_feature_layer_to_gdb_calls_to_file_with_right_path(self, mocker):
         expected_out_path = Path("foo", "backup.gdb")
         expected_out_layer = f'flayer_{datetime.date.today().strftime("%Y_%m_%d")}'
@@ -1628,7 +1605,6 @@ class TestSaveDataframeToGDF:
         )
 
     def test_save_feature_layer_to_gdb_doesnt_save_empty_data(self, mocker):
-
         mock_fl = mocker.Mock()
         mock_fl.properties.name = "flayer"
         mock_fl.query.return_value.sdf.empty = True
@@ -1655,7 +1631,6 @@ class TestSaveDataframeToGDF:
 
 
 class TestDataFrameChunking:
-
     def test_ceildiv_always_returns_at_least_one(self):
         assert palletjack.utils.Chunking._ceildiv(1, 2) == 1
 
@@ -1663,7 +1638,6 @@ class TestDataFrameChunking:
         assert palletjack.utils.Chunking._ceildiv(3, 2) == 2
 
     def test_chunk_dataframe_properly_chunks(self, iris):
-
         chunks = 4
         chunk_size = palletjack.utils.Chunking._ceildiv(len(iris), chunks)
         dfs = palletjack.utils.Chunking._chunk_dataframe(iris, chunk_size)
@@ -1672,7 +1646,6 @@ class TestDataFrameChunking:
         assert [len(df) for df in dfs] == [38, 38, 38, 36]
 
     def test_chunk_dataframe_properly_chunks_even_sized_chunks(self, iris):
-
         chunks = 5
         chunk_size = palletjack.utils.Chunking._ceildiv(len(iris), chunks)
         dfs = palletjack.utils.Chunking._chunk_dataframe(iris, chunk_size)
@@ -1818,7 +1791,6 @@ class TestDataFrameChunking:
         assert error_text in str(exc_info.value)
 
     def test_build_upload_json_calls_null_string_fixer_appropriate_number_of_times(self, mocker):
-
         mock_df = mocker.Mock()
         mock_string_fixer = mocker.patch("palletjack.utils.fix_numeric_empty_strings")
         mock_string_fixer.return_value.to_geojson = "new_json"
@@ -1833,7 +1805,6 @@ class TestDataFrameChunking:
 
 
 class TestChunker:
-
     def test_chunker(self):
         sequence = ["a", "b", "c", "d", "e", "f", "g"]
         chunks = [chunk for chunk in palletjack.utils.chunker(sequence, 3)]
@@ -1842,7 +1813,6 @@ class TestChunker:
 
 
 class TestSEDFtoGDF:
-
     def test_sedf_to_gdf_uses_wkid_when_missing_latestwkid(self, mocker):
         gdf_mock = mocker.patch("palletjack.utils.gpd.GeoDataFrame").return_value
         df_attrs = {"spatial.sr": {"wkid": "foo"}}
