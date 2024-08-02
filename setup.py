@@ -52,12 +52,11 @@ setup(
             "pytest-cov>=3,<6",
             "pytest-instafail~=0.4",
             "pytest-mock>=3.10,<3.15",
-            "pytest-ruff==0.*",
             "pytest-watch~=4.2",
             "pytest>=6,<9",
             "black>=23.3,<24.5",
             "requests-mock==1.*",
-            "ruff==0.0.*",
+            "ruff==0.*",
         ]
     },
     setup_requires=[
