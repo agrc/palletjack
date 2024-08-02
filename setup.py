@@ -4,6 +4,7 @@
 setup.py
 A module that installs palletjack as a module
 """
+
 from pathlib import Path
 
 from setuptools import find_packages, setup
@@ -54,7 +55,6 @@ setup(
             "pytest-mock>=3.10,<3.15",
             "pytest-watch~=4.2",
             "pytest>=6,<9",
-            "black>=23.3,<24.5",
             "requests-mock==1.*",
             "ruff==0.*",
         ]
