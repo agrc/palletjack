@@ -478,7 +478,7 @@ class TableServiceUpdater:
         """
 
         self._class_logger.info("Adding items to layer `%s` in itemid `%s` in-place", self.table_id, self.itemid)
-        fields = TableUpdater._get_fields_from_dataframe(dataframe)
+        fields = self.__class__._get_fields_from_dataframe(dataframe)
         self._class_logger.debug("Using fields %s", fields)
 
         #: Field checks to prevent various AGOL errors
