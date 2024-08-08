@@ -14,7 +14,7 @@ Classes in `extract` handle the extract stage, pulling data in from external sou
 
 There are a handful of classes in `transform` with methods for cleaning and preparing your dataframes for upload to AGOL. You may also need to modify your data to fit your specific business needs: calculating fields, renaming fields, performing quality checks, etc. Some classes only have static methods can be called directly without needing to instantiate the class.
 
-Once your dataframe is looking pretty, the `load` module will help you update a hosted feature service with your new data. The `FeatureServiceUpdater` class contains several class methods that handle the instantiation process for you, allowing you to make a single method call. The other classes in `load` require you to instantiate the class yourself.
+Once your dataframe is looking pretty, the `load` module will help you update a hosted feature service with your new data. The `ServiceUpdater` class contains several class methods that handle the instantiation process for you, allowing you to make a single method call. The other classes in `load` require you to instantiate the class yourself.
 
 While many parts of the classes' functionality are hidden in private methods, commonly-used code is exposed publicly in the `utils` module. You will probably not need any of the methods provided, but they may be useful for other projects. This is palletjack's junk drawer.
 
@@ -42,7 +42,7 @@ Because the upload process uses geojsons, you **MUST** project your dataframe to
 
 ### OBJECTID and Join Keys
 
-If you want to update existing data without truncating and loading, you will need a join key between the incoming new data and the existing AGOL data. Do not use OBJECTID for this field; it may change at any time. Instead, use your own custom field that you have complete control over. You will perform the join manually in the transform step with pandas by loading the live AGOL data into a dataframe, joining the new data into the live data, and then passing the resulting dataframe to `palletjack.load.FeatureServiceUpdater.update_features`. This method uses the live data's OBJECTID to apply the edits to the proper rows.
+If you want to update existing data without truncating and loading, you will need a join key between the incoming new data and the existing AGOL data. Do not use OBJECTID for this field; it may change at any time. Instead, use your own custom field that you have complete control over. You will perform the join manually in the transform step with pandas by loading the live AGOL data into a dataframe, joining the new data into the live data, and then passing the resulting dataframe to `palletjack.load.ServiceUpdater.update`. This method uses the live data's OBJECTID to apply the edits to the proper rows.
 
 ## Error handling
 
@@ -83,7 +83,7 @@ The largest change is that the namespace has been refactored to match the ETL st
 
 As a corollary to this, clients now import each module rather than palletjack exposing the classes directly. The recommended import is `from palletjack import extract, transform, load, utils` (omitting unused modules as necessary).
 
-Version 3 also introduces the use of class methods to take care of object instantiation for the client. These are used the most in `palletjack.load.FeatureServiceUpdater`, where the client just calls the relevant methods.
+Version 3 also introduces the use of class methods to take care of object instantiation for the client. These are used the most in `palletjack.load.ServiceUpdater`, where the client just calls the relevant methods.
 
 ### One Step at a Time
 
