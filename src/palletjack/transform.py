@@ -1,5 +1,4 @@
-"""Transform pandas dataframes in preparation for loading to AGOL.
-"""
+"""Transform pandas dataframes in preparation for loading to AGOL."""
 
 import locale
 import logging

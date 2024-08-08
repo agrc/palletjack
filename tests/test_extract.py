@@ -17,7 +17,6 @@ from pandas import testing as tm
 
 
 class TestGSheetsLoader:
-
     def test_load_specific_worksheet_into_dataframe_by_id(self, mocker):
         sheet_mock = mocker.Mock()
 
@@ -143,7 +142,6 @@ class TestGSheetsLoader:
 
 
 class TestGoogleDriveDownloader:
-
     def test_get_filename_from_response_works_normally(self, mocker):
         response = mocker.Mock()
         response.headers = {
@@ -187,7 +185,6 @@ class TestGoogleDriveDownloader:
         assert "Cannot access foo_file_id (is it publicly shared?). Response header in log." in str(error.value)
 
     def test_save_response_content_skips_empty_chunks(self, mocker):
-
         response_mock = mocker.MagicMock()
         response_mock.iter_content.return_value = [b"\x01", b"", b"\x02"]
 
@@ -200,7 +197,6 @@ class TestGoogleDriveDownloader:
         assert open_mock().write.call_args_list[1][0] == (b"\x02",)
 
     def test_download_file_from_google_drive_creates_filename(self, mocker):
-
         mocker.patch.object(extract.GoogleDriveDownloader, "_get_file_id_from_sharing_link")
         mocker.patch.object(extract.GoogleDriveDownloader, "_get_http_response", return_value="response")
         mocker.patch.object(extract.GoogleDriveDownloader, "_get_filename_from_response", return_value="baz.png")
@@ -214,7 +210,6 @@ class TestGoogleDriveDownloader:
         save_mock.assert_called_with("response", Path("/foo/bar/baz.png"))
 
     def test_download_file_from_google_drive_handles_empty_string_link(self, mocker, caplog):
-
         file_id_mock = mocker.Mock()
         mocker.patch.object(extract.GoogleDriveDownloader, "_get_file_id_from_sharing_link", file_id_mock)
 
@@ -229,7 +224,6 @@ class TestGoogleDriveDownloader:
         assert result is None
 
     def test_download_file_from_google_drive_handles_None_link(self, mocker, caplog):
-
         file_id_mock = mocker.Mock()
         mocker.patch.object(extract.GoogleDriveDownloader, "_get_file_id_from_sharing_link", file_id_mock)
 
@@ -244,7 +238,6 @@ class TestGoogleDriveDownloader:
         assert result is None
 
     def test_download_file_from_google_drive_handles_download_error(self, mocker, caplog):
-
         mocker.patch.object(extract.GoogleDriveDownloader, "_get_file_id_from_sharing_link", return_value="google_id")
         mocker.patch.object(extract.GoogleDriveDownloader, "_get_http_response", side_effect=Exception("Boom"))
         filename_mock = mocker.Mock()
@@ -282,7 +275,6 @@ class TestGoogleDriveDownloader:
         sleep_mock.assert_called_once()
 
     def test_download_attachments_from_dataframe_sleeps_specified_time(self, mocker):
-
         sleep_mock = mocker.patch.object(extract, "sleep")
         mocker.patch.object(extract.GoogleDriveDownloader, "_get_file_id_from_sharing_link")
         mocker.patch.object(extract.GoogleDriveDownloader, "_get_http_response", return_value="response")
@@ -304,7 +296,6 @@ class TestGoogleDriveDownloader:
         sleep_mock.assert_called_once()
 
     def test_download_attachments_from_dataframe_handles_multiple_rows(self, mocker):
-
         downloader_mock = mocker.Mock()
         downloader_mock.download_file_from_google_drive.side_effect = ["foo/bar.png", "baz/boo.png"]
 
@@ -330,7 +321,6 @@ class TestGoogleDriveDownloader:
         tm.assert_frame_equal(downloaded_df, test_df)
 
     def test_get_file_id_from_sharing_link_extracts_group_file_link(self, mocker):
-
         downloader = extract.GoogleDriveDownloader("foo")
         test_link = "https://drive.google.com/file/d/abcdefghijklm_opqrstuvwxy/view?usp=sharing"
 
@@ -339,7 +329,6 @@ class TestGoogleDriveDownloader:
         assert file_id == "abcdefghijklm_opqrstuvwxy"
 
     def test_get_file_id_from_sharing_link_extracts_group_file_link_with_dashes(self, mocker):
-
         downloader = extract.GoogleDriveDownloader("foo")
         test_link = "https://drive.google.com/file/d/abcdefghijklm-opqrstuvwxy/view?usp=sharing"
 
@@ -348,7 +337,6 @@ class TestGoogleDriveDownloader:
         assert file_id == "abcdefghijklm-opqrstuvwxy"
 
     def test_get_file_id_from_sharing_link_extracts_group_open_link(self, mocker):
-
         downloader = extract.GoogleDriveDownloader("foo")
         test_link = "https://drive.google.com/open?id=abcdefghijklm_opqrstuvwxy"
 
@@ -357,7 +345,6 @@ class TestGoogleDriveDownloader:
         assert file_id == "abcdefghijklm_opqrstuvwxy"
 
     def test_get_file_id_from_sharing_link_raises_error_on_failed_match(self, mocker):
-
         downloader = extract.GoogleDriveDownloader("foo")
         test_link = "bad_link"
 
@@ -366,7 +353,6 @@ class TestGoogleDriveDownloader:
 
 
 class TestGoogleDriveDownloaderAPI:
-
     def test_get_request_and_filename_from_drive_api_returns_both(self, mocker):
         client = mocker.Mock()
         client.drive.service.files.return_value.get_media.return_value = "request"
@@ -443,7 +429,6 @@ class TestGoogleDriveDownloaderAPI:
         assert downloader_mock.return_value.next_chunk.call_count == 2
 
     def test_download_file_from_google_drive_using_api_creates_filename(self, mocker):
-
         mocker.patch.object(extract.GoogleDriveDownloader, "_get_file_id_from_sharing_link")
         mocker.patch.object(
             extract.GoogleDriveDownloader,
@@ -459,7 +444,6 @@ class TestGoogleDriveDownloaderAPI:
         save_mock.assert_called_with("response", Path("/foo/bar/baz.png"))
 
     def test_download_file_from_google_drive_using_api_handles_empty_string_link(self, mocker, caplog):
-
         file_id_mock = mocker.patch.object(extract.GoogleDriveDownloader, "_get_file_id_from_sharing_link")
 
         downloader = extract.GoogleDriveDownloader("/foo/bar")
@@ -473,7 +457,6 @@ class TestGoogleDriveDownloaderAPI:
         assert result is None
 
     def test_download_file_from_google_drive_using_api_handles_None_link(self, mocker, caplog):
-
         file_id_mock = mocker.patch.object(extract.GoogleDriveDownloader, "_get_file_id_from_sharing_link")
 
         downloader = extract.GoogleDriveDownloader("/foo/bar")
@@ -487,7 +470,6 @@ class TestGoogleDriveDownloaderAPI:
         assert result is None
 
     def test_download_file_from_google_drive_using_api_handles_download_error(self, mocker, caplog):
-
         mocker.patch.object(extract.GoogleDriveDownloader, "_get_file_id_from_sharing_link", return_value="google_id")
         mocker.patch.object(extract.utils, "sleep")
         mocker.patch.object(
@@ -512,7 +494,6 @@ class TestGoogleDriveDownloaderAPI:
         assert result is None
 
     def test_download_attachments_from_dataframe_using_api_handles_multiple_rows(self, mocker):
-
         mocker.patch.object(extract.utils, "authorize_pygsheets")
 
         downloader_mock = mocker.Mock()
@@ -541,7 +522,6 @@ class TestGoogleDriveDownloaderAPI:
 
 
 class TestSFTPLoader:
-
     def test_download_sftp_folder_contents_uses_right_credentials(self, mocker):
         sftploader_mock = mocker.Mock()
         sftploader_mock.knownhosts_file = "knownhosts_file"
@@ -618,12 +598,8 @@ class TestSFTPLoader:
 
 
 class TestPostgresLoader:
-
     def test_get_postgres_connection(self, mocker):
-
-        mocker.patch.object(
-            gpd, "read_postgis", return_value=gpd.read_file(geodatasets.get_path("naturalearth land"))
-        )
+        mocker.patch.object(gpd, "read_postgis", return_value=gpd.read_file(geodatasets.get_path("naturalearth land")))
         loader = extract.PostgresLoader("host", "app", "user", "password")
         dataframe = loader.read_table_into_dataframe("table", "name", "4326", "geometry")
 
@@ -631,9 +607,7 @@ class TestPostgresLoader:
 
 
 class TestRESTServiceLoader:
-
     def test_get_features_gets_max_record_count_from_properties(self, mocker):
-
         layer_mock = mocker.patch("palletjack.extract.ServiceLayer").return_value
         layer_mock.max_record_count = 42
         layer_mock.get_object_ids.return_value = list(range(0, 142))
@@ -772,7 +746,6 @@ class TestRESTServiceLoader:
             extract.RESTServiceLoader.get_feature_layers_info(mocker.Mock(url="foo.bar"))
 
     def test_get_feature_layers_info_raises_on_missing_layer_type(self, mocker):
-
         mocker.patch("palletjack.extract.utils.retry", return_value=mocker.Mock(json=lambda: {"layers": [{"id": 0}]}))
 
         with pytest.raises(RuntimeError, match=re.escape("Layer info did not contain layer type")):
@@ -807,9 +780,7 @@ class TestRESTServiceLoader:
 
 
 class Test_ServiceLayer:
-
     def test_get_layer_info_works_normally(self, mocker):
-
         retry_mock = mocker.patch("palletjack.extract.utils.retry")
         retry_mock.return_value.json.return_value = {
             "capabilities": "foo,bar,baz",
@@ -1100,7 +1071,6 @@ class Test_ServiceLayer:
         assert test_loader.feature_params == {"outFields": "*", "where": "eggs", "returnGeometry": "spam"}
 
     def test_init_raises_on_missing_envelope_geometry(self, mocker):
-
         with pytest.raises(
             ValueError, match="envelope_params must contain both the envelope geometry and its spatial reference"
         ):
@@ -1109,7 +1079,6 @@ class Test_ServiceLayer:
             )
 
     def test_init_raises_on_missing_envelope_sr(self, mocker):
-
         with pytest.raises(
             ValueError, match="envelope_params must contain both the envelope geometry and its spatial reference"
         ):
@@ -1120,7 +1089,6 @@ class Test_ServiceLayer:
             )
 
     def test_init_raises_on_missing_envelope_geometry_and_sr(self, mocker):
-
         with pytest.raises(
             ValueError, match="envelope_params must contain both the envelope geometry and its spatial reference"
         ):
@@ -1190,7 +1158,6 @@ ORG = "ugrc"
 
 
 class TestSalesForceLoader:
-
     def ticks(self, dt):
         return (dt - datetime(1970, 1, 1)).total_seconds() * 1000
 
@@ -1202,7 +1169,6 @@ class TestSalesForceLoader:
 
     @pytest.fixture
     def loader(self, credentials):
-
         return extract.SalesforceRestLoader(ORG, credentials)
 
     url_template_test_data = [

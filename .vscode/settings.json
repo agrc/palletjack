@@ -8,6 +8,7 @@
     "astype",
     "authed",
     "auths",
+    "caplog",
     "casefolded",
     "castable",
     "ceildiv",
@@ -105,7 +106,7 @@
   "python.testing.pytestEnabled": true,
   "python.testing.unittestEnabled": false,
   "[python]": {
-    "editor.defaultFormatter": "ms-python.black-formatter",
+    "editor.defaultFormatter": "charliermarsh.ruff",
     "editor.formatOnSave": true
   }
 }

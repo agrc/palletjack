@@ -28,6 +28,9 @@ jobs:
       - name: 🏗 Install module
         run: pip install .[tests]
 
+      - name: 🧶 Lint
+        run: ruff check --output-format=github
+
       - name: 🧪 Run pytest
         run: pytest
 

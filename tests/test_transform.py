@@ -9,9 +9,7 @@ from pandas import testing as tm
 
 
 class TestAPIGeocoder:
-
     def test_geocode_dataframe_calls_with_right_args(self, mocker):
-
         utils_mock = mocker.patch("palletjack.transform.utils", autospec=True)
         utils_mock.Geocoding.validate_api_key.return_value = "valid"
         utils_mock.rename_columns_for_agol.return_value = {}
@@ -41,7 +39,6 @@ class TestAPIGeocoder:
         assert utils_mock.Geocoding.geocode_addr.call_args.kwargs == {"spatialReference": "3857"}
 
     def test_geocode_dataframe_handles_street_zone_fields_with_invalid_python_names(self, mocker):
-
         utils_mock = mocker.patch("palletjack.transform.utils", autospec=True)
         utils_mock.Geocoding.validate_api_key.return_value = "valid"
         utils_mock.rename_columns_for_agol.return_value = {}
@@ -246,7 +243,6 @@ class TestAPIGeocoder:
 
 
 class TestFeatureServiceMerging:
-
     def test_update_live_data_with_new_data_works_normally(self):
         new_dataframe = pd.DataFrame(
             {
@@ -278,7 +274,6 @@ class TestFeatureServiceMerging:
         pd.testing.assert_frame_equal(joined, expected, check_like=True)
 
     def test_update_live_data_with_new_data_only_updates_common_rows(self):
-
         new_dataframe = pd.DataFrame(
             {
                 "col1": [20, 30],
@@ -393,7 +388,6 @@ class TestFeatureServiceMerging:
 
 
 class TestNullableIntFixing:
-
     def test_switch_to_nullable_int_casts_float_field_with_nan(self):
         df = pd.DataFrame(
             {
@@ -478,7 +472,6 @@ class TestNullableIntFixing:
 
 
 class TestFloatFixing:
-
     def test_switch_to_float_all_string_values(self):
         df = pd.DataFrame(
             {
@@ -560,7 +553,6 @@ class TestFloatFixing:
 
 
 class TestSwitchSeriesToNumericDtype:
-
     def test_switch_series_to_numeric_dtype_ints_to_Int64(self):
         series1 = pd.Series([1, 2, 3, 4, 5])
         test_series = pd.Series([1, 2, 3, 4, 5], dtype="Int64")
@@ -593,7 +585,6 @@ class TestSwitchSeriesToNumericDtype:
 
 
 class TestDatetimeSwitching:
-
     def test_switch_to_datetime_handles_multiple_fields(self):
         df = pd.DataFrame(
             {
@@ -671,7 +662,6 @@ class TestDatetimeSwitching:
 
 
 class TestDataFrameColumnRenaming:
-
     def test_rename_dataframe_columns_for_agol(self, mocker):
         df = pd.DataFrame(
             {
