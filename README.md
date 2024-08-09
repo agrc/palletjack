@@ -53,8 +53,8 @@ The `arcgis` library does all the heavy lifting for spatial data. If the `arcpy`
 
 ## Development
 
-1. Create a conda environment with Python 3.9
-   - `conda create -n palletjack python=3.9`
+1. Create a conda environment with Python 3.11
+   - `conda create -n palletjack python=3.11`
    - `activate palletjack`
 1. Clone the repo
 1. Install in dev mode with development dependencies
