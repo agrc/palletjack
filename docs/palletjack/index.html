@@ -1,54 +1,609 @@
 <!doctype html>
 <html lang="en">
+
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
-<meta name="generator" content="pdoc 0.10.0" />
-<title>palletjack API documentation</title>
-<meta name="description" content="A library for extracting tabular/spatial data from many different sources, transforming it to meet ArcGIS Online hosted feature service requirements, …" />
-<link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/sanitize.min.css" integrity="sha256-PK9q560IAAa6WVRRh76LtCaI8pjTJ2z11v0miyNNjrs=" crossorigin>
-<link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/typography.min.css" integrity="sha256-7l/o7C8jubJiy74VsKTidCy1yBkRtiUGbVkYBylBqUg=" crossorigin>
-<link rel="stylesheet preload" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.1/styles/github.min.css" crossorigin>
-<style>:root{--highlight-color:#fe9}.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:30px;overflow:hidden}#sidebar > *:last-child{margin-bottom:2cm}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:1em 0 .50em 0}h3{font-size:1.4em;margin:25px 0 10px 0}h4{margin:0;font-size:105%}h1:target,h2:target,h3:target,h4:target,h5:target,h6:target{background:var(--highlight-color);padding:.2em 0}a{color:#058;text-decoration:none;transition:color .3s ease-in-out}a:hover{color:#e82}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900}pre code{background:#f8f8f8;font-size:.8em;line-height:1.4em}code{background:#f2f2f1;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{background:#f8f8f8;border:0;border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0;padding:1ex}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{margin-top:.6em;font-weight:bold}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-weight:bold;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}dt:target .name{background:var(--highlight-color)}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}td{padding:0 .5em}.admonition{padding:.1em .5em;margin-bottom:1em}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
-<style media="screen and (min-width: 700px)">@media screen and (min-width:700px){#sidebar{width:30%;height:100vh;overflow:auto;position:sticky;top:0}#content{width:70%;max-width:100ch;padding:3em 4em;border-left:1px solid #ddd}pre code{font-size:1em}.item .name{font-size:1em}main{display:flex;flex-direction:row-reverse;justify-content:flex-end}.toc ul ul,#index ul{padding-left:1.5em}.toc > ul > li{margin-top:.5em}}</style>
-<style media="print">@media print{#sidebar h1{page-break-before:always}.source{display:none}}@media print{*{background:transparent !important;color:#000 !important;box-shadow:none !important;text-shadow:none !important}a[href]:after{content:" (" attr(href) ")";font-size:90%}a[href][title]:after{content:none}abbr[title]:after{content:" (" attr(title) ")"}.ir a:after,a[href^="javascript:"]:after,a[href^="#"]:after{content:""}pre,blockquote{border:1px solid #999;page-break-inside:avoid}thead{display:table-header-group}tr,img{page-break-inside:avoid}img{max-width:100% !important}@page{margin:0.5cm}p,h2,h3{orphans:3;widows:3}h1,h2,h3,h4,h5,h6{page-break-after:avoid}}</style>
-<script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.1/highlight.min.js" integrity="sha256-Uv3H6lx7dJmRfRvH8TH6kJD1TSK1aFcwgx+mdg3epi8=" crossorigin></script>
-<script>window.addEventListener('DOMContentLoaded', () => hljs.initHighlighting())</script>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
+    <meta name="generator" content="pdoc 0.10.0" />
+    <title>palletjack API documentation</title>
+    <meta name="description"
+        content="A library for extracting tabular/spatial data from many different sources, transforming it to meet ArcGIS Online hosted feature service requirements, …" />
+    <link rel="preload stylesheet" as="style"
+        href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/sanitize.min.css"
+        integrity="sha256-PK9q560IAAa6WVRRh76LtCaI8pjTJ2z11v0miyNNjrs=" crossorigin>
+    <link rel="preload stylesheet" as="style"
+        href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/typography.min.css"
+        integrity="sha256-7l/o7C8jubJiy74VsKTidCy1yBkRtiUGbVkYBylBqUg=" crossorigin>
+    <link rel="stylesheet preload" as="style"
+        href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.1/styles/github.min.css" crossorigin>
+    <style>
+        :root {
+            --highlight-color: #fe9
+        }
+
+        .flex {
+            display: flex !important
+        }
+
+        body {
+            line-height: 1.5em
+        }
+
+        #content {
+            padding: 20px
+        }
+
+        #sidebar {
+            padding: 30px;
+            overflow: hidden
+        }
+
+        #sidebar>*:last-child {
+            margin-bottom: 2cm
+        }
+
+        .http-server-breadcrumbs {
+            font-size: 130%;
+            margin: 0 0 15px 0
+        }
+
+        #footer {
+            font-size: .75em;
+            padding: 5px 30px;
+            border-top: 1px solid #ddd;
+            text-align: right
+        }
+
+        #footer p {
+            margin: 0 0 0 1em;
+            display: inline-block
+        }
+
+        #footer p:last-child {
+            margin-right: 30px
+        }
+
+        h1,
+        h2,
+        h3,
+        h4,
+        h5 {
+            font-weight: 300
+        }
+
+        h1 {
+            font-size: 2.5em;
+            line-height: 1.1em
+        }
+
+        h2 {
+            font-size: 1.75em;
+            margin: 1em 0 .50em 0
+        }
+
+        h3 {
+            font-size: 1.4em;
+            margin: 25px 0 10px 0
+        }
+
+        h4 {
+            margin: 0;
+            font-size: 105%
+        }
+
+        h1:target,
+        h2:target,
+        h3:target,
+        h4:target,
+        h5:target,
+        h6:target {
+            background: var(--highlight-color);
+            padding: .2em 0
+        }
+
+        a {
+            color: #058;
+            text-decoration: none;
+            transition: color .3s ease-in-out
+        }
+
+        a:hover {
+            color: #e82
+        }
+
+        .title code {
+            font-weight: bold
+        }
+
+        h2[id^="header-"] {
+            margin-top: 2em
+        }
+
+        .ident {
+            color: #900
+        }
+
+        pre code {
+            background: #f8f8f8;
+            font-size: .8em;
+            line-height: 1.4em
+        }
+
+        code {
+            background: #f2f2f1;
+            padding: 1px 4px;
+            overflow-wrap: break-word
+        }
+
+        h1 code {
+            background: transparent
+        }
+
+        pre {
+            background: #f8f8f8;
+            border: 0;
+            border-top: 1px solid #ccc;
+            border-bottom: 1px solid #ccc;
+            margin: 1em 0;
+            padding: 1ex
+        }
+
+        #http-server-module-list {
+            display: flex;
+            flex-flow: column
+        }
+
+        #http-server-module-list div {
+            display: flex
+        }
+
+        #http-server-module-list dt {
+            min-width: 10%
+        }
+
+        #http-server-module-list p {
+            margin-top: 0
+        }
+
+        .toc ul,
+        #index {
+            list-style-type: none;
+            margin: 0;
+            padding: 0
+        }
+
+        #index code {
+            background: transparent
+        }
+
+        #index h3 {
+            border-bottom: 1px solid #ddd
+        }
+
+        #index ul {
+            padding: 0
+        }
+
+        #index h4 {
+            margin-top: .6em;
+            font-weight: bold
+        }
+
+        @media (min-width:200ex) {
+            #index .two-column {
+                column-count: 2
+            }
+        }
+
+        @media (min-width:300ex) {
+            #index .two-column {
+                column-count: 3
+            }
+        }
+
+        dl {
+            margin-bottom: 2em
+        }
+
+        dl dl:last-child {
+            margin-bottom: 4em
+        }
+
+        dd {
+            margin: 0 0 1em 3em
+        }
+
+        #header-classes+dl>dd {
+            margin-bottom: 3em
+        }
+
+        dd dd {
+            margin-left: 2em
+        }
+
+        dd p {
+            margin: 10px 0
+        }
+
+        .name {
+            background: #eee;
+            font-weight: bold;
+            font-size: .85em;
+            padding: 5px 10px;
+            display: inline-block;
+            min-width: 40%
+        }
+
+        .name:hover {
+            background: #e0e0e0
+        }
+
+        dt:target .name {
+            background: var(--highlight-color)
+        }
+
+        .name>span:first-child {
+            white-space: nowrap
+        }
+
+        .name.class>span:nth-child(2) {
+            margin-left: .4em
+        }
+
+        .inherited {
+            color: #999;
+            border-left: 5px solid #eee;
+            padding-left: 1em
+        }
+
+        .inheritance em {
+            font-style: normal;
+            font-weight: bold
+        }
+
+        .desc h2 {
+            font-weight: 400;
+            font-size: 1.25em
+        }
+
+        .desc h3 {
+            font-size: 1em
+        }
+
+        .desc dt code {
+            background: inherit
+        }
+
+        .source summary,
+        .git-link-div {
+            color: #666;
+            text-align: right;
+            font-weight: 400;
+            font-size: .8em;
+            text-transform: uppercase
+        }
+
+        .source summary>* {
+            white-space: nowrap;
+            cursor: pointer
+        }
+
+        .git-link {
+            color: inherit;
+            margin-left: 1em
+        }
+
+        .source pre {
+            max-height: 500px;
+            overflow: auto;
+            margin: 0
+        }
+
+        .source pre code {
+            font-size: 12px;
+            overflow: visible
+        }
+
+        .hlist {
+            list-style: none
+        }
+
+        .hlist li {
+            display: inline
+        }
+
+        .hlist li:after {
+            content: ',\2002'
+        }
+
+        .hlist li:last-child:after {
+            content: none
+        }
+
+        .hlist .hlist {
+            display: inline;
+            padding-left: 1em
+        }
+
+        img {
+            max-width: 100%
+        }
+
+        td {
+            padding: 0 .5em
+        }
+
+        .admonition {
+            padding: .1em .5em;
+            margin-bottom: 1em
+        }
+
+        .admonition-title {
+            font-weight: bold
+        }
+
+        .admonition.note,
+        .admonition.info,
+        .admonition.important {
+            background: #aef
+        }
+
+        .admonition.todo,
+        .admonition.versionadded,
+        .admonition.tip,
+        .admonition.hint {
+            background: #dfd
+        }
+
+        .admonition.warning,
+        .admonition.versionchanged,
+        .admonition.deprecated {
+            background: #fd4
+        }
+
+        .admonition.error,
+        .admonition.danger,
+        .admonition.caution {
+            background: lightpink
+        }
+    </style>
+    <style media="screen and (min-width: 700px)">
+        @media screen and (min-width:700px) {
+            #sidebar {
+                width: 30%;
+                height: 100vh;
+                overflow: auto;
+                position: sticky;
+                top: 0
+            }
+
+            #content {
+                width: 70%;
+                max-width: 100ch;
+                padding: 3em 4em;
+                border-left: 1px solid #ddd
+            }
+
+            pre code {
+                font-size: 1em
+            }
+
+            .item .name {
+                font-size: 1em
+            }
+
+            main {
+                display: flex;
+                flex-direction: row-reverse;
+                justify-content: flex-end
+            }
+
+            .toc ul ul,
+            #index ul {
+                padding-left: 1.5em
+            }
+
+            .toc>ul>li {
+                margin-top: .5em
+            }
+        }
+    </style>
+    <style media="print">
+        @media print {
+            #sidebar h1 {
+                page-break-before: always
+            }
+
+            .source {
+                display: none
+            }
+        }
+
+        @media print {
+            * {
+                background: transparent !important;
+                color: #000 !important;
+                box-shadow: none !important;
+                text-shadow: none !important
+            }
+
+            a[href]:after {
+                content: " (" attr(href) ")";
+                font-size: 90%
+            }
+
+            a[href][title]:after {
+                content: none
+            }
+
+            abbr[title]:after {
+                content: " (" attr(title) ")"
+            }
+
+            .ir a:after,
+            a[href^="javascript:"]:after,
+            a[href^="#"]:after {
+                content: ""
+            }
+
+            pre,
+            blockquote {
+                border: 1px solid #999;
+                page-break-inside: avoid
+            }
+
+            thead {
+                display: table-header-group
+            }
+
+            tr,
+            img {
+                page-break-inside: avoid
+            }
+
+            img {
+                max-width: 100% !important
+            }
+
+            @page {
+                margin: 0.5cm
+            }
+
+            p,
+            h2,
+            h3 {
+                orphans: 3;
+                widows: 3
+            }
+
+            h1,
+            h2,
+            h3,
+            h4,
+            h5,
+            h6 {
+                page-break-after: avoid
+            }
+        }
+    </style>
+    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.1/highlight.min.js"
+        integrity="sha256-Uv3H6lx7dJmRfRvH8TH6kJD1TSK1aFcwgx+mdg3epi8=" crossorigin></script>
+    <script>window.addEventListener('DOMContentLoaded', () => hljs.initHighlighting())</script>
 </head>
+
 <body>
-<main>
-<article id="content">
-<header>
-<h1 class="title">Package <code>palletjack</code></h1>
-</header>
-<section id="section-intro">
-<p>A library for extracting tabular/spatial data from many different sources, transforming it to meet ArcGIS Online hosted feature service requirements, and loading it into existing feature services.</p>
-<h1 id="overview">Overview</h1>
-<p><code><a title="palletjack" href="#palletjack">palletjack</a></code> is a library of modules for updating data in ArcGIS Online (AGOL) based on information from external data. It handles the repetitive parts of the extract, transform, and load stages of the ETL process, allowing the user to focus on the custom transform steps unique to every project.</p>
-<p>As a library, palletjack is not meant to be used by itself. Rather, its classes and methods should be used by other apps written for specific use cases. These other apps are referred to as the "client" apps, and internally we often refer to them as "skids".</p>
-<p>pandas dataframes are the main unifying data structure between the different steps. The client loads data from an external source into a dataframe and then modifies the dataframe according to their business needs. Once the dataframe is ready to go, it is used to update the hosted feature service in AGOL.</p>
-<h2 id="organization">Organization</h2>
-<p>The individual modules within palletjack each handle their own step of the ETL process. Each module contains classes for accomplishing its task organized by source, operation, or destination. There may be multiple, similar methods in a class depending on exactly how you want to perform a given step—you probably won't use all the available classes and methods in every application. The publicly-exposed methods usually call several private methods to keep functions small and testable.</p>
-<p>Classes in <code><a title="palletjack.extract" href="extract.html">palletjack.extract</a></code> handle the extract stage, pulling data in from external sources. Tabular data (csvs, Google Sheets) are loaded into dataframes, while non-tabular data for attachments are just downloaded to the specified locations. Spatial data are loaded into spatially-enable dataframes. You'll instantiate the desired class with the basic connection info and then call the appropriate method on the resulting object to extract the data.</p>
-<p>There are a handful of classes in <code><a title="palletjack.transform" href="transform.html">palletjack.transform</a></code> with methods for cleaning and preparing your dataframes for upload to AGOL. You may also need to modify your data to fit your specific business needs: calculating fields, renaming fields, performing quality checks, etc. Some classes only have static methods can be called directly without needing to instantiate the class.</p>
-<p>Once your dataframe is looking pretty, the <code><a title="palletjack.load" href="load.html">palletjack.load</a></code> module will help you update a hosted feature service with your new data. The <code>FeatureServiceUpdater</code> class represents a single feature layer and its supporting information, allowing you to call the individual methods for the necessary parts of the update process (add, remove, update, or completely truncate and load).</p>
-<p>While many parts of the classes' functionality are hidden in private methods, commonly-used code is exposed publicly in the <code><a title="palletjack.utils" href="utils.html">palletjack.utils</a></code> module. You will probably not need any of the methods provided, but they may be useful for other projects. This is palletjack's junk drawer.</p>
-<h2 id="data-considerations">Data Considerations</h2>
-<p>Under the hood, palletjack uses the <code>arcgis.features.FeatureLayer.append()</code> method to upload data. To eliminate the dependency on <code>arcpy</code> (and thus ArcGIS Pro/Enterprise), it uses GeoPandas and pyogrio to save data to a geodatabase, uploads the geodatabase to AGOL, calls <code>.append()</code> using the geodatabase as the source, and then deletes the geodatabase item from AGOL. palletjack tests for all the known gotchas and raises an error if the data needs extra work before uploading. In addition, AGOL imposes its own set of constraints.</p>
-<h3 id="field-names">Field Names</h3>
-<p>The column names in your dataframes should match the field names in AGOL one-to-one, with the exception of AGOL's auto-generated fields (shape length/area, editor tracking, etc). You can use <code><a title="palletjack.transform.DataCleaning.rename_dataframe_columns_for_agol" href="transform.html#palletjack.transform.DataCleaning.rename_dataframe_columns_for_agol">DataCleaning.rename_dataframe_columns_for_agol()</a></code> to handle the majority of field name formatting, but you'll want to double check the results.</p>
-<h3 id="field-types">Field Types</h3>
-<p>The upload process is very particular about data types and missing data. <code><a title="palletjack.utils.FieldChecker.check_live_and_new_field_types_match" href="utils.html#palletjack.utils.FieldChecker.check_live_and_new_field_types_match">FieldChecker.check_live_and_new_field_types_match()</a></code> contains a mapping of dataframe dtypes to Esri field types. They generally follow what you would expect. However, because pandas (currently) handles missing data by with <code>np.nan</code> by default, you may have integer data assigned a float dtype. In addition, some sources render missing data as an empty string, creating an object dtype. Finally, datetimes must be in UTC and stored in the non-timezone-aware <code>datetime64[ns]</code> dtype.</p>
-<p><code><a title="palletjack.transform.DataCleaning" href="transform.html#palletjack.transform.DataCleaning">DataCleaning</a></code> has methods to help convert your data to these dtypes. In addition, it's a good practice to use pandas' nullable dtypes via <a href="https://pandas.pydata.org/pandas-docs/dev/reference/api/pandas.DataFrame.convert_dtypes.html"><code>pd.DataFrame.convert_dtypes()</code></a> (see also the section on <a href="https://pandas.pydata.org/pandas-docs/dev/user_guide/integer_na.html">nullable ints</a>).</p>
-<h3 id="objectid-and-join-keys">OBJECTID and Join Keys</h3>
-<p>If you want to update existing data without truncating and loading, you will need a join key between the incoming new data and the existing AGOL data. Do not use OBJECTID for this field; it may change at any time. Instead, use your own custom field that you have complete control over. You will perform the join manually in the transform step with pandas by loading the live AGOL data into a dataframe, joining the new data into the live data, and then passing the resulting dataframe to <code><a title="palletjack.load.FeatureServiceUpdater.update_features" href="load.html#palletjack.load.FeatureServiceUpdater.update_features">FeatureServiceUpdater.update_features()</a></code>. This method uses the live data's OBJECTID to apply the edits to the proper rows.</p>
-<h2 id="error-handling">Error handling</h2>
-<p>The client is responsible for handling errors and warnings that arise during the process. palletjack will raise its own errors when something occurs that would keep the process from continuing or when one of its internal data checks fails. It will also captured and <a href="https://docs.python.org/3/tutorial/errors.html#exception-chaining">chain</a> errors from the underlying libraries to include additional, context-specific messages for the user. It will raise warnings when something happens that the client should be aware of but will not keep the process from completing.</p>
-<h2 id="logging">Logging</h2>
-<p>palletjack takes full advantage of python's built-in <a href="https://docs.python.org/3/howto/logging.html#advanced-logging-tutorial"><code>logging</code></a> library to perform its feedback and reporting. It employs a <a href="https://stackoverflow.com/a/50751987">hierarchical structure</a>, creating module-level loggers for each module and then each class in a module creates their own child logger. This allows rapid identification of where log events are occurring.</p>
-<h3 id="accessing-palletjack-logs">Accessing palletjack logs</h3>
-<p>The client can get a reference to the palletjack logger and add their handlers, formatters, etc to it alongside its own logger:</p>
-<pre><code class="language-python">myapp_logger = logging.getLogger('my_app')
+    <main>
+        <article id="content">
+            <header>
+                <h1 class="title">Package <code>palletjack</code></h1>
+            </header>
+            <section id="section-intro">
+                <p>A library for extracting tabular/spatial data from many different sources, transforming it to meet
+                    ArcGIS Online hosted feature service requirements, and loading it into existing feature services.
+                </p>
+                <h1 id="overview">Overview</h1>
+                <p><code><a title="palletjack" href="#palletjack">palletjack</a></code> is a library of modules for
+                    updating data in ArcGIS Online (AGOL) based on information from external data. It handles the
+                    repetitive parts of the extract, transform, and load stages of the ETL process, allowing the user to
+                    focus on the custom transform steps unique to every project.</p>
+                <p>As a library, palletjack is not meant to be used by itself. Rather, its classes and methods should be
+                    used by other apps written for specific use cases. These other apps are referred to as the "client"
+                    apps, and internally we often refer to them as "skids".</p>
+                <p>pandas dataframes are the main unifying data structure between the different steps. The client loads
+                    data from an external source into a dataframe and then modifies the dataframe according to their
+                    business needs. Once the dataframe is ready to go, it is used to update the hosted feature service
+                    in AGOL.</p>
+                <h2 id="organization">Organization</h2>
+                <p>The individual modules within palletjack each handle their own step of the ETL process. Each module
+                    contains classes for accomplishing its task organized by source, operation, or destination. There
+                    may be multiple, similar methods in a class depending on exactly how you want to perform a given
+                    step—you probably won't use all the available classes and methods in every application. The
+                    publicly-exposed methods usually call several private methods to keep functions small and testable.
+                </p>
+                <p>Classes in <code><a title="palletjack.extract" href="extract.html">palletjack.extract</a></code>
+                    handle the extract stage, pulling data in from external sources. Tabular data (csvs, Google Sheets)
+                    are loaded into dataframes, while non-tabular data for attachments are just downloaded to the
+                    specified locations. Spatial data are loaded into spatially-enable dataframes. You'll instantiate
+                    the desired class with the basic connection info and then call the appropriate method on the
+                    resulting object to extract the data.</p>
+                <p>There are a handful of classes in
+                    <code><a title="palletjack.transform" href="transform.html">palletjack.transform</a></code> with
+                    methods for cleaning and preparing your dataframes for upload to AGOL. You may also need to modify
+                    your data to fit your specific business needs: calculating fields, renaming fields, performing
+                    quality checks, etc. Some classes only have static methods can be called directly without needing to
+                    instantiate the class.
+                </p>
+                <p>Once your dataframe is looking pretty, the
+                    <code><a title="palletjack.load" href="load.html">palletjack.load</a></code> module will help you
+                    update a hosted feature service with your new data. The <code>FeatureServiceUpdater</code> class
+                    represents a single feature layer and its supporting information, allowing you to call the
+                    individual methods for the necessary parts of the update process (add, remove, update, or completely
+                    truncate and load).
+                </p>
+                <p>While many parts of the classes' functionality are hidden in private methods, commonly-used code is
+                    exposed publicly in the
+                    <code><a title="palletjack.utils" href="utils.html">palletjack.utils</a></code> module. You will
+                    probably not need any of the methods provided, but they may be useful for other projects. This is
+                    palletjack's junk drawer.
+                </p>
+                <h2 id="data-considerations">Data Considerations</h2>
+                <p>Under the hood, palletjack uses the <code>arcgis.features.FeatureLayer.append()</code> method to
+                    upload data. To eliminate the dependency on <code>arcpy</code> (and thus ArcGIS Pro/Enterprise), it
+                    uses GeoPandas and pyogrio to save data to a geodatabase, uploads the geodatabase to AGOL, calls
+                    <code>.append()</code> using the geodatabase as the source, and then deletes the geodatabase item
+                    from AGOL. palletjack tests for all the known gotchas and raises an error if the data needs extra
+                    work before uploading. In addition, AGOL imposes its own set of constraints.
+                </p>
+                <h3 id="field-names">Field Names</h3>
+                <p>The column names in your dataframes should match the field names in AGOL one-to-one, with the
+                    exception of AGOL's auto-generated fields (shape length/area, editor tracking, etc). You can use
+                    <code><a title="palletjack.transform.DataCleaning.rename_dataframe_columns_for_agol" href="transform.html#palletjack.transform.DataCleaning.rename_dataframe_columns_for_agol">DataCleaning.rename_dataframe_columns_for_agol()</a></code>
+                    to handle the majority of field name formatting, but you'll want to double check the results.
+                </p>
+                <h3 id="field-types">Field Types</h3>
+                <p>The upload process is very particular about data types and missing data.
+                    <code><a title="palletjack.utils.FieldChecker.check_live_and_new_field_types_match" href="utils.html#palletjack.utils.FieldChecker.check_live_and_new_field_types_match">FieldChecker.check_live_and_new_field_types_match()</a></code>
+                    contains a mapping of dataframe dtypes to Esri field types. They generally follow what you would
+                    expect. However, because pandas (currently) handles missing data by with <code>np.nan</code> by
+                    default, you may have integer data assigned a float dtype. In addition, some sources render missing
+                    data as an empty string, creating an object dtype. Finally, datetimes must be in UTC and stored in
+                    the non-timezone-aware <code>datetime64[ns]</code> dtype.
+                </p>
+                <p><code><a title="palletjack.transform.DataCleaning" href="transform.html#palletjack.transform.DataCleaning">DataCleaning</a></code>
+                    has methods to help convert your data to these dtypes. In addition, it's a good practice to use
+                    pandas' nullable dtypes via <a
+                        href="https://pandas.pydata.org/pandas-docs/dev/reference/api/pandas.DataFrame.convert_dtypes.html"><code>pd.DataFrame.convert_dtypes()</code></a>
+                    (see also the section on <a
+                        href="https://pandas.pydata.org/pandas-docs/dev/user_guide/integer_na.html">nullable ints</a>).
+                </p>
+                <h3 id="objectid-and-join-keys">OBJECTID and Join Keys</h3>
+                <p>If you want to update existing data without truncating and loading, you will need a join key between
+                    the incoming new data and the existing AGOL data. Do not use OBJECTID for this field; it may change
+                    at any time. Instead, use your own custom field that you have complete control over. You will
+                    perform the join manually in the transform step with pandas by loading the live AGOL data into a
+                    dataframe, joining the new data into the live data, and then passing the resulting dataframe to
+                    <code><a title="palletjack.load.FeatureServiceUpdater.update_features" href="load.html#palletjack.load.FeatureServiceUpdater.update_features">FeatureServiceUpdater.update_features()</a></code>.
+                    This method uses the live data's OBJECTID to apply the edits to the proper rows.
+                </p>
+                <h2 id="error-handling">Error handling</h2>
+                <p>The client is responsible for handling errors and warnings that arise during the process. palletjack
+                    will raise its own errors when something occurs that would keep the process from continuing or when
+                    one of its internal data checks fails. It will also captured and <a
+                        href="https://docs.python.org/3/tutorial/errors.html#exception-chaining">chain</a> errors from
+                    the underlying libraries to include additional, context-specific messages for the user. It will
+                    raise warnings when something happens that the client should be aware of but will not keep the
+                    process from completing.</p>
+                <h2 id="logging">Logging</h2>
+                <p>palletjack takes full advantage of python's built-in <a
+                        href="https://docs.python.org/3/howto/logging.html#advanced-logging-tutorial"><code>logging</code></a>
+                    library to perform its feedback and reporting. It employs a <a
+                        href="https://stackoverflow.com/a/50751987">hierarchical structure</a>, creating module-level
+                    loggers for each module and then each class in a module creates their own child logger. This allows
+                    rapid identification of where log events are occurring.</p>
+                <h3 id="accessing-palletjack-logs">Accessing palletjack logs</h3>
+                <p>The client can get a reference to the palletjack logger and add their handlers, formatters, etc to it
+                    alongside its own logger:</p>
+                <pre><code class="language-python">myapp_logger = logging.getLogger('my_app')
 myapp_logger.setLevel(logging.INFO)
 palletjack_logger = logging.getLogger('palletjack')
 palletjack_logger.setLevel(logging.INFO)
@@ -57,32 +612,68 @@ palletjack_logger.setLevel(logging.INFO)
 myapp_logger.addHandler(log_handler)
 palletjack_logger.addHandler(log_handler)
 </code></pre>
-<h3 id="log-levels">Log levels</h3>
-<ul>
-<li><code>logging.DEBUG</code> includes verbose debug info that should allow you to manually (possibly programmatically) undo or redo any operation.</li>
-<li><code>logging.INFO</code> includes standard runtime progress reports and result information.</li>
-<li><code>logging.WARNING</code> includes negative results from checks or other situations that the user should be aware of.</li>
-</ul>
-<h2 id="updating-from-v3-to-v4">Updating from v3 to v4</h2>
-<p>palletjack v4's biggest breaking change requires you to now instantiate a <code>FeatureServiceUpdater</code> class yourself before calling the appropriate methods. v3 used class methods to handle instantiation for you, but we've broken this out into the more traditional pattern to store the additional information that's common to all the steps.</p>
-<p>v4 also completely does away with JSON for uploads and storage. Because of this, you no longer need to worry about projecting to WGS84 or (relatively sane) dataset sizes. In addition, truncate and load now uses a simple boolean flag to save the existing data, and saves it as a file gdb instead of a JSON file.</p>
-<h2 id="updating-from-v2-to-v3">Updating from v2 to v3</h2>
-<p>palletjack v3 has several changes from the previous version that users will need to consider when updating existing clients. Version 3 is designed to align with each step in the ETL process and to better follow the single-responsibility principle.</p>
-<h3 id="namespace-changes">Namespace Changes</h3>
-<p>The largest change is that the namespace has been refactored to match the ETL steps. <code>loaders.py</code> has been changed to <code>extract.py</code> and <code>updaters.py</code> has been changed to <code>load.py</code>. This eliminates the confusion created by "loaders" being used in the ETL "extract" stage.</p>
-<p>As a corollary to this, clients now import each module rather than palletjack exposing the classes directly. The recommended import is <code>from <a title="palletjack" href="#palletjack">palletjack</a> import <a title="palletjack.extract" href="extract.html">palletjack.extract</a>, <a title="palletjack.transform" href="transform.html">palletjack.transform</a>, <a title="palletjack.load" href="load.html">palletjack.load</a>, <a title="palletjack.utils" href="utils.html">palletjack.utils</a></code> (omitting unused modules as necessary).</p>
-<p>Version 3 also introduces the use of class methods to take care of object instantiation for the client. These are used the most in <code><a title="palletjack.load.FeatureServiceUpdater" href="load.html#palletjack.load.FeatureServiceUpdater">FeatureServiceUpdater</a></code>, where the client just calls the relevant methods.</p>
-<h3 id="one-step-at-a-time">One Step at a Time</h3>
-<p>As part of the refactor, each method generally only tries to do one thing: extract one piece of data, clean one common data error, or perform one load operation.</p>
-<p>Previous versions focused on being able to call a single method to do everything. This quickly got unwieldly and led to a lot of complexity trying to match the complexity of real-world data.</p>
-<p>Version 3 load methods expect the client to have already cleaned the data and made it ready for uploading. Many of the cleaning steps that were coupled to the load methods in version 2 have been refactored to the <code><a title="palletjack.transform" href="transform.html">palletjack.transform</a></code> module.</p>
-<h3 id="append-instead-of-edit_features">.append instead of .edit_features</h3>
-<p>Under the hood, version 3 has completely replaced <code>FeatureLayer.edit_features()</code> with <code>FeatureLayer.append()</code> based on the recommendation in the ArcGIS API for Python docs. This has a couple ramifications for the client. First, in order to avoid the arcpy dependency, all data are converted to geojson for upload. This requires the client to project the dataframes to WGS84/wkid 4326 prior to updating the feature service. Secondly, the client must separate out add, update, and delete operations into individual method calls.</p>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">&#34;&#34;&#34;A library for extracting tabular/spatial data from many different sources, transforming it to meet ArcGIS Online hosted feature service requirements, and loading it into existing feature services.
+                <h3 id="log-levels">Log levels</h3>
+                <ul>
+                    <li><code>logging.DEBUG</code> includes verbose debug info that should allow you to manually
+                        (possibly programmatically) undo or redo any operation.</li>
+                    <li><code>logging.INFO</code> includes standard runtime progress reports and result information.
+                    </li>
+                    <li><code>logging.WARNING</code> includes negative results from checks or other situations that the
+                        user should be aware of.</li>
+                </ul>
+                <h2 id="updating-from-v3-to-v4">Updating from v3 to v4</h2>
+                <p>palletjack v4's biggest breaking change requires you to now instantiate a
+                    <code>FeatureServiceUpdater</code> class yourself before calling the appropriate methods. v3 used
+                    class methods to handle instantiation for you, but we've broken this out into the more traditional
+                    pattern to store the additional information that's common to all the steps.
+                </p>
+                <p>v4 also completely does away with JSON for uploads and storage. Because of this, you no longer need
+                    to worry about projecting to WGS84 or (relatively sane) dataset sizes. In addition, truncate and
+                    load now uses a simple boolean flag to save the existing data, and saves it as a file gdb instead of
+                    a JSON file.</p>
+                <h2 id="updating-from-v2-to-v3">Updating from v2 to v3</h2>
+                <p>palletjack v3 has several changes from the previous version that users will need to consider when
+                    updating existing clients. Version 3 is designed to align with each step in the ETL process and to
+                    better follow the single-responsibility principle.</p>
+                <h3 id="namespace-changes">Namespace Changes</h3>
+                <p>The largest change is that the namespace has been refactored to match the ETL steps.
+                    <code>loaders.py</code> has been changed to <code>extract.py</code> and <code>updaters.py</code> has
+                    been changed to <code>load.py</code>. This eliminates the confusion created by "loaders" being used
+                    in the ETL "extract" stage.
+                </p>
+                <p>As a corollary to this, clients now import each module rather than palletjack exposing the classes
+                    directly. The recommended import is
+                    <code>from palletjack import palletjack.extract, palletjack.transform, palletjack.load, palletjack.utils</code>
+                    (omitting unused modules as necessary).
+                </p>
+                <p>Version 3 also introduces the use of class methods to take care of object instantiation for the
+                    client. These are used the most in
+                    <code><a title="palletjack.load.FeatureServiceUpdater" href="load.html#palletjack.load.FeatureServiceUpdater">FeatureServiceUpdater</a></code>,
+                    where the client just calls the relevant methods.
+                </p>
+                <h3 id="one-step-at-a-time">One Step at a Time</h3>
+                <p>As part of the refactor, each method generally only tries to do one thing: extract one piece of data,
+                    clean one common data error, or perform one load operation.</p>
+                <p>Previous versions focused on being able to call a single method to do everything. This quickly got
+                    unwieldly and led to a lot of complexity trying to match the complexity of real-world data.</p>
+                <p>Version 3 load methods expect the client to have already cleaned the data and made it ready for
+                    uploading. Many of the cleaning steps that were coupled to the load methods in version 2 have been
+                    refactored to the
+                    <code><a title="palletjack.transform" href="transform.html">palletjack.transform</a></code> module.
+                </p>
+                <h3 id="append-instead-of-edit_features">.append instead of .edit_features</h3>
+                <p>Under the hood, version 3 has completely replaced <code>FeatureLayer.edit_features()</code> with
+                    <code>FeatureLayer.append()</code> based on the recommendation in the ArcGIS API for Python docs.
+                    This has a couple ramifications for the client. First, in order to avoid the arcpy dependency, all
+                    data are converted to geojson for upload. This requires the client to project the dataframes to
+                    WGS84/wkid 4326 prior to updating the feature service. Secondly, the client must separate out add,
+                    update, and delete operations into individual method calls.
+                </p>
+                <details class="source">
+                    <summary>
+                        <span>Expand source code</span>
+                    </summary>
+                    <pre><code class="python">&#34;&#34;&#34;A library for extracting tabular/spatial data from many different sources, transforming it to meet ArcGIS Online hosted feature service requirements, and loading it into existing feature services.
 
 .. include:: ../../docs/README.md
 &#34;&#34;&#34;
@@ -94,91 +685,122 @@ from .errors import IntFieldAsFloatError, TimezoneAwareDatetimeError
 #: If the locale is not set explicitly, set it to the system default for text to number conversions
 if not locale.getlocale(locale.LC_NUMERIC)[0]:
     locale.setlocale(locale.LC_NUMERIC, locale.getlocale())</code></pre>
-</details>
-</section>
-<section>
-<h2 class="section-title" id="header-submodules">Sub-modules</h2>
-<dl>
-<dt><code class="name"><a title="palletjack.errors" href="errors.html">palletjack.errors</a></code></dt>
-<dd>
-<div class="desc"><p>Errors specific to palletjack</p></div>
-</dd>
-<dt><code class="name"><a title="palletjack.extract" href="extract.html">palletjack.extract</a></code></dt>
-<dd>
-<div class="desc"><p>Extract tabular/spatial data from various sources into a pandas dataframe …</p></div>
-</dd>
-<dt><code class="name"><a title="palletjack.load" href="load.html">palletjack.load</a></code></dt>
-<dd>
-<div class="desc"><p>Modify existing ArcGIS Online content (mostly hosted feature services). Contains classes for updating hosted feature
-service data, modifying the …</p></div>
-</dd>
-<dt><code class="name"><a title="palletjack.transform" href="transform.html">palletjack.transform</a></code></dt>
-<dd>
-<div class="desc"><p>Transform pandas dataframes in preparation for loading to AGOL.</p></div>
-</dd>
-<dt><code class="name"><a title="palletjack.utils" href="utils.html">palletjack.utils</a></code></dt>
-<dd>
-<div class="desc"><p>Utility classes and methods that are used internally throughout palletjack. Many are exposed publicly in case they are useful elsewhere in a client's …</p></div>
-</dd>
-<dt><code class="name"><a title="palletjack.version" href="version.html">palletjack.version</a></code></dt>
-<dd>
-<div class="desc"><p>A single source of truth for the version in a programatically-accessible variable.
-This must only include a single line: <strong>version</strong> = '0.0.0'</p></div>
-</dd>
-</dl>
-</section>
-<section>
-</section>
-<section>
-</section>
-<section>
-</section>
-</article>
-<nav id="sidebar">
-<h1>Index</h1>
-<div class="toc">
-<ul>
-<li><a href="#overview">Overview</a><ul>
-<li><a href="#organization">Organization</a></li>
-<li><a href="#data-considerations">Data Considerations</a><ul>
-<li><a href="#field-names">Field Names</a></li>
-<li><a href="#field-types">Field Types</a></li>
-<li><a href="#objectid-and-join-keys">OBJECTID and Join Keys</a></li>
-</ul>
-</li>
-<li><a href="#error-handling">Error handling</a></li>
-<li><a href="#logging">Logging</a><ul>
-<li><a href="#accessing-palletjack-logs">Accessing palletjack logs</a></li>
-<li><a href="#log-levels">Log levels</a></li>
-</ul>
-</li>
-<li><a href="#updating-from-v3-to-v4">Updating from v3 to v4</a></li>
-<li><a href="#updating-from-v2-to-v3">Updating from v2 to v3</a><ul>
-<li><a href="#namespace-changes">Namespace Changes</a></li>
-<li><a href="#one-step-at-a-time">One Step at a Time</a></li>
-<li><a href="#append-instead-of-edit_features">.append instead of .edit_features</a></li>
-</ul>
-</li>
-</ul>
-</li>
-</ul>
-</div>
-<ul id="index">
-<li><h3><a href="#header-submodules">Sub-modules</a></h3>
-<ul>
-<li><code><a title="palletjack.errors" href="errors.html">palletjack.errors</a></code></li>
-<li><code><a title="palletjack.extract" href="extract.html">palletjack.extract</a></code></li>
-<li><code><a title="palletjack.load" href="load.html">palletjack.load</a></code></li>
-<li><code><a title="palletjack.transform" href="transform.html">palletjack.transform</a></code></li>
-<li><code><a title="palletjack.utils" href="utils.html">palletjack.utils</a></code></li>
-<li><code><a title="palletjack.version" href="version.html">palletjack.version</a></code></li>
-</ul>
-</li>
-</ul>
-</nav>
-</main>
-<footer id="footer">
-<p>Generated by <a href="https://pdoc3.github.io/pdoc" title="pdoc: Python API documentation generator"><cite>pdoc</cite> 0.10.0</a>.</p>
-</footer>
+                </details>
+            </section>
+            <section>
+                <h2 class="section-title" id="header-submodules">Sub-modules</h2>
+                <dl>
+                    <dt><code class="name"><a title="palletjack.errors" href="errors.html">palletjack.errors</a></code>
+                    </dt>
+                    <dd>
+                        <div class="desc">
+                            <p>Errors specific to palletjack</p>
+                        </div>
+                    </dd>
+                    <dt><code
+                            class="name"><a title="palletjack.extract" href="extract.html">palletjack.extract</a></code>
+                    </dt>
+                    <dd>
+                        <div class="desc">
+                            <p>Extract tabular/spatial data from various sources into a pandas dataframe …</p>
+                        </div>
+                    </dd>
+                    <dt><code class="name"><a title="palletjack.load" href="load.html">palletjack.load</a></code></dt>
+                    <dd>
+                        <div class="desc">
+                            <p>Modify existing ArcGIS Online content (mostly hosted feature services). Contains classes
+                                for updating hosted feature
+                                service data, modifying the …</p>
+                        </div>
+                    </dd>
+                    <dt><code
+                            class="name"><a title="palletjack.transform" href="transform.html">palletjack.transform</a></code>
+                    </dt>
+                    <dd>
+                        <div class="desc">
+                            <p>Transform pandas dataframes in preparation for loading to AGOL.</p>
+                        </div>
+                    </dd>
+                    <dt><code class="name"><a title="palletjack.utils" href="utils.html">palletjack.utils</a></code>
+                    </dt>
+                    <dd>
+                        <div class="desc">
+                            <p>Utility classes and methods that are used internally throughout palletjack. Many are
+                                exposed publicly in case they are useful elsewhere in a client's …</p>
+                        </div>
+                    </dd>
+                    <dt><code
+                            class="name"><a title="palletjack.version" href="version.html">palletjack.version</a></code>
+                    </dt>
+                    <dd>
+                        <div class="desc">
+                            <p>A single source of truth for the version in a programmatically-accessible variable.
+                                This must only include a single line: <strong>version</strong> = '0.0.0'</p>
+                        </div>
+                    </dd>
+                </dl>
+            </section>
+            <section>
+            </section>
+            <section>
+            </section>
+            <section>
+            </section>
+        </article>
+        <nav id="sidebar">
+            <h1>Index</h1>
+            <div class="toc">
+                <ul>
+                    <li><a href="#overview">Overview</a>
+                        <ul>
+                            <li><a href="#organization">Organization</a></li>
+                            <li><a href="#data-considerations">Data Considerations</a>
+                                <ul>
+                                    <li><a href="#field-names">Field Names</a></li>
+                                    <li><a href="#field-types">Field Types</a></li>
+                                    <li><a href="#objectid-and-join-keys">OBJECTID and Join Keys</a></li>
+                                </ul>
+                            </li>
+                            <li><a href="#error-handling">Error handling</a></li>
+                            <li><a href="#logging">Logging</a>
+                                <ul>
+                                    <li><a href="#accessing-palletjack-logs">Accessing palletjack logs</a></li>
+                                    <li><a href="#log-levels">Log levels</a></li>
+                                </ul>
+                            </li>
+                            <li><a href="#updating-from-v3-to-v4">Updating from v3 to v4</a></li>
+                            <li><a href="#updating-from-v2-to-v3">Updating from v2 to v3</a>
+                                <ul>
+                                    <li><a href="#namespace-changes">Namespace Changes</a></li>
+                                    <li><a href="#one-step-at-a-time">One Step at a Time</a></li>
+                                    <li><a href="#append-instead-of-edit_features">.append instead of .edit_features</a>
+                                    </li>
+                                </ul>
+                            </li>
+                        </ul>
+                    </li>
+                </ul>
+            </div>
+            <ul id="index">
+                <li>
+                    <h3><a href="#header-submodules">Sub-modules</a></h3>
+                    <ul>
+                        <li><code><a title="palletjack.errors" href="errors.html">palletjack.errors</a></code></li>
+                        <li><code><a title="palletjack.extract" href="extract.html">palletjack.extract</a></code></li>
+                        <li><code><a title="palletjack.load" href="load.html">palletjack.load</a></code></li>
+                        <li><code><a title="palletjack.transform" href="transform.html">palletjack.transform</a></code>
+                        </li>
+                        <li><code><a title="palletjack.utils" href="utils.html">palletjack.utils</a></code></li>
+                        <li><code><a title="palletjack.version" href="version.html">palletjack.version</a></code></li>
+                    </ul>
+                </li>
+            </ul>
+        </nav>
+    </main>
+    <footer id="footer">
+        <p>Generated by <a href="https://pdoc3.github.io/pdoc"
+                title="pdoc: Python API documentation generator"><cite>pdoc</cite> 0.10.0</a>.</p>
+    </footer>
 </body>
+
 </html>

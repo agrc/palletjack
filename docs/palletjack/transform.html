@@ -283,7 +283,9 @@ class DataCleaning:
         &#34;&#34;&#34;
 
         for field in date_fields:
-            dataframe[field] = pd.to_datetime(dataframe[field], **to_datetime_kwargs).dt.tz_localize(None)
+            dataframe[field] = pd.to_datetime(dataframe[field], **to_datetime_kwargs) \
+                                    .dt.as_unit(&#39;ns&#39;) \
+                                    .dt.tz_localize(None)
 
         return dataframe
 
@@ -611,7 +613,9 @@ other settings.</p>
         &#34;&#34;&#34;
 
         for field in date_fields:
-            dataframe[field] = pd.to_datetime(dataframe[field], **to_datetime_kwargs).dt.tz_localize(None)
+            dataframe[field] = pd.to_datetime(dataframe[field], **to_datetime_kwargs) \
+                                    .dt.as_unit(&#39;ns&#39;) \
+                                    .dt.tz_localize(None)
 
         return dataframe
 
@@ -704,7 +708,9 @@ def switch_to_datetime(dataframe, date_fields, **to_datetime_kwargs):
     &#34;&#34;&#34;
 
     for field in date_fields:
-        dataframe[field] = pd.to_datetime(dataframe[field], **to_datetime_kwargs).dt.tz_localize(None)
+        dataframe[field] = pd.to_datetime(dataframe[field], **to_datetime_kwargs) \
+                                .dt.as_unit(&#39;ns&#39;) \
+                                .dt.tz_localize(None)
 
     return dataframe</code></pre>
 </details>

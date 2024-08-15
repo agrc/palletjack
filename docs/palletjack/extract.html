@@ -43,8 +43,10 @@ import random
 import re
 import time
 import warnings
+from datetime import datetime, timedelta
 from io import BytesIO
 from pathlib import Path
+from string import Template
 from time import sleep
 
 import arcgis
@@ -639,25 +641,25 @@ class RESTServiceLoader:
             self._class_logger.debug(&#39;Getting max record count...&#39;)
             max_record_count = service_layer.max_record_count
         self._class_logger.debug(&#39;Getting object ids...&#39;)
-        oids = service_layer.get_object_ids()
+        oids = utils.retry(service_layer.get_object_ids)
 
         if len(oids) == 0:
             warnings.warn(f&#39;Layer {service_layer.layer_url} has no features&#39;)
             return None
 
         self._class_logger.debug(&#39;Downloading %s features in chunks of %s...&#39;, len(oids), max_record_count)
-        feature_dataframes = []
+        all_features_df = pd.DataFrame()
         for oid_subset in utils.chunker(oids, max_record_count):
             # sleep between 1.5 and 3 s to be friendly
             time.sleep(random.randint(150, 300) / 100)
-            feature_dataframes.append(
+            all_features_df = pd.concat([
+                all_features_df,
                 utils.retry(service_layer.get_unique_id_list_as_dataframe, service_layer.oid_field, oid_subset)
-            )
-
-        #: if you don&#39;t do ignore_index=True, the index wont&#39; be unique and this will trip up esri&#39;s spatial dataframe
-        #: which tries calling [geom_col][0] to determine the geoemtry type, which then returns a series instead of a
+            ],
+                                        ignore_index=True)
+        #: if you don&#39;t do ignore_index=True, the index won&#39;t be unique and this will trip up esri&#39;s spatial dataframe
+        #: which tries calling [geom_col][0] to determine the geometry type, which then returns a series instead of a
         #: single value because the index isn&#39;t unique
-        all_features_df = pd.concat(feature_dataframes, ignore_index=True)
 
         return all_features_df
 
@@ -867,7 +869,7 @@ class ServiceLayer:
     def get_unique_id_list_as_dataframe(self, unique_id_field, unique_id_list):
         &#34;&#34;&#34;Use a REST query to download specified features from a MapService or FeatureService layer.
 
-        unique_id_list defines the ids in unique_id_fied to download.
+        unique_id_list defines the ids in unique_id_field to download.
 
         Args:
             unique_id_field (str): The field in the service layer used as the unique ID.
@@ -892,7 +894,8 @@ class ServiceLayer:
             raise RuntimeError(f&#39;Bad chunk response HTTP status code ({response.status_code})&#39;)
 
         try:
-            features_df = arcgis.features.FeatureSet.from_json(response.text).sdf.sort_values(by=unique_id_field)
+            fs = arcgis.features.FeatureSet.from_json(response.text)
+            features_df = fs.sdf.sort_values(by=unique_id_field)
 
         except ujson.JSONDecodeError as error:
             raise RuntimeError(&#39;Could not parse chunk features from response&#39;) from error
@@ -902,7 +905,174 @@ class ServiceLayer:
                 f&#39;Missing features. {len(unique_id_list)} OIDs requested, but {len(features_df)} features downloaded&#39;
             )
 
-        return features_df</code></pre>
+        return features_df
+
+
+class SalesforceApiUserCredentials:
+    &#34;&#34;&#34;A salesforce API user credential model&#34;&#34;&#34;
+
+    def __init__(self, secret, key) -&gt; None:
+        self.client_secret = secret
+        self.client_id = key
+
+
+class SalesforceSandboxCredentials:
+    &#34;&#34;&#34;A salesforce sandbox credential model&#34;&#34;&#34;
+
+    def __init__(self, username, password, token, secret, key) -&gt; None:
+        self.username = username
+        self.password = password + token
+        self.client_secret = secret
+        self.client_id = key
+
+
+class SalesforceRestLoader:
+    &#34;&#34;&#34;Queries a Salesforce organization using SOQL using the REST API.
+
+    To use this loader a connected app needs to be created in Salesforce which create the credentials.
+    You can then use the workbench, https://workbench.developerforce.com/query.php, to construct and test SOQL queries.
+
+    Create a Salesforce credential model and a SalesforceRest loader to authenticate and query Salesforce.
+    Call get_records with a SOQL query to get the results as a pandas dataframe.&#34;&#34;&#34;
+
+    sandbox = False
+
+    access_token_template = Template(&#34;https://$org.my.salesforce.com/services/oauth2/token&#34;)
+    access_token_url = &#34;&#34;
+    access_token = {}
+
+    query_template = Template(&#34;https://$org.my.salesforce.com/services/data/v58.0/query&#34;)
+    query_url = &#34;&#34;
+
+    client_secret = None
+    client_id = None
+    username = None
+    password = None
+
+    token_lease_in_days = 30
+    access_token_timeout_in_seconds = 10
+    soql_query_timeout_in_seconds = 30
+
+    def __init__(self, org, credentials, sandbox=False) -&gt; None:
+        &#34;&#34;&#34;Create a SalesforceRestLoader to query Salesforce. Timeout values are set to default values and can be
+        modified by updating the instance variables.
+
+        token_lease_in_days: The number of days before the token expires. Defaults to 30 days.
+        access_token_timeout_in_seconds: The timeout for getting a new token. Defaults to 10 seconds.
+        soql_query_timeout_in_seconds: The timeout for a SOQL query. Defaults to 30 seconds.
+
+        Args:
+            org (string): the organization name from the salesforce url https://[org].my.salesforce.com
+            credentials (SalesforceApiUserCredentials | SalesforceSandboxCredentials): The credentials to use to
+            authenticate.
+            sandbox (bool, optional): The credentials for sandboxes are different than API users. Defaults to False if
+            it&#39;s not a sandbox instance of Salesforce.
+        &#34;&#34;&#34;
+        self.client_secret = credentials.client_secret
+        self.client_id = credentials.client_id
+
+        if sandbox:
+            self.username = credentials.username
+            self.password = credentials.password
+            org = org + &#34;.sandbox&#34;
+
+        self.access_token_url = self.access_token_template.substitute(org=org)
+        self.query_url = self.query_template.substitute(org=org)
+
+        self.sandbox = sandbox
+
+        self._class_logger = logging.getLogger(__name__).getChild(self.__class__.__name__)
+
+    def _is_token_valid(self, token: dict[str, str]) -&gt; bool:
+        &#34;&#34;&#34;Checks if the token is valid by looking at the issued_at field.
+
+        Args:
+            token (dict[str, str]): the sales force token response to check
+
+        Returns:
+            bool: true if the token is valid
+        &#34;&#34;&#34;
+        if &#34;issued_at&#34; not in token.keys():
+            return False
+
+        issued = timedelta.max
+        lease = timedelta(days=self.token_lease_in_days)
+
+        try:
+            ticks = int(token[&#34;issued_at&#34;])
+            issued = datetime.fromtimestamp(ticks / 1000)
+
+            self._class_logger.debug(&#34;Token is {%s} days old&#34;, issued)
+        except ValueError:
+            self._class_logger.warning(&#34;could not convert issued_at delta to a number %s&#34;, token)
+
+            return False
+
+        return datetime.now() &lt; (issued + lease)
+
+    def _get_token(self) -&gt; dict[str, str]:
+        &#34;&#34;&#34;Gets a new Salesforce access token if the current one is expired.&#34;&#34;&#34;
+        if self._is_token_valid(self.access_token):
+            return self.access_token
+
+        form_data = {
+            &#34;grant_type&#34;: &#34;password&#34;,
+            &#34;client_id&#34;: self.client_id,
+            &#34;client_secret&#34;: self.client_secret,
+        }
+
+        if self.sandbox:
+            form_data[&#34;username&#34;] = self.username
+            form_data[&#34;password&#34;] = self.password
+
+        response = requests.post(
+            self.access_token_url,
+            data=form_data,
+            headers={&#34;Content-Type&#34;: &#34;application/x-www-form-urlencoded&#34;},
+            timeout=self.access_token_timeout_in_seconds,
+        )
+
+        self._class_logger.debug(&#34;requesting new token %s&#34;, response)
+
+        response.raise_for_status()
+
+        self.access_token = response.json()
+
+        return self.access_token
+
+    def get_records(self, query) -&gt; pd.DataFrame:
+        &#34;&#34;&#34;Queries the Salesforce API and returns the results as a dataframe.
+
+        Args:
+            query (str): A SOQL query string.
+
+        Raises:
+            ValueError: If the query fails.
+
+        Returns:
+            pd.Dataframe: A dataframe of the results.
+        &#34;&#34;&#34;
+        token = self._get_token()
+
+        response = requests.get(
+            self.query_url,
+            params={&#34;q&#34;: query},
+            headers={
+                &#34;Authorization&#34;: f&#34;Bearer {token[&#39;access_token&#39;]}&#34;,
+            },
+            timeout=self.soql_query_timeout_in_seconds,
+        )
+
+        try:
+            response.raise_for_status()
+        except requests.exceptions.HTTPError as error:
+            self._class_logger.error(&#34;Error getting records from Salesforce %s&#34;, error)
+
+            raise ValueError(f&#34;Error getting records from Salesforce {response.json()}&#34;) from error
+
+        data = response.json()
+
+        return pd.DataFrame(data[&#34;records&#34;])</code></pre>
 </details>
 </section>
 <section>
@@ -1917,25 +2087,25 @@ success.</p>
             self._class_logger.debug(&#39;Getting max record count...&#39;)
             max_record_count = service_layer.max_record_count
         self._class_logger.debug(&#39;Getting object ids...&#39;)
-        oids = service_layer.get_object_ids()
+        oids = utils.retry(service_layer.get_object_ids)
 
         if len(oids) == 0:
             warnings.warn(f&#39;Layer {service_layer.layer_url} has no features&#39;)
             return None
 
         self._class_logger.debug(&#39;Downloading %s features in chunks of %s...&#39;, len(oids), max_record_count)
-        feature_dataframes = []
+        all_features_df = pd.DataFrame()
         for oid_subset in utils.chunker(oids, max_record_count):
             # sleep between 1.5 and 3 s to be friendly
             time.sleep(random.randint(150, 300) / 100)
-            feature_dataframes.append(
+            all_features_df = pd.concat([
+                all_features_df,
                 utils.retry(service_layer.get_unique_id_list_as_dataframe, service_layer.oid_field, oid_subset)
-            )
-
-        #: if you don&#39;t do ignore_index=True, the index wont&#39; be unique and this will trip up esri&#39;s spatial dataframe
-        #: which tries calling [geom_col][0] to determine the geoemtry type, which then returns a series instead of a
+            ],
+                                        ignore_index=True)
+        #: if you don&#39;t do ignore_index=True, the index won&#39;t be unique and this will trip up esri&#39;s spatial dataframe
+        #: which tries calling [geom_col][0] to determine the geometry type, which then returns a series instead of a
         #: single value because the index isn&#39;t unique
-        all_features_df = pd.concat(feature_dataframes, ignore_index=True)
 
         return all_features_df
 
@@ -2093,25 +2263,25 @@ will use the service's maxRecordCount. Adjust if the service is failing frequent
         self._class_logger.debug(&#39;Getting max record count...&#39;)
         max_record_count = service_layer.max_record_count
     self._class_logger.debug(&#39;Getting object ids...&#39;)
-    oids = service_layer.get_object_ids()
+    oids = utils.retry(service_layer.get_object_ids)
 
     if len(oids) == 0:
         warnings.warn(f&#39;Layer {service_layer.layer_url} has no features&#39;)
         return None
 
     self._class_logger.debug(&#39;Downloading %s features in chunks of %s...&#39;, len(oids), max_record_count)
-    feature_dataframes = []
+    all_features_df = pd.DataFrame()
     for oid_subset in utils.chunker(oids, max_record_count):
         # sleep between 1.5 and 3 s to be friendly
         time.sleep(random.randint(150, 300) / 100)
-        feature_dataframes.append(
+        all_features_df = pd.concat([
+            all_features_df,
             utils.retry(service_layer.get_unique_id_list_as_dataframe, service_layer.oid_field, oid_subset)
-        )
-
-    #: if you don&#39;t do ignore_index=True, the index wont&#39; be unique and this will trip up esri&#39;s spatial dataframe
-    #: which tries calling [geom_col][0] to determine the geoemtry type, which then returns a series instead of a
+        ],
+                                    ignore_index=True)
+    #: if you don&#39;t do ignore_index=True, the index won&#39;t be unique and this will trip up esri&#39;s spatial dataframe
+    #: which tries calling [geom_col][0] to determine the geometry type, which then returns a series instead of a
     #: single value because the index isn&#39;t unique
-    all_features_df = pd.concat(feature_dataframes, ignore_index=True)
 
     return all_features_df</code></pre>
 </details>
@@ -2386,6 +2556,339 @@ will use the service's maxRecordCount. Adjust if the service is failing frequent
 </dd>
 </dl>
 </dd>
+<dt id="palletjack.extract.SalesforceApiUserCredentials"><code class="flex name class">
+<span>class <span class="ident">SalesforceApiUserCredentials</span></span>
+<span>(</span><span>secret, key)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>A salesforce API user credential model</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class SalesforceApiUserCredentials:
+    &#34;&#34;&#34;A salesforce API user credential model&#34;&#34;&#34;
+
+    def __init__(self, secret, key) -&gt; None:
+        self.client_secret = secret
+        self.client_id = key</code></pre>
+</details>
+</dd>
+<dt id="palletjack.extract.SalesforceRestLoader"><code class="flex name class">
+<span>class <span class="ident">SalesforceRestLoader</span></span>
+<span>(</span><span>org, credentials, sandbox=False)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Queries a Salesforce organization using SOQL using the REST API.</p>
+<p>To use this loader a connected app needs to be created in Salesforce which create the credentials.
+You can then use the workbench, <a href="https://workbench.developerforce.com/query.php,">https://workbench.developerforce.com/query.php,</a> to construct and test SOQL queries.</p>
+<p>Create a Salesforce credential model and a SalesforceRest loader to authenticate and query Salesforce.
+Call get_records with a SOQL query to get the results as a pandas dataframe.</p>
+<p>Create a SalesforceRestLoader to query Salesforce. Timeout values are set to default values and can be
+modified by updating the instance variables.</p>
+<p>token_lease_in_days: The number of days before the token expires. Defaults to 30 days.
+access_token_timeout_in_seconds: The timeout for getting a new token. Defaults to 10 seconds.
+soql_query_timeout_in_seconds: The timeout for a SOQL query. Defaults to 30 seconds.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>org</code></strong> :&ensp;<code>string</code></dt>
+<dd>the organization name from the salesforce url <a href="https://[org].my.salesforce.com">https://[org].my.salesforce.com</a></dd>
+<dt>credentials (SalesforceApiUserCredentials | SalesforceSandboxCredentials): The credentials to use to</dt>
+<dt>authenticate.</dt>
+<dt><strong><code>sandbox</code></strong> :&ensp;<code>bool</code>, optional</dt>
+<dd>The credentials for sandboxes are different than API users. Defaults to False if</dd>
+</dl>
+<p>it's not a sandbox instance of Salesforce.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class SalesforceRestLoader:
+    &#34;&#34;&#34;Queries a Salesforce organization using SOQL using the REST API.
+
+    To use this loader a connected app needs to be created in Salesforce which create the credentials.
+    You can then use the workbench, https://workbench.developerforce.com/query.php, to construct and test SOQL queries.
+
+    Create a Salesforce credential model and a SalesforceRest loader to authenticate and query Salesforce.
+    Call get_records with a SOQL query to get the results as a pandas dataframe.&#34;&#34;&#34;
+
+    sandbox = False
+
+    access_token_template = Template(&#34;https://$org.my.salesforce.com/services/oauth2/token&#34;)
+    access_token_url = &#34;&#34;
+    access_token = {}
+
+    query_template = Template(&#34;https://$org.my.salesforce.com/services/data/v58.0/query&#34;)
+    query_url = &#34;&#34;
+
+    client_secret = None
+    client_id = None
+    username = None
+    password = None
+
+    token_lease_in_days = 30
+    access_token_timeout_in_seconds = 10
+    soql_query_timeout_in_seconds = 30
+
+    def __init__(self, org, credentials, sandbox=False) -&gt; None:
+        &#34;&#34;&#34;Create a SalesforceRestLoader to query Salesforce. Timeout values are set to default values and can be
+        modified by updating the instance variables.
+
+        token_lease_in_days: The number of days before the token expires. Defaults to 30 days.
+        access_token_timeout_in_seconds: The timeout for getting a new token. Defaults to 10 seconds.
+        soql_query_timeout_in_seconds: The timeout for a SOQL query. Defaults to 30 seconds.
+
+        Args:
+            org (string): the organization name from the salesforce url https://[org].my.salesforce.com
+            credentials (SalesforceApiUserCredentials | SalesforceSandboxCredentials): The credentials to use to
+            authenticate.
+            sandbox (bool, optional): The credentials for sandboxes are different than API users. Defaults to False if
+            it&#39;s not a sandbox instance of Salesforce.
+        &#34;&#34;&#34;
+        self.client_secret = credentials.client_secret
+        self.client_id = credentials.client_id
+
+        if sandbox:
+            self.username = credentials.username
+            self.password = credentials.password
+            org = org + &#34;.sandbox&#34;
+
+        self.access_token_url = self.access_token_template.substitute(org=org)
+        self.query_url = self.query_template.substitute(org=org)
+
+        self.sandbox = sandbox
+
+        self._class_logger = logging.getLogger(__name__).getChild(self.__class__.__name__)
+
+    def _is_token_valid(self, token: dict[str, str]) -&gt; bool:
+        &#34;&#34;&#34;Checks if the token is valid by looking at the issued_at field.
+
+        Args:
+            token (dict[str, str]): the sales force token response to check
+
+        Returns:
+            bool: true if the token is valid
+        &#34;&#34;&#34;
+        if &#34;issued_at&#34; not in token.keys():
+            return False
+
+        issued = timedelta.max
+        lease = timedelta(days=self.token_lease_in_days)
+
+        try:
+            ticks = int(token[&#34;issued_at&#34;])
+            issued = datetime.fromtimestamp(ticks / 1000)
+
+            self._class_logger.debug(&#34;Token is {%s} days old&#34;, issued)
+        except ValueError:
+            self._class_logger.warning(&#34;could not convert issued_at delta to a number %s&#34;, token)
+
+            return False
+
+        return datetime.now() &lt; (issued + lease)
+
+    def _get_token(self) -&gt; dict[str, str]:
+        &#34;&#34;&#34;Gets a new Salesforce access token if the current one is expired.&#34;&#34;&#34;
+        if self._is_token_valid(self.access_token):
+            return self.access_token
+
+        form_data = {
+            &#34;grant_type&#34;: &#34;password&#34;,
+            &#34;client_id&#34;: self.client_id,
+            &#34;client_secret&#34;: self.client_secret,
+        }
+
+        if self.sandbox:
+            form_data[&#34;username&#34;] = self.username
+            form_data[&#34;password&#34;] = self.password
+
+        response = requests.post(
+            self.access_token_url,
+            data=form_data,
+            headers={&#34;Content-Type&#34;: &#34;application/x-www-form-urlencoded&#34;},
+            timeout=self.access_token_timeout_in_seconds,
+        )
+
+        self._class_logger.debug(&#34;requesting new token %s&#34;, response)
+
+        response.raise_for_status()
+
+        self.access_token = response.json()
+
+        return self.access_token
+
+    def get_records(self, query) -&gt; pd.DataFrame:
+        &#34;&#34;&#34;Queries the Salesforce API and returns the results as a dataframe.
+
+        Args:
+            query (str): A SOQL query string.
+
+        Raises:
+            ValueError: If the query fails.
+
+        Returns:
+            pd.Dataframe: A dataframe of the results.
+        &#34;&#34;&#34;
+        token = self._get_token()
+
+        response = requests.get(
+            self.query_url,
+            params={&#34;q&#34;: query},
+            headers={
+                &#34;Authorization&#34;: f&#34;Bearer {token[&#39;access_token&#39;]}&#34;,
+            },
+            timeout=self.soql_query_timeout_in_seconds,
+        )
+
+        try:
+            response.raise_for_status()
+        except requests.exceptions.HTTPError as error:
+            self._class_logger.error(&#34;Error getting records from Salesforce %s&#34;, error)
+
+            raise ValueError(f&#34;Error getting records from Salesforce {response.json()}&#34;) from error
+
+        data = response.json()
+
+        return pd.DataFrame(data[&#34;records&#34;])</code></pre>
+</details>
+<h3>Class variables</h3>
+<dl>
+<dt id="palletjack.extract.SalesforceRestLoader.access_token"><code class="name">var <span class="ident">access_token</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="palletjack.extract.SalesforceRestLoader.access_token_template"><code class="name">var <span class="ident">access_token_template</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="palletjack.extract.SalesforceRestLoader.access_token_timeout_in_seconds"><code class="name">var <span class="ident">access_token_timeout_in_seconds</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="palletjack.extract.SalesforceRestLoader.access_token_url"><code class="name">var <span class="ident">access_token_url</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="palletjack.extract.SalesforceRestLoader.client_id"><code class="name">var <span class="ident">client_id</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="palletjack.extract.SalesforceRestLoader.client_secret"><code class="name">var <span class="ident">client_secret</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="palletjack.extract.SalesforceRestLoader.password"><code class="name">var <span class="ident">password</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="palletjack.extract.SalesforceRestLoader.query_template"><code class="name">var <span class="ident">query_template</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="palletjack.extract.SalesforceRestLoader.query_url"><code class="name">var <span class="ident">query_url</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="palletjack.extract.SalesforceRestLoader.sandbox"><code class="name">var <span class="ident">sandbox</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="palletjack.extract.SalesforceRestLoader.soql_query_timeout_in_seconds"><code class="name">var <span class="ident">soql_query_timeout_in_seconds</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="palletjack.extract.SalesforceRestLoader.token_lease_in_days"><code class="name">var <span class="ident">token_lease_in_days</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="palletjack.extract.SalesforceRestLoader.username"><code class="name">var <span class="ident">username</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+</dl>
+<h3>Methods</h3>
+<dl>
+<dt id="palletjack.extract.SalesforceRestLoader.get_records"><code class="name flex">
+<span>def <span class="ident">get_records</span></span>(<span>self, query) ‑> pandas.core.frame.DataFrame</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Queries the Salesforce API and returns the results as a dataframe.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>query</code></strong> :&ensp;<code>str</code></dt>
+<dd>A SOQL query string.</dd>
+</dl>
+<h2 id="raises">Raises</h2>
+<dl>
+<dt><code>ValueError</code></dt>
+<dd>If the query fails.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>pd.Dataframe</code></dt>
+<dd>A dataframe of the results.</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_records(self, query) -&gt; pd.DataFrame:
+    &#34;&#34;&#34;Queries the Salesforce API and returns the results as a dataframe.
+
+    Args:
+        query (str): A SOQL query string.
+
+    Raises:
+        ValueError: If the query fails.
+
+    Returns:
+        pd.Dataframe: A dataframe of the results.
+    &#34;&#34;&#34;
+    token = self._get_token()
+
+    response = requests.get(
+        self.query_url,
+        params={&#34;q&#34;: query},
+        headers={
+            &#34;Authorization&#34;: f&#34;Bearer {token[&#39;access_token&#39;]}&#34;,
+        },
+        timeout=self.soql_query_timeout_in_seconds,
+    )
+
+    try:
+        response.raise_for_status()
+    except requests.exceptions.HTTPError as error:
+        self._class_logger.error(&#34;Error getting records from Salesforce %s&#34;, error)
+
+        raise ValueError(f&#34;Error getting records from Salesforce {response.json()}&#34;) from error
+
+    data = response.json()
+
+    return pd.DataFrame(data[&#34;records&#34;])</code></pre>
+</details>
+</dd>
+</dl>
+</dd>
+<dt id="palletjack.extract.SalesforceSandboxCredentials"><code class="flex name class">
+<span>class <span class="ident">SalesforceSandboxCredentials</span></span>
+<span>(</span><span>username, password, token, secret, key)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>A salesforce sandbox credential model</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class SalesforceSandboxCredentials:
+    &#34;&#34;&#34;A salesforce sandbox credential model&#34;&#34;&#34;
+
+    def __init__(self, username, password, token, secret, key) -&gt; None:
+        self.username = username
+        self.password = password + token
+        self.client_secret = secret
+        self.client_id = key</code></pre>
+</details>
+</dd>
 <dt id="palletjack.extract.ServiceLayer"><code class="flex name class">
 <span>class <span class="ident">ServiceLayer</span></span>
 <span>(</span><span>layer_url, timeout=5, envelope_params=None, feature_params=None, where_clause='1=1')</span>
@@ -2578,7 +3081,7 @@ features. Parameter defaults to None, and the query defaults to 'outFields': '*'
     def get_unique_id_list_as_dataframe(self, unique_id_field, unique_id_list):
         &#34;&#34;&#34;Use a REST query to download specified features from a MapService or FeatureService layer.
 
-        unique_id_list defines the ids in unique_id_fied to download.
+        unique_id_list defines the ids in unique_id_field to download.
 
         Args:
             unique_id_field (str): The field in the service layer used as the unique ID.
@@ -2603,7 +3106,8 @@ features. Parameter defaults to None, and the query defaults to 'outFields': '*'
             raise RuntimeError(f&#39;Bad chunk response HTTP status code ({response.status_code})&#39;)
 
         try:
-            features_df = arcgis.features.FeatureSet.from_json(response.text).sdf.sort_values(by=unique_id_field)
+            fs = arcgis.features.FeatureSet.from_json(response.text)
+            features_df = fs.sdf.sort_values(by=unique_id_field)
 
         except ujson.JSONDecodeError as error:
             raise RuntimeError(&#39;Could not parse chunk features from response&#39;) from error
@@ -2701,7 +3205,7 @@ features. Parameter defaults to None, and the query defaults to 'outFields': '*'
 </code></dt>
 <dd>
 <div class="desc"><p>Use a REST query to download specified features from a MapService or FeatureService layer.</p>
-<p>unique_id_list defines the ids in unique_id_fied to download.</p>
+<p>unique_id_list defines the ids in unique_id_field to download.</p>
 <h2 id="args">Args</h2>
 <dl>
 <dt><strong><code>unique_id_field</code></strong> :&ensp;<code>str</code></dt>
@@ -2730,7 +3234,7 @@ features. Parameter defaults to None, and the query defaults to 'outFields': '*'
 <pre><code class="python">def get_unique_id_list_as_dataframe(self, unique_id_field, unique_id_list):
     &#34;&#34;&#34;Use a REST query to download specified features from a MapService or FeatureService layer.
 
-    unique_id_list defines the ids in unique_id_fied to download.
+    unique_id_list defines the ids in unique_id_field to download.
 
     Args:
         unique_id_field (str): The field in the service layer used as the unique ID.
@@ -2755,7 +3259,8 @@ features. Parameter defaults to None, and the query defaults to 'outFields': '*'
         raise RuntimeError(f&#39;Bad chunk response HTTP status code ({response.status_code})&#39;)
 
     try:
-        features_df = arcgis.features.FeatureSet.from_json(response.text).sdf.sort_values(by=unique_id_field)
+        fs = arcgis.features.FeatureSet.from_json(response.text)
+        features_df = fs.sdf.sort_values(by=unique_id_field)
 
     except ujson.JSONDecodeError as error:
         raise RuntimeError(&#39;Could not parse chunk features from response&#39;) from error
@@ -2823,6 +3328,31 @@ features. Parameter defaults to None, and the query defaults to 'outFields': '*'
 <li><code><a title="palletjack.extract.SFTPLoader.download_sftp_single_file" href="#palletjack.extract.SFTPLoader.download_sftp_single_file">download_sftp_single_file</a></code></li>
 <li><code><a title="palletjack.extract.SFTPLoader.read_csv_into_dataframe" href="#palletjack.extract.SFTPLoader.read_csv_into_dataframe">read_csv_into_dataframe</a></code></li>
 </ul>
+</li>
+<li>
+<h4><code><a title="palletjack.extract.SalesforceApiUserCredentials" href="#palletjack.extract.SalesforceApiUserCredentials">SalesforceApiUserCredentials</a></code></h4>
+</li>
+<li>
+<h4><code><a title="palletjack.extract.SalesforceRestLoader" href="#palletjack.extract.SalesforceRestLoader">SalesforceRestLoader</a></code></h4>
+<ul class="">
+<li><code><a title="palletjack.extract.SalesforceRestLoader.access_token" href="#palletjack.extract.SalesforceRestLoader.access_token">access_token</a></code></li>
+<li><code><a title="palletjack.extract.SalesforceRestLoader.access_token_template" href="#palletjack.extract.SalesforceRestLoader.access_token_template">access_token_template</a></code></li>
+<li><code><a title="palletjack.extract.SalesforceRestLoader.access_token_timeout_in_seconds" href="#palletjack.extract.SalesforceRestLoader.access_token_timeout_in_seconds">access_token_timeout_in_seconds</a></code></li>
+<li><code><a title="palletjack.extract.SalesforceRestLoader.access_token_url" href="#palletjack.extract.SalesforceRestLoader.access_token_url">access_token_url</a></code></li>
+<li><code><a title="palletjack.extract.SalesforceRestLoader.client_id" href="#palletjack.extract.SalesforceRestLoader.client_id">client_id</a></code></li>
+<li><code><a title="palletjack.extract.SalesforceRestLoader.client_secret" href="#palletjack.extract.SalesforceRestLoader.client_secret">client_secret</a></code></li>
+<li><code><a title="palletjack.extract.SalesforceRestLoader.get_records" href="#palletjack.extract.SalesforceRestLoader.get_records">get_records</a></code></li>
+<li><code><a title="palletjack.extract.SalesforceRestLoader.password" href="#palletjack.extract.SalesforceRestLoader.password">password</a></code></li>
+<li><code><a title="palletjack.extract.SalesforceRestLoader.query_template" href="#palletjack.extract.SalesforceRestLoader.query_template">query_template</a></code></li>
+<li><code><a title="palletjack.extract.SalesforceRestLoader.query_url" href="#palletjack.extract.SalesforceRestLoader.query_url">query_url</a></code></li>
+<li><code><a title="palletjack.extract.SalesforceRestLoader.sandbox" href="#palletjack.extract.SalesforceRestLoader.sandbox">sandbox</a></code></li>
+<li><code><a title="palletjack.extract.SalesforceRestLoader.soql_query_timeout_in_seconds" href="#palletjack.extract.SalesforceRestLoader.soql_query_timeout_in_seconds">soql_query_timeout_in_seconds</a></code></li>
+<li><code><a title="palletjack.extract.SalesforceRestLoader.token_lease_in_days" href="#palletjack.extract.SalesforceRestLoader.token_lease_in_days">token_lease_in_days</a></code></li>
+<li><code><a title="palletjack.extract.SalesforceRestLoader.username" href="#palletjack.extract.SalesforceRestLoader.username">username</a></code></li>
+</ul>
+</li>
+<li>
+<h4><code><a title="palletjack.extract.SalesforceSandboxCredentials" href="#palletjack.extract.SalesforceSandboxCredentials">SalesforceSandboxCredentials</a></code></h4>
 </li>
 <li>
 <h4><code><a title="palletjack.extract.ServiceLayer" href="#palletjack.extract.ServiceLayer">ServiceLayer</a></code></h4>
