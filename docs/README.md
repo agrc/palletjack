@@ -10,7 +10,7 @@ pandas dataframes are the main unifying data structure between the different ste
 
 The individual modules within palletjack each handle their own step of the ETL process. Each module contains classes for accomplishing its task organized by source, operation, or destination. There may be multiple, similar methods in a class depending on exactly how you want to perform a given step—you probably won't use all the available classes and methods in every application. The publicly-exposed methods usually call several private methods to keep functions small and testable.
 
-Classes in `extract` handle the extract stage, pulling data in from external sources. Tabular data (csvs, Google Sheets) are loaded into dataframes, while non-tabular data for attachments are just downloaded to the specified locations. You'll instantiate the desired class with the basic connection info and then call the appropriate method on the resulting object to extract the data.
+Classes in `extract` handle the extract stage, pulling data in from external sources. Tabular data (csvs, Google Sheets) are loaded into dataframes, while non-tabular data for attachments are just downloaded to the specified locations. Spatial data are loaded into spatially-enable dataframes. You'll instantiate the desired class with the basic connection info and then call the appropriate method on the resulting object to extract the data.
 
 There are a handful of classes in `transform` with methods for cleaning and preparing your dataframes for upload to AGOL. You may also need to modify your data to fit your specific business needs: calculating fields, renaming fields, performing quality checks, etc. Some classes only have static methods can be called directly without needing to instantiate the class.
 
@@ -20,7 +20,7 @@ While many parts of the classes' functionality are hidden in private methods, co
 
 ## Data Considerations
 
-Under the hood, palletjack uses the `arcgis.features.FeatureLayer.append()` method to upload data. To eliminate the dependency on `arcpy` (and thus ArcGIS Pro/Enterprise), it converts and uploads the data as a geojson. This conversion process introduces several constraints and gotchas on the format of the data. palletjack tests for all the known gotchas and raises an error if the data needs extra work before uploading. In addition, AGOL imposes its own set of constraints.
+Under the hood, palletjack uses the `arcgis.features.FeatureLayer.append()` method to upload data. To eliminate the dependency on `arcpy` (and thus ArcGIS Pro/Enterprise), it uses GeoPandas and pyogrio to save data to a geodatabase, uploads the geodatabase to AGOL, calls `.append()` using the geodatabase as the source, and then deletes the geodatabase item from AGOL. palletjack tests for all the known gotchas and raises an error if the data needs extra work before uploading. In addition, AGOL imposes its own set of constraints.
 
 ### Field Names
 
@@ -31,14 +31,6 @@ The column names in your dataframes should match the field names in AGOL one-to-
 The upload process is very particular about data types and missing data. `utils.FieldChecker.check_live_and_new_field_types_match()` contains a mapping of dataframe dtypes to Esri field types. They generally follow what you would expect. However, because pandas (currently) handles missing data by with `np.nan` by default, you may have integer data assigned a float dtype. In addition, some sources render missing data as an empty string, creating an object dtype. Finally, datetimes must be in UTC and stored in the non-timezone-aware `datetime64[ns]` dtype.
 
 `transform.DataCleaning` has methods to help convert your data to these dtypes. In addition, it's a good practice to use pandas' nullable dtypes via [`pd.DataFrame.convert_dtypes()`](https://pandas.pydata.org/pandas-docs/dev/reference/api/pandas.DataFrame.convert_dtypes.html) (see also the section on [nullable ints](https://pandas.pydata.org/pandas-docs/dev/user_guide/integer_na.html)).
-
-### Geometries
-
-palletjack uses Esri's spatially-enabled dataframes for handling geometries. However, there's no reason you couldn't use geodataframes for other parts of the process and convert them to spatially-enabled dataframes for use in the `load` methods.
-
-Because the upload process uses geojsons, you **MUST** project your dataframe to WGS84 (wkid 4326) (the upload stage will error out if it isn't). If your hosted feature service is in a different projection, AGOL will automatically project it back as part of the upload process.
-
-**WARNING**: The reprojection process may introduce spatial shifts/topological errors due to projection differences. We highly recommend your target hosted feature services use WGS84 from the beginning, and that you choose an appropriate transformation when projecting your data.
 
 ### OBJECTID and Join Keys
 
@@ -72,6 +64,12 @@ palletjack_logger.addHandler(log_handler)
 - `logging.DEBUG` includes verbose debug info that should allow you to manually (possibly programmatically) undo or redo any operation.
 - `logging.INFO` includes standard runtime progress reports and result information.
 - `logging.WARNING` includes negative results from checks or other situations that the user should be aware of.
+
+## Updating from v3 to v4
+
+palletjack v4's biggest breaking change requires you to now instantiate a `FeatureServiceUpdater` class yourself before calling the appropriate methods. v3 used class methods to handle instantiation for you, but we've broken this out into the more traditional pattern to store the additional information that's common to all the steps.
+
+v4 also completely does away with JSON for uploads and storage. Because of this, you no longer need to worry about projecting to WGS84 or (relatively sane) dataset sizes. In addition, truncate and load now uses a simple boolean flag to save the existing data, and saves it as a file gdb instead of a JSON file.
 
 ## Updating from v2 to v3
 
