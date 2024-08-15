@@ -27,8 +27,7 @@
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">&#34;&#34;&#34;Utility classes and methods that are used internally throughout palletjack. Many are exposed publicly in case they are useful elsewhere in a client&#39;s code.
-&#34;&#34;&#34;
+<pre><code class="python">&#34;&#34;&#34;Utility classes and methods that are used internally throughout palletjack. Many are exposed publicly in case they are useful elsewhere in a client&#39;s code.&#34;&#34;&#34;
 
 import datetime
 import importlib
@@ -88,7 +87,7 @@ def retry(worker_method, *args, **kwargs):
 
         #: ArcGIS API for Python loves throwing bog-standard Exceptions, so we can&#39;t narrow this down further
         except Exception as error:
-            if tries &lt;= max_tries:  #pylint: disable=no-else-return
+            if tries &lt;= max_tries:  # pylint: disable=no-else-return
                 wait_time = delay**tries
                 module_logger.debug(
                     &#39;Exception &#34;%s&#34; thrown on &#34;%s&#34;. Retrying after %s seconds...&#39;, error, worker_method, wait_time
@@ -114,8 +113,8 @@ def rename_columns_for_agol(columns):
 
     rename_dict = {}
     for column in columns:
-        no_specials = re.sub(r&#39;[^a-zA-Z0-9_]&#39;, &#39;_&#39;, column)
-        match = re.match(r&#39;(^[0-9_]+)&#39;, no_specials)
+        no_specials = re.sub(r&#34;[^a-zA-Z0-9_]&#34;, &#34;_&#34;, column)
+        match = re.match(r&#34;(^[0-9_]+)&#34;, no_specials)
         if match:
             number = match.groups()[0]
             rename_dict[column] = no_specials.removeprefix(number) + number
@@ -136,22 +135,22 @@ def check_fields_match(featurelayer, new_dataframe):
         RuntimeError: If new data contains a field not present in the live data
     &#34;&#34;&#34;
 
-    live_fields = {field[&#39;name&#39;] for field in featurelayer.properties.fields}
+    live_fields = {field[&#34;name&#34;] for field in featurelayer.properties.fields}
     new_fields = set(new_dataframe.columns)
     #: Remove SHAPE field from set (live &#34;featurelayer.properties[&#39;fields&#39;]&#34; does not expose the &#39;SHAPE&#39; field)
     try:
-        new_fields.remove(&#39;SHAPE&#39;)
+        new_fields.remove(&#34;SHAPE&#34;)
     except KeyError:
         pass
     new_dif = new_fields - live_fields
     live_dif = live_fields - new_fields
     if new_dif:
         raise RuntimeError(
-            f&#39;New dataset contains the following fields that are not present in the live dataset: {new_dif}&#39;
+            f&#34;New dataset contains the following fields that are not present in the live dataset: {new_dif}&#34;
         )
     if live_dif:
         module_logger.warning(
-            &#39;New dataset does not contain the following fields that are present in the live dataset: %s&#39;, live_dif
+            &#34;New dataset does not contain the following fields that are present in the live dataset: %s&#34;, live_dif
         )
 
 
@@ -167,9 +166,9 @@ def check_index_column_in_feature_layer(featurelayer, index_column):
         RuntimeError: If index_column is not in featurelayer&#39;s fields
     &#34;&#34;&#34;
 
-    featurelayer_fields = [field[&#39;name&#39;] for field in featurelayer.properties.fields]
+    featurelayer_fields = [field[&#34;name&#34;] for field in featurelayer.properties.fields]
     if index_column not in featurelayer_fields:
-        raise RuntimeError(f&#39;Index column {index_column} not found in feature layer fields {featurelayer_fields}&#39;)
+        raise RuntimeError(f&#34;Index column {index_column} not found in feature layer fields {featurelayer_fields}&#34;)
 
 
 #: unused?
@@ -189,7 +188,7 @@ def rename_fields(dataframe, field_mapping):
 
     for original_name in field_mapping.keys():
         if original_name not in dataframe.columns:
-            raise ValueError(f&#39;Field {original_name} not found in dataframe.&#39;)
+            raise ValueError(f&#34;Field {original_name} not found in dataframe.&#34;)
 
     renamed_df = dataframe.rename(columns=field_mapping)
 
@@ -225,18 +224,17 @@ def check_field_set_to_unique(featurelayer, field_name):
         RuntimeError: If the field is not unique (or if it&#39;s indexed but not unique)
     &#34;&#34;&#34;
 
-    fields = [field[&#39;fields&#39;] for field in featurelayer.properties.indexes]
+    fields = [field[&#34;fields&#34;] for field in featurelayer.properties.indexes]
     if field_name not in fields:
         raise RuntimeError(f&#39;{field_name} does not have a &#34;unique constraint&#34; set within the feature layer&#39;)
     for field in featurelayer.properties.indexes:
-        if field[&#39;fields&#39;] == field_name:
-            if not field[&#39;isUnique&#39;]:
+        if field[&#34;fields&#34;] == field_name:
+            if not field[&#34;isUnique&#34;]:
                 raise RuntimeError(f&#39;{field_name} does not have a &#34;unique constraint&#34; set within the feature layer&#39;)
 
 
 class Geocoding:
-    &#34;&#34;&#34;Methods for geocoding an address
-    &#34;&#34;&#34;
+    &#34;&#34;&#34;Methods for geocoding an address&#34;&#34;&#34;
 
     @staticmethod
     def geocode_addr(street, zone, api_key, rate_limits, **api_args):
@@ -258,20 +256,20 @@ class Geocoding:
         &#34;&#34;&#34;
 
         sleep(random.uniform(rate_limits[0], rate_limits[1]))
-        url = f&#39;https://api.mapserv.utah.gov/api/v1/geocode/{street}/{zone}&#39;
-        api_args[&#39;apiKey&#39;] = api_key
+        url = f&#34;https://api.mapserv.utah.gov/api/v1/geocode/{street}/{zone}&#34;
+        api_args[&#34;apiKey&#34;] = api_key
 
         try:
             geocode_result_dict = retry(Geocoding._geocode_api_call, url, api_args)
         except Exception as error:
             module_logger.error(error)
-            return (0, 0, 0., &#39;No API response&#39;)
+            return (0, 0, 0.0, &#34;No API response&#34;)
 
         return (
-            geocode_result_dict[&#39;location&#39;][&#39;x&#39;],
-            geocode_result_dict[&#39;location&#39;][&#39;y&#39;],
-            geocode_result_dict[&#39;score&#39;],
-            geocode_result_dict[&#39;matchAddress&#39;],
+            geocode_result_dict[&#34;location&#34;][&#34;x&#34;],
+            geocode_result_dict[&#34;location&#34;][&#34;y&#34;],
+            geocode_result_dict[&#34;score&#34;],
+            geocode_result_dict[&#34;matchAddress&#34;],
         )
 
     @staticmethod
@@ -297,26 +295,23 @@ class Geocoding:
 
         #: The server times out and doesn&#39;t respond
         if response is None:
-            module_logger.debug(&#39;GET call did not return a response&#39;)
-            raise RuntimeError(&#39;No response from GET; request timeout?&#39;)
+            module_logger.debug(&#34;GET call did not return a response&#34;)
+            raise RuntimeError(&#34;No response from GET; request timeout?&#34;)
 
         #: The point does geocode
         if response.status_code == 200:
-            return response.json()[&#39;result&#39;]
+            return response.json()[&#34;result&#34;]
 
         #: The point doesn&#39;t geocode
         if response.status_code == 404:
             return {
-                &#39;location&#39;: {
-                    &#39;x&#39;: 0,
-                    &#39;y&#39;: 0
-                },
-                &#39;score&#39;: 0.,
-                &#39;matchAddress&#39;: &#39;No Match&#39;,
+                &#34;location&#34;: {&#34;x&#34;: 0, &#34;y&#34;: 0},
+                &#34;score&#34;: 0.0,
+                &#34;matchAddress&#34;: &#34;No Match&#34;,
             }
 
         #: If we haven&#39;t returned, raise an error to trigger _retry
-        raise RuntimeError(f&#39;Did not receive a valid geocoding response; status code: {response.status_code}&#39;)
+        raise RuntimeError(f&#34;Did not receive a valid geocoding response; status code: {response.status_code}&#34;)
 
     @staticmethod
     def validate_api_key(api_key):
@@ -331,18 +326,19 @@ class Geocoding:
             UserWarning: If the API responds with some other abnormal result
         &#34;&#34;&#34;
 
-        url = &#39;https://api.mapserv.utah.gov/api/v1/geocode/326 east south temple street/slc&#39;
+        url = &#34;https://api.mapserv.utah.gov/api/v1/geocode/326 east south temple street/slc&#34;
 
         try:
-            response = retry(requests.get, url=url, params={&#39;apiKey&#39;: api_key})
+            response = retry(requests.get, url=url, params={&#34;apiKey&#34;: api_key})
         except Exception as error:
             raise RuntimeError(
-                &#39;Could not determine key validity; check your API key and/or network connection&#39;
+                &#34;Could not determine key validity; check your API key and/or network connection&#34;
             ) from error
         response_json = response.json()
-        if response_json[&#39;status&#39;] == 200:
+        if response_json[&#34;status&#34;] == 200:
             return
-        if response_json[&#39;status&#39;] == 400 and &#39;Invalid API key&#39; in response_json[&#39;message&#39;]:
+        if response_json[&#34;status&#34;] == 400 and &#34;Invalid API key&#34; in response_json[&#34;message&#34;]:
+            module_logger.error(f&#39;API key validation failed: {response_json[&#34;message&#34;]}&#39;)
             raise ValueError(f&#39;API key validation failed: {response_json[&#34;message&#34;]}&#39;)
 
         warnings.warn(f&#39;Unhandled API key validation response {response_json[&#34;status&#34;]}: {response_json[&#34;message&#34;]}&#39;)
@@ -394,11 +390,11 @@ def authorize_pygsheets(credentials):
         return pygsheets.authorize(service_file=credentials)
     except (FileNotFoundError, TypeError) as err:
         module_logger.debug(err)
-        module_logger.debug(&#39;Credentials file not found, trying as environment variable&#39;)
+        module_logger.debug(&#34;Credentials file not found, trying as environment variable&#34;)
     try:
         return pygsheets.authorize(custom_credentials=credentials)
     except Exception as err:
-        raise RuntimeError(&#39;Could not authenticate to Google API&#39;) from err
+        raise RuntimeError(&#34;Could not authenticate to Google API&#34;) from err
 
 
 def sedf_to_gdf(dataframe):
@@ -413,14 +409,14 @@ def sedf_to_gdf(dataframe):
 
     gdf = gpd.GeoDataFrame(dataframe, geometry=dataframe.spatial.name)
     try:
-        gdf.set_crs(dataframe.spatial.sr[&#39;latestWkid&#39;], inplace=True)
+        gdf.set_crs(dataframe.spatial.sr[&#34;latestWkid&#34;], inplace=True)
     except KeyError:
-        gdf.set_crs(dataframe.spatial.sr[&#39;wkid&#39;], inplace=True)
+        gdf.set_crs(dataframe.spatial.sr[&#34;wkid&#34;], inplace=True)
 
     return gdf
 
 
-def save_feature_layer_to_gdb(feature_layer, directory):
+def save_to_gdb(table_or_layer, directory):
     &#34;&#34;&#34;Save a feature_layer to a gdb for safety as backup.gdb/{layer name}_{todays date}
 
     Args:
@@ -431,22 +427,25 @@ def save_feature_layer_to_gdb(feature_layer, directory):
         Path: The full path to the output file, named with the layer name and today&#39;s date.
     &#34;&#34;&#34;
 
-    module_logger.debug(&#39;Downloading existing data...&#39;)
-    dataframe = feature_layer.query().sdf
+    module_logger.debug(&#34;Downloading existing data...&#34;)
+    dataframe = table_or_layer.query().sdf
 
     if dataframe.empty:
-        return f&#39;No data to save in feature layer {feature_layer.properties.name}&#39;
+        return f&#34;No data to save in feature layer {table_or_layer.properties.name}&#34;
 
-    gdf = sedf_to_gdf(dataframe)
+    if table_or_layer.properties.type == &#34;Feature Layer&#34;:
+        gdf = sedf_to_gdf(dataframe)
+    else:
+        gdf = gpd.GeoDataFrame(dataframe)
 
-    out_path = Path(directory, &#39;backup.gdb&#39;)
-    out_layer = f&#39;{feature_layer.properties.name}_{datetime.date.today().strftime(&#34;%Y_%m_%d&#34;)}&#39;
-    module_logger.debug(&#39;Saving existing data to %s&#39;, out_path)
+    out_path = Path(directory, &#34;backup.gdb&#34;)
+    out_layer = f&#39;{table_or_layer.properties.name}_{datetime.date.today().strftime(&#34;%Y_%m_%d&#34;)}&#39;
+    module_logger.debug(&#34;Saving existing data to %s&#34;, out_path)
     try:
-        gdf.to_file(out_path, layer=out_layer, engine=&#39;pyogrio&#39;, driver=&#39;OpenFileGDB&#39;)
+        gdf.to_file(out_path, layer=out_layer, engine=&#34;pyogrio&#34;, driver=&#34;OpenFileGDB&#34;)
     except pyogrio.errors.DataSourceError as error:
         raise ValueError(
-            f&#39;Error writing {out_layer} to {out_path}. Verify {Path(directory)} exists and is writable.&#39;
+            f&#34;Error writing {out_layer} to {out_path}. Verify {Path(directory)} exists and is writable.&#34;
         ) from error
 
     return out_path
@@ -507,32 +506,32 @@ class FieldChecker:
 
         #: Converting dtypes to str and comparing seems to be the only way to break out into shorts and longs, singles
         #: and doubles. Otherwise, checking subclass is probably more pythonic.
-        short_ints = [&#39;uint8&#39;, &#39;uint16&#39;, &#39;int8&#39;, &#39;int16&#39;]
-        long_ints = [&#39;int&#39;, &#39;uint32&#39;, &#39;uint64&#39;, &#39;int32&#39;, &#39;int64&#39;]
+        short_ints = [&#34;uint8&#34;, &#34;uint16&#34;, &#34;int8&#34;, &#34;int16&#34;]
+        long_ints = [&#34;int&#34;, &#34;uint32&#34;, &#34;uint64&#34;, &#34;int32&#34;, &#34;int64&#34;]
 
         #: Leaving the commented types here for future implementation if necessary
         esri_to_pandas_types_mapping = {
-            &#39;esriFieldTypeInteger&#39;: [&#39;int&#39;] + short_ints + long_ints,
-            &#39;esriFieldTypeSmallInteger&#39;: short_ints,
-            &#39;esriFieldTypeDouble&#39;: [&#39;float&#39;, &#39;float32&#39;, &#39;float64&#39;],
-            &#39;esriFieldTypeSingle&#39;: [&#39;float32&#39;],
-            &#39;esriFieldTypeString&#39;: [&#39;str&#39;, &#39;object&#39;, &#39;string&#39;],
-            &#39;esriFieldTypeDate&#39;: [&#39;datetime64[ns]&#39;],
-            &#39;esriFieldTypeGeometry&#39;: [&#39;geometry&#39;],
-            &#39;esriFieldTypeOID&#39;: [&#39;int&#39;] + short_ints + long_ints,
+            &#34;esriFieldTypeInteger&#34;: [&#34;int&#34;] + short_ints + long_ints,
+            &#34;esriFieldTypeSmallInteger&#34;: short_ints,
+            &#34;esriFieldTypeDouble&#34;: [&#34;float&#34;, &#34;float32&#34;, &#34;float64&#34;],
+            &#34;esriFieldTypeSingle&#34;: [&#34;float32&#34;],
+            &#34;esriFieldTypeString&#34;: [&#34;str&#34;, &#34;object&#34;, &#34;string&#34;],
+            &#34;esriFieldTypeDate&#34;: [&#34;datetime64[ns]&#34;],
+            &#34;esriFieldTypeGeometry&#34;: [&#34;geometry&#34;],
+            &#34;esriFieldTypeOID&#34;: [&#34;int&#34;] + short_ints + long_ints,
             #  &#39;esriFieldTypeBlob&#39;: [],
-            &#39;esriFieldTypeGlobalID&#39;: [&#39;str&#39;, &#39;object&#39;, &#39;string&#39;],
+            &#34;esriFieldTypeGlobalID&#34;: [&#34;str&#34;, &#34;object&#34;, &#34;string&#34;],
             #  &#39;esriFieldTypeRaster&#39;: [],
-            &#39;esriFieldTypeGUID&#39;: [&#39;str&#39;, &#39;object&#39;, &#39;string&#39;],
+            &#34;esriFieldTypeGUID&#34;: [&#34;str&#34;, &#34;object&#34;, &#34;string&#34;],
             #  &#39;esriFieldTypeXML&#39;: [],
         }
 
         #: geometry checking gets its own function
-        if &#39;SHAPE&#39; in fields:
+        if &#34;SHAPE&#34; in fields:
             self._check_geometry_types()
-            fields.remove(&#39;SHAPE&#39;)
+            fields.remove(&#34;SHAPE&#34;)
 
-        fields_to_check = self.fields_dataframe[self.fields_dataframe[&#39;name&#39;].isin(fields)].set_index(&#39;name&#39;)
+        fields_to_check = self.fields_dataframe[self.fields_dataframe[&#34;name&#34;].isin(fields)].set_index(&#34;name&#34;)
 
         invalid_fields = []
         int_fields_as_floats = []
@@ -540,15 +539,17 @@ class FieldChecker:
         for field in fields:
             #: check against the str.lower to catch normal dtypes (int64) and the new, pd.NA-aware dtypes (Int64)
             new_dtype = str(self.new_dataframe[field].dtype).lower()
-            live_type = fields_to_check.loc[field, &#39;type&#39;]
+            live_type = fields_to_check.loc[field, &#34;type&#34;]
 
             try:
                 if new_dtype not in esri_to_pandas_types_mapping[live_type]:
                     invalid_fields.append((field, live_type, str(self.new_dataframe[field].dtype)))
-                if new_dtype in [&#39;float&#39;, &#39;float32&#39;, &#39;float64&#39;
-                                ] and live_type in [&#39;esriFieldTypeInteger&#39;, &#39;esriFieldTypeSmallInteger&#39;]:
+                if new_dtype in [&#34;float&#34;, &#34;float32&#34;, &#34;float64&#34;] and live_type in [
+                    &#34;esriFieldTypeInteger&#34;,
+                    &#34;esriFieldTypeSmallInteger&#34;,
+                ]:
                     int_fields_as_floats.append(field)
-                if &#39;datetime64&#39; in new_dtype and new_dtype != &#39;datetime64[ns]&#39; and live_type == &#39;esriFieldTypeDate&#39;:
+                if &#34;datetime64&#34; in new_dtype and new_dtype != &#34;datetime64[ns]&#34; and live_type == &#34;esriFieldTypeDate&#34;:
                     datetime_fields_with_timezone.append(field)
             except KeyError:
                 # pylint: disable-next=raise-missing-from
@@ -557,18 +558,18 @@ class FieldChecker:
         if invalid_fields:
             if int_fields_as_floats:
                 raise IntFieldAsFloatError(
-                    f&#39;Field type incompatibilities (field, live type, new type): {invalid_fields}\n&#39; \
-                    &#39;Check the following int fields for null/np.nan values and convert to panda\&#39;s nullable int &#39;\
+                    f&#34;Field type incompatibilities (field, live type, new type): {invalid_fields}\n&#34;
+                    &#34;Check the following int fields for null/np.nan values and convert to panda&#39;s nullable int &#34;
                     f&#39;dtype: {&#34;, &#34;.join(int_fields_as_floats)}&#39;
                 )
             if datetime_fields_with_timezone:
                 raise TimezoneAwareDatetimeError(
-                    f&#39;Field type incompatibilities (field, live type, new type): {invalid_fields}\n&#39; \
-                    &#39;Check the following datetime fields for timezone aware dtypes values and convert to &#39;\
-                    &#39;timezone-naive dtypes using pd.to_datetime(df[\&#39;field\&#39;]).dt.tz_localize(None): &#39;\
+                    f&#34;Field type incompatibilities (field, live type, new type): {invalid_fields}\n&#34;
+                    &#34;Check the following datetime fields for timezone aware dtypes values and convert to &#34;
+                    &#34;timezone-naive dtypes using pd.to_datetime(df[&#39;field&#39;]).dt.tz_localize(None): &#34;
                     f&#39;{&#34;, &#34;.join(datetime_fields_with_timezone)}&#39;
                 )
-            raise ValueError(f&#39;Field type incompatibilities (field, live type, new type): {invalid_fields}&#39;)
+            raise ValueError(f&#34;Field type incompatibilities (field, live type, new type): {invalid_fields}&#34;)
 
     def _check_geometry_types(self):
         &#34;&#34;&#34;Raise an error if the live and new data geometry types are incompatible.
@@ -583,17 +584,17 @@ class FieldChecker:
         &#34;&#34;&#34;
 
         esri_to_sedf_geometry_mapping = {
-            &#39;esriGeometryPoint&#39;: &#39;point&#39;,
-            &#39;esriGeometryMultipoint&#39;: &#39;multipoint&#39;,
-            &#39;esriGeometryPolyline&#39;: &#39;polyline&#39;,
-            &#39;esriGeometryPolygon&#39;: &#39;polygon&#39;,
-            &#39;esriGeometryEnvelope&#39;: &#39;envelope&#39;,
+            &#34;esriGeometryPoint&#34;: &#34;point&#34;,
+            &#34;esriGeometryMultipoint&#34;: &#34;multipoint&#34;,
+            &#34;esriGeometryPolyline&#34;: &#34;polyline&#34;,
+            &#34;esriGeometryPolygon&#34;: &#34;polygon&#34;,
+            &#34;esriGeometryEnvelope&#34;: &#34;envelope&#34;,
         }
 
-        if &#39;SHAPE&#39; not in self.new_dataframe.columns:
-            raise ValueError(&#39;New dataframe does not have a SHAPE column&#39;)
+        if &#34;SHAPE&#34; not in self.new_dataframe.columns:
+            raise ValueError(&#34;New dataframe does not have a SHAPE column&#34;)
 
-        if self.new_dataframe[&#39;SHAPE&#39;].isna().any():
+        if self.new_dataframe[&#34;SHAPE&#34;].isna().any():
             raise ValueError(
                 f&#39;New dataframe has missing geometries at index {list(self.new_dataframe[self.new_dataframe[&#34;SHAPE&#34;].isna()].index)}&#39;
             )
@@ -601,7 +602,7 @@ class FieldChecker:
         live_geometry_type = self.live_data_properties.geometryType
         new_geometry_types = self.new_dataframe.spatial.geometry_type
         if len(new_geometry_types) &gt; 1:
-            raise ValueError(&#39;New dataframe has multiple geometry types&#39;)
+            raise ValueError(&#34;New dataframe has multiple geometry types&#34;)
         if esri_to_sedf_geometry_mapping[live_geometry_type] != new_geometry_types[0].lower():
             raise ValueError(
                 f&#39;New dataframe geometry type &#34;{new_geometry_types[0]}&#34; incompatible with live geometry type &#34;{live_geometry_type}&#34;&#39;
@@ -624,8 +625,8 @@ class FieldChecker:
         columns_with_nulls = self.new_dataframe.columns[self.new_dataframe.isna().any()].tolist()
         # fields_dataframe = pd.DataFrame(self.live_data_properties[&#39;fields&#39;])
         non_nullable_live_columns = self.fields_dataframe[
-            ~(self.fields_dataframe[&#39;nullable&#39;]) &amp;
-            ~(self.fields_dataframe[&#39;defaultValue&#39;].astype(bool))][&#39;name&#39;].tolist()
+            ~(self.fields_dataframe[&#34;nullable&#34;]) &amp; ~(self.fields_dataframe[&#34;defaultValue&#34;].astype(bool))
+        ][&#34;name&#34;].tolist()
 
         columns_to_check = [column for column in columns_with_nulls if column in fields]
 
@@ -654,22 +655,23 @@ class FieldChecker:
                 live data allows.
         &#34;&#34;&#34;
 
-        if &#39;length&#39; not in self.fields_dataframe.columns:
-            module_logger.debug(&#39;No fields with length property&#39;)
+        if &#34;length&#34; not in self.fields_dataframe.columns:
+            module_logger.debug(&#34;No fields with length property&#34;)
             return
 
         length_limited_fields = self.fields_dataframe[
-            (self.fields_dataframe[&#39;type&#39;].isin([&#39;esriFieldTypeString&#39;, &#39;esriFieldTypeGlobalID&#39;])) &amp;
-            (self.fields_dataframe[&#39;length&#39;].astype(bool))]
+            (self.fields_dataframe[&#34;type&#34;].isin([&#34;esriFieldTypeString&#34;, &#34;esriFieldTypeGlobalID&#34;]))
+            &amp; (self.fields_dataframe[&#34;length&#34;].astype(bool))
+        ]
 
-        columns_to_check = length_limited_fields[length_limited_fields[&#39;name&#39;].isin(fields)]
+        columns_to_check = length_limited_fields[length_limited_fields[&#34;name&#34;].isin(fields)]
 
-        for field, live_max_length in columns_to_check[[&#39;name&#39;, &#39;length&#39;]].to_records(index=False):
+        for field, live_max_length in columns_to_check[[&#34;name&#34;, &#34;length&#34;]].to_records(index=False):
             new_data_lengths = self.new_dataframe[field].str.len()
             new_max_length = new_data_lengths.max()
             if new_max_length &gt; live_max_length:
                 raise ValueError(
-                    f&#39;Row {new_data_lengths.argmax()}, column {field} in new data exceeds the live data max length of {live_max_length}&#39;
+                    f&#34;Row {new_data_lengths.argmax()}, column {field} in new data exceeds the live data max length of {live_max_length}&#34;
                 )
 
     def check_fields_present(self, fields, add_oid):
@@ -684,12 +686,12 @@ class FieldChecker:
             RuntimeError: If any of fields are not in live or new data.
         &#34;&#34;&#34;
 
-        live_fields = set(self.fields_dataframe[&#39;name&#39;])
+        live_fields = set(self.fields_dataframe[&#34;name&#34;])
         new_fields = set(self.new_dataframe.columns)
         working_fields = set(fields)
-        working_fields.discard(&#39;SHAPE&#39;)  #: The fields from the feature layer properties don&#39;t include the SHAPE field.
+        working_fields.discard(&#34;SHAPE&#34;)  #: The fields from the feature layer properties don&#39;t include the SHAPE field.
         if add_oid:
-            working_fields.add(&#39;OBJECTID&#39;)
+            working_fields.add(&#34;OBJECTID&#34;)
 
         live_dif = working_fields - live_fields
         new_dif = working_fields - new_fields
@@ -701,7 +703,7 @@ class FieldChecker:
             error_message.append(f&#39;Fields missing in new data: {&#34;, &#34;.join(new_dif)}&#39;)
 
         if error_message:
-            raise RuntimeError(&#39;. &#39;.join(error_message))
+            raise RuntimeError(&#34;. &#34;.join(error_message))
 
     def check_srs_wgs84(self):
         &#34;&#34;&#34;Raise an error if the new spatial reference system isn&#39;t WGS84 as required by geojson.
@@ -721,10 +723,10 @@ class FieldChecker:
         try:
             new_srs = int(new_srs)
         except ValueError as error:
-            raise ValueError(&#39;Could not cast new SRS to int&#39;) from error
+            raise ValueError(&#34;Could not cast new SRS to int&#34;) from error
         if new_srs != 4326:
             raise ValueError(
-                f&#39;New dataframe SRS {new_srs} is not wkid 4326. Reproject with appropriate transformation.&#39;
+                f&#34;New dataframe SRS {new_srs} is not wkid 4326. Reproject with appropriate transformation.&#34;
             )
 
     def check_nullable_ints_shapely(self):
@@ -738,10 +740,10 @@ class FieldChecker:
         &#34;&#34;&#34;
 
         #: Only occurs if client is using shapely instead of arcpy
-        if importlib.util.find_spec(&#39;arcpy&#39;):
+        if importlib.util.find_spec(&#34;arcpy&#34;):
             return
 
-        nullable_ints = {&#39;Int8&#39;, &#39;Int16&#39;, &#39;Int32&#39;, &#39;Int64&#39;, &#39;UInt8&#39;, &#39;UInt16&#39;, &#39;UInt32&#39;, &#39;UInt64&#39;}
+        nullable_ints = {&#34;Int8&#34;, &#34;Int16&#34;, &#34;Int32&#34;, &#34;Int64&#34;, &#34;UInt8&#34;, &#34;UInt16&#34;, &#34;UInt32&#34;, &#34;UInt64&#34;}
         nullable_int_columns = [
             column for column in self.new_dataframe.columns if str(self.new_dataframe[column].dtype) in nullable_ints
         ]
@@ -749,8 +751,8 @@ class FieldChecker:
 
         if columns_with_nulls:
             warnings.warn(
-                &#39;The following columns have null values that will be replaced by 0 due to shapely conventions: &#39;\
-                    f&#39;{&#34;, &#34;.join(columns_with_nulls)}&#39;
+                &#34;The following columns have null values that will be replaced by 0 due to shapely conventions: &#34;
+                f&#39;{&#34;, &#34;.join(columns_with_nulls)}&#39;
             )
 
 
@@ -777,31 +779,24 @@ def get_null_geometries(feature_layer_properties):
 
     live_geometry_type = feature_layer_properties.geometryType
 
-    if live_geometry_type == &#39;esriGeometryPoint&#39;:
-        return arcgis.geometry.Point({&#39;x&#39;: 0, &#39;y&#39;: 0, &#39;spatialReference&#39;: {&#39;wkid&#39;: 4326}}).JSON
+    if live_geometry_type == &#34;esriGeometryPoint&#34;:
+        return arcgis.geometry.Point({&#34;x&#34;: 0, &#34;y&#34;: 0, &#34;spatialReference&#34;: {&#34;wkid&#34;: 4326}}).JSON
 
-    if live_geometry_type == &#39;esriGeometryPolyline&#39;:
-        return arcgis.geometry.Polyline({
-            &#39;paths&#39;: [[[0, 0], [.1, .1], [.2, .2]]],
-            &#39;spatialReference&#39;: {
-                &#39;wkid&#39;: 4326
-            }
-        }).JSON
+    if live_geometry_type == &#34;esriGeometryPolyline&#34;:
+        return arcgis.geometry.Polyline(
+            {&#34;paths&#34;: [[[0, 0], [0.1, 0.1], [0.2, 0.2]]], &#34;spatialReference&#34;: {&#34;wkid&#34;: 4326}}
+        ).JSON
 
-    if live_geometry_type == &#39;esriGeometryPolygon&#39;:
-        return arcgis.geometry.Polygon({
-            &#39;rings&#39;: [[[0, .1], [.1, .1], [.1, 0], [0, 0]]],
-            &#39;spatialReference&#39;: {
-                &#39;wkid&#39;: 4326
-            }
-        }).JSON
+    if live_geometry_type == &#34;esriGeometryPolygon&#34;:
+        return arcgis.geometry.Polygon(
+            {&#34;rings&#34;: [[[0, 0.1], [0.1, 0.1], [0.1, 0], [0, 0]]], &#34;spatialReference&#34;: {&#34;wkid&#34;: 4326}}
+        ).JSON
 
-    raise NotImplementedError(f&#39;Null value generator for live geometry type {live_geometry_type} not yet implemented&#39;)
+    raise NotImplementedError(f&#34;Null value generator for live geometry type {live_geometry_type} not yet implemented&#34;)
 
 
 class DeleteUtils:
-    &#34;&#34;&#34;Verify Object IDs used for delete operations
-    &#34;&#34;&#34;
+    &#34;&#34;&#34;Verify Object IDs used for delete operations&#34;&#34;&#34;
 
     @staticmethod
     def check_delete_oids_are_ints(oid_list):
@@ -825,7 +820,7 @@ class DeleteUtils:
             except ValueError:
                 bad_oids.append(oid)
         if bad_oids:
-            raise TypeError(f&#39;Couldn\&#39;t convert OBJECTID(s) `{bad_oids}` to integer&#39;)
+            raise TypeError(f&#34;Couldn&#39;t convert OBJECTID(s) `{bad_oids}` to integer&#34;)
         return numeric_oids
 
     @staticmethod
@@ -841,7 +836,7 @@ class DeleteUtils:
         &#34;&#34;&#34;
 
         if not numeric_oids:
-            raise ValueError(f&#39;No OBJECTIDs found in {oid_list}&#39;)
+            raise ValueError(f&#34;No OBJECTIDs found in {oid_list}&#34;)
 
     @staticmethod
     def check_delete_oids_are_in_live_data(oid_string, numeric_oids, feature_layer):
@@ -860,18 +855,17 @@ class DeleteUtils:
         &#34;&#34;&#34;
 
         query_results = feature_layer.query(object_ids=oid_string, return_ids_only=True)
-        query_oids = query_results[&#39;objectIds&#39;]
+        query_oids = query_results[&#34;objectIds&#34;]
         oids_not_in_layer = set(numeric_oids) - set(query_oids)
 
         if oids_not_in_layer:
-            warnings.warn(f&#39;OBJECTIDs {oids_not_in_layer} were not found in the live data&#39;)
+            warnings.warn(f&#34;OBJECTIDs {oids_not_in_layer} were not found in the live data&#34;)
 
         return len(oids_not_in_layer)
 
 
 class Chunking:
-    &#34;&#34;&#34;Divide a dataframe into chunks to satisfy upload size requirements for append operation.
-    &#34;&#34;&#34;
+    &#34;&#34;&#34;Divide a dataframe into chunks to satisfy upload size requirements for append operation.&#34;&#34;&#34;
 
     @staticmethod
     def _ceildiv(num, denom):
@@ -910,7 +904,7 @@ class Chunking:
 
         if df_length == 1:
             raise ValueError(
-                f&#39;Dataframe chunk is only one row (index {dataframe.index[0]}), further chunking impossible&#39;
+                f&#34;Dataframe chunk is only one row (index {dataframe.index[0]}), further chunking impossible&#34;
             )
 
         starts = range(0, df_length, chunk_size)
@@ -937,8 +931,8 @@ class Chunking:
             list[str]: A list of the dataframe chunks converted to geojson
         &#34;&#34;&#34;
 
-        geojson_size = sys.getsizeof(dataframe.spatial.to_featureset().to_geojson.encode(&#39;utf-16&#39;))
-        module_logger.debug(&#39;Initial file size: %s&#39;, geojson_size)
+        geojson_size = sys.getsizeof(dataframe.spatial.to_featureset().to_geojson.encode(&#34;utf-16&#34;))
+        module_logger.debug(&#34;Initial file size: %s&#34;, geojson_size)
 
         chunked_dataframes = Chunking._recursive_dataframe_chunking(dataframe, max_bytes)
 
@@ -972,7 +966,7 @@ class Chunking:
         &#34;&#34;&#34;
 
         #: Calculate number of chunks needed and the guesstimate max number of rows to achieve that size
-        geojson_size = sys.getsizeof(dataframe.spatial.to_featureset().to_geojson.encode(&#39;utf-16&#39;))
+        geojson_size = sys.getsizeof(dataframe.spatial.to_featureset().to_geojson.encode(&#34;utf-16&#34;))
         chunks_needed = Chunking._ceildiv(geojson_size, max_bytes)
         max_rows = Chunking._ceildiv(len(dataframe), chunks_needed)
 
@@ -981,7 +975,7 @@ class Chunking:
         list_of_dataframes = Chunking._chunk_dataframe(dataframe, max_rows)
         return_dataframes = []  #: Holds result of valid and recursive chunks
         for chunk_dataframe in list_of_dataframes:
-            chunk_geojson_size = sys.getsizeof(chunk_dataframe.spatial.to_featureset().to_geojson.encode(&#39;utf-16&#39;))
+            chunk_geojson_size = sys.getsizeof(chunk_dataframe.spatial.to_featureset().to_geojson.encode(&#34;utf-16&#34;))
             if chunk_geojson_size &gt; max_bytes:
                 return_dataframes.extend(Chunking._recursive_dataframe_chunking(chunk_dataframe, max_bytes))
             else:
@@ -998,15 +992,15 @@ def fix_numeric_empty_strings(feature_set, feature_layer_fields):
     &#34;&#34;&#34;
 
     fields_to_fix = {
-        field[&#39;name&#39;]
+        field[&#34;name&#34;]
         for field in feature_layer_fields
-        if field[&#39;type&#39;] in [&#39;esriFieldTypeDouble&#39;, &#39;esriFieldTypeInteger&#39;, &#39;esriFieldTypeDate&#39;] and field[&#39;nullable&#39;]
+        if field[&#34;type&#34;] in [&#34;esriFieldTypeDouble&#34;, &#34;esriFieldTypeInteger&#34;, &#34;esriFieldTypeDate&#34;] and field[&#34;nullable&#34;]
     }
-    fields_to_fix -= {&#39;Shape__Length&#39;, &#39;Shape__Area&#39;}
+    fields_to_fix -= {&#34;Shape__Length&#34;, &#34;Shape__Area&#34;}
 
     for feature in feature_set.features:
         for field_name in fields_to_fix:
-            if feature.attributes[field_name] == &#39;&#39;:
+            if feature.attributes[field_name] == &#34;&#34;:
                 feature.attributes[field_name] = None
 
     return feature_set
@@ -1023,7 +1017,7 @@ def chunker(sequence, chunk_size):
         generator: Generator of original sequence broken into chunk_size lists
     &#34;&#34;&#34;
 
-    return (sequence[position:position + chunk_size] for position in range(0, len(sequence), chunk_size))</code></pre>
+    return (sequence[position : position + chunk_size] for position in range(0, len(sequence), chunk_size))</code></pre>
 </details>
 </section>
 <section>
@@ -1089,11 +1083,11 @@ obtained from google.auth.default() within a cloud function.</dd>
         return pygsheets.authorize(service_file=credentials)
     except (FileNotFoundError, TypeError) as err:
         module_logger.debug(err)
-        module_logger.debug(&#39;Credentials file not found, trying as environment variable&#39;)
+        module_logger.debug(&#34;Credentials file not found, trying as environment variable&#34;)
     try:
         return pygsheets.authorize(custom_credentials=credentials)
     except Exception as err:
-        raise RuntimeError(&#39;Could not authenticate to Google API&#39;) from err</code></pre>
+        raise RuntimeError(&#34;Could not authenticate to Google API&#34;) from err</code></pre>
 </details>
 </dd>
 <dt id="palletjack.utils.build_sql_in_list"><code class="name flex">
@@ -1206,12 +1200,12 @@ split_value.</p>
         RuntimeError: If the field is not unique (or if it&#39;s indexed but not unique)
     &#34;&#34;&#34;
 
-    fields = [field[&#39;fields&#39;] for field in featurelayer.properties.indexes]
+    fields = [field[&#34;fields&#34;] for field in featurelayer.properties.indexes]
     if field_name not in fields:
         raise RuntimeError(f&#39;{field_name} does not have a &#34;unique constraint&#34; set within the feature layer&#39;)
     for field in featurelayer.properties.indexes:
-        if field[&#39;fields&#39;] == field_name:
-            if not field[&#39;isUnique&#39;]:
+        if field[&#34;fields&#34;] == field_name:
+            if not field[&#34;isUnique&#34;]:
                 raise RuntimeError(f&#39;{field_name} does not have a &#34;unique constraint&#34; set within the feature layer&#39;)</code></pre>
 </details>
 </dd>
@@ -1247,22 +1241,22 @@ split_value.</p>
         RuntimeError: If new data contains a field not present in the live data
     &#34;&#34;&#34;
 
-    live_fields = {field[&#39;name&#39;] for field in featurelayer.properties.fields}
+    live_fields = {field[&#34;name&#34;] for field in featurelayer.properties.fields}
     new_fields = set(new_dataframe.columns)
     #: Remove SHAPE field from set (live &#34;featurelayer.properties[&#39;fields&#39;]&#34; does not expose the &#39;SHAPE&#39; field)
     try:
-        new_fields.remove(&#39;SHAPE&#39;)
+        new_fields.remove(&#34;SHAPE&#34;)
     except KeyError:
         pass
     new_dif = new_fields - live_fields
     live_dif = live_fields - new_fields
     if new_dif:
         raise RuntimeError(
-            f&#39;New dataset contains the following fields that are not present in the live dataset: {new_dif}&#39;
+            f&#34;New dataset contains the following fields that are not present in the live dataset: {new_dif}&#34;
         )
     if live_dif:
         module_logger.warning(
-            &#39;New dataset does not contain the following fields that are present in the live dataset: %s&#39;, live_dif
+            &#34;New dataset does not contain the following fields that are present in the live dataset: %s&#34;, live_dif
         )</code></pre>
 </details>
 </dd>
@@ -1298,9 +1292,9 @@ split_value.</p>
         RuntimeError: If index_column is not in featurelayer&#39;s fields
     &#34;&#34;&#34;
 
-    featurelayer_fields = [field[&#39;name&#39;] for field in featurelayer.properties.fields]
+    featurelayer_fields = [field[&#34;name&#34;] for field in featurelayer.properties.fields]
     if index_column not in featurelayer_fields:
-        raise RuntimeError(f&#39;Index column {index_column} not found in feature layer fields {featurelayer_fields}&#39;)</code></pre>
+        raise RuntimeError(f&#34;Index column {index_column} not found in feature layer fields {featurelayer_fields}&#34;)</code></pre>
 </details>
 </dd>
 <dt id="palletjack.utils.chunker"><code class="name flex">
@@ -1335,7 +1329,7 @@ split_value.</p>
         generator: Generator of original sequence broken into chunk_size lists
     &#34;&#34;&#34;
 
-    return (sequence[position:position + chunk_size] for position in range(0, len(sequence), chunk_size))</code></pre>
+    return (sequence[position : position + chunk_size] for position in range(0, len(sequence), chunk_size))</code></pre>
 </details>
 </dd>
 <dt id="palletjack.utils.fix_numeric_empty_strings"><code class="name flex">
@@ -1362,15 +1356,15 @@ split_value.</p>
     &#34;&#34;&#34;
 
     fields_to_fix = {
-        field[&#39;name&#39;]
+        field[&#34;name&#34;]
         for field in feature_layer_fields
-        if field[&#39;type&#39;] in [&#39;esriFieldTypeDouble&#39;, &#39;esriFieldTypeInteger&#39;, &#39;esriFieldTypeDate&#39;] and field[&#39;nullable&#39;]
+        if field[&#34;type&#34;] in [&#34;esriFieldTypeDouble&#34;, &#34;esriFieldTypeInteger&#34;, &#34;esriFieldTypeDate&#34;] and field[&#34;nullable&#34;]
     }
-    fields_to_fix -= {&#39;Shape__Length&#39;, &#39;Shape__Area&#39;}
+    fields_to_fix -= {&#34;Shape__Length&#34;, &#34;Shape__Area&#34;}
 
     for feature in feature_set.features:
         for field_name in fields_to_fix:
-            if feature.attributes[field_name] == &#39;&#39;:
+            if feature.attributes[field_name] == &#34;&#34;:
                 feature.attributes[field_name] = None
 
     return feature_set</code></pre>
@@ -1423,26 +1417,20 @@ split_value.</p>
 
     live_geometry_type = feature_layer_properties.geometryType
 
-    if live_geometry_type == &#39;esriGeometryPoint&#39;:
-        return arcgis.geometry.Point({&#39;x&#39;: 0, &#39;y&#39;: 0, &#39;spatialReference&#39;: {&#39;wkid&#39;: 4326}}).JSON
+    if live_geometry_type == &#34;esriGeometryPoint&#34;:
+        return arcgis.geometry.Point({&#34;x&#34;: 0, &#34;y&#34;: 0, &#34;spatialReference&#34;: {&#34;wkid&#34;: 4326}}).JSON
 
-    if live_geometry_type == &#39;esriGeometryPolyline&#39;:
-        return arcgis.geometry.Polyline({
-            &#39;paths&#39;: [[[0, 0], [.1, .1], [.2, .2]]],
-            &#39;spatialReference&#39;: {
-                &#39;wkid&#39;: 4326
-            }
-        }).JSON
+    if live_geometry_type == &#34;esriGeometryPolyline&#34;:
+        return arcgis.geometry.Polyline(
+            {&#34;paths&#34;: [[[0, 0], [0.1, 0.1], [0.2, 0.2]]], &#34;spatialReference&#34;: {&#34;wkid&#34;: 4326}}
+        ).JSON
 
-    if live_geometry_type == &#39;esriGeometryPolygon&#39;:
-        return arcgis.geometry.Polygon({
-            &#39;rings&#39;: [[[0, .1], [.1, .1], [.1, 0], [0, 0]]],
-            &#39;spatialReference&#39;: {
-                &#39;wkid&#39;: 4326
-            }
-        }).JSON
+    if live_geometry_type == &#34;esriGeometryPolygon&#34;:
+        return arcgis.geometry.Polygon(
+            {&#34;rings&#34;: [[[0, 0.1], [0.1, 0.1], [0.1, 0], [0, 0]]], &#34;spatialReference&#34;: {&#34;wkid&#34;: 4326}}
+        ).JSON
 
-    raise NotImplementedError(f&#39;Null value generator for live geometry type {live_geometry_type} not yet implemented&#39;)</code></pre>
+    raise NotImplementedError(f&#34;Null value generator for live geometry type {live_geometry_type} not yet implemented&#34;)</code></pre>
 </details>
 </dd>
 <dt id="palletjack.utils.rename_columns_for_agol"><code class="name flex">
@@ -1476,8 +1464,8 @@ split_value.</p>
 
     rename_dict = {}
     for column in columns:
-        no_specials = re.sub(r&#39;[^a-zA-Z0-9_]&#39;, &#39;_&#39;, column)
-        match = re.match(r&#39;(^[0-9_]+)&#39;, no_specials)
+        no_specials = re.sub(r&#34;[^a-zA-Z0-9_]&#34;, &#34;_&#34;, column)
+        match = re.match(r&#34;(^[0-9_]+)&#34;, no_specials)
         if match:
             number = match.groups()[0]
             rename_dict[column] = no_specials.removeprefix(number) + number
@@ -1528,7 +1516,7 @@ split_value.</p>
 
     for original_name in field_mapping.keys():
         if original_name not in dataframe.columns:
-            raise ValueError(f&#39;Field {original_name} not found in dataframe.&#39;)
+            raise ValueError(f&#34;Field {original_name} not found in dataframe.&#34;)
 
     renamed_df = dataframe.rename(columns=field_mapping)
 
@@ -1596,7 +1584,7 @@ palletjack.utils.RETRY_MAX_TRIES and palletjack.utils.RETRY_DELAY_TIME constants
 
         #: ArcGIS API for Python loves throwing bog-standard Exceptions, so we can&#39;t narrow this down further
         except Exception as error:
-            if tries &lt;= max_tries:  #pylint: disable=no-else-return
+            if tries &lt;= max_tries:  # pylint: disable=no-else-return
                 wait_time = delay**tries
                 module_logger.debug(
                     &#39;Exception &#34;%s&#34; thrown on &#34;%s&#34;. Retrying after %s seconds...&#39;, error, worker_method, wait_time
@@ -1610,8 +1598,8 @@ palletjack.utils.RETRY_MAX_TRIES and palletjack.utils.RETRY_DELAY_TIME constants
     return _inner_retry(worker_method, *args, **kwargs)</code></pre>
 </details>
 </dd>
-<dt id="palletjack.utils.save_feature_layer_to_gdb"><code class="name flex">
-<span>def <span class="ident">save_feature_layer_to_gdb</span></span>(<span>feature_layer, directory)</span>
+<dt id="palletjack.utils.save_to_gdb"><code class="name flex">
+<span>def <span class="ident">save_to_gdb</span></span>(<span>table_or_layer, directory)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Save a feature_layer to a gdb for safety as backup.gdb/{layer name}_{todays date}</p>
@@ -1631,7 +1619,7 @@ palletjack.utils.RETRY_MAX_TRIES and palletjack.utils.RETRY_DELAY_TIME constants
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def save_feature_layer_to_gdb(feature_layer, directory):
+<pre><code class="python">def save_to_gdb(table_or_layer, directory):
     &#34;&#34;&#34;Save a feature_layer to a gdb for safety as backup.gdb/{layer name}_{todays date}
 
     Args:
@@ -1642,22 +1630,25 @@ palletjack.utils.RETRY_MAX_TRIES and palletjack.utils.RETRY_DELAY_TIME constants
         Path: The full path to the output file, named with the layer name and today&#39;s date.
     &#34;&#34;&#34;
 
-    module_logger.debug(&#39;Downloading existing data...&#39;)
-    dataframe = feature_layer.query().sdf
+    module_logger.debug(&#34;Downloading existing data...&#34;)
+    dataframe = table_or_layer.query().sdf
 
     if dataframe.empty:
-        return f&#39;No data to save in feature layer {feature_layer.properties.name}&#39;
+        return f&#34;No data to save in feature layer {table_or_layer.properties.name}&#34;
 
-    gdf = sedf_to_gdf(dataframe)
+    if table_or_layer.properties.type == &#34;Feature Layer&#34;:
+        gdf = sedf_to_gdf(dataframe)
+    else:
+        gdf = gpd.GeoDataFrame(dataframe)
 
-    out_path = Path(directory, &#39;backup.gdb&#39;)
-    out_layer = f&#39;{feature_layer.properties.name}_{datetime.date.today().strftime(&#34;%Y_%m_%d&#34;)}&#39;
-    module_logger.debug(&#39;Saving existing data to %s&#39;, out_path)
+    out_path = Path(directory, &#34;backup.gdb&#34;)
+    out_layer = f&#39;{table_or_layer.properties.name}_{datetime.date.today().strftime(&#34;%Y_%m_%d&#34;)}&#39;
+    module_logger.debug(&#34;Saving existing data to %s&#34;, out_path)
     try:
-        gdf.to_file(out_path, layer=out_layer, engine=&#39;pyogrio&#39;, driver=&#39;OpenFileGDB&#39;)
+        gdf.to_file(out_path, layer=out_layer, engine=&#34;pyogrio&#34;, driver=&#34;OpenFileGDB&#34;)
     except pyogrio.errors.DataSourceError as error:
         raise ValueError(
-            f&#39;Error writing {out_layer} to {out_path}. Verify {Path(directory)} exists and is writable.&#39;
+            f&#34;Error writing {out_layer} to {out_path}. Verify {Path(directory)} exists and is writable.&#34;
         ) from error
 
     return out_path</code></pre>
@@ -1694,9 +1685,9 @@ palletjack.utils.RETRY_MAX_TRIES and palletjack.utils.RETRY_DELAY_TIME constants
 
     gdf = gpd.GeoDataFrame(dataframe, geometry=dataframe.spatial.name)
     try:
-        gdf.set_crs(dataframe.spatial.sr[&#39;latestWkid&#39;], inplace=True)
+        gdf.set_crs(dataframe.spatial.sr[&#34;latestWkid&#34;], inplace=True)
     except KeyError:
-        gdf.set_crs(dataframe.spatial.sr[&#39;wkid&#39;], inplace=True)
+        gdf.set_crs(dataframe.spatial.sr[&#34;wkid&#34;], inplace=True)
 
     return gdf</code></pre>
 </details>
@@ -1716,8 +1707,7 @@ palletjack.utils.RETRY_MAX_TRIES and palletjack.utils.RETRY_DELAY_TIME constants
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">class Chunking:
-    &#34;&#34;&#34;Divide a dataframe into chunks to satisfy upload size requirements for append operation.
-    &#34;&#34;&#34;
+    &#34;&#34;&#34;Divide a dataframe into chunks to satisfy upload size requirements for append operation.&#34;&#34;&#34;
 
     @staticmethod
     def _ceildiv(num, denom):
@@ -1756,7 +1746,7 @@ palletjack.utils.RETRY_MAX_TRIES and palletjack.utils.RETRY_DELAY_TIME constants
 
         if df_length == 1:
             raise ValueError(
-                f&#39;Dataframe chunk is only one row (index {dataframe.index[0]}), further chunking impossible&#39;
+                f&#34;Dataframe chunk is only one row (index {dataframe.index[0]}), further chunking impossible&#34;
             )
 
         starts = range(0, df_length, chunk_size)
@@ -1783,8 +1773,8 @@ palletjack.utils.RETRY_MAX_TRIES and palletjack.utils.RETRY_DELAY_TIME constants
             list[str]: A list of the dataframe chunks converted to geojson
         &#34;&#34;&#34;
 
-        geojson_size = sys.getsizeof(dataframe.spatial.to_featureset().to_geojson.encode(&#39;utf-16&#39;))
-        module_logger.debug(&#39;Initial file size: %s&#39;, geojson_size)
+        geojson_size = sys.getsizeof(dataframe.spatial.to_featureset().to_geojson.encode(&#34;utf-16&#34;))
+        module_logger.debug(&#34;Initial file size: %s&#34;, geojson_size)
 
         chunked_dataframes = Chunking._recursive_dataframe_chunking(dataframe, max_bytes)
 
@@ -1818,7 +1808,7 @@ palletjack.utils.RETRY_MAX_TRIES and palletjack.utils.RETRY_DELAY_TIME constants
         &#34;&#34;&#34;
 
         #: Calculate number of chunks needed and the guesstimate max number of rows to achieve that size
-        geojson_size = sys.getsizeof(dataframe.spatial.to_featureset().to_geojson.encode(&#39;utf-16&#39;))
+        geojson_size = sys.getsizeof(dataframe.spatial.to_featureset().to_geojson.encode(&#34;utf-16&#34;))
         chunks_needed = Chunking._ceildiv(geojson_size, max_bytes)
         max_rows = Chunking._ceildiv(len(dataframe), chunks_needed)
 
@@ -1827,7 +1817,7 @@ palletjack.utils.RETRY_MAX_TRIES and palletjack.utils.RETRY_DELAY_TIME constants
         list_of_dataframes = Chunking._chunk_dataframe(dataframe, max_rows)
         return_dataframes = []  #: Holds result of valid and recursive chunks
         for chunk_dataframe in list_of_dataframes:
-            chunk_geojson_size = sys.getsizeof(chunk_dataframe.spatial.to_featureset().to_geojson.encode(&#39;utf-16&#39;))
+            chunk_geojson_size = sys.getsizeof(chunk_dataframe.spatial.to_featureset().to_geojson.encode(&#34;utf-16&#34;))
             if chunk_geojson_size &gt; max_bytes:
                 return_dataframes.extend(Chunking._recursive_dataframe_chunking(chunk_dataframe, max_bytes))
             else:
@@ -1882,8 +1872,8 @@ def build_upload_json(dataframe, feature_layer_fields, max_bytes=100_000_000):
         list[str]: A list of the dataframe chunks converted to geojson
     &#34;&#34;&#34;
 
-    geojson_size = sys.getsizeof(dataframe.spatial.to_featureset().to_geojson.encode(&#39;utf-16&#39;))
-    module_logger.debug(&#39;Initial file size: %s&#39;, geojson_size)
+    geojson_size = sys.getsizeof(dataframe.spatial.to_featureset().to_geojson.encode(&#34;utf-16&#34;))
+    module_logger.debug(&#34;Initial file size: %s&#34;, geojson_size)
 
     chunked_dataframes = Chunking._recursive_dataframe_chunking(dataframe, max_bytes)
 
@@ -1907,8 +1897,7 @@ def build_upload_json(dataframe, feature_layer_fields, max_bytes=100_000_000):
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">class DeleteUtils:
-    &#34;&#34;&#34;Verify Object IDs used for delete operations
-    &#34;&#34;&#34;
+    &#34;&#34;&#34;Verify Object IDs used for delete operations&#34;&#34;&#34;
 
     @staticmethod
     def check_delete_oids_are_ints(oid_list):
@@ -1932,7 +1921,7 @@ def build_upload_json(dataframe, feature_layer_fields, max_bytes=100_000_000):
             except ValueError:
                 bad_oids.append(oid)
         if bad_oids:
-            raise TypeError(f&#39;Couldn\&#39;t convert OBJECTID(s) `{bad_oids}` to integer&#39;)
+            raise TypeError(f&#34;Couldn&#39;t convert OBJECTID(s) `{bad_oids}` to integer&#34;)
         return numeric_oids
 
     @staticmethod
@@ -1948,7 +1937,7 @@ def build_upload_json(dataframe, feature_layer_fields, max_bytes=100_000_000):
         &#34;&#34;&#34;
 
         if not numeric_oids:
-            raise ValueError(f&#39;No OBJECTIDs found in {oid_list}&#39;)
+            raise ValueError(f&#34;No OBJECTIDs found in {oid_list}&#34;)
 
     @staticmethod
     def check_delete_oids_are_in_live_data(oid_string, numeric_oids, feature_layer):
@@ -1967,11 +1956,11 @@ def build_upload_json(dataframe, feature_layer_fields, max_bytes=100_000_000):
         &#34;&#34;&#34;
 
         query_results = feature_layer.query(object_ids=oid_string, return_ids_only=True)
-        query_oids = query_results[&#39;objectIds&#39;]
+        query_oids = query_results[&#34;objectIds&#34;]
         oids_not_in_layer = set(numeric_oids) - set(query_oids)
 
         if oids_not_in_layer:
-            warnings.warn(f&#39;OBJECTIDs {oids_not_in_layer} were not found in the live data&#39;)
+            warnings.warn(f&#34;OBJECTIDs {oids_not_in_layer} were not found in the live data&#34;)
 
         return len(oids_not_in_layer)</code></pre>
 </details>
@@ -2022,11 +2011,11 @@ def check_delete_oids_are_in_live_data(oid_string, numeric_oids, feature_layer):
     &#34;&#34;&#34;
 
     query_results = feature_layer.query(object_ids=oid_string, return_ids_only=True)
-    query_oids = query_results[&#39;objectIds&#39;]
+    query_oids = query_results[&#34;objectIds&#34;]
     oids_not_in_layer = set(numeric_oids) - set(query_oids)
 
     if oids_not_in_layer:
-        warnings.warn(f&#39;OBJECTIDs {oids_not_in_layer} were not found in the live data&#39;)
+        warnings.warn(f&#34;OBJECTIDs {oids_not_in_layer} were not found in the live data&#34;)
 
     return len(oids_not_in_layer)</code></pre>
 </details>
@@ -2077,7 +2066,7 @@ def check_delete_oids_are_ints(oid_list):
         except ValueError:
             bad_oids.append(oid)
     if bad_oids:
-        raise TypeError(f&#39;Couldn\&#39;t convert OBJECTID(s) `{bad_oids}` to integer&#39;)
+        raise TypeError(f&#34;Couldn&#39;t convert OBJECTID(s) `{bad_oids}` to integer&#34;)
     return numeric_oids</code></pre>
 </details>
 </dd>
@@ -2115,7 +2104,7 @@ def check_for_empty_oid_list(oid_list, numeric_oids):
     &#34;&#34;&#34;
 
     if not numeric_oids:
-        raise ValueError(f&#39;No OBJECTIDs found in {oid_list}&#39;)</code></pre>
+        raise ValueError(f&#34;No OBJECTIDs found in {oid_list}&#34;)</code></pre>
 </details>
 </dd>
 </dl>
@@ -2193,32 +2182,32 @@ Provides the check_fields class method to run all the checks in one call with ha
 
         #: Converting dtypes to str and comparing seems to be the only way to break out into shorts and longs, singles
         #: and doubles. Otherwise, checking subclass is probably more pythonic.
-        short_ints = [&#39;uint8&#39;, &#39;uint16&#39;, &#39;int8&#39;, &#39;int16&#39;]
-        long_ints = [&#39;int&#39;, &#39;uint32&#39;, &#39;uint64&#39;, &#39;int32&#39;, &#39;int64&#39;]
+        short_ints = [&#34;uint8&#34;, &#34;uint16&#34;, &#34;int8&#34;, &#34;int16&#34;]
+        long_ints = [&#34;int&#34;, &#34;uint32&#34;, &#34;uint64&#34;, &#34;int32&#34;, &#34;int64&#34;]
 
         #: Leaving the commented types here for future implementation if necessary
         esri_to_pandas_types_mapping = {
-            &#39;esriFieldTypeInteger&#39;: [&#39;int&#39;] + short_ints + long_ints,
-            &#39;esriFieldTypeSmallInteger&#39;: short_ints,
-            &#39;esriFieldTypeDouble&#39;: [&#39;float&#39;, &#39;float32&#39;, &#39;float64&#39;],
-            &#39;esriFieldTypeSingle&#39;: [&#39;float32&#39;],
-            &#39;esriFieldTypeString&#39;: [&#39;str&#39;, &#39;object&#39;, &#39;string&#39;],
-            &#39;esriFieldTypeDate&#39;: [&#39;datetime64[ns]&#39;],
-            &#39;esriFieldTypeGeometry&#39;: [&#39;geometry&#39;],
-            &#39;esriFieldTypeOID&#39;: [&#39;int&#39;] + short_ints + long_ints,
+            &#34;esriFieldTypeInteger&#34;: [&#34;int&#34;] + short_ints + long_ints,
+            &#34;esriFieldTypeSmallInteger&#34;: short_ints,
+            &#34;esriFieldTypeDouble&#34;: [&#34;float&#34;, &#34;float32&#34;, &#34;float64&#34;],
+            &#34;esriFieldTypeSingle&#34;: [&#34;float32&#34;],
+            &#34;esriFieldTypeString&#34;: [&#34;str&#34;, &#34;object&#34;, &#34;string&#34;],
+            &#34;esriFieldTypeDate&#34;: [&#34;datetime64[ns]&#34;],
+            &#34;esriFieldTypeGeometry&#34;: [&#34;geometry&#34;],
+            &#34;esriFieldTypeOID&#34;: [&#34;int&#34;] + short_ints + long_ints,
             #  &#39;esriFieldTypeBlob&#39;: [],
-            &#39;esriFieldTypeGlobalID&#39;: [&#39;str&#39;, &#39;object&#39;, &#39;string&#39;],
+            &#34;esriFieldTypeGlobalID&#34;: [&#34;str&#34;, &#34;object&#34;, &#34;string&#34;],
             #  &#39;esriFieldTypeRaster&#39;: [],
-            &#39;esriFieldTypeGUID&#39;: [&#39;str&#39;, &#39;object&#39;, &#39;string&#39;],
+            &#34;esriFieldTypeGUID&#34;: [&#34;str&#34;, &#34;object&#34;, &#34;string&#34;],
             #  &#39;esriFieldTypeXML&#39;: [],
         }
 
         #: geometry checking gets its own function
-        if &#39;SHAPE&#39; in fields:
+        if &#34;SHAPE&#34; in fields:
             self._check_geometry_types()
-            fields.remove(&#39;SHAPE&#39;)
+            fields.remove(&#34;SHAPE&#34;)
 
-        fields_to_check = self.fields_dataframe[self.fields_dataframe[&#39;name&#39;].isin(fields)].set_index(&#39;name&#39;)
+        fields_to_check = self.fields_dataframe[self.fields_dataframe[&#34;name&#34;].isin(fields)].set_index(&#34;name&#34;)
 
         invalid_fields = []
         int_fields_as_floats = []
@@ -2226,15 +2215,17 @@ Provides the check_fields class method to run all the checks in one call with ha
         for field in fields:
             #: check against the str.lower to catch normal dtypes (int64) and the new, pd.NA-aware dtypes (Int64)
             new_dtype = str(self.new_dataframe[field].dtype).lower()
-            live_type = fields_to_check.loc[field, &#39;type&#39;]
+            live_type = fields_to_check.loc[field, &#34;type&#34;]
 
             try:
                 if new_dtype not in esri_to_pandas_types_mapping[live_type]:
                     invalid_fields.append((field, live_type, str(self.new_dataframe[field].dtype)))
-                if new_dtype in [&#39;float&#39;, &#39;float32&#39;, &#39;float64&#39;
-                                ] and live_type in [&#39;esriFieldTypeInteger&#39;, &#39;esriFieldTypeSmallInteger&#39;]:
+                if new_dtype in [&#34;float&#34;, &#34;float32&#34;, &#34;float64&#34;] and live_type in [
+                    &#34;esriFieldTypeInteger&#34;,
+                    &#34;esriFieldTypeSmallInteger&#34;,
+                ]:
                     int_fields_as_floats.append(field)
-                if &#39;datetime64&#39; in new_dtype and new_dtype != &#39;datetime64[ns]&#39; and live_type == &#39;esriFieldTypeDate&#39;:
+                if &#34;datetime64&#34; in new_dtype and new_dtype != &#34;datetime64[ns]&#34; and live_type == &#34;esriFieldTypeDate&#34;:
                     datetime_fields_with_timezone.append(field)
             except KeyError:
                 # pylint: disable-next=raise-missing-from
@@ -2243,18 +2234,18 @@ Provides the check_fields class method to run all the checks in one call with ha
         if invalid_fields:
             if int_fields_as_floats:
                 raise IntFieldAsFloatError(
-                    f&#39;Field type incompatibilities (field, live type, new type): {invalid_fields}\n&#39; \
-                    &#39;Check the following int fields for null/np.nan values and convert to panda\&#39;s nullable int &#39;\
+                    f&#34;Field type incompatibilities (field, live type, new type): {invalid_fields}\n&#34;
+                    &#34;Check the following int fields for null/np.nan values and convert to panda&#39;s nullable int &#34;
                     f&#39;dtype: {&#34;, &#34;.join(int_fields_as_floats)}&#39;
                 )
             if datetime_fields_with_timezone:
                 raise TimezoneAwareDatetimeError(
-                    f&#39;Field type incompatibilities (field, live type, new type): {invalid_fields}\n&#39; \
-                    &#39;Check the following datetime fields for timezone aware dtypes values and convert to &#39;\
-                    &#39;timezone-naive dtypes using pd.to_datetime(df[\&#39;field\&#39;]).dt.tz_localize(None): &#39;\
+                    f&#34;Field type incompatibilities (field, live type, new type): {invalid_fields}\n&#34;
+                    &#34;Check the following datetime fields for timezone aware dtypes values and convert to &#34;
+                    &#34;timezone-naive dtypes using pd.to_datetime(df[&#39;field&#39;]).dt.tz_localize(None): &#34;
                     f&#39;{&#34;, &#34;.join(datetime_fields_with_timezone)}&#39;
                 )
-            raise ValueError(f&#39;Field type incompatibilities (field, live type, new type): {invalid_fields}&#39;)
+            raise ValueError(f&#34;Field type incompatibilities (field, live type, new type): {invalid_fields}&#34;)
 
     def _check_geometry_types(self):
         &#34;&#34;&#34;Raise an error if the live and new data geometry types are incompatible.
@@ -2269,17 +2260,17 @@ Provides the check_fields class method to run all the checks in one call with ha
         &#34;&#34;&#34;
 
         esri_to_sedf_geometry_mapping = {
-            &#39;esriGeometryPoint&#39;: &#39;point&#39;,
-            &#39;esriGeometryMultipoint&#39;: &#39;multipoint&#39;,
-            &#39;esriGeometryPolyline&#39;: &#39;polyline&#39;,
-            &#39;esriGeometryPolygon&#39;: &#39;polygon&#39;,
-            &#39;esriGeometryEnvelope&#39;: &#39;envelope&#39;,
+            &#34;esriGeometryPoint&#34;: &#34;point&#34;,
+            &#34;esriGeometryMultipoint&#34;: &#34;multipoint&#34;,
+            &#34;esriGeometryPolyline&#34;: &#34;polyline&#34;,
+            &#34;esriGeometryPolygon&#34;: &#34;polygon&#34;,
+            &#34;esriGeometryEnvelope&#34;: &#34;envelope&#34;,
         }
 
-        if &#39;SHAPE&#39; not in self.new_dataframe.columns:
-            raise ValueError(&#39;New dataframe does not have a SHAPE column&#39;)
+        if &#34;SHAPE&#34; not in self.new_dataframe.columns:
+            raise ValueError(&#34;New dataframe does not have a SHAPE column&#34;)
 
-        if self.new_dataframe[&#39;SHAPE&#39;].isna().any():
+        if self.new_dataframe[&#34;SHAPE&#34;].isna().any():
             raise ValueError(
                 f&#39;New dataframe has missing geometries at index {list(self.new_dataframe[self.new_dataframe[&#34;SHAPE&#34;].isna()].index)}&#39;
             )
@@ -2287,7 +2278,7 @@ Provides the check_fields class method to run all the checks in one call with ha
         live_geometry_type = self.live_data_properties.geometryType
         new_geometry_types = self.new_dataframe.spatial.geometry_type
         if len(new_geometry_types) &gt; 1:
-            raise ValueError(&#39;New dataframe has multiple geometry types&#39;)
+            raise ValueError(&#34;New dataframe has multiple geometry types&#34;)
         if esri_to_sedf_geometry_mapping[live_geometry_type] != new_geometry_types[0].lower():
             raise ValueError(
                 f&#39;New dataframe geometry type &#34;{new_geometry_types[0]}&#34; incompatible with live geometry type &#34;{live_geometry_type}&#34;&#39;
@@ -2310,8 +2301,8 @@ Provides the check_fields class method to run all the checks in one call with ha
         columns_with_nulls = self.new_dataframe.columns[self.new_dataframe.isna().any()].tolist()
         # fields_dataframe = pd.DataFrame(self.live_data_properties[&#39;fields&#39;])
         non_nullable_live_columns = self.fields_dataframe[
-            ~(self.fields_dataframe[&#39;nullable&#39;]) &amp;
-            ~(self.fields_dataframe[&#39;defaultValue&#39;].astype(bool))][&#39;name&#39;].tolist()
+            ~(self.fields_dataframe[&#34;nullable&#34;]) &amp; ~(self.fields_dataframe[&#34;defaultValue&#34;].astype(bool))
+        ][&#34;name&#34;].tolist()
 
         columns_to_check = [column for column in columns_with_nulls if column in fields]
 
@@ -2340,22 +2331,23 @@ Provides the check_fields class method to run all the checks in one call with ha
                 live data allows.
         &#34;&#34;&#34;
 
-        if &#39;length&#39; not in self.fields_dataframe.columns:
-            module_logger.debug(&#39;No fields with length property&#39;)
+        if &#34;length&#34; not in self.fields_dataframe.columns:
+            module_logger.debug(&#34;No fields with length property&#34;)
             return
 
         length_limited_fields = self.fields_dataframe[
-            (self.fields_dataframe[&#39;type&#39;].isin([&#39;esriFieldTypeString&#39;, &#39;esriFieldTypeGlobalID&#39;])) &amp;
-            (self.fields_dataframe[&#39;length&#39;].astype(bool))]
+            (self.fields_dataframe[&#34;type&#34;].isin([&#34;esriFieldTypeString&#34;, &#34;esriFieldTypeGlobalID&#34;]))
+            &amp; (self.fields_dataframe[&#34;length&#34;].astype(bool))
+        ]
 
-        columns_to_check = length_limited_fields[length_limited_fields[&#39;name&#39;].isin(fields)]
+        columns_to_check = length_limited_fields[length_limited_fields[&#34;name&#34;].isin(fields)]
 
-        for field, live_max_length in columns_to_check[[&#39;name&#39;, &#39;length&#39;]].to_records(index=False):
+        for field, live_max_length in columns_to_check[[&#34;name&#34;, &#34;length&#34;]].to_records(index=False):
             new_data_lengths = self.new_dataframe[field].str.len()
             new_max_length = new_data_lengths.max()
             if new_max_length &gt; live_max_length:
                 raise ValueError(
-                    f&#39;Row {new_data_lengths.argmax()}, column {field} in new data exceeds the live data max length of {live_max_length}&#39;
+                    f&#34;Row {new_data_lengths.argmax()}, column {field} in new data exceeds the live data max length of {live_max_length}&#34;
                 )
 
     def check_fields_present(self, fields, add_oid):
@@ -2370,12 +2362,12 @@ Provides the check_fields class method to run all the checks in one call with ha
             RuntimeError: If any of fields are not in live or new data.
         &#34;&#34;&#34;
 
-        live_fields = set(self.fields_dataframe[&#39;name&#39;])
+        live_fields = set(self.fields_dataframe[&#34;name&#34;])
         new_fields = set(self.new_dataframe.columns)
         working_fields = set(fields)
-        working_fields.discard(&#39;SHAPE&#39;)  #: The fields from the feature layer properties don&#39;t include the SHAPE field.
+        working_fields.discard(&#34;SHAPE&#34;)  #: The fields from the feature layer properties don&#39;t include the SHAPE field.
         if add_oid:
-            working_fields.add(&#39;OBJECTID&#39;)
+            working_fields.add(&#34;OBJECTID&#34;)
 
         live_dif = working_fields - live_fields
         new_dif = working_fields - new_fields
@@ -2387,7 +2379,7 @@ Provides the check_fields class method to run all the checks in one call with ha
             error_message.append(f&#39;Fields missing in new data: {&#34;, &#34;.join(new_dif)}&#39;)
 
         if error_message:
-            raise RuntimeError(&#39;. &#39;.join(error_message))
+            raise RuntimeError(&#34;. &#34;.join(error_message))
 
     def check_srs_wgs84(self):
         &#34;&#34;&#34;Raise an error if the new spatial reference system isn&#39;t WGS84 as required by geojson.
@@ -2407,10 +2399,10 @@ Provides the check_fields class method to run all the checks in one call with ha
         try:
             new_srs = int(new_srs)
         except ValueError as error:
-            raise ValueError(&#39;Could not cast new SRS to int&#39;) from error
+            raise ValueError(&#34;Could not cast new SRS to int&#34;) from error
         if new_srs != 4326:
             raise ValueError(
-                f&#39;New dataframe SRS {new_srs} is not wkid 4326. Reproject with appropriate transformation.&#39;
+                f&#34;New dataframe SRS {new_srs} is not wkid 4326. Reproject with appropriate transformation.&#34;
             )
 
     def check_nullable_ints_shapely(self):
@@ -2424,10 +2416,10 @@ Provides the check_fields class method to run all the checks in one call with ha
         &#34;&#34;&#34;
 
         #: Only occurs if client is using shapely instead of arcpy
-        if importlib.util.find_spec(&#39;arcpy&#39;):
+        if importlib.util.find_spec(&#34;arcpy&#34;):
             return
 
-        nullable_ints = {&#39;Int8&#39;, &#39;Int16&#39;, &#39;Int32&#39;, &#39;Int64&#39;, &#39;UInt8&#39;, &#39;UInt16&#39;, &#39;UInt32&#39;, &#39;UInt64&#39;}
+        nullable_ints = {&#34;Int8&#34;, &#34;Int16&#34;, &#34;Int32&#34;, &#34;Int64&#34;, &#34;UInt8&#34;, &#34;UInt16&#34;, &#34;UInt32&#34;, &#34;UInt64&#34;}
         nullable_int_columns = [
             column for column in self.new_dataframe.columns if str(self.new_dataframe[column].dtype) in nullable_ints
         ]
@@ -2435,8 +2427,8 @@ Provides the check_fields class method to run all the checks in one call with ha
 
         if columns_with_nulls:
             warnings.warn(
-                &#39;The following columns have null values that will be replaced by 0 due to shapely conventions: &#39;\
-                    f&#39;{&#34;, &#34;.join(columns_with_nulls)}&#39;
+                &#34;The following columns have null values that will be replaced by 0 due to shapely conventions: &#34;
+                f&#39;{&#34;, &#34;.join(columns_with_nulls)}&#39;
             )</code></pre>
 </details>
 <h3>Static methods</h3>
@@ -2520,22 +2512,23 @@ live data allows.</dd>
             live data allows.
     &#34;&#34;&#34;
 
-    if &#39;length&#39; not in self.fields_dataframe.columns:
-        module_logger.debug(&#39;No fields with length property&#39;)
+    if &#34;length&#34; not in self.fields_dataframe.columns:
+        module_logger.debug(&#34;No fields with length property&#34;)
         return
 
     length_limited_fields = self.fields_dataframe[
-        (self.fields_dataframe[&#39;type&#39;].isin([&#39;esriFieldTypeString&#39;, &#39;esriFieldTypeGlobalID&#39;])) &amp;
-        (self.fields_dataframe[&#39;length&#39;].astype(bool))]
+        (self.fields_dataframe[&#34;type&#34;].isin([&#34;esriFieldTypeString&#34;, &#34;esriFieldTypeGlobalID&#34;]))
+        &amp; (self.fields_dataframe[&#34;length&#34;].astype(bool))
+    ]
 
-    columns_to_check = length_limited_fields[length_limited_fields[&#39;name&#39;].isin(fields)]
+    columns_to_check = length_limited_fields[length_limited_fields[&#34;name&#34;].isin(fields)]
 
-    for field, live_max_length in columns_to_check[[&#39;name&#39;, &#39;length&#39;]].to_records(index=False):
+    for field, live_max_length in columns_to_check[[&#34;name&#34;, &#34;length&#34;]].to_records(index=False):
         new_data_lengths = self.new_dataframe[field].str.len()
         new_max_length = new_data_lengths.max()
         if new_max_length &gt; live_max_length:
             raise ValueError(
-                f&#39;Row {new_data_lengths.argmax()}, column {field} in new data exceeds the live data max length of {live_max_length}&#39;
+                f&#34;Row {new_data_lengths.argmax()}, column {field} in new data exceeds the live data max length of {live_max_length}&#34;
             )</code></pre>
 </details>
 </dd>
@@ -2573,12 +2566,12 @@ OBJECTID, such as upsert)</dd>
         RuntimeError: If any of fields are not in live or new data.
     &#34;&#34;&#34;
 
-    live_fields = set(self.fields_dataframe[&#39;name&#39;])
+    live_fields = set(self.fields_dataframe[&#34;name&#34;])
     new_fields = set(self.new_dataframe.columns)
     working_fields = set(fields)
-    working_fields.discard(&#39;SHAPE&#39;)  #: The fields from the feature layer properties don&#39;t include the SHAPE field.
+    working_fields.discard(&#34;SHAPE&#34;)  #: The fields from the feature layer properties don&#39;t include the SHAPE field.
     if add_oid:
-        working_fields.add(&#39;OBJECTID&#39;)
+        working_fields.add(&#34;OBJECTID&#34;)
 
     live_dif = working_fields - live_fields
     new_dif = working_fields - new_fields
@@ -2590,7 +2583,7 @@ OBJECTID, such as upsert)</dd>
         error_message.append(f&#39;Fields missing in new data: {&#34;, &#34;.join(new_dif)}&#39;)
 
     if error_message:
-        raise RuntimeError(&#39;. &#39;.join(error_message))</code></pre>
+        raise RuntimeError(&#34;. &#34;.join(error_message))</code></pre>
 </details>
 </dd>
 <dt id="palletjack.utils.FieldChecker.check_for_non_null_fields"><code class="name flex">
@@ -2632,8 +2625,8 @@ have a default value.</dd>
     columns_with_nulls = self.new_dataframe.columns[self.new_dataframe.isna().any()].tolist()
     # fields_dataframe = pd.DataFrame(self.live_data_properties[&#39;fields&#39;])
     non_nullable_live_columns = self.fields_dataframe[
-        ~(self.fields_dataframe[&#39;nullable&#39;]) &amp;
-        ~(self.fields_dataframe[&#39;defaultValue&#39;].astype(bool))][&#39;name&#39;].tolist()
+        ~(self.fields_dataframe[&#34;nullable&#34;]) &amp; ~(self.fields_dataframe[&#34;defaultValue&#34;].astype(bool))
+    ][&#34;name&#34;].tolist()
 
     columns_to_check = [column for column in columns_with_nulls if column in fields]
 
@@ -2693,32 +2686,32 @@ or the new data is not a valid spatially-enabled dataframe.</dd>
 
     #: Converting dtypes to str and comparing seems to be the only way to break out into shorts and longs, singles
     #: and doubles. Otherwise, checking subclass is probably more pythonic.
-    short_ints = [&#39;uint8&#39;, &#39;uint16&#39;, &#39;int8&#39;, &#39;int16&#39;]
-    long_ints = [&#39;int&#39;, &#39;uint32&#39;, &#39;uint64&#39;, &#39;int32&#39;, &#39;int64&#39;]
+    short_ints = [&#34;uint8&#34;, &#34;uint16&#34;, &#34;int8&#34;, &#34;int16&#34;]
+    long_ints = [&#34;int&#34;, &#34;uint32&#34;, &#34;uint64&#34;, &#34;int32&#34;, &#34;int64&#34;]
 
     #: Leaving the commented types here for future implementation if necessary
     esri_to_pandas_types_mapping = {
-        &#39;esriFieldTypeInteger&#39;: [&#39;int&#39;] + short_ints + long_ints,
-        &#39;esriFieldTypeSmallInteger&#39;: short_ints,
-        &#39;esriFieldTypeDouble&#39;: [&#39;float&#39;, &#39;float32&#39;, &#39;float64&#39;],
-        &#39;esriFieldTypeSingle&#39;: [&#39;float32&#39;],
-        &#39;esriFieldTypeString&#39;: [&#39;str&#39;, &#39;object&#39;, &#39;string&#39;],
-        &#39;esriFieldTypeDate&#39;: [&#39;datetime64[ns]&#39;],
-        &#39;esriFieldTypeGeometry&#39;: [&#39;geometry&#39;],
-        &#39;esriFieldTypeOID&#39;: [&#39;int&#39;] + short_ints + long_ints,
+        &#34;esriFieldTypeInteger&#34;: [&#34;int&#34;] + short_ints + long_ints,
+        &#34;esriFieldTypeSmallInteger&#34;: short_ints,
+        &#34;esriFieldTypeDouble&#34;: [&#34;float&#34;, &#34;float32&#34;, &#34;float64&#34;],
+        &#34;esriFieldTypeSingle&#34;: [&#34;float32&#34;],
+        &#34;esriFieldTypeString&#34;: [&#34;str&#34;, &#34;object&#34;, &#34;string&#34;],
+        &#34;esriFieldTypeDate&#34;: [&#34;datetime64[ns]&#34;],
+        &#34;esriFieldTypeGeometry&#34;: [&#34;geometry&#34;],
+        &#34;esriFieldTypeOID&#34;: [&#34;int&#34;] + short_ints + long_ints,
         #  &#39;esriFieldTypeBlob&#39;: [],
-        &#39;esriFieldTypeGlobalID&#39;: [&#39;str&#39;, &#39;object&#39;, &#39;string&#39;],
+        &#34;esriFieldTypeGlobalID&#34;: [&#34;str&#34;, &#34;object&#34;, &#34;string&#34;],
         #  &#39;esriFieldTypeRaster&#39;: [],
-        &#39;esriFieldTypeGUID&#39;: [&#39;str&#39;, &#39;object&#39;, &#39;string&#39;],
+        &#34;esriFieldTypeGUID&#34;: [&#34;str&#34;, &#34;object&#34;, &#34;string&#34;],
         #  &#39;esriFieldTypeXML&#39;: [],
     }
 
     #: geometry checking gets its own function
-    if &#39;SHAPE&#39; in fields:
+    if &#34;SHAPE&#34; in fields:
         self._check_geometry_types()
-        fields.remove(&#39;SHAPE&#39;)
+        fields.remove(&#34;SHAPE&#34;)
 
-    fields_to_check = self.fields_dataframe[self.fields_dataframe[&#39;name&#39;].isin(fields)].set_index(&#39;name&#39;)
+    fields_to_check = self.fields_dataframe[self.fields_dataframe[&#34;name&#34;].isin(fields)].set_index(&#34;name&#34;)
 
     invalid_fields = []
     int_fields_as_floats = []
@@ -2726,15 +2719,17 @@ or the new data is not a valid spatially-enabled dataframe.</dd>
     for field in fields:
         #: check against the str.lower to catch normal dtypes (int64) and the new, pd.NA-aware dtypes (Int64)
         new_dtype = str(self.new_dataframe[field].dtype).lower()
-        live_type = fields_to_check.loc[field, &#39;type&#39;]
+        live_type = fields_to_check.loc[field, &#34;type&#34;]
 
         try:
             if new_dtype not in esri_to_pandas_types_mapping[live_type]:
                 invalid_fields.append((field, live_type, str(self.new_dataframe[field].dtype)))
-            if new_dtype in [&#39;float&#39;, &#39;float32&#39;, &#39;float64&#39;
-                            ] and live_type in [&#39;esriFieldTypeInteger&#39;, &#39;esriFieldTypeSmallInteger&#39;]:
+            if new_dtype in [&#34;float&#34;, &#34;float32&#34;, &#34;float64&#34;] and live_type in [
+                &#34;esriFieldTypeInteger&#34;,
+                &#34;esriFieldTypeSmallInteger&#34;,
+            ]:
                 int_fields_as_floats.append(field)
-            if &#39;datetime64&#39; in new_dtype and new_dtype != &#39;datetime64[ns]&#39; and live_type == &#39;esriFieldTypeDate&#39;:
+            if &#34;datetime64&#34; in new_dtype and new_dtype != &#34;datetime64[ns]&#34; and live_type == &#34;esriFieldTypeDate&#34;:
                 datetime_fields_with_timezone.append(field)
         except KeyError:
             # pylint: disable-next=raise-missing-from
@@ -2743,18 +2738,18 @@ or the new data is not a valid spatially-enabled dataframe.</dd>
     if invalid_fields:
         if int_fields_as_floats:
             raise IntFieldAsFloatError(
-                f&#39;Field type incompatibilities (field, live type, new type): {invalid_fields}\n&#39; \
-                &#39;Check the following int fields for null/np.nan values and convert to panda\&#39;s nullable int &#39;\
+                f&#34;Field type incompatibilities (field, live type, new type): {invalid_fields}\n&#34;
+                &#34;Check the following int fields for null/np.nan values and convert to panda&#39;s nullable int &#34;
                 f&#39;dtype: {&#34;, &#34;.join(int_fields_as_floats)}&#39;
             )
         if datetime_fields_with_timezone:
             raise TimezoneAwareDatetimeError(
-                f&#39;Field type incompatibilities (field, live type, new type): {invalid_fields}\n&#39; \
-                &#39;Check the following datetime fields for timezone aware dtypes values and convert to &#39;\
-                &#39;timezone-naive dtypes using pd.to_datetime(df[\&#39;field\&#39;]).dt.tz_localize(None): &#39;\
+                f&#34;Field type incompatibilities (field, live type, new type): {invalid_fields}\n&#34;
+                &#34;Check the following datetime fields for timezone aware dtypes values and convert to &#34;
+                &#34;timezone-naive dtypes using pd.to_datetime(df[&#39;field&#39;]).dt.tz_localize(None): &#34;
                 f&#39;{&#34;, &#34;.join(datetime_fields_with_timezone)}&#39;
             )
-        raise ValueError(f&#39;Field type incompatibilities (field, live type, new type): {invalid_fields}&#39;)</code></pre>
+        raise ValueError(f&#34;Field type incompatibilities (field, live type, new type): {invalid_fields}&#34;)</code></pre>
 </details>
 </dd>
 <dt id="palletjack.utils.FieldChecker.check_nullable_ints_shapely"><code class="name flex">
@@ -2784,10 +2779,10 @@ is one or more pd.NA values within a nullable int column.</dd>
     &#34;&#34;&#34;
 
     #: Only occurs if client is using shapely instead of arcpy
-    if importlib.util.find_spec(&#39;arcpy&#39;):
+    if importlib.util.find_spec(&#34;arcpy&#34;):
         return
 
-    nullable_ints = {&#39;Int8&#39;, &#39;Int16&#39;, &#39;Int32&#39;, &#39;Int64&#39;, &#39;UInt8&#39;, &#39;UInt16&#39;, &#39;UInt32&#39;, &#39;UInt64&#39;}
+    nullable_ints = {&#34;Int8&#34;, &#34;Int16&#34;, &#34;Int32&#34;, &#34;Int64&#34;, &#34;UInt8&#34;, &#34;UInt16&#34;, &#34;UInt32&#34;, &#34;UInt64&#34;}
     nullable_int_columns = [
         column for column in self.new_dataframe.columns if str(self.new_dataframe[column].dtype) in nullable_ints
     ]
@@ -2795,8 +2790,8 @@ is one or more pd.NA values within a nullable int column.</dd>
 
     if columns_with_nulls:
         warnings.warn(
-            &#39;The following columns have null values that will be replaced by 0 due to shapely conventions: &#39;\
-                f&#39;{&#34;, &#34;.join(columns_with_nulls)}&#39;
+            &#34;The following columns have null values that will be replaced by 0 due to shapely conventions: &#34;
+            f&#39;{&#34;, &#34;.join(columns_with_nulls)}&#39;
         )</code></pre>
 </details>
 </dd>
@@ -2834,10 +2829,10 @@ is one or more pd.NA values within a nullable int column.</dd>
     try:
         new_srs = int(new_srs)
     except ValueError as error:
-        raise ValueError(&#39;Could not cast new SRS to int&#39;) from error
+        raise ValueError(&#34;Could not cast new SRS to int&#34;) from error
     if new_srs != 4326:
         raise ValueError(
-            f&#39;New dataframe SRS {new_srs} is not wkid 4326. Reproject with appropriate transformation.&#39;
+            f&#34;New dataframe SRS {new_srs} is not wkid 4326. Reproject with appropriate transformation.&#34;
         )</code></pre>
 </details>
 </dd>
@@ -2853,8 +2848,7 @@ is one or more pd.NA values within a nullable int column.</dd>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">class Geocoding:
-    &#34;&#34;&#34;Methods for geocoding an address
-    &#34;&#34;&#34;
+    &#34;&#34;&#34;Methods for geocoding an address&#34;&#34;&#34;
 
     @staticmethod
     def geocode_addr(street, zone, api_key, rate_limits, **api_args):
@@ -2876,20 +2870,20 @@ is one or more pd.NA values within a nullable int column.</dd>
         &#34;&#34;&#34;
 
         sleep(random.uniform(rate_limits[0], rate_limits[1]))
-        url = f&#39;https://api.mapserv.utah.gov/api/v1/geocode/{street}/{zone}&#39;
-        api_args[&#39;apiKey&#39;] = api_key
+        url = f&#34;https://api.mapserv.utah.gov/api/v1/geocode/{street}/{zone}&#34;
+        api_args[&#34;apiKey&#34;] = api_key
 
         try:
             geocode_result_dict = retry(Geocoding._geocode_api_call, url, api_args)
         except Exception as error:
             module_logger.error(error)
-            return (0, 0, 0., &#39;No API response&#39;)
+            return (0, 0, 0.0, &#34;No API response&#34;)
 
         return (
-            geocode_result_dict[&#39;location&#39;][&#39;x&#39;],
-            geocode_result_dict[&#39;location&#39;][&#39;y&#39;],
-            geocode_result_dict[&#39;score&#39;],
-            geocode_result_dict[&#39;matchAddress&#39;],
+            geocode_result_dict[&#34;location&#34;][&#34;x&#34;],
+            geocode_result_dict[&#34;location&#34;][&#34;y&#34;],
+            geocode_result_dict[&#34;score&#34;],
+            geocode_result_dict[&#34;matchAddress&#34;],
         )
 
     @staticmethod
@@ -2915,26 +2909,23 @@ is one or more pd.NA values within a nullable int column.</dd>
 
         #: The server times out and doesn&#39;t respond
         if response is None:
-            module_logger.debug(&#39;GET call did not return a response&#39;)
-            raise RuntimeError(&#39;No response from GET; request timeout?&#39;)
+            module_logger.debug(&#34;GET call did not return a response&#34;)
+            raise RuntimeError(&#34;No response from GET; request timeout?&#34;)
 
         #: The point does geocode
         if response.status_code == 200:
-            return response.json()[&#39;result&#39;]
+            return response.json()[&#34;result&#34;]
 
         #: The point doesn&#39;t geocode
         if response.status_code == 404:
             return {
-                &#39;location&#39;: {
-                    &#39;x&#39;: 0,
-                    &#39;y&#39;: 0
-                },
-                &#39;score&#39;: 0.,
-                &#39;matchAddress&#39;: &#39;No Match&#39;,
+                &#34;location&#34;: {&#34;x&#34;: 0, &#34;y&#34;: 0},
+                &#34;score&#34;: 0.0,
+                &#34;matchAddress&#34;: &#34;No Match&#34;,
             }
 
         #: If we haven&#39;t returned, raise an error to trigger _retry
-        raise RuntimeError(f&#39;Did not receive a valid geocoding response; status code: {response.status_code}&#39;)
+        raise RuntimeError(f&#34;Did not receive a valid geocoding response; status code: {response.status_code}&#34;)
 
     @staticmethod
     def validate_api_key(api_key):
@@ -2949,18 +2940,19 @@ is one or more pd.NA values within a nullable int column.</dd>
             UserWarning: If the API responds with some other abnormal result
         &#34;&#34;&#34;
 
-        url = &#39;https://api.mapserv.utah.gov/api/v1/geocode/326 east south temple street/slc&#39;
+        url = &#34;https://api.mapserv.utah.gov/api/v1/geocode/326 east south temple street/slc&#34;
 
         try:
-            response = retry(requests.get, url=url, params={&#39;apiKey&#39;: api_key})
+            response = retry(requests.get, url=url, params={&#34;apiKey&#34;: api_key})
         except Exception as error:
             raise RuntimeError(
-                &#39;Could not determine key validity; check your API key and/or network connection&#39;
+                &#34;Could not determine key validity; check your API key and/or network connection&#34;
             ) from error
         response_json = response.json()
-        if response_json[&#39;status&#39;] == 200:
+        if response_json[&#34;status&#34;] == 200:
             return
-        if response_json[&#39;status&#39;] == 400 and &#39;Invalid API key&#39; in response_json[&#39;message&#39;]:
+        if response_json[&#34;status&#34;] == 400 and &#34;Invalid API key&#34; in response_json[&#34;message&#34;]:
+            module_logger.error(f&#39;API key validation failed: {response_json[&#34;message&#34;]}&#39;)
             raise ValueError(f&#39;API key validation failed: {response_json[&#34;message&#34;]}&#39;)
 
         warnings.warn(f&#39;Unhandled API key validation response {response_json[&#34;status&#34;]}: {response_json[&#34;message&#34;]}&#39;)</code></pre>
@@ -3016,20 +3008,20 @@ def geocode_addr(street, zone, api_key, rate_limits, **api_args):
     &#34;&#34;&#34;
 
     sleep(random.uniform(rate_limits[0], rate_limits[1]))
-    url = f&#39;https://api.mapserv.utah.gov/api/v1/geocode/{street}/{zone}&#39;
-    api_args[&#39;apiKey&#39;] = api_key
+    url = f&#34;https://api.mapserv.utah.gov/api/v1/geocode/{street}/{zone}&#34;
+    api_args[&#34;apiKey&#34;] = api_key
 
     try:
         geocode_result_dict = retry(Geocoding._geocode_api_call, url, api_args)
     except Exception as error:
         module_logger.error(error)
-        return (0, 0, 0., &#39;No API response&#39;)
+        return (0, 0, 0.0, &#34;No API response&#34;)
 
     return (
-        geocode_result_dict[&#39;location&#39;][&#39;x&#39;],
-        geocode_result_dict[&#39;location&#39;][&#39;y&#39;],
-        geocode_result_dict[&#39;score&#39;],
-        geocode_result_dict[&#39;matchAddress&#39;],
+        geocode_result_dict[&#34;location&#34;][&#34;x&#34;],
+        geocode_result_dict[&#34;location&#34;][&#34;y&#34;],
+        geocode_result_dict[&#34;score&#34;],
+        geocode_result_dict[&#34;matchAddress&#34;],
     )</code></pre>
 </details>
 </dd>
@@ -3069,18 +3061,19 @@ def validate_api_key(api_key):
         UserWarning: If the API responds with some other abnormal result
     &#34;&#34;&#34;
 
-    url = &#39;https://api.mapserv.utah.gov/api/v1/geocode/326 east south temple street/slc&#39;
+    url = &#34;https://api.mapserv.utah.gov/api/v1/geocode/326 east south temple street/slc&#34;
 
     try:
-        response = retry(requests.get, url=url, params={&#39;apiKey&#39;: api_key})
+        response = retry(requests.get, url=url, params={&#34;apiKey&#34;: api_key})
     except Exception as error:
         raise RuntimeError(
-            &#39;Could not determine key validity; check your API key and/or network connection&#39;
+            &#34;Could not determine key validity; check your API key and/or network connection&#34;
         ) from error
     response_json = response.json()
-    if response_json[&#39;status&#39;] == 200:
+    if response_json[&#34;status&#34;] == 200:
         return
-    if response_json[&#39;status&#39;] == 400 and &#39;Invalid API key&#39; in response_json[&#39;message&#39;]:
+    if response_json[&#34;status&#34;] == 400 and &#34;Invalid API key&#34; in response_json[&#34;message&#34;]:
+        module_logger.error(f&#39;API key validation failed: {response_json[&#34;message&#34;]}&#39;)
         raise ValueError(f&#39;API key validation failed: {response_json[&#34;message&#34;]}&#39;)
 
     warnings.warn(f&#39;Unhandled API key validation response {response_json[&#34;status&#34;]}: {response_json[&#34;message&#34;]}&#39;)</code></pre>
@@ -3116,7 +3109,7 @@ def validate_api_key(api_key):
 <li><code><a title="palletjack.utils.rename_columns_for_agol" href="#palletjack.utils.rename_columns_for_agol">rename_columns_for_agol</a></code></li>
 <li><code><a title="palletjack.utils.rename_fields" href="#palletjack.utils.rename_fields">rename_fields</a></code></li>
 <li><code><a title="palletjack.utils.retry" href="#palletjack.utils.retry">retry</a></code></li>
-<li><code><a title="palletjack.utils.save_feature_layer_to_gdb" href="#palletjack.utils.save_feature_layer_to_gdb">save_feature_layer_to_gdb</a></code></li>
+<li><code><a title="palletjack.utils.save_to_gdb" href="#palletjack.utils.save_to_gdb">save_to_gdb</a></code></li>
 <li><code><a title="palletjack.utils.sedf_to_gdf" href="#palletjack.utils.sedf_to_gdf">sedf_to_gdf</a></code></li>
 </ul>
 </li>
