@@ -28,11 +28,6 @@ jobs:
         with:
           python-version: 3.11
 
-      - name: 👊 Bump version
-        run: |
-          TAG=$(gh release view --json tagName --jq ".tagName")
-          sed -i "s/__version__ = .*$/__version__ = '$TAG'/" src/palletjack/version.py
-
       - name: 🛞️ Install wheel
         run: pip install wheel
 
