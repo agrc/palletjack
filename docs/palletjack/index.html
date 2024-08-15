@@ -45,11 +45,11 @@
 <p>Because the upload process uses geojsons, you <strong>MUST</strong> project your dataframe to WGS84 (wkid 4326) (the upload stage will error out if it isn't). If your hosted feature service is in a different projection, AGOL will automatically project it back as part of the upload process.</p>
 <p><strong>WARNING</strong>: The reprojection process may introduce spatial shifts/topological errors due to projection differences. We highly recommend your target hosted feature services use WGS84 from the beginning, and that you choose an appropriate transformation when projecting your data.</p>
 <h3 id="objectid-and-join-keys">OBJECTID and Join Keys</h3>
-<p>If you want to update existing data without truncating and loading, you will need a join key between the incoming new data and the existing AGOL data. Do not use OBJECTID for this field; it may change at any time. Instead, use your own custom field that you have complete control over. You will perform the join manually in the transform step with pandas by loading the live AGOL data into a dataframe.</p>
+<p>If you want to update existing data without truncating and loading, you will need a join key between the incoming new data and the existing AGOL data. Do not use OBJECTID for this field; it may change at any time. Instead, use your own custom field that you have complete control over. You will perform the join manually in the transform step with pandas by loading the live AGOL data into a dataframe, joining the new data into the live data, and then passing the resulting dataframe to <code><a title="palletjack.load.FeatureServiceUpdater.update_features" href="load.html#palletjack.load.FeatureServiceUpdater.update_features">FeatureServiceUpdater.update_features()</a></code>. This method uses the live data's OBJECTID to apply the edits to the proper rows.</p>
 <h2 id="error-handling">Error handling</h2>
-<p>The client is responsible for handling errors and warnings that arise during the process. palletjack will raise its own errors when something occurs that would keep the procces from continuing or when one of its internal data checks fails. It will also captured and <a href="https://docs.python.org/3/tutorial/errors.html#exception-chaining">chain</a> errors from the underlying libraries to include additional, context-specific messages for the user. It will raise warnings when something happens that the client should be aware of but will not keep the process from completing.</p>
+<p>The client is responsible for handling errors and warnings that arise during the process. palletjack will raise its own errors when something occurs that would keep the process from continuing or when one of its internal data checks fails. It will also captured and <a href="https://docs.python.org/3/tutorial/errors.html#exception-chaining">chain</a> errors from the underlying libraries to include additional, context-specific messages for the user. It will raise warnings when something happens that the client should be aware of but will not keep the process from completing.</p>
 <h2 id="logging">Logging</h2>
-<p>palletjack takes full advantage of python's built-in <a href="https://docs.python.org/3/howto/logging.html#advanced-logging-tutorial"><code>logging</code></a> library to perform its feedback and reporting. It employs a <a href="https://stackoverflow.com/a/50751987">hierarchical structure</a>, creating module-level loggers for each module and then each class in a module creates their own child logger. This allows rapid identification of where log events are occuring.</p>
+<p>palletjack takes full advantage of python's built-in <a href="https://docs.python.org/3/howto/logging.html#advanced-logging-tutorial"><code>logging</code></a> library to perform its feedback and reporting. It employs a <a href="https://stackoverflow.com/a/50751987">hierarchical structure</a>, creating module-level loggers for each module and then each class in a module creates their own child logger. This allows rapid identification of where log events are occurring.</p>
 <h3 id="accessing-palletjack-logs">Accessing palletjack logs</h3>
 <p>The client can get a reference to the palletjack logger and add their handlers, formatters, etc to it alongside its own logger:</p>
 <pre><code class="language-python">myapp_logger = logging.getLogger('my_app')
@@ -67,6 +67,18 @@ palletjack_logger.addHandler(log_handler)
 <li><code>logging.INFO</code> includes standard runtime progress reports and result information.</li>
 <li><code>logging.WARNING</code> includes negative results from checks or other situations that the user should be aware of.</li>
 </ul>
+<h2 id="updating-from-v2-to-v3">Updating from v2 to v3</h2>
+<p>palletjack v3 has several changes from the previous version that users will need to consider when updating existing clients. Version 3 is designed to align with each step in the ETL process and to better follow the single-responsibility principle.</p>
+<h3 id="namespace-changes">Namespace Changes</h3>
+<p>The largest change is that the namespace has been refactored to match the ETL steps. <code>loaders.py</code> has been changed to <code>extract.py</code> and <code>updaters.py</code> has been changed to <code>load.py</code>. This eliminates the confusion created by "loaders" being used in the ETL "extract" stage.</p>
+<p>As a corollary to this, clients now import each module rather than palletjack exposing the classes directly. The recommended import is <code>from <a title="palletjack" href="#palletjack">palletjack</a> import <a title="palletjack.extract" href="extract.html">palletjack.extract</a>, <a title="palletjack.transform" href="transform.html">palletjack.transform</a>, <a title="palletjack.load" href="load.html">palletjack.load</a>, <a title="palletjack.utils" href="utils.html">palletjack.utils</a></code> (omitting unused modules as necessary).</p>
+<p>Version 3 also introduces the use of class methods to take care of object instantiation for the client. These are used the most in <code><a title="palletjack.load.FeatureServiceUpdater" href="load.html#palletjack.load.FeatureServiceUpdater">FeatureServiceUpdater</a></code>, where the client just calls the relevant methods.</p>
+<h3 id="one-step-at-a-time">One Step at a Time</h3>
+<p>As part of the refactor, each method generally only tries to do one thing: extract one piece of data, clean one common data error, or perform one load operation.</p>
+<p>Previous versions focused on being able to call a single method to do everything. This quickly got unwieldly and led to a lot of complexity trying to match the complexity of real-world data.</p>
+<p>Version 3 load methods expect the client to have already cleaned the data and made it ready for uploading. Many of the cleaning steps that were coupled to the load methods in version 2 have been refactored to the <code><a title="palletjack.transform" href="transform.html">palletjack.transform</a></code> module.</p>
+<h3 id="append-instead-of-edit_features">.append instead of .edit_features</h3>
+<p>Under the hood, version 3 has completely replaced <code>FeatureLayer.edit_features()</code> with <code>FeatureLayer.append()</code> based on the recommendation in the ArcGIS API for Python docs. This has a couple ramifications for the client. First, in order to avoid the arcpy dependency, all data are converted to geojson for upload. This requires the client to project the dataframes to WGS84/wkid 4326 prior to updating the feature service. Secondly, the client must separate out add, update, and delete operations into individual method calls.</p>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -135,6 +147,12 @@ This must only include a single line: <strong>version</strong> = '0.0.0'</p></di
 <li><a href="#logging">Logging</a><ul>
 <li><a href="#accessing-palletjack-logs">Accessing palletjack logs</a></li>
 <li><a href="#log-levels">Log levels</a></li>
+</ul>
+</li>
+<li><a href="#updating-from-v2-to-v3">Updating from v2 to v3</a><ul>
+<li><a href="#namespace-changes">Namespace Changes</a></li>
+<li><a href="#one-step-at-a-time">One Step at a Time</a></li>
+<li><a href="#append-instead-of-edit_features">.append instead of .edit_features</a></li>
 </ul>
 </li>
 </ul>
