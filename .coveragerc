@@ -2,6 +2,8 @@
 omit =
     # files to omit from coverage. should be sample files etc
     # */connection_sample.py
+    src/palletjack/version.py
+    src/palletjack/__init__.py
 
 [report]
 exclude_lines =
