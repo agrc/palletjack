@@ -1,5 +1,12 @@
 # Changelog
 
+## [5.0.1](https://github.com/agrc/palletjack/compare/v5.0.0...v5.0.1) (2024-08-16)
+
+
+### Bug Fixes
+
+* date value in log to match text around it ([c09702b](https://github.com/agrc/palletjack/commit/c09702b836cea219ffaf84bf1c7533f09e3f8bf2))
+
 ## [5.0.0](https://github.com/agrc/palletjack/compare/4.4.2...v5.0.0) (2024-08-15)
 
 
