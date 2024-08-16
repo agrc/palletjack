@@ -969,8 +969,9 @@ class SalesforceRestLoader:
         try:
             ticks = int(token["issued_at"])
             issued = datetime.fromtimestamp(ticks / 1000)
+            days_from_today = (datetime.now() - issued).days
 
-            self._class_logger.debug("Token is {%s} days old", issued)
+            self._class_logger.debug("Token is %s days old", days_from_today)
         except ValueError:
             self._class_logger.warning("could not convert issued_at delta to a number %s", token)
 
