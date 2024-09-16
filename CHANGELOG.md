@@ -1,5 +1,12 @@
 # Changelog
 
+## [5.0.2](https://github.com/agrc/palletjack/compare/v5.0.1...v5.0.2) (2024-09-16)
+
+
+### Dependencies
+
+* update geodatasets requirement in the major-dependencies group ([5b11f93](https://github.com/agrc/palletjack/commit/5b11f93535c8503ed1afd8fc807a5df3189191cb))
+
 ## [5.0.1](https://github.com/agrc/palletjack/compare/v5.0.0...v5.0.1) (2024-08-16)
 
 
