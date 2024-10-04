@@ -7,7 +7,6 @@ operations or techniques.
 import json
 import logging
 import mimetypes
-import os
 import random
 import re
 import time
@@ -500,7 +499,7 @@ class PostgresLoader:
         """
 
         self._class_logger = logging.getLogger(__name__).getChild(self.__class__.__name__)
-        if os.environ.get("FUNCTION_TARGET") is not None:  #: this is an env var specific to cloud functions
+        if utils.is_running_in_gcp():
             self._class_logger.info("running in GCF, using unix socket")
             self.engine = sqlalchemy.create_engine(
                 sqlalchemy.engine.url.URL.create(
