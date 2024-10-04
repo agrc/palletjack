@@ -989,3 +989,19 @@ def chunker(sequence, chunk_size):
     """
 
     return (sequence[position : position + chunk_size] for position in range(0, len(sequence), chunk_size))
+
+
+def is_running_in_gcp() -> bool:
+    """Check if the code is running in a GCP environment
+
+    Returns:
+        bool: True if running in a GCP environment, False otherwise
+    """
+
+    #: check if the metadata server is available
+    try:
+        requests.get("http://metadata.google.internal", headers={"Metadata-Flavor": "Google"}, timeout=3)
+    except requests.exceptions.ConnectionError:
+        return False
+
+    return True
