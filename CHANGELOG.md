@@ -1,5 +1,12 @@
 # Changelog
 
+## [5.1.0](https://github.com/agrc/palletjack/compare/v5.0.2...v5.1.0) (2024-10-04)
+
+
+### Features
+
+* enhance cloud check in PostgresLoader to work in any GCP environment ([05748f2](https://github.com/agrc/palletjack/commit/05748f20cf203bd2cfa30143fa7caaaaea947152))
+
 ## [5.0.2](https://github.com/agrc/palletjack/compare/v5.0.1...v5.0.2) (2024-09-16)
 
 
