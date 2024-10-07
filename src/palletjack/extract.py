@@ -500,7 +500,7 @@ class PostgresLoader:
 
         self._class_logger = logging.getLogger(__name__).getChild(self.__class__.__name__)
         if utils.is_running_in_gcp():
-            self._class_logger.info("running in GCF, using unix socket")
+            self._class_logger.info("running in GCP, using unix socket")
             self.engine = sqlalchemy.create_engine(
                 sqlalchemy.engine.url.URL.create(
                     drivername="postgresql+pg8000",
