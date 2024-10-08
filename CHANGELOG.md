@@ -1,5 +1,20 @@
 # Changelog
 
+## [5.1.1](https://github.com/agrc/palletjack/compare/v5.1.0...v5.1.1) (2024-10-08)
+
+
+### Bug Fixes
+
+* .sr has attributes, not keys ([09a3c0b](https://github.com/agrc/palletjack/commit/09a3c0b78227912e4a3b7bde4afcce082d584ee3))
+* access sr as attr, not dict ([5c7dbb2](https://github.com/agrc/palletjack/commit/5c7dbb2f8b2204f0c5d4006b087bfd7c5b86c053))
+* make log message more generic (and correct) ([85314da](https://github.com/agrc/palletjack/commit/85314dad4fe7994d0be6113c10637b9b6010edba))
+* remove date parsing from PostgresLoader ([fc431ab](https://github.com/agrc/palletjack/commit/fc431ab4c5875ab606cd82a008df21e4ba7e849e))
+
+
+### Dependencies
+
+* update arcgis requirement in the major-dependencies group ([5825933](https://github.com/agrc/palletjack/commit/5825933da30c1f7150834181014d050222383e29))
+
 ## [5.1.0](https://github.com/agrc/palletjack/compare/v5.0.2...v5.1.0) (2024-10-04)
 
 
