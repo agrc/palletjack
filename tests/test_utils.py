@@ -5,13 +5,14 @@ from collections import namedtuple
 from pathlib import Path
 
 import numpy as np
-import palletjack
 import pandas as pd
 import pyogrio
 import pytest
 from arcgis import geometry
 from arcgis.features import FeatureLayer, Table
 from pandas import testing as tm
+
+import palletjack
 
 
 @pytest.fixture(scope="module")  #: only call this once per module
@@ -1833,15 +1834,19 @@ class TestChunker:
 class TestSEDFtoGDF:
     def test_sedf_to_gdf_uses_wkid_when_missing_latestwkid(self, mocker):
         gdf_mock = mocker.patch("palletjack.utils.gpd.GeoDataFrame").return_value
-        df_attrs = {"spatial.sr": {"wkid": "foo"}}
-        df_mock = mocker.Mock(**df_attrs)
+
+        df_mock = mocker.Mock()
+        df_mock.spatial.sr = mocker.Mock(spec=palletjack.utils.arcgis.geometry.SpatialReference)
+        df_mock.spatial.sr.wkid = "foo"
 
         palletjack.utils.sedf_to_gdf(df_mock)
 
         gdf_mock.set_crs.assert_called_with("foo", inplace=True)
 
     def test_sedf_to_gdf_uses_sedf_geometry_column(self, mocker):
-        mock_sedf = mocker.Mock(**{"spatial.name": "FOOSHAPE", "spatial.sr": {"wkid": "foo"}})
+        mock_sedf = mocker.Mock(**{"spatial.name": "FOOSHAPE"})  # , "spatial.sr": {"wkid": "foo"}})
+        mock_sedf.spatial.sr = mocker.Mock(spec=palletjack.utils.arcgis.geometry.SpatialReference)
+        mock_sedf.spatial.sr.wkid = "foo"
         gpd_mock = mocker.patch("palletjack.utils.gpd.GeoDataFrame")
 
         palletjack.utils.sedf_to_gdf(mock_sedf)

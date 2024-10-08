@@ -380,9 +380,9 @@ def sedf_to_gdf(dataframe):
 
     gdf = gpd.GeoDataFrame(dataframe, geometry=dataframe.spatial.name)
     try:
-        gdf.set_crs(dataframe.spatial.sr["latestWkid"], inplace=True)
+        gdf.set_crs(dataframe.spatial.sr.latestWkid, inplace=True)
     except AttributeError:
-        gdf.set_crs(dataframe.spatial.sr["wkid"], inplace=True)
+        gdf.set_crs(dataframe.spatial.sr.wkid, inplace=True)
 
     return gdf
 
