@@ -50,7 +50,7 @@ setup(
     extras_require={
         "tests": [
             "pdoc3>=0.10,<0.12",
-            "pytest-cov>=3,<6",
+            "pytest-cov>=3,<7",
             "pytest-instafail~=0.4",
             "pytest-mock>=3.10,<3.15",
             "pytest-watch~=4.2",
