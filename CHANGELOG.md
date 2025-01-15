@@ -1,5 +1,12 @@
 # Changelog
 
+## [5.1.2](https://github.com/agrc/palletjack/compare/v5.1.1...v5.1.2) (2025-01-15)
+
+
+### Dependencies
+
+* **dev:** update pytest-cov requirement from &lt;6,&gt;=3 to &gt;=3,&lt;7 ([dfd19e1](https://github.com/agrc/palletjack/commit/dfd19e1e6aad0ac9a4f5f0b82d6540d9b0953c76))
+
 ## [5.1.1](https://github.com/agrc/palletjack/compare/v5.1.0...v5.1.1) (2024-10-08)
 
 
