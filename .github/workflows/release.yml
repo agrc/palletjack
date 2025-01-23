@@ -7,16 +7,9 @@ env:
   GH_TOKEN: ${{ github.token }}
 
 jobs:
-  publish:
-    name: Build and Publish
+  build:
+    name: Build
     runs-on: ubuntu-latest
-    environment:
-      name: prod
-      url: https://pypi.org/project/ugrc-palletjack
-    permissions:
-      # IMPORTANT: this permission is mandatory for trusted publishing
-      id-token: write
-
     steps:
       - name: ⬇️ Set up code
         uses: actions/checkout@v4
@@ -26,23 +19,50 @@ jobs:
       - name: 🐍 Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: 3.11
-
-      - name: 🛞️ Install wheel
-        run: pip install wheel
+          python-version-file: .python-version
+          cache: pip
+          cache-dependency-path: setup.py
 
       - name: 📦 Build package
-        run: python setup.py sdist bdist_wheel
+        run: pipx run build
+
+      - name: ⬆️ Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-artifacts
+          path: dist
+          retention-days: 1
+
+  publish:
+    name: Publish
+    runs-on: ubuntu-latest
+    needs: build
+    environment:
+      name: prod
+      url: https://pypi.org/project/ugrc-palletjack
+    permissions:
+      id-token: write
+
+    steps:
+      - name: ⬇️ Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: build-artifacts
+          path: dist
 
       - name: 🚀 Publish to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
 
-      - name: 🔔 Create deployment notification
-        uses: agrc/service-now-worknote-action@v1
+  notify:
+    name: Notifications
+    runs-on: ubuntu-latest
+    needs: publish
+    permissions:
+      contents: read
+      pull-requests: write
+      issues: write
+    steps:
+      - name: Release Notifier
+        uses: agrc/release-issue-notifications-action@v1
         with:
-          repo-token: ${{ github.token }}
-          username: ${{ secrets.SN_USERNAME }}
-          password: ${{ secrets.SN_PASSWORD }}
-          instance-name: ${{ secrets.SN_INSTANCE }}
-          table-name: ${{ secrets.SN_TABLE }}
-          system-id: ${{ secrets.SN_SYS_ID }}
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
