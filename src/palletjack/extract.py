@@ -869,7 +869,7 @@ class ServiceLayer:
             unique_id_params["token"] = self.token
 
         self._class_logger.debug("OID range params: %s", unique_id_params)
-        response = requests.get(f"{self.layer_url}/query", params=unique_id_params, timeout=self.timeout)
+        response = requests.post(f"{self.layer_url}/query", data=unique_id_params, timeout=self.timeout)
 
         if response.status_code != 200:
             raise RuntimeError(f"Bad chunk response HTTP status code ({response.status_code})")
