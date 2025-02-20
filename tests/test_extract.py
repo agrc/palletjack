@@ -12,8 +12,9 @@ import pytest
 import requests
 import requests_mock
 import ujson
-from palletjack import extract
 from pandas import testing as tm
+
+from palletjack import extract
 
 
 class TestGSheetsLoader:
@@ -759,10 +760,13 @@ class TestRESTServiceLoader:
         get_mock.return_value = mock_response
 
         service_mock = mocker.Mock(url="http://fakeurl.com", timeout=10)
+        service_mock.token = "token_value"
 
         response = extract.RESTServiceLoader._get_service_info(service_mock)
 
-        get_mock.assert_called_once_with("http://fakeurl.com/query", params={"f": "json"}, timeout=10)
+        get_mock.assert_called_once_with(
+            "http://fakeurl.com/query", params={"f": "json", "token": "token_value"}, timeout=10
+        )
         assert response == mock_response
 
     def test__get_service_info_raises_http_error(self, mocker):
@@ -848,6 +852,7 @@ class Test_ServiceLayer:
         )
 
         class_mock = mocker.Mock()
+        class_mock.token = None
         class_mock.layer_url = "foo.bar"
         class_mock.timeout = 5
 
@@ -862,6 +867,7 @@ class Test_ServiceLayer:
         get_mock = mocker.patch("palletjack.extract.requests.get", return_value=response_mock)
 
         class_mock = mocker.Mock()
+        class_mock.token = None
         class_mock.layer_url = "foo.bar"
         class_mock.timeout = 5
         class_mock.envelope_params = None
@@ -872,6 +878,27 @@ class Test_ServiceLayer:
         assert record_count == [8, 16, 42]
         get_mock.assert_called_once_with(
             "foo.bar/query", params={"returnIdsOnly": "true", "f": "json", "where": "1=1"}, timeout=5
+        )
+
+    def test_get_object_ids_works_with_token(self, mocker):
+        response_mock = mocker.Mock()
+        response_mock.json.return_value = {"objectIds": [8, 16, 42]}
+        get_mock = mocker.patch("palletjack.extract.requests.get", return_value=response_mock)
+
+        class_mock = mocker.Mock()
+        class_mock.token = "token_value"
+        class_mock.layer_url = "foo.bar"
+        class_mock.timeout = 5
+        class_mock.envelope_params = None
+        class_mock.where_clause = "1=1"
+
+        record_count = extract.ServiceLayer.get_object_ids(class_mock)
+
+        assert record_count == [8, 16, 42]
+        get_mock.assert_called_once_with(
+            "foo.bar/query",
+            params={"returnIdsOnly": "true", "f": "json", "where": "1=1", "token": "token_value"},
+            timeout=5,
         )
 
     def test_get_object_ids_includes_envelope_params(self, mocker):
@@ -889,6 +916,7 @@ class Test_ServiceLayer:
         get_mock = mocker.patch("palletjack.extract.requests.get", return_value=response_mock)
 
         class_mock = mocker.Mock()
+        class_mock.token = None
         class_mock.layer_url = "foo.bar"
         class_mock.timeout = 5
         class_mock.envelope_params = {"geometry": "envelope", "geometryType": "esriGeometryEnvelope", "inSR": "sr"}
@@ -906,6 +934,7 @@ class Test_ServiceLayer:
         get_mock = mocker.patch("palletjack.extract.requests.get", return_value=response_mock)
 
         class_mock = mocker.Mock()
+        class_mock.token = None
         class_mock.layer_url = "foo.bar"
         class_mock.timeout = 5
         class_mock.envelope_params = None
@@ -924,6 +953,7 @@ class Test_ServiceLayer:
         get_mock = mocker.patch("palletjack.extract.requests.get", return_value=response_mock)
 
         class_mock = mocker.Mock()
+        class_mock.token = None
         class_mock.layer_url = "foo.bar"
         class_mock.timeout = 5
         class_mock.envelope_params = None
@@ -956,6 +986,7 @@ class Test_ServiceLayer:
         get_mock = mocker.patch("palletjack.extract.requests.get", return_value=response_mock)
 
         class_mock = mocker.Mock()
+        class_mock.token = None
         class_mock.layer_url = "foo.bar"
         class_mock.timeout = 5
         class_mock.envelope_params = None
@@ -970,6 +1001,7 @@ class Test_ServiceLayer:
 
     def test_get_unique_id_list_as_dataframe_creates_list(self, mocker):
         class_mock = mocker.Mock()
+        class_mock.token = None
         class_mock.layer_url = "foo.bar"
         class_mock.timeout = 5
         class_mock.feature_params = {"outFields": "*", "returnGeometry": "true"}
