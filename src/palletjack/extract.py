@@ -562,18 +562,20 @@ class RESTServiceLoader:
     success.
     """
 
-    def __init__(self, service_url, timeout=5):
+    def __init__(self, service_url, timeout=5, token=None):
         """Create a representation of a REST FeatureService or MapService
 
         Args:
             service_url (str): The service's REST endpoint
             timeout (int, optional): Timeout for HTTP requests in seconds. Defaults to 5.
+            token (str, optional): Auth token for the service. Defaults to None.
         """
 
         if service_url[-1] == "/":
             service_url = service_url[:-1]
         self.url = service_url
         self.timeout = timeout
+        self.token = token
 
         self._class_logger = logging.getLogger(__name__).getChild(self.__class__.__name__)
 
@@ -668,7 +670,13 @@ class RESTServiceLoader:
             requests.Response: Raw response object from a /query request.
         """
         self._class_logger.debug("Getting service information...")
-        response = requests.get(f"{self.url}/query", params={"f": "json"}, timeout=self.timeout)
+
+        params = {"f": "json"}
+
+        if self.token:
+            params["token"] = self.token
+
+        response = requests.get(f"{self.url}/query", params=params, timeout=self.timeout)
 
         response.raise_for_status()
 
@@ -685,7 +693,7 @@ class ServiceLayer:
     all of these steps and should be used instead of calling the methods in this class directly.
     """
 
-    def __init__(self, layer_url, timeout=5, envelope_params=None, feature_params=None, where_clause="1=1"):
+    def __init__(self, layer_url, timeout=5, envelope_params=None, feature_params=None, where_clause="1=1", token=None):
         """Create an object representing a single layer
 
         Args:
@@ -697,6 +705,7 @@ class ServiceLayer:
                 features. Parameter defaults to None, and the query defaults to 'outFields': '*', 'returnGeometry':
                 'true'. See the ArcGIS REST API documentation for more information.
             where_clause (str, optional): Where clause to refine the features returned. Defaults to '1=1'.
+            token (str, optional): Auth token for the service. Defaults to None.
 
         """
 
@@ -706,6 +715,7 @@ class ServiceLayer:
             layer_url = layer_url[:-1]
         self.layer_url = layer_url
         self.timeout = timeout
+        self.token = token
 
         self.layer_properties_json = self._get_layer_info()
         self.max_record_count = self.layer_properties_json["maxRecordCount"]
@@ -738,8 +748,10 @@ class ServiceLayer:
         Returns:
             dict: The query's json response as a dictionary
         """
-
-        response_json = utils.retry(requests.get, self.layer_url, params={"f": "json"}, timeout=self.timeout).json()
+        params = {"f": "json"}
+        if self.token:
+            params["token"] = self.token
+        response_json = utils.retry(requests.get, self.layer_url, params=params, timeout=self.timeout).json()
         try:
             #: bogus boolean to make sure the keys exist
             response_json["capabilities"] and response_json["type"]  # and response_json['maxRecordCount']
@@ -782,7 +794,7 @@ class ServiceLayer:
 
         if self.layer_properties_json["type"] not in ["Feature Layer", "Table"]:
             raise RuntimeError(
-                f'Layer {self.layer_url} is a {self.layer_properties_json["type"]}, not a feature layer or table'
+                f"Layer {self.layer_url} is a {self.layer_properties_json['type']}, not a feature layer or table"
             )
 
     def _get_object_id_field(self):
@@ -817,6 +829,8 @@ class ServiceLayer:
         if self.envelope_params is not None:
             objectid_params.update(self.envelope_params)
         self._class_logger.debug("OID params: %s", objectid_params)
+        if self.token:
+            objectid_params["token"] = self.token
 
         response = utils.retry(requests.get, f"{self.layer_url}/query", params=objectid_params, timeout=self.timeout)
         oids = []
@@ -849,7 +863,10 @@ class ServiceLayer:
         """
         unique_id_params = {"f": "json"}
         unique_id_params.update(self.feature_params)
-        unique_id_params.update({"where": f'{unique_id_field} in ({",".join([str(oid) for oid in unique_id_list])})'})
+        unique_id_params.update({"where": f"{unique_id_field} in ({','.join([str(oid) for oid in unique_id_list])})"})
+
+        if self.token:
+            unique_id_params["token"] = self.token
 
         self._class_logger.debug("OID range params: %s", unique_id_params)
         response = requests.get(f"{self.layer_url}/query", params=unique_id_params, timeout=self.timeout)
