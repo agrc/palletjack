@@ -1,5 +1,12 @@
 # Changelog
 
+## [5.2.0](https://github.com/agrc/palletjack/compare/v5.1.2...v5.2.0) (2025-02-20)
+
+
+### Features
+
+* add token support to RESTServiceLoader ([867abaa](https://github.com/agrc/palletjack/commit/867abaa8f2eae6e7a682edeb7233c61da8b782b2))
+
 ## [5.1.2](https://github.com/agrc/palletjack/compare/v5.1.1...v5.1.2) (2025-01-15)
 
 
