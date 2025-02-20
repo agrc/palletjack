@@ -1,5 +1,12 @@
 # Changelog
 
+## [5.2.1](https://github.com/agrc/palletjack/compare/v5.2.0...v5.2.1) (2025-02-20)
+
+
+### Bug Fixes
+
+* switch to post for query request to accommodate larger where clauses ([70643d4](https://github.com/agrc/palletjack/commit/70643d4c035eba920df866f0ca16fd4a9077aaef))
+
 ## [5.2.0](https://github.com/agrc/palletjack/compare/v5.1.2...v5.2.0) (2025-02-20)
 
 
