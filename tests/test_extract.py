@@ -1008,7 +1008,7 @@ class Test_ServiceLayer:
 
         response_mock = mocker.Mock()
         response_mock.status_code = 200
-        requests_mock = mocker.patch("palletjack.extract.requests.get", return_value=response_mock)
+        requests_mock = mocker.patch("palletjack.extract.requests.post", return_value=response_mock)
 
         mocker.patch("palletjack.extract.arcgis.features.FeatureSet")
         mocker.patch("palletjack.extract.len", return_value=5)
@@ -1019,7 +1019,7 @@ class Test_ServiceLayer:
 
         requests_mock.assert_called_once_with(
             "foo.bar/query",
-            params={"f": "json", "outFields": "*", "returnGeometry": "true", "where": "OBJECTID in (10,11,12,13,14)"},
+            data={"f": "json", "outFields": "*", "returnGeometry": "true", "where": "OBJECTID in (10,11,12,13,14)"},
             timeout=5,
         )
 
@@ -1031,7 +1031,7 @@ class Test_ServiceLayer:
 
         response_mock = mocker.Mock()
         response_mock.status_code = 404
-        requests_mock = mocker.patch("palletjack.extract.requests.get", return_value=response_mock)
+        requests_mock = mocker.patch("palletjack.extract.requests.post", return_value=response_mock)
 
         oid_list = [10, 11, 12, 13, 14]
 
@@ -1046,7 +1046,7 @@ class Test_ServiceLayer:
 
         response_mock = mocker.Mock()
         response_mock.status_code = 200
-        requests_mock = mocker.patch("palletjack.extract.requests.get", return_value=response_mock)
+        requests_mock = mocker.patch("palletjack.extract.requests.post", return_value=response_mock)
 
         mocker.patch(
             "palletjack.extract.arcgis.features.FeatureSet.from_json",
@@ -1066,7 +1066,7 @@ class Test_ServiceLayer:
 
         response_mock = mocker.Mock()
         response_mock.status_code = 200
-        requests_mock = mocker.patch("palletjack.extract.requests.get", return_value=response_mock)
+        requests_mock = mocker.patch("palletjack.extract.requests.post", return_value=response_mock)
 
         featureset_mock = mocker.patch("palletjack.extract.arcgis.features.FeatureSet")
         featureset_mock.from_json.return_value.sdf.sort_values.return_value = pd.DataFrame(
