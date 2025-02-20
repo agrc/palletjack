@@ -1008,7 +1008,7 @@ class Test_ServiceLayer:
 
         response_mock = mocker.Mock()
         response_mock.status_code = 200
-        requests_mock = mocker.patch("palletjack.extract.requests.post", return_value=response_mock)
+        post_mock = mocker.patch("palletjack.extract.requests.post", return_value=response_mock)
 
         mocker.patch("palletjack.extract.arcgis.features.FeatureSet")
         mocker.patch("palletjack.extract.len", return_value=5)
@@ -1017,7 +1017,7 @@ class Test_ServiceLayer:
 
         extract.ServiceLayer.get_unique_id_list_as_dataframe(class_mock, "OBJECTID", oid_list)
 
-        requests_mock.assert_called_once_with(
+        post_mock.assert_called_once_with(
             "foo.bar/query",
             data={"f": "json", "outFields": "*", "returnGeometry": "true", "where": "OBJECTID in (10,11,12,13,14)"},
             timeout=5,
@@ -1031,7 +1031,7 @@ class Test_ServiceLayer:
 
         response_mock = mocker.Mock()
         response_mock.status_code = 404
-        requests_mock = mocker.patch("palletjack.extract.requests.post", return_value=response_mock)
+        mocker.patch("palletjack.extract.requests.post", return_value=response_mock)
 
         oid_list = [10, 11, 12, 13, 14]
 
@@ -1046,7 +1046,7 @@ class Test_ServiceLayer:
 
         response_mock = mocker.Mock()
         response_mock.status_code = 200
-        requests_mock = mocker.patch("palletjack.extract.requests.post", return_value=response_mock)
+        mocker.patch("palletjack.extract.requests.post", return_value=response_mock)
 
         mocker.patch(
             "palletjack.extract.arcgis.features.FeatureSet.from_json",
@@ -1066,7 +1066,7 @@ class Test_ServiceLayer:
 
         response_mock = mocker.Mock()
         response_mock.status_code = 200
-        requests_mock = mocker.patch("palletjack.extract.requests.post", return_value=response_mock)
+        mocker.patch("palletjack.extract.requests.post", return_value=response_mock)
 
         featureset_mock = mocker.patch("palletjack.extract.arcgis.features.FeatureSet")
         featureset_mock.from_json.return_value.sdf.sort_values.return_value = pd.DataFrame(
@@ -1277,11 +1277,11 @@ class TestSalesForceLoader:
 
     def test_get_token_uses_client_credentials(self, loader, mocker):
         mocker.patch.object(loader, "_is_token_valid", return_value=False)
-        requests_mock = mocker.patch("palletjack.extract.requests.post")
+        post_mock = mocker.patch("palletjack.extract.requests.post")
 
         loader._get_token()
 
-        requests_mock.assert_called_once_with(
+        post_mock.assert_called_once_with(
             loader.access_token_url,
             data={
                 "grant_type": "client_credentials",
@@ -1294,14 +1294,14 @@ class TestSalesForceLoader:
 
     def test_get_token_uses_sandbox_credentials(self, loader, mocker):
         mocker.patch.object(loader, "_is_token_valid", return_value=False)
-        requests_mock = mocker.patch("palletjack.extract.requests.post")
+        post_mock = mocker.patch("palletjack.extract.requests.post")
         loader.sandbox = True
         loader.username = "user"
         loader.password = "pass"
 
         loader._get_token()
 
-        requests_mock.assert_called_once_with(
+        post_mock.assert_called_once_with(
             loader.access_token_url,
             data={
                 "grant_type": "password",
