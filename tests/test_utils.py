@@ -1252,6 +1252,27 @@ class TestFieldLength:
         #: Should not raise
         checker.check_field_length(["foo"])
 
+    def test_check_field_length_can_handle_all_null_strings(self, mocker):
+        properties_mock = mocker.Mock()
+        properties_mock.fields = [
+            {
+                "name": "foo",
+                "type": "esriFieldTypeString",
+                "length": 10,
+            },
+        ]
+
+        new_df = pd.DataFrame(
+            {
+                "foo": pd.Series([None, None], dtype="string"),
+            }
+        )
+
+        checker = palletjack.utils.FieldChecker(properties_mock, new_df)
+
+        #: Should not raise
+        checker.check_field_length(["foo"])
+
     def test_check_field_length_raises_on_long_string(self, mocker):
         properties_mock = mocker.Mock()
         properties_mock.fields = [
@@ -1592,7 +1613,7 @@ class TestDeleteUtils:
 class TestSaveDataframeToGDF:
     def test_save_to_gdb_calls_to_file_with_right_path(self, mocker):
         expected_out_path = Path("foo", "backup.gdb")
-        expected_out_layer = f'flayer_{datetime.date.today().strftime("%Y_%m_%d")}'
+        expected_out_layer = f"flayer_{datetime.date.today().strftime('%Y_%m_%d')}"
 
         mock_fl = mocker.Mock(spec=FeatureLayer)
         mock_fl.properties.name = "flayer"
@@ -1609,7 +1630,7 @@ class TestSaveDataframeToGDF:
 
     def test_save_to_gdb_uses_gdb_for_tables(self, mocker):
         expected_out_path = Path("foo", "backup.gdb")
-        expected_out_layer = f'table_{datetime.date.today().strftime("%Y_%m_%d")}'
+        expected_out_layer = f"table_{datetime.date.today().strftime('%Y_%m_%d')}"
 
         mock_tb = mocker.Mock(spec=Table)
         mock_tb.properties.name = "table"
