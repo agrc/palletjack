@@ -177,10 +177,10 @@ def build_sql_in_list(series):
         str: Values formatted as (1, 2, 3) for numbers or ('a', 'b', 'c') for anything else
     """
     if pd.api.types.is_numeric_dtype(series):
-        return f'({", ".join(series.astype(str))})'
+        return f"({', '.join(series.astype(str))})"
     else:
         quoted_values = [f"'{value}'" for value in series]
-        return f'({", ".join(quoted_values)})'
+        return f"({', '.join(quoted_values)})"
 
 
 #: Unused in v3, but keeping for "unique constraint" info.
@@ -309,10 +309,10 @@ class Geocoding:
         if response_json["status"] == 200:
             return
         if response_json["status"] == 400 and "Invalid API key" in response_json["message"]:
-            module_logger.error(f'API key validation failed: {response_json["message"]}')
-            raise ValueError(f'API key validation failed: {response_json["message"]}')
+            module_logger.error(f"API key validation failed: {response_json['message']}")
+            raise ValueError(f"API key validation failed: {response_json['message']}")
 
-        warnings.warn(f'Unhandled API key validation response {response_json["status"]}: {response_json["message"]}')
+        warnings.warn(f"Unhandled API key validation response {response_json['status']}: {response_json['message']}")
 
 
 def calc_modulus_for_reporting_interval(n, split_value=500):
@@ -410,7 +410,7 @@ def save_to_gdb(table_or_layer, directory):
         gdf = gpd.GeoDataFrame(dataframe)
 
     out_path = Path(directory, "backup.gdb")
-    out_layer = f'{table_or_layer.properties.name}_{datetime.date.today().strftime("%Y_%m_%d")}'
+    out_layer = f"{table_or_layer.properties.name}_{datetime.date.today().strftime('%Y_%m_%d')}"
     module_logger.debug("Saving existing data to %s", out_path)
     try:
         gdf.to_file(out_path, layer=out_layer, engine="pyogrio", driver="OpenFileGDB")
@@ -531,14 +531,14 @@ class FieldChecker:
                 raise IntFieldAsFloatError(
                     f"Field type incompatibilities (field, live type, new type): {invalid_fields}\n"
                     "Check the following int fields for null/np.nan values and convert to panda's nullable int "
-                    f'dtype: {", ".join(int_fields_as_floats)}'
+                    f"dtype: {', '.join(int_fields_as_floats)}"
                 )
             if datetime_fields_with_timezone:
                 raise TimezoneAwareDatetimeError(
                     f"Field type incompatibilities (field, live type, new type): {invalid_fields}\n"
                     "Check the following datetime fields for timezone aware dtypes values and convert to "
                     "timezone-naive dtypes using pd.to_datetime(df['field']).dt.tz_localize(None): "
-                    f'{", ".join(datetime_fields_with_timezone)}'
+                    f"{', '.join(datetime_fields_with_timezone)}"
                 )
             raise ValueError(f"Field type incompatibilities (field, live type, new type): {invalid_fields}")
 
@@ -567,7 +567,7 @@ class FieldChecker:
 
         if self.new_dataframe["SHAPE"].isna().any():
             raise ValueError(
-                f'New dataframe has missing geometries at index {list(self.new_dataframe[self.new_dataframe["SHAPE"].isna()].index)}'
+                f"New dataframe has missing geometries at index {list(self.new_dataframe[self.new_dataframe['SHAPE'].isna()].index)}"
             )
 
         live_geometry_type = self.live_data_properties.geometryType
@@ -612,7 +612,7 @@ class FieldChecker:
 
         if problem_fields:
             raise ValueError(
-                f'The following fields cannot have null values in the live data but one or more nulls exist in the new data: {", ".join(problem_fields)}'
+                f"The following fields cannot have null values in the live data but one or more nulls exist in the new data: {', '.join(problem_fields)}"
             )
 
     def check_field_length(self, fields):
@@ -640,7 +640,7 @@ class FieldChecker:
         for field, live_max_length in columns_to_check[["name", "length"]].to_records(index=False):
             new_data_lengths = self.new_dataframe[field].str.len()
             new_max_length = new_data_lengths.max()
-            if new_max_length > live_max_length:
+            if not pd.isna(new_max_length) and new_max_length > live_max_length:
                 raise ValueError(
                     f"Row {new_data_lengths.argmax()}, column {field} in new data exceeds the live data max length of {live_max_length}"
                 )
@@ -669,9 +669,9 @@ class FieldChecker:
 
         error_message = []
         if live_dif:
-            error_message.append(f'Fields missing in live data: {", ".join(live_dif)}')
+            error_message.append(f"Fields missing in live data: {', '.join(live_dif)}")
         if new_dif:
-            error_message.append(f'Fields missing in new data: {", ".join(new_dif)}')
+            error_message.append(f"Fields missing in new data: {', '.join(new_dif)}")
 
         if error_message:
             raise RuntimeError(". ".join(error_message))
@@ -723,7 +723,7 @@ class FieldChecker:
         if columns_with_nulls:
             warnings.warn(
                 "The following columns have null values that will be replaced by 0 due to shapely conventions: "
-                f'{", ".join(columns_with_nulls)}'
+                f"{', '.join(columns_with_nulls)}"
             )
 
 
