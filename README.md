@@ -1,6 +1,6 @@
-# agrc/palletjack
+# palletjack
 
-![Build Status](https://github.com/agrc/palletjack/workflows/Build%20and%20Test/badge.svg)
+[![Release Events](https://github.com/agrc/palletjack/actions/workflows/release.yml/badge.svg)](https://github.com/agrc/palletjack/actions/workflows/release.yml)
 [![codecov](https://codecov.io/gh/agrc/palletjack/branch/main/graph/badge.svg)](https://codecov.io/gh/agrc/palletjack)
 
 A library of classes and methods for automatically updating AGOL feature services with data from several different types of external sources. Client apps (sometimes called 'skids') can reuse these classes for common use cases. The code modules are oriented around each step in the extract, transform, and load process.
