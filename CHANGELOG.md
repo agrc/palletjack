@@ -1,5 +1,12 @@
 # Changelog
 
+## [5.2.2](https://github.com/agrc/palletjack/compare/v5.2.1...v5.2.2) (2025-05-19)
+
+
+### Bug Fixes
+
+* prevent FieldChecker from returning false negatives related to null string values ([b1f74a5](https://github.com/agrc/palletjack/commit/b1f74a5e977235d24730d59841cf76b3089b5df0))
+
 ## [5.2.1](https://github.com/agrc/palletjack/compare/v5.2.0...v5.2.1) (2025-02-20)
 
 
