@@ -12,6 +12,7 @@ import pandas.testing as tm
 import pyogrio
 import pytest
 from arcgis import GeoAccessor, GeoSeriesAccessor  # noqa: F401
+
 from palletjack import load
 
 
@@ -1243,6 +1244,7 @@ class TestGDBStuff:
 
         mocker.patch("palletjack.load.arcgis")
         gis_mock = mocker.Mock()
+        gis_mock.content.search.return_value = []
         updater = load.ServiceUpdater(gis_mock, "abc", service_type="table")
 
         foo = updater._upload_gdb(gdb_path)
@@ -1262,6 +1264,7 @@ class TestGDBStuff:
 
         mocker.patch("palletjack.load.arcgis")
         gis_mock = mocker.Mock()
+        gis_mock.content.search.return_value = []
         updater = load.ServiceUpdater(gis_mock, "abc", gdb_item_prefix="foo")
 
         foo = updater._upload_gdb(gdb_path)
@@ -1271,6 +1274,7 @@ class TestGDBStuff:
     def test__upload_gdb_raises_on_agol_error(self, mocker):
         gdb_path = Path("/foo/bar/upload.gdb")
         updater_mock = mocker.Mock()
+        updater_mock.gis.content.search.return_value = []
         updater_mock.gis.content.add.side_effect = [Exception("foo")] * 4
         mocker.patch("palletjack.utils.sleep")
 
@@ -1279,6 +1283,20 @@ class TestGDBStuff:
 
         assert exc_info.value.args[0] == f"Error uploading {gdb_path} to AGOL"
         assert updater_mock.gis.content.add.call_count == 4  #: retries
+
+    def test__upload_gdb_deletes_existing_item(self, mocker):
+        gdb_path = Path("/foo/bar/upload.gdb")
+        updater_mock = mocker.Mock()
+        deleteFunction = mocker.Mock()
+        updater_mock.gis.content.search.return_value = [mocker.Mock(id="1234", delete=deleteFunction)]
+        updater_mock.gis.content.add.return_value = mocker.Mock()
+        updater_mock.gdb_item_prefix = "palletjack"
+        updater_mock.gis.users.me.username = "test_user"
+
+        load.ServiceUpdater._upload_gdb(updater_mock, gdb_path)
+
+        deleteFunction.assert_called_once()
+        updater_mock.gis.content.add.assert_called_once()
 
     def test__cleanup_deletes_agol_and_file(self, mocker):
         zipped_path = Path("/foo/bar/upload.gdb.zip")
@@ -1308,7 +1326,7 @@ class TestGDBStuff:
 
     def test__cleanup_warns_on_both_agol_and_file_errors(self, mocker):
         expected_agol_warning = "Error deleting gdb item 1234 from AGOL"
-        expected_file_warning = f'Error deleting zipped gdb {Path("/foo/bar/upload.gdb.zip")}'
+        expected_file_warning = f"Error deleting zipped gdb {Path('/foo/bar/upload.gdb.zip')}"
         gdb_item_mock = mocker.Mock(id="1234")
         gdb_item_mock.delete.side_effect = [RuntimeError("Unable to delete item.")]
         zipped_path = Path("/foo/bar/upload.gdb.zip")

@@ -289,7 +289,7 @@ class ServiceUpdater:
                 or append_kwargs["upsert_matching_field"] not in dataframe.columns
             ):
                 raise ValueError(
-                    f'Upsert matching field {append_kwargs["upsert_matching_field"]} not found in either append fields or existing fields.'
+                    f"Upsert matching field {append_kwargs['upsert_matching_field']} not found in either append fields or existing fields."
                 )
         except KeyError:
             pass
@@ -372,12 +372,31 @@ class ServiceUpdater:
             arcgis.gis.Item: Reference to the resulting Item object in self.gis
         """
 
+        title = f"{self.gdb_item_prefix} Temporary gdb upload"
+        item_type = "File Geodatabase"
+
+        try:
+            search_results = utils.retry(
+                self.gis.content.search,
+                f'title:"{title}" AND owner:{self.gis.users.me.username}',
+                item_type=item_type,
+                max_items=1,
+            )
+            if len(search_results) > 0:
+                self._class_logger.debug(
+                    "Found existing gdb item %s, deleting it before uploading new gdb", search_results[0].id
+                )
+                utils.retry(search_results[0].delete)
+        except Exception as error:
+            self._class_logger.warning(f"Error searching for existing gdb item with title {title}")
+            warnings.warn(repr(error))
+
         try:
             gdb_item = utils.retry(
                 self.gis.content.add,
                 item_properties={
-                    "type": "File Geodatabase",
-                    "title": f"{self.gdb_item_prefix} Temporary gdb upload",
+                    "type": item_type,
+                    "title": title,
                     "snippet": "Temporary gdb upload from palletjack",
                 },
                 data=zipped_gdb_path,
