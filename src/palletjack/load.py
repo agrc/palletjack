@@ -375,6 +375,7 @@ class ServiceUpdater:
         title = f"{self.gdb_item_prefix} Temporary gdb upload"
         item_type = "File Geodatabase"
 
+        search_results = []
         try:
             search_results = utils.retry(
                 self.gis.content.search,
@@ -382,14 +383,18 @@ class ServiceUpdater:
                 item_type=item_type,
                 max_items=1,
             )
-            if len(search_results) > 0:
-                self._class_logger.debug(
-                    "Found existing gdb item %s, deleting it before uploading new gdb", search_results[0].id
-                )
-                utils.retry(search_results[0].delete)
         except Exception as error:
             self._class_logger.warning(f"Error searching for existing gdb item with title {title}")
             warnings.warn(repr(error))
+
+        if len(search_results) > 0:
+            self._class_logger.debug(
+                "Found existing gdb item %s, deleting it before uploading new gdb", search_results[0].id
+            )
+            try:
+                utils.retry(search_results[0].delete)
+            except Exception as error:
+                raise RuntimeError(f"Error deleting existing gdb item with title {title}") from error
 
         try:
             gdb_item = utils.retry(
