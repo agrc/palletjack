@@ -1,5 +1,12 @@
 # Changelog
 
+## [5.2.3](https://github.com/agrc/palletjack/compare/v5.2.2...v5.2.3) (2025-06-23)
+
+
+### Bug Fixes
+
+* delete any existing gdb upload items left over from previous runs ([11f3359](https://github.com/agrc/palletjack/commit/11f33593c412172b6ee4be6c777e361c798d3236)), closes [#78](https://github.com/agrc/palletjack/issues/78)
+
 ## [5.2.2](https://github.com/agrc/palletjack/compare/v5.2.1...v5.2.2) (2025-05-19)
 
 
