@@ -378,12 +378,46 @@ def sedf_to_gdf(dataframe):
         GeoPandas.DataFrame: dataframe converted to GeoDataFrame
     """
 
+    warnings.warn(
+        "sedf_to_gdf is deprecated and will be removed in a future release. Use convert_to_gdf instead.",
+        DeprecationWarning,
+    )
+
     gdf = gpd.GeoDataFrame(dataframe, geometry=dataframe.spatial.name)
     try:
         gdf.set_crs(dataframe.spatial.sr.latestWkid, inplace=True)
     except AttributeError:
         gdf.set_crs(dataframe.spatial.sr.wkid, inplace=True)
 
+    return gdf
+
+
+def convert_to_gdf(dataframe):
+    """Given a dataframe, convert it to a GeoDataFrame. Non-spatially-enabled dataframes have no geometry, allowing them to be written as gdb tables.
+
+    Args:
+        dataframe (pd.DataFrame): Input dataframe, can be a regular dataframe, gdf, or sedf.
+
+    Returns:
+        gpd.GeoDataFrame: GeoDataFrame with or without geometry.
+    """
+
+    #: Already a gdf
+    if isinstance(dataframe, gpd.GeoDataFrame):
+        return dataframe
+
+    #: just a normal df, convert to gdf w/o geometry (allows us to write as table to gdb)
+    try:
+        dataframe.spatial.geometry_type  # raises KeyError if this is a regular dataframe
+    except KeyError:
+        return gpd.GeoDataFrame(dataframe, geometry=None)
+
+    #: spatially-enabled dataframe
+    gdf = gpd.GeoDataFrame(dataframe, geometry=dataframe.spatial.name)
+    try:
+        gdf.set_crs(dataframe.spatial.sr.latestWkid, inplace=True)
+    except AttributeError:
+        gdf.set_crs(dataframe.spatial.sr.wkid, inplace=True)
     return gdf
 
 
