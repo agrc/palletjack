@@ -330,11 +330,13 @@ class FeatureServiceUpdater:
                 )
         except KeyError:
             pass
-
+        self._class_logger.debug(&#39;Saving data to gdb and zipping...&#39;)
         zipped_gdb_path = self._save_to_gdb_and_zip(dataframe)
 
+        self._class_logger.debug(&#39;Uploading gdb to AGOL...&#39;)
         gdb_item = self._upload_gdb(zipped_gdb_path)
 
+        self._class_logger.debug(&#39;Appending data from gdb to feature layer...&#39;)
         try:
             result, messages = utils.retry(
                 self.feature_layer.append,
@@ -1783,11 +1785,13 @@ working_dir should be a TemporaryDirectory unless persistent access to the gdb i
                 )
         except KeyError:
             pass
-
+        self._class_logger.debug(&#39;Saving data to gdb and zipping...&#39;)
         zipped_gdb_path = self._save_to_gdb_and_zip(dataframe)
 
+        self._class_logger.debug(&#39;Uploading gdb to AGOL...&#39;)
         gdb_item = self._upload_gdb(zipped_gdb_path)
 
+        self._class_logger.debug(&#39;Appending data from gdb to feature layer...&#39;)
         try:
             result, messages = utils.retry(
                 self.feature_layer.append,

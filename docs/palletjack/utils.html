@@ -593,6 +593,11 @@ class FieldChecker:
         if &#39;SHAPE&#39; not in self.new_dataframe.columns:
             raise ValueError(&#39;New dataframe does not have a SHAPE column&#39;)
 
+        if self.new_dataframe[&#39;SHAPE&#39;].isna().any():
+            raise ValueError(
+                f&#39;New dataframe has missing geometries at index {list(self.new_dataframe[self.new_dataframe[&#34;SHAPE&#34;].isna()].index)}&#39;
+            )
+
         live_geometry_type = self.live_data_properties.geometryType
         new_geometry_types = self.new_dataframe.spatial.geometry_type
         if len(new_geometry_types) &gt; 1:
@@ -2273,6 +2278,11 @@ Provides the check_fields class method to run all the checks in one call with ha
 
         if &#39;SHAPE&#39; not in self.new_dataframe.columns:
             raise ValueError(&#39;New dataframe does not have a SHAPE column&#39;)
+
+        if self.new_dataframe[&#39;SHAPE&#39;].isna().any():
+            raise ValueError(
+                f&#39;New dataframe has missing geometries at index {list(self.new_dataframe[self.new_dataframe[&#34;SHAPE&#34;].isna()].index)}&#39;
+            )
 
         live_geometry_type = self.live_data_properties.geometryType
         new_geometry_types = self.new_dataframe.spatial.geometry_type
