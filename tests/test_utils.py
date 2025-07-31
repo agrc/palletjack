@@ -1103,31 +1103,31 @@ class TestCheckGeometryTypes:
 
 class TestCondenseGeopandasMultiTypes:
     def test__condense_geopandas_multi_types_single_type_passes_through(self, mocker):
-        types = pd.Series(["Polygon", "Polygon", "Polygon"])
-        result = palletjack.utils.FieldChecker._condense_geopandas_multi_types(mocker.Mock(), types)
-        assert result == ["Polygon"]
+        unique_types = np.array(["Polygon"])
+        result = palletjack.utils.FieldChecker._condense_geopandas_multi_types(mocker.Mock(), unique_types)
+        np.testing.assert_array_equal(result, ["Polygon"])
 
     def test__condense_geopandas_multi_types_polygon_and_multipolygon_condenses_to_multipolygon(self, mocker):
-        types = pd.Series(["Polygon", "MultiPolygon", "Polygon"])
-        result = palletjack.utils.FieldChecker._condense_geopandas_multi_types(mocker.Mock(), types)
+        unique_types = np.array(["Polygon", "MultiPolygon"])
+        result = palletjack.utils.FieldChecker._condense_geopandas_multi_types(mocker.Mock(), unique_types)
 
-        assert result == ["MultiPolygon"]
+        np.testing.assert_array_equal(result, ["MultiPolygon"])
 
     def test__condense_geopandas_multi_types_linestring_and_multilinestring_condenses_to_multilinestring(self, mocker):
-        types = pd.Series(["LineString", "MultiLineString", "LineString"])
-        result = palletjack.utils.FieldChecker._condense_geopandas_multi_types(mocker.Mock(), types)
+        unique_types = np.array(["LineString", "MultiLineString"])
+        result = palletjack.utils.FieldChecker._condense_geopandas_multi_types(mocker.Mock(), unique_types)
 
-        assert result == ["MultiLineString"]
+        np.testing.assert_array_equal(result, ["MultiLineString"])
 
     def test__condense_geopandas_multi_types_point_and_multipoint_condenses_to_multipoint(self, mocker):
-        types = pd.Series(["Point", "MultiPoint", "Point"])
-        result = palletjack.utils.FieldChecker._condense_geopandas_multi_types(mocker.Mock(), types)
+        unique_types = np.array(["Point", "MultiPoint"])
+        result = palletjack.utils.FieldChecker._condense_geopandas_multi_types(mocker.Mock(), unique_types)
 
-        assert result == ["MultiPoint"]
+        np.testing.assert_array_equal(result, ["MultiPoint"])
 
     def test__condense_geopandas_multi_types_passes_heterogenous_types(self, mocker):
-        types = pd.Series(["Point", "MultiPoint", "Polygon"])
-        result = palletjack.utils.FieldChecker._condense_geopandas_multi_types(mocker.Mock(), types)
+        unique_types = np.array(["Point", "MultiPoint", "Polygon"])
+        result = palletjack.utils.FieldChecker._condense_geopandas_multi_types(mocker.Mock(), unique_types)
 
         np.testing.assert_array_equal(result, ["MultiPoint", "Polygon"])
 

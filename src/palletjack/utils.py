@@ -619,27 +619,27 @@ class FieldChecker:
                 f'New dataframe geometry type "{new_geometry_types[0]}" incompatible with live geometry type "{live_geometry_type}"'
             )
 
-    def _condense_geopandas_multi_types(self, unique_types: np.array) -> np.array:
+    def _condense_geopandas_multi_types(self, unique_types: np.ndarray) -> np.ndarray:
         """Given a numpy array of unique geometry types from geopandas, if both a singular type and it's corresponding multi* type are present remove the singular type; ie, ["Polygon", "MultiPolygon"] becomes ["MultiPolygon"].
 
         Mimics promote_to_multi arg's behavior in to_file().
 
         Args:
-            unique_types (np.array): Array of unique geometry types from a GeoDataFrame (gdf.geom_type.unique())
+            unique_types (np.ndarray): Array of unique geometry types from a GeoDataFrame (gdf.geom_type.unique())
 
         Returns:
-            np.array: Input array with any singular geometry types replaced with their multi* partner.
+            np.ndarray: Input array with any singular geometry types replaced with their multi* partner.
         """
 
         if len(unique_types) == 1:
             return unique_types
 
         if "MultiPolygon" in unique_types and "Polygon" in unique_types:
-            unique_types = np.delete(unique_types, unique_types == "Polygon")
+            unique_types = unique_types[unique_types != "Polygon"]
         if "MultiLineString" in unique_types and "LineString" in unique_types:
-            unique_types = np.delete(unique_types, unique_types == "LineString")
+            unique_types = unique_types[unique_types != "LineString"]
         if "MultiPoint" in unique_types and "Point" in unique_types:
-            unique_types = np.delete(unique_types, unique_types == "Point")
+            unique_types = unique_types[unique_types != "Point"]
 
         return unique_types
 
