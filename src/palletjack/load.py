@@ -339,12 +339,7 @@ class ServiceUpdater:
         except TypeError as error:
             raise AttributeError(f"working_dir not specified on {self.__class__.__name__}") from error
 
-        try:
-            #: check if the dataframe is a spatially enabled dataframe
-            dataframe.spatial.geometry_type  # raises KeyError if this is a regular dataframe
-            gdf = utils.sedf_to_gdf(dataframe)
-        except KeyError:
-            gdf = gpd.GeoDataFrame(dataframe)
+        gdf = utils.convert_to_gdf(dataframe)
 
         try:
             gdf.to_file(gdb_path, layer="upload", engine="pyogrio", driver="OpenFileGDB")
