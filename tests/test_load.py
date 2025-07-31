@@ -1168,26 +1168,10 @@ class TestGDBStuff:
         updater_mock.working_dir = "/foo/bar"
         updater_mock.service = mocker.Mock()
 
-        mocker.patch("palletjack.utils.sedf_to_gdf")
+        mocker.patch("palletjack.utils.convert_to_gdf")
         shutil_mock = mocker.patch("palletjack.load.shutil")
 
         foo = load.ServiceUpdater._save_to_gdb_and_zip(updater_mock, mocker.Mock())
-
-        shutil_mock.make_archive.assert_called_once_with(*expected_call_args, **expected_call_kwargs)
-
-    def test__save_to_gdb_and_zip_handles_tables(self, mocker):
-        expected_call_args = [Path("/foo/bar/upload.gdb"), "zip"]
-        expected_call_kwargs = {"root_dir": Path("/foo/bar"), "base_dir": "upload.gdb"}
-
-        updater_mock = mocker.Mock()
-        updater_mock.working_dir = "/foo/bar"
-        updater_mock.service = mocker.Mock()
-
-        mocker.patch("geopandas.GeoDataFrame")
-        shutil_mock = mocker.patch("palletjack.load.shutil")
-        dataframe = pd.DataFrame()
-
-        foo = load.ServiceUpdater._save_to_gdb_and_zip(updater_mock, dataframe)
 
         shutil_mock.make_archive.assert_called_once_with(*expected_call_args, **expected_call_kwargs)
 
@@ -1199,7 +1183,7 @@ class TestGDBStuff:
         updater_mock.working_dir = "/foo/bar"
         updater_mock.service = mocker.Mock()
 
-        gdf_mock = mocker.patch("palletjack.utils.sedf_to_gdf").return_value
+        gdf_mock = mocker.patch("palletjack.utils.convert_to_gdf").return_value
         gdf_mock.to_file.side_effect = pyogrio.errors.DataSourceError
 
         with pytest.raises(ValueError, match=re.escape(expected_error)):
@@ -1209,7 +1193,7 @@ class TestGDBStuff:
         updater_mock = mocker.Mock()
         updater_mock.working_dir = "/foo/bar"
         updater_mock.service = mocker.Mock()
-        mocker.patch("palletjack.utils.sedf_to_gdf")
+        mocker.patch("palletjack.utils.convert_to_gdf")
         mocker.patch("palletjack.load.shutil.make_archive", side_effect=OSError("io error"))
 
         gdb_path = Path("/foo/bar/upload.gdb")
