@@ -11,7 +11,6 @@ from pathlib import Path
 from typing import Literal
 
 import arcgis
-import geopandas as gpd
 import numpy as np
 import pandas as pd
 import pyogrio
