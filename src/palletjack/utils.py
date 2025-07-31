@@ -13,6 +13,7 @@ from time import sleep
 
 import arcgis
 import geopandas as gpd
+import numpy as np
 import pandas as pd
 import pygsheets
 import pyogrio
@@ -579,21 +580,20 @@ class FieldChecker:
     def _check_geometry_types(self):
         """Raise an error if the live and new data geometry types are incompatible.
 
-        Args:
-            live_data_properties (dict): FeatureLayer.properties of live data
-            new_dataframe (pd.DataFrame): New data to be added/updated
-
         Raises:
             ValueError: If the new data is not a valid spatially-enabled dataframe, has multiple geometry types, or has
                 a geometry type that doesn't match the live data.
         """
 
-        esri_to_sedf_geometry_mapping = {
-            "esriGeometryPoint": "point",
-            "esriGeometryMultipoint": "multipoint",
-            "esriGeometryPolyline": "polyline",
-            "esriGeometryPolygon": "polygon",
-            "esriGeometryEnvelope": "envelope",
+        df_to_esri_geometry_mapping = {
+            "point": "esriGeometryPoint",
+            "multipoint": "esriGeometryMultipoint",
+            "polyline": "esriGeometryPolyline",
+            "linestring": "esriGeometryPolyline",  #: gdf
+            "multilinestring": "esriGeometryPolyline",  #: gdf
+            "polygon": "esriGeometryPolygon",
+            "multipolygon": "esriGeometryPolygon",  #: gdf
+            "envelope": "esriGeometryEnvelope",
         }
 
         if "SHAPE" not in self.new_dataframe.columns:
@@ -605,13 +605,43 @@ class FieldChecker:
             )
 
         live_geometry_type = self.live_data_properties.geometryType
-        new_geometry_types = self.new_dataframe.spatial.geometry_type
+
+        try:
+            new_geometry_types = self.new_dataframe.spatial.geometry_type
+        except Exception:  #: If it's not an sedf, the call to geometry_type raises a general Exception, so try gdf
+            new_geometry_types = self._condense_geopandas_multi_types(self.new_dataframe.geom_type.unique())
+
         if len(new_geometry_types) > 1:
             raise ValueError("New dataframe has multiple geometry types")
-        if esri_to_sedf_geometry_mapping[live_geometry_type] != new_geometry_types[0].lower():
+
+        if df_to_esri_geometry_mapping[new_geometry_types[0].lower()] != live_geometry_type:
             raise ValueError(
                 f'New dataframe geometry type "{new_geometry_types[0]}" incompatible with live geometry type "{live_geometry_type}"'
             )
+
+    def _condense_geopandas_multi_types(self, unique_types: np.array) -> np.array:
+        """Given a numpy array of unique geometry types from geopandas, if both a singular type and it's corresponding multi* type are present remove the singular type; ie, ["Polygon", "MultiPolygon"] becomes ["MultiPolygon"].
+
+        Mimics promote_to_multi arg's behavior in to_file().
+
+        Args:
+            unique_types (np.array): Array of unique geometry types from a GeoDataFrame (gdf.geom_type.unique())
+
+        Returns:
+            np.array: Input array with any singular geometry types replaced with their multi* partner.
+        """
+
+        if len(unique_types) == 1:
+            return unique_types
+
+        if "MultiPolygon" in unique_types and "Polygon" in unique_types:
+            unique_types = np.delete(unique_types, unique_types == "Polygon")
+        if "MultiLineString" in unique_types and "LineString" in unique_types:
+            unique_types = np.delete(unique_types, unique_types == "LineString")
+        if "MultiPoint" in unique_types and "Point" in unique_types:
+            unique_types = np.delete(unique_types, unique_types == "Point")
+
+        return unique_types
 
     def check_for_non_null_fields(self, fields):
         """Raise an error if the new data contains nulls in a field that the live data says is not nullable.
