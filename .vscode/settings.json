@@ -58,6 +58,7 @@
     "mapserv",
     "minval",
     "nans",
+    "ndarray",
     "nojekyll",
     "oids",
     "Overwriter",
