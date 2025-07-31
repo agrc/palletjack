@@ -1065,6 +1065,73 @@ class TestCheckFieldsMatch:
         assert "New dataframe has missing geometries at index [1]" in str(exc_info.value)
 
 
+class TestCheckGeometryTypes:
+    def test_check_geometry_types_handles_geodataframe(self, mocker):
+        self_mock = mocker.Mock()
+
+        new_df = mocker.MagicMock(spec="palletjack.utils.pd.DataFrame")
+        new_df.columns = ["SHAPE"]
+        new_df["SHAPE"].isna.return_value.any.return_value = False
+        new_df.geom_type = pd.Series(["MultiPolygon", "MultiPolygon", "MultiPolygon"])
+
+        self_mock.new_dataframe = new_df
+        self_mock.live_data_properties.geometryType = "esriGeometryPolygon"
+        self_mock._condense_geopandas_multi_types.return_value = np.array(["MultiPolygon"])
+
+        #: If it raises an error, it failed.
+        palletjack.utils.FieldChecker._check_geometry_types(self_mock)
+
+        self_mock._condense_geopandas_multi_types.assert_called_once_with(np.array(["MultiPolygon"]))
+
+    def test_check_geometry_types_raises_on_multiple_gdf_types(self, mocker):
+        self_mock = mocker.Mock()
+
+        new_df = mocker.MagicMock(spec="palletjack.utils.pd.DataFrame")
+        new_df.columns = ["SHAPE"]
+        new_df["SHAPE"].isna.return_value.any.return_value = False
+        new_df.geom_type = pd.Series(["Point", "Polygon"])
+
+        self_mock.new_dataframe = new_df
+        self_mock.live_data_properties.geometryType = "esriGeometryPoint"
+        self_mock._condense_geopandas_multi_types.return_value = np.array(["Point", "Polygon"])
+
+        with pytest.raises(ValueError) as exc_info:
+            palletjack.utils.FieldChecker._check_geometry_types(self_mock)
+
+        assert "New dataframe has multiple geometry types" in str(exc_info.value)
+
+
+class TestCondenseGeopandasMultiTypes:
+    def test__condense_geopandas_multi_types_single_type_passes_through(self, mocker):
+        types = pd.Series(["Polygon", "Polygon", "Polygon"])
+        result = palletjack.utils.FieldChecker._condense_geopandas_multi_types(mocker.Mock(), types)
+        assert result == ["Polygon"]
+
+    def test__condense_geopandas_multi_types_polygon_and_multipolygon_condenses_to_multipolygon(self, mocker):
+        types = pd.Series(["Polygon", "MultiPolygon", "Polygon"])
+        result = palletjack.utils.FieldChecker._condense_geopandas_multi_types(mocker.Mock(), types)
+
+        assert result == ["MultiPolygon"]
+
+    def test__condense_geopandas_multi_types_linestring_and_multilinestring_condenses_to_multilinestring(self, mocker):
+        types = pd.Series(["LineString", "MultiLineString", "LineString"])
+        result = palletjack.utils.FieldChecker._condense_geopandas_multi_types(mocker.Mock(), types)
+
+        assert result == ["MultiLineString"]
+
+    def test__condense_geopandas_multi_types_point_and_multipoint_condenses_to_multipoint(self, mocker):
+        types = pd.Series(["Point", "MultiPoint", "Point"])
+        result = palletjack.utils.FieldChecker._condense_geopandas_multi_types(mocker.Mock(), types)
+
+        assert result == ["MultiPoint"]
+
+    def test__condense_geopandas_multi_types_passes_heterogenous_types(self, mocker):
+        types = pd.Series(["Point", "MultiPoint", "Polygon"])
+        result = palletjack.utils.FieldChecker._condense_geopandas_multi_types(mocker.Mock(), types)
+
+        np.testing.assert_array_equal(result, ["MultiPoint", "Polygon"])
+
+
 class TestNullableIntWarning:
     def test_check_nullable_ints_shapely_warns_with_na(self, mocker):
         new_df = pd.DataFrame(
