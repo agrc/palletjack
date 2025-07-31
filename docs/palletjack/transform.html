@@ -29,6 +29,7 @@
 </summary>
 <pre><code class="python">&#34;&#34;&#34;Transform pandas dataframes in preparation for loading to AGOL.
 &#34;&#34;&#34;
+import locale
 import logging
 import warnings
 from datetime import datetime
@@ -212,10 +213,11 @@ class DataCleaning:
             pd.DataFrame: Input dataframe with columns converted to nullable Int64
         &#34;&#34;&#34;
 
-        int_dict = {field: &#39;Int64&#39; for field in fields_that_should_be_ints}
+        retyped = dataframe.copy()
         try:
-            retyped = dataframe.astype(int_dict)
-        except TypeError as error:
+            for field in fields_that_should_be_ints:
+                retyped[field] = DataCleaning._switch_series_to_numeric_dtype(retyped[field], &#39;Int64&#39;)
+        except (TypeError, ValueError) as error:
             raise TypeError(
                 &#39;Cannot convert one or more fields to nullable ints. Check for non-int/non-np.nan values.&#39;
             ) from error
@@ -237,16 +239,35 @@ class DataCleaning:
             pd.DataFrame: Input dataframe with columns converted to float
         &#34;&#34;&#34;
 
-        float_dict = {field: &#39;float&#39; for field in fields_that_should_be_floats}
-        empty_string_dict = {field: {&#39;&#39;: None} for field in fields_that_should_be_floats}
+        retyped = dataframe.copy()
         try:
-            no_empty_strings = dataframe.replace(empty_string_dict)
-            retyped = no_empty_strings.astype(float_dict)
-        except TypeError as error:
+            for field in fields_that_should_be_floats:
+                retyped[field] = DataCleaning._switch_series_to_numeric_dtype(retyped[field], &#39;float&#39;)
+        except (TypeError, ValueError) as error:
             raise TypeError(
                 &#39;Cannot convert one or more fields to floats. Check for non-float/non-null values.&#39;
             ) from error
         return retyped
+
+    @staticmethod
+    def _switch_series_to_numeric_dtype(series, dtype):
+        &#34;&#34;&#34;Switch the dtype of a series to the specified dtype
+
+        Series of dtype &#39;object&#39; (ie, series of strings or mixed strings and numbers) are converted to str so that they
+        can be de-localized to remove comma thousands separators
+
+        Args:
+            series (pd.Series): The series to be converted
+            dtype (str): The dtype to convert to
+
+        Returns:
+            pd.Series: The converted series
+        &#34;&#34;&#34;
+
+        if series.dtype == &#39;object&#39;:
+            series = series.astype(str).apply(locale.delocalize)
+            series.replace(&#39;&#39;, None, inplace=True)
+        return series.astype(dtype)
 
     @staticmethod
     def switch_to_datetime(dataframe, date_fields, **to_datetime_kwargs):
@@ -520,10 +541,11 @@ other settings.</p>
             pd.DataFrame: Input dataframe with columns converted to nullable Int64
         &#34;&#34;&#34;
 
-        int_dict = {field: &#39;Int64&#39; for field in fields_that_should_be_ints}
+        retyped = dataframe.copy()
         try:
-            retyped = dataframe.astype(int_dict)
-        except TypeError as error:
+            for field in fields_that_should_be_ints:
+                retyped[field] = DataCleaning._switch_series_to_numeric_dtype(retyped[field], &#39;Int64&#39;)
+        except (TypeError, ValueError) as error:
             raise TypeError(
                 &#39;Cannot convert one or more fields to nullable ints. Check for non-int/non-np.nan values.&#39;
             ) from error
@@ -545,16 +567,35 @@ other settings.</p>
             pd.DataFrame: Input dataframe with columns converted to float
         &#34;&#34;&#34;
 
-        float_dict = {field: &#39;float&#39; for field in fields_that_should_be_floats}
-        empty_string_dict = {field: {&#39;&#39;: None} for field in fields_that_should_be_floats}
+        retyped = dataframe.copy()
         try:
-            no_empty_strings = dataframe.replace(empty_string_dict)
-            retyped = no_empty_strings.astype(float_dict)
-        except TypeError as error:
+            for field in fields_that_should_be_floats:
+                retyped[field] = DataCleaning._switch_series_to_numeric_dtype(retyped[field], &#39;float&#39;)
+        except (TypeError, ValueError) as error:
             raise TypeError(
                 &#39;Cannot convert one or more fields to floats. Check for non-float/non-null values.&#39;
             ) from error
         return retyped
+
+    @staticmethod
+    def _switch_series_to_numeric_dtype(series, dtype):
+        &#34;&#34;&#34;Switch the dtype of a series to the specified dtype
+
+        Series of dtype &#39;object&#39; (ie, series of strings or mixed strings and numbers) are converted to str so that they
+        can be de-localized to remove comma thousands separators
+
+        Args:
+            series (pd.Series): The series to be converted
+            dtype (str): The dtype to convert to
+
+        Returns:
+            pd.Series: The converted series
+        &#34;&#34;&#34;
+
+        if series.dtype == &#39;object&#39;:
+            series = series.astype(str).apply(locale.delocalize)
+            series.replace(&#39;&#39;, None, inplace=True)
+        return series.astype(dtype)
 
     @staticmethod
     def switch_to_datetime(dataframe, date_fields, **to_datetime_kwargs):
@@ -711,12 +752,11 @@ def switch_to_float(dataframe, fields_that_should_be_floats):
         pd.DataFrame: Input dataframe with columns converted to float
     &#34;&#34;&#34;
 
-    float_dict = {field: &#39;float&#39; for field in fields_that_should_be_floats}
-    empty_string_dict = {field: {&#39;&#39;: None} for field in fields_that_should_be_floats}
+    retyped = dataframe.copy()
     try:
-        no_empty_strings = dataframe.replace(empty_string_dict)
-        retyped = no_empty_strings.astype(float_dict)
-    except TypeError as error:
+        for field in fields_that_should_be_floats:
+            retyped[field] = DataCleaning._switch_series_to_numeric_dtype(retyped[field], &#39;float&#39;)
+    except (TypeError, ValueError) as error:
         raise TypeError(
             &#39;Cannot convert one or more fields to floats. Check for non-float/non-null values.&#39;
         ) from error
@@ -766,10 +806,11 @@ def switch_to_nullable_int(dataframe, fields_that_should_be_ints):
         pd.DataFrame: Input dataframe with columns converted to nullable Int64
     &#34;&#34;&#34;
 
-    int_dict = {field: &#39;Int64&#39; for field in fields_that_should_be_ints}
+    retyped = dataframe.copy()
     try:
-        retyped = dataframe.astype(int_dict)
-    except TypeError as error:
+        for field in fields_that_should_be_ints:
+            retyped[field] = DataCleaning._switch_series_to_numeric_dtype(retyped[field], &#39;Int64&#39;)
+    except (TypeError, ValueError) as error:
         raise TypeError(
             &#39;Cannot convert one or more fields to nullable ints. Check for non-int/non-np.nan values.&#39;
         ) from error
