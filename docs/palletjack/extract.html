@@ -2,18 +2,32 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
-<meta name="generator" content="pdoc 0.10.0" />
+<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1">
+<meta name="generator" content="pdoc3 0.11.5">
 <title>palletjack.extract API documentation</title>
-<meta name="description" content="Extract tabular/spatial data from various sources into a pandas dataframe …" />
-<link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/sanitize.min.css" integrity="sha256-PK9q560IAAa6WVRRh76LtCaI8pjTJ2z11v0miyNNjrs=" crossorigin>
-<link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/typography.min.css" integrity="sha256-7l/o7C8jubJiy74VsKTidCy1yBkRtiUGbVkYBylBqUg=" crossorigin>
-<link rel="stylesheet preload" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.1/styles/github.min.css" crossorigin>
-<style>:root{--highlight-color:#fe9}.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:30px;overflow:hidden}#sidebar > *:last-child{margin-bottom:2cm}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:1em 0 .50em 0}h3{font-size:1.4em;margin:25px 0 10px 0}h4{margin:0;font-size:105%}h1:target,h2:target,h3:target,h4:target,h5:target,h6:target{background:var(--highlight-color);padding:.2em 0}a{color:#058;text-decoration:none;transition:color .3s ease-in-out}a:hover{color:#e82}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900}pre code{background:#f8f8f8;font-size:.8em;line-height:1.4em}code{background:#f2f2f1;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{background:#f8f8f8;border:0;border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0;padding:1ex}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{margin-top:.6em;font-weight:bold}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-weight:bold;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}dt:target .name{background:var(--highlight-color)}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}td{padding:0 .5em}.admonition{padding:.1em .5em;margin-bottom:1em}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
-<style media="screen and (min-width: 700px)">@media screen and (min-width:700px){#sidebar{width:30%;height:100vh;overflow:auto;position:sticky;top:0}#content{width:70%;max-width:100ch;padding:3em 4em;border-left:1px solid #ddd}pre code{font-size:1em}.item .name{font-size:1em}main{display:flex;flex-direction:row-reverse;justify-content:flex-end}.toc ul ul,#index ul{padding-left:1.5em}.toc > ul > li{margin-top:.5em}}</style>
+<meta name="description" content="Extract tabular/spatial data from various sources into a pandas dataframe …">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/sanitize.min.css" integrity="sha512-y1dtMcuvtTMJc1yPgEqF0ZjQbhnc/bFhyvIyVNb9Zk5mIGtqVaAB1Ttl28su8AvFMOY0EwRbAe+HCLqj6W7/KA==" crossorigin>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/typography.min.css" integrity="sha512-Y1DYSb995BAfxobCkKepB1BqJJTPrOp3zPL74AWFugHHmmdcvO+C48WLrUOlhGMc0QG7AE3f7gmvvcrmX2fDoA==" crossorigin>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css" crossorigin>
+<style>:root{--highlight-color:#fe9}.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:1.5em;overflow:hidden}#sidebar > *:last-child{margin-bottom:2cm}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:2em 0 .50em 0}h3{font-size:1.4em;margin:1.6em 0 .7em 0}h4{margin:0;font-size:105%}h1:target,h2:target,h3:target,h4:target,h5:target,h6:target{background:var(--highlight-color);padding:.2em 0}a{color:#058;text-decoration:none;transition:color .2s ease-in-out}a:visited{color:#503}a:hover{color:#b62}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900;font-weight:bold}pre code{font-size:.8em;line-height:1.4em;padding:1em;display:block}code{background:#f3f3f3;font-family:"DejaVu Sans Mono",monospace;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{margin-top:.6em;font-weight:bold}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}dt:target .name{background:var(--highlight-color)}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source > summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible;min-width:max-content}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}td{padding:0 .5em}.admonition{padding:.1em 1em;margin:1em 0}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
+<style media="screen and (min-width: 700px)">@media screen and (min-width:700px){#sidebar{width:30%;height:100vh;overflow:auto;position:sticky;top:0}#content{width:70%;max-width:100ch;padding:3em 4em;border-left:1px solid #ddd}pre code{font-size:1em}.name{font-size:1em}main{display:flex;flex-direction:row-reverse;justify-content:flex-end}.toc ul ul,#index ul ul{padding-left:1em}.toc > ul > li{margin-top:.5em}}</style>
 <style media="print">@media print{#sidebar h1{page-break-before:always}.source{display:none}}@media print{*{background:transparent !important;color:#000 !important;box-shadow:none !important;text-shadow:none !important}a[href]:after{content:" (" attr(href) ")";font-size:90%}a[href][title]:after{content:none}abbr[title]:after{content:" (" attr(title) ")"}.ir a:after,a[href^="javascript:"]:after,a[href^="#"]:after{content:""}pre,blockquote{border:1px solid #999;page-break-inside:avoid}thead{display:table-header-group}tr,img{page-break-inside:avoid}img{max-width:100% !important}@page{margin:0.5cm}p,h2,h3{orphans:3;widows:3}h1,h2,h3,h4,h5,h6{page-break-after:avoid}}</style>
-<script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.1/highlight.min.js" integrity="sha256-Uv3H6lx7dJmRfRvH8TH6kJD1TSK1aFcwgx+mdg3epi8=" crossorigin></script>
-<script>window.addEventListener('DOMContentLoaded', () => hljs.initHighlighting())</script>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js" integrity="sha512-D9gUyxqja7hBtkWpPWGt9wfbfaMGVt9gnyCvYa+jojwwPHLCzUm5i8rpk7vD7wNee9bA35eYIjobYPaQuKS1MQ==" crossorigin></script>
+<script>window.addEventListener('DOMContentLoaded', () => {
+hljs.configure({languages: ['bash', 'css', 'diff', 'graphql', 'ini', 'javascript', 'json', 'plaintext', 'python', 'python-repl', 'rust', 'shell', 'sql', 'typescript', 'xml', 'yaml']});
+hljs.highlightAll();
+/* Collapse source docstrings */
+setTimeout(() => {
+[...document.querySelectorAll('.hljs.language-python > .hljs-string')]
+.filter(el => el.innerHTML.length > 200 && ['"""', "'''"].includes(el.innerHTML.substring(0, 3)))
+.forEach(el => {
+let d = document.createElement('details');
+d.classList.add('hljs-string');
+d.innerHTML = '<summary>"""</summary>' + el.innerHTML.substring(3);
+el.replaceWith(d);
+});
+}, 100);
+})</script>
 </head>
 <body>
 <main>
@@ -25,1079 +39,6 @@
 <p>Extract tabular/spatial data from various sources into a pandas dataframe.</p>
 <p>Each different type of source has its own class. Each class may have multiple methods available for different loading
 operations or techniques.</p>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">&#34;&#34;&#34;Extract tabular/spatial data from various sources into a pandas dataframe.
-
-Each different type of source has its own class. Each class may have multiple methods available for different loading
-operations or techniques.
-&#34;&#34;&#34;
-
-import json
-import logging
-import mimetypes
-import os
-import random
-import re
-import time
-import warnings
-from datetime import datetime, timedelta
-from io import BytesIO
-from pathlib import Path
-from string import Template
-from time import sleep
-
-import arcgis
-import geopandas as gpd
-import pandas as pd
-import pysftp
-import requests
-import sqlalchemy
-import ujson
-from googleapiclient.http import MediaIoBaseDownload
-
-from palletjack import utils
-
-logger = logging.getLogger(__name__)
-
-
-class GSheetLoader:
-    &#34;&#34;&#34;Loads data from a Google Sheets spreadsheet into a pandas data frame
-
-    Requires either the path to a service account .json file that has access to the sheet in question or a
-    `google.auth.credentials.Credentials` object. Calling `google.auth.default()` in a Google Cloud Function will give
-    you a tuple of a `Credentials` object and the project id. You can use this `Credentials` object to authorize
-    pygsheets as the same account the Cloud Function is running under.
-    &#34;&#34;&#34;
-
-    def __init__(self, credentials):
-        &#34;&#34;&#34;
-        Args:
-            credentials (str or google.auth.credentials.Credentials): Path to the service file OR credentials object
-                obtained from google.auth.default() within a cloud function.
-        &#34;&#34;&#34;
-        self._class_logger = logging.getLogger(__name__).getChild(self.__class__.__name__)
-        self.gsheets_client = utils.authorize_pygsheets(credentials)
-
-    def load_specific_worksheet_into_dataframe(self, sheet_id, worksheet, by_title=False):
-        &#34;&#34;&#34;Load a single worksheet from a spreadsheet into a dataframe by worksheet index or title
-
-        Args:
-            sheet_id (str): The ID of the sheet (long alpha-numeric unique ID)
-            worksheet (int or str): Zero-based index of the worksheet or the worksheet title
-            by_title (bool, optional): Search for worksheet by title instead of index. Defaults to False.
-
-        Returns:
-            pd.DataFrame: The specified worksheet as a data frame.
-        &#34;&#34;&#34;
-
-        self._class_logger.debug(&#34;Loading sheet ID %s&#34;, sheet_id)
-        sheet = self.gsheets_client.open_by_key(sheet_id)
-
-        if by_title:
-            self._class_logger.debug(&#34;Loading worksheet by title %s&#34;, worksheet)
-            return sheet.worksheet_by_title(worksheet).get_as_df()
-        else:
-            self._class_logger.debug(&#34;Loading worksheet by index %s&#34;, worksheet)
-            return sheet.worksheet(&#34;index&#34;, worksheet).get_as_df()
-
-    def load_all_worksheets_into_dataframes(self, sheet_id):
-        &#34;&#34;&#34;Load all worksheets into a dictionary of dataframes. Keys are the worksheet.
-
-        Args:
-            sheet_id (str): The ID of the sheet (long alpha-numeric unique ID)
-
-        Returns:
-            dict: {&#39;worksheet_name&#39;: Worksheet as a dataframe}
-        &#34;&#34;&#34;
-
-        self._class_logger.debug(&#34;Loading sheet ID %s&#34;, sheet_id)
-        sheet = self.gsheets_client.open_by_key(sheet_id)
-
-        worksheet_dfs = {worksheet.title: worksheet.get_as_df() for worksheet in sheet.worksheets()}
-
-        return worksheet_dfs
-
-    def combine_worksheets_into_single_dataframe(self, worksheet_dfs):
-        &#34;&#34;&#34;Merge worksheet dataframes (having same columns) into a single dataframe with a new &#39;worksheet&#39; column
-        identifying the source worksheet.
-
-        Args:
-            worksheet_dfs (dict): {&#39;worksheet_name&#39;: Worksheet as a dataframe}.
-
-        Raises:
-            ValueError: If all the worksheets in worksheets_dfs don&#39;t have the same column index, it raises an error
-                and bombs out.
-
-        Returns:
-            pd.DataFrame: A single combined data frame with a new &#39;worksheet&#39; column identifying the worksheet the row
-                came from. The row index is the original row numbers and is probably not unique.
-        &#34;&#34;&#34;
-
-        dataframes = list(worksheet_dfs.values())
-
-        #: Make sure all the dataframes have the same columns
-        if not all([set(dataframes[0].columns) == set(df.columns) for df in dataframes]):
-            raise ValueError(&#34;Columns do not match; cannot create multi-index dataframe&#34;)
-
-        self._class_logger.debug(&#34;Concatting worksheet dataframes %s into a single dataframe&#34;, worksheet_dfs.keys())
-        concatted_df = pd.concat(dataframes, keys=worksheet_dfs.keys(), names=[&#34;worksheet&#34;, &#34;row&#34;])
-        return concatted_df.reset_index(level=&#34;worksheet&#34;)
-
-
-class GoogleDriveDownloader:
-    &#34;&#34;&#34;Provides methods to download any non-html file (ie, Content-Type != text/html) Google Drive file from it&#39;s
-    sharing link (of the form `https://drive.google.com/file/d/big_long_id/etc`). The files may be publicly shared or shared with a service account.
-
-    This class has two similar sets of methods. The `*_using_api` methods authenticate to the Google API using either a
-    service account file or a `google.auth.credentials.Credentials` object and downloads using the API. The
-    `*_using_api` methods are the most robust and should be used whenever possible.
-    &#34;&#34;&#34;
-
-    def __init__(self, out_dir):
-        &#34;&#34;&#34;
-        Args:
-            out_dir (str or Path): Directory to save downloaded files. Can be reassigned later to change the directory.
-        &#34;&#34;&#34;
-        self._class_logger = logging.getLogger(__name__).getChild(self.__class__.__name__)
-        self._class_logger.debug(&#34;Initializing GoogleDriveDownloader&#34;)
-        self._class_logger.debug(&#34;Output directory: %s&#34;, out_dir)
-        self.out_dir = Path(out_dir)
-        regex_pattern = &#34;(\/|=)([-\w]{25,})&#34;  # pylint:disable=anomalous-backslash-in-string
-        self._class_logger.debug(&#34;Regex pattern: %s&#34;, regex_pattern)
-        self.regex = re.compile(regex_pattern)
-
-    @staticmethod
-    def _save_response_content(response, destination, chunk_size=32768):
-        &#34;&#34;&#34;Download streaming response content in chunks
-
-        Args:
-            response (requests.response): The response object from the requests .get call
-            destination (Path): File path to write to
-            chunk_size (int, optional): Download the file in chunks of this size. Defaults to 32768.
-        &#34;&#34;&#34;
-
-        with destination.open(mode=&#34;wb&#34;) as out_file:
-            for chunk in response.iter_content(chunk_size):
-                if chunk:  # filter out keep-alive new chunks
-                    out_file.write(chunk)
-
-    def _get_http_response(self, file_id, base_url=&#34;https://docs.google.com/uc?export=download&#34;):
-        &#34;&#34;&#34;Performs the HTTP GET request and checks the response
-
-        Args:
-            file_id (str): The Google-created unique id for the file
-            base_url (str, optional): The base URL for the GET call. Defaults to &#39;https://docs.google.com/uc?
-                export=download&#39;.
-
-        Raises:
-            RuntimeError: If Content-Type is text/html, we can&#39;t get the file, either because it doesn&#39;t exist or isn&#39;t
-                publicly shared.
-
-        Returns:
-            request.response: The requests response object.
-        &#34;&#34;&#34;
-
-        response = requests.get(base_url, params={&#34;id&#34;: file_id}, stream=True)
-
-        if &#34;text/html&#34; in response.headers[&#34;Content-Type&#34;]:
-            self._class_logger.error(response.headers)
-            raise RuntimeError(f&#34;Cannot access {file_id} (is it publicly shared?). Response header in log.&#34;)
-
-        return response
-
-    @staticmethod
-    def _get_filename_from_response(response):
-        &#34;&#34;&#34;Get the filename from the response header
-
-        Args:
-            response (requests.response): response object from the HTTP GET call
-
-        Raises:
-            ValueError: If it can&#39;t find the filename in the header
-
-        Returns:
-            str: Filename as defined in the header
-        &#34;&#34;&#34;
-
-        content = response.headers[&#34;Content-Disposition&#34;]
-        all_filenames = re.findall(&#34;filename\*?=([^;]+)&#34;, content, flags=re.IGNORECASE)  # pylint:disable=anomalous-backslash-in-string
-        if all_filenames:
-            #: Remove spurious whitespace and &#34;s
-            return all_filenames[0].strip().strip(&#39;&#34;&#39;)
-
-        #: If we don&#39;t return a filename, raise an error instead
-        raise ValueError(&#34;filename not found in response header&#34;)
-
-    def _get_file_id_from_sharing_link(self, sharing_link):
-        &#34;&#34;&#34;Use regex to parse out the unique Google id from the sharing link
-
-        Args:
-            sharing_link (str): The public sharing link to the file
-
-        Raises:
-            IndexError: If the regex matches the url but can&#39;t get a sharing roup (may not ever occur)
-            RuntimeError: If the regex doesn&#39;t match the sharing link
-
-        Returns:
-            str: The unique Google id for the file.
-        &#34;&#34;&#34;
-
-        match = self.regex.search(sharing_link)
-        if match:
-            try:
-                return match.group(2)
-            #: Not sure how this would happen (can&#39;t even figure out a test), but leaving in for safety.
-            except IndexError as err:
-                raise IndexError(f&#34;Regex could not extract the file id from sharing link {sharing_link}&#34;) from err
-        raise RuntimeError(f&#34;Regex could not match sharing link {sharing_link}&#34;)
-
-    def download_file_from_google_drive(self, sharing_link, join_id, pause=0.0):
-        &#34;&#34;&#34;Download a publicly-shared image from Google Drive using it&#39;s sharing link
-
-        Uses an anonymous HTTP request with support for sleeping between downloads to try to get around Google&#39;s
-        blocking (I haven&#39;t found a good value yet).
-
-        Logs a warning if the URL doesn&#39;t match the proper pattern or it can&#39;t extract the unique id from the sharing
-        URL. Will also log a warning if the header&#39;s Content-Type is text/html, which usually indicates the HTTP
-        response was an error message instead of the file.
-
-        Args:
-            sharing_link (str): The publicly-shared link to the image.
-            join_id (str or int): The unique key for the row (used for reporting)
-            pause (flt, optional): Pause the specified number of seconds before downloading. Defaults to 0.
-
-        Returns:
-            Path: Path of downloaded file or None if download fails/is not possible
-        &#34;&#34;&#34;
-
-        if pause:
-            self._class_logger.debug(&#34;Sleeping for %s&#34;, pause)
-        sleep(pause)
-        if not sharing_link:
-            self._class_logger.debug(&#34;Row %s has no attachment info&#34;, join_id)
-            return None
-        self._class_logger.debug(&#34;Row %s: downloading shared file %s&#34;, join_id, sharing_link)
-        try:
-            file_id = self._get_file_id_from_sharing_link(sharing_link)
-            self._class_logger.debug(&#34;Row %s: extracted file id %s&#34;, join_id, file_id)
-            response = self._get_http_response(file_id)
-            filename = self._get_filename_from_response(response)
-            out_file_path = self.out_dir / filename
-            self._class_logger.debug(&#34;Row %s: writing to %s&#34;, join_id, out_file_path)
-            self._save_response_content(response, out_file_path)
-            return out_file_path
-        except Exception as err:
-            self._class_logger.warning(&#34;Row %s: Couldn&#39;t download %s&#34;, join_id, sharing_link)
-            self._class_logger.warning(err)
-            return None
-
-    def _get_request_and_filename_from_drive_api(self, client, file_id):
-        &#34;&#34;&#34;Get the request object and filename from a Google drive file_id. Will try to determine extension if missing.
-
-        Args:
-            client (pygsheets.Client): Authenticated client object from pygsheets
-            file_id (str): The Google fileId to be downloaded
-
-        Returns:
-            (googleapiclient.http.HttpRequest, str): Result of the .get_media() call, name of the file
-        &#34;&#34;&#34;
-
-        get_media_request = client.drive.service.files().get_media(fileId=file_id)  # pylint:disable=no-member
-        metadata = client.drive.service.files().get(fileId=file_id).execute()  # pylint:disable=no-member
-        filename = metadata[&#34;name&#34;]
-        if not Path(filename).suffix:
-            try:
-                filename = filename + mimetypes.guess_extension(metadata[&#34;mimeType&#34;])
-            except KeyError:
-                self._class_logger.warning(&#34;%s: No MIME type in drive info, file extension not set&#34;, file_id)
-            except TypeError:
-                self._class_logger.warning(
-                    &#34;%s: Unable to determine file extension from MIME type, file extension not set&#34;, file_id
-                )
-
-        return get_media_request, filename
-
-    def _save_get_media_content(self, request, out_file_path):
-        &#34;&#34;&#34;Save the binary data referenced from a .get_media() call to out_file_path
-
-        Args:
-            request (googleapiclient.http.HttpRequest): Result of the .get_media() call
-            out_file_path (Path): Path object to the location to save the data
-        &#34;&#34;&#34;
-
-        in_memory = BytesIO()
-        downloader = MediaIoBaseDownload(in_memory, request)
-        done = False
-        while not done:
-            _, done = downloader.next_chunk()
-        out_file_path.write_bytes(in_memory.getbuffer())
-
-    def download_file_from_google_drive_using_api(self, gsheets_client, sharing_link, join_id):
-        &#34;&#34;&#34;Download a file using the Google API via pygsheets authentication.
-
-        Requires a pygsheets client object that handles authentication.
-
-        Logs a warning if the URL doesn&#39;t match the proper pattern or it can&#39;t extract the unique id from the sharing
-        URL. Will also log a warning if the header&#39;s Content-Type is text/html, which usually indicates the HTTP
-        response was an error message instead of the file.
-
-        Args:
-            gsheets_client (pygsheets.Client): The authenticated client object from pygsheets
-            sharing_link (str): Sharing link to the file to be downloaded
-            join_id (str or int): Unique key for the row (used for reporting)
-
-        Returns:
-            Path: Path of downloaded file or None if download fails/is not possible
-        &#34;&#34;&#34;
-        if not sharing_link:
-            self._class_logger.debug(&#34;Row %s has no attachment info&#34;, join_id)
-            return None
-        self._class_logger.debug(&#34;Row %s: downloading file %s&#34;, join_id, sharing_link)
-        try:
-            file_id = self._get_file_id_from_sharing_link(sharing_link)
-            self._class_logger.debug(&#34;Row %s: extracted file id %s&#34;, join_id, file_id)
-            get_media_request, filename = utils.retry(
-                self._get_request_and_filename_from_drive_api, gsheets_client, file_id
-            )
-            out_file_path = self.out_dir / filename
-            self._class_logger.debug(&#34;Row %s: writing to %s&#34;, join_id, out_file_path)
-            utils.retry(self._save_get_media_content, get_media_request, out_file_path)
-            return out_file_path
-        except Exception as err:
-            self._class_logger.warning(&#34;Row %s: Couldn&#39;t download %s&#34;, join_id, sharing_link)
-            self._class_logger.warning(err)
-            return None
-
-    def download_attachments_from_dataframe(self, dataframe, sharing_link_column, join_id_column, output_path_column):
-        &#34;&#34;&#34;Download the attachments linked in a dataframe column, creating a new column with the resulting path
-
-        Args:
-            dataframe (pd.DataFrame): Input dataframe with required columns
-            sharing_link_column (str): Column holding the Google sharing link
-            join_id_column (str): Column holding a unique key (for reporting purposes)
-            output_path_column (str): Column for the resulting path; will be added if it doesn&#39;t exist in the
-                dataframe
-
-        Returns:
-            pd.DataFrame: Input dataframe with output path info
-        &#34;&#34;&#34;
-
-        dataframe[output_path_column] = dataframe.apply(
-            lambda x: self.download_file_from_google_drive(x[sharing_link_column], x[join_id_column], pause=5), axis=1
-        )
-        return dataframe
-
-    def download_attachments_from_dataframe_using_api(
-        self, credentials, dataframe, sharing_link_column, join_id_column, output_path_column
-    ):
-        &#34;&#34;&#34;Download the attachments linked in a dataframe column using an authenticated api client, creating a new
-        column with the resulting path
-
-        Args:
-            credentials (str or google.auth.credentials.Credentials): Path to the service file OR credentials object
-                obtained from google.auth.default() within a cloud function.
-            dataframe (pd.DataFrame): Input dataframe with required columns
-            sharing_link_column (str): Column holding the Google sharing link
-            join_id_column (str): Column holding a unique key (for reporting purposes)
-            output_path_column (str): Column for the resulting path; will be added if it doesn&#39;t existing in the
-                dataframe
-
-        Returns:
-            pd.DataFrame: Input dataframe with output path info
-        &#34;&#34;&#34;
-
-        client = utils.authorize_pygsheets(credentials)
-
-        dataframe[output_path_column] = dataframe.apply(
-            lambda x: self.download_file_from_google_drive_using_api(client, x[sharing_link_column], x[join_id_column]),
-            axis=1,
-        )
-        return dataframe
-
-
-class SFTPLoader:
-    &#34;&#34;&#34;Loads data from an SFTP share into a pandas DataFrame&#34;&#34;&#34;
-
-    def __init__(self, host, username, password, knownhosts_file, download_dir):
-        &#34;&#34;&#34;
-        Args:
-            host (str): The SFTP host to connect to
-            username (str): SFTP username
-            password (str): SFTP password
-            knownhosts_file (str): Path to a known_hosts file for pysftp.CnOpts. Can be generated via ssh-keyscan.
-            download_dir (str or Path): Directory to save downloaded files
-        &#34;&#34;&#34;
-
-        self.host = host
-        self.username = username
-        self.password = password
-        self.knownhosts_file = knownhosts_file
-        self.download_dir = download_dir
-        self._class_logger = logging.getLogger(__name__).getChild(self.__class__.__name__)
-
-    def download_sftp_folder_contents(self, sftp_folder=&#34;upload&#34;):
-        &#34;&#34;&#34;Download all files in sftp_folder to the SFTPLoader&#39;s download_dir
-
-        Args:
-            sftp_folder (str, optional): Path of remote folder, relative to sftp home directory. Defaults to &#39;upload&#39;.
-        &#34;&#34;&#34;
-
-        self._class_logger.info(&#34;Downloading files from `%s:%s` to `%s`&#34;, self.host, sftp_folder, self.download_dir)
-        starting_file_count = len(list(self.download_dir.iterdir()))
-        self._class_logger.debug(&#34;SFTP Username: %s&#34;, self.username)
-        connection_opts = pysftp.CnOpts(knownhosts=self.knownhosts_file)
-        with pysftp.Connection(
-            self.host, username=self.username, password=self.password, cnopts=connection_opts
-        ) as sftp:
-            try:
-                sftp.get_d(sftp_folder, self.download_dir, preserve_mtime=True)
-            except FileNotFoundError as error:
-                raise FileNotFoundError(f&#34;Folder `{sftp_folder}` not found on SFTP server&#34;) from error
-        downloaded_file_count = len(list(self.download_dir.iterdir())) - starting_file_count
-        if not downloaded_file_count:
-            raise ValueError(&#34;No files downloaded&#34;)
-        return downloaded_file_count
-
-    def download_sftp_single_file(self, filename, sftp_folder=&#34;upload&#34;):
-        &#34;&#34;&#34;Download filename into SFTPLoader&#39;s download_dir
-
-        Args:
-            filename (str): Filename to download; used as output filename as well.
-            sftp_folder (str, optional): Path of remote folder, relative to sftp home directory. Defaults to &#39;upload&#39;.
-
-        Raises:
-            FileNotFoundError: Will warn if pysftp can&#39;t find the file or folder on the sftp server
-
-        Returns:
-            Path: Downloaded file&#39;s path
-        &#34;&#34;&#34;
-
-        outfile = Path(self.download_dir, filename)
-
-        self._class_logger.info(&#34;Downloading %s from `%s:%s` to `%s`&#34;, filename, self.host, sftp_folder, outfile)
-        self._class_logger.debug(&#34;SFTP Username: %s&#34;, self.username)
-        connection_opts = pysftp.CnOpts(knownhosts=self.knownhosts_file)
-        try:
-            with pysftp.Connection(
-                self.host,
-                username=self.username,
-                password=self.password,
-                cnopts=connection_opts,
-                default_path=sftp_folder,
-            ) as sftp:
-                sftp.get(filename, localpath=outfile, preserve_mtime=True)
-        except FileNotFoundError as error:
-            raise FileNotFoundError(f&#34;File `{filename}` or folder `{sftp_folder}`` not found on SFTP server&#34;) from error
-
-        return outfile
-
-    def read_csv_into_dataframe(self, filename, column_types=None):
-        &#34;&#34;&#34;Read filename into a dataframe with optional column names and types
-
-        Args:
-            filename (str): Name of file in the SFTPLoader&#39;s download_dir
-            column_types (dict, optional): Column names and their dtypes(np.float64, str, etc). Defaults to None.
-
-        Returns:
-            pd.DataFrame: CSV as a pandas dataframe
-        &#34;&#34;&#34;
-
-        self._class_logger.info(&#34;Reading `%s` into dataframe&#34;, filename)
-        filepath = Path(self.download_dir, filename)
-        column_names = None
-        if column_types:
-            column_names = list(column_types.keys())
-        dataframe = pd.read_csv(filepath, names=column_names, dtype=column_types)
-        self._class_logger.debug(&#34;Dataframe shape: %s&#34;, dataframe.shape)
-        if len(dataframe.index) == 0:
-            self._class_logger.warning(&#34;Dataframe contains no rows. Shape: %s&#34;, dataframe.shape)
-        return dataframe
-
-
-class PostgresLoader:
-    &#34;&#34;&#34;Loads data from a Postgres/PostGIS database into a pandas data frame&#34;&#34;&#34;
-
-    def __init__(self, host, database, username, password, port=5432):
-        &#34;&#34;&#34;
-        Args:
-            host (str): Postgres server host name
-            database (str): Database to connect to
-            username (str): Database user
-            password (str): Database password
-            port (int, optional): Database port. Defaults to 5432.
-        &#34;&#34;&#34;
-
-        self._class_logger = logging.getLogger(__name__).getChild(self.__class__.__name__)
-        if os.environ.get(&#34;FUNCTION_TARGET&#34;) is not None:  #: this is an env var specific to cloud functions
-            self._class_logger.info(&#34;running in GCF, using unix socket&#34;)
-            self.engine = sqlalchemy.create_engine(
-                sqlalchemy.engine.url.URL.create(
-                    drivername=&#34;postgresql+pg8000&#34;,
-                    username=username,
-                    password=password,
-                    database=database,
-                    query={&#34;unix_sock&#34;: f&#34;/cloudsql/{host}/.s.PGSQL.{port}&#34;},  #: requires the pg8000 package
-                )
-            )
-        else:
-            self._class_logger.info(&#34;running locally, using traditional host connection&#34;)
-            self.engine = sqlalchemy.create_engine(
-                sqlalchemy.engine.url.URL.create(
-                    drivername=&#34;postgresql&#34;,
-                    username=username,
-                    password=password,
-                    database=database,
-                    host=host,
-                    port=port,
-                )
-            )
-
-    def read_table_into_dataframe(self, table_name, index_column, crs, spatial_column):
-        &#34;&#34;&#34;Read a table into a dataframe
-
-        Args:
-            table_name (str): Name of table or view to read in the following format: schema.table_name
-            index_column (str): Name of column to use as the dataframe&#39;s index
-            crs (str): Coordinate reference system of the table&#39;s geometry column
-            spatial_column (str): Name of the table&#39;s geometry or geography column
-
-        Returns:
-            pd.DataFrame.spatial: Table as a spatially enabled dataframe
-        &#34;&#34;&#34;
-
-        self._class_logger.info(&#34;Reading `%s` into dataframe&#34;, table_name)
-
-        dataframe = gpd.read_postgis(
-            f&#34;select * from {table_name}&#34;, self.engine, index_col=index_column, crs=crs, geom_col=spatial_column
-        )
-
-        spatial_dataframe = pd.DataFrame.spatial.from_geodataframe(dataframe, column_name=spatial_column)
-        for column in spatial_dataframe.select_dtypes(include=[&#34;datetime64[ns, UTC]&#34;]):
-            self._class_logger.debug(&#34;Converting column `%s` to ISO string format&#34;, column)
-            spatial_dataframe[column] = spatial_dataframe[column].apply(pd.Timestamp.isoformat)
-
-        self._class_logger.debug(&#34;Dataframe shape: %s&#34;, spatial_dataframe.shape)
-        if len(spatial_dataframe.index) == 0:
-            self._class_logger.warning(&#34;Dataframe contains no rows. Shape: %s&#34;, spatial_dataframe.shape)
-
-        return spatial_dataframe
-
-
-class RESTServiceLoader:
-    &#34;&#34;&#34;Downloads features from a layer within a map service or feature service (with queries enabled) based on its REST
-    endpoint.
-
-    Create a RestServiceLoader object to represent the service and call get_features on the RESTServiceLoader object,
-    passing in a ServiceLayer object representing the layer you want to download. This will use either a specified
-    chunk size or the service&#39;s maxRecordCount to download the data in appropriately-sized chunks using the OIDs
-    returned by the service. It will retry individual chunks three times in case of error to ensure the best chance of
-    success.
-    &#34;&#34;&#34;
-
-    def __init__(self, service_url, timeout=5):
-        &#34;&#34;&#34;Create a representation of a REST FeatureService or MapService
-
-        Args:
-            service_url (str): The service&#39;s REST endpoint
-            timeout (int, optional): Timeout for HTTP requests in seconds. Defaults to 5.
-        &#34;&#34;&#34;
-
-        if service_url[-1] == &#34;/&#34;:
-            service_url = service_url[:-1]
-        self.url = service_url
-        self.timeout = timeout
-
-        self._class_logger = logging.getLogger(__name__).getChild(self.__class__.__name__)
-
-    def get_features(self, service_layer, chunk_size=100):
-        &#34;&#34;&#34;Download the features from a ServiceLayer by unique ID in chunk_size-limited requests.
-
-        Uses either chunk_size or the service&#39;s maxRecordCount parameter to chunk the request into manageable-sized
-        requests. 100 seems to be the sweet spot before requests start to error out consistently. To limit the number
-        of features returned, you can specify a geographic bounding box or where clause when creating the ServiceLayer.
-        Individual chunk requests and other HTML requests are wrapped in retries to handle momentary network glitches.
-
-        This method does not catch any errors raised by the individual ServiceLayer methods it calls. See that class
-        for more information on the individual errors.
-
-        Args:
-            service_layer (ServiceLayer): A ServiceLayer object representing the layer to download
-            chunk_size (int, optional): Number of features to download per chunk. Defaults to 100. If set to None, it
-                will use the service&#39;s maxRecordCount. Adjust if the service is failing frequently.
-
-        Returns:
-            pd.DataFrame.spatial: The service&#39;s features as a spatially-enabled dataframe
-        &#34;&#34;&#34;
-
-        self._class_logger.info(&#34;Getting features from %s...&#34;, service_layer.layer_url)
-        self._class_logger.debug(&#34;Checking for query capability...&#34;)
-        service_layer.check_capabilities(&#34;query&#34;)
-        max_record_count = chunk_size
-        if not max_record_count:
-            self._class_logger.debug(&#34;Getting max record count...&#34;)
-            max_record_count = service_layer.max_record_count
-        self._class_logger.debug(&#34;Getting object ids...&#34;)
-        oids = utils.retry(service_layer.get_object_ids)
-
-        if len(oids) == 0:
-            warnings.warn(f&#34;Layer {service_layer.layer_url} has no features&#34;)
-            return None
-
-        self._class_logger.debug(&#34;Downloading %s features in chunks of %s...&#34;, len(oids), max_record_count)
-        all_features_df = pd.DataFrame()
-        for oid_subset in utils.chunker(oids, max_record_count):
-            # sleep between 1.5 and 3 s to be friendly
-            time.sleep(random.randint(150, 300) / 100)
-            all_features_df = pd.concat(
-                [
-                    all_features_df,
-                    utils.retry(service_layer.get_unique_id_list_as_dataframe, service_layer.oid_field, oid_subset),
-                ],
-                ignore_index=True,
-            )
-        #: if you don&#39;t do ignore_index=True, the index won&#39;t be unique and this will trip up esri&#39;s spatial dataframe
-        #: which tries calling [geom_col][0] to determine the geometry type, which then returns a series instead of a
-        #: single value because the index isn&#39;t unique
-
-        return all_features_df
-
-    def get_feature_layers_info(self):
-        &#34;&#34;&#34;Get the information dictionary for any and all feature layers and tables within the service.
-
-        Retries the request to the service&#39;s REST endpoint three times in case of error.
-
-        Raises:
-            RuntimeError: If the response can&#39;t be parsed as JSON, the service does not contain layers, or the response
-                does not contain information about the layer types
-
-        Returns:
-            dict: The parsed JSON info of the service&#39;s feature layers
-        &#34;&#34;&#34;
-
-        response = utils.retry(self._get_service_info)
-
-        try:
-            response_json = response.json()
-        except json.JSONDecodeError as error:
-            raise RuntimeError(f&#34;Could not parse response from {self.url}&#34;) from error
-
-        try:
-            layers = [layer for layer in response_json[&#34;layers&#34;] if layer[&#34;type&#34;] in [&#34;Feature Layer&#34;, &#34;Table&#34;]]
-        except KeyError as error:
-            if &#34;layers&#34; in str(error):
-                raise RuntimeError(f&#34;Response from {self.url} does not contain layer information&#34;) from error
-            raise RuntimeError(&#34;Layer info did not contain layer type&#34;) from error
-
-        return layers
-
-    def _get_service_info(self):
-        &#34;&#34;&#34;Get the basic info from the service&#39;s REST endpoint
-
-        Raises:
-            requests.HTTPError: If the response returns a status code considered an error
-
-        Returns:
-            requests.Response: Raw response object from a /query request.
-        &#34;&#34;&#34;
-        self._class_logger.debug(&#34;Getting service information...&#34;)
-        response = requests.get(f&#34;{self.url}/query&#34;, params={&#34;f&#34;: &#34;json&#34;}, timeout=self.timeout)
-
-        response.raise_for_status()
-
-        return response
-
-
-class ServiceLayer:
-    &#34;&#34;&#34;Represents a single layer within a service and provides methods for querying the layer and downloading features.
-
-    The methods in this object represent the individual steps of a more complete download process involving sanity
-    checks, getting the list of unique IDs to download, and then downloading based on those unique IDS. Any queries,
-    where clauses, or subsetting can be done by specifying the envelope_params, feature_params, and/or where_clause to
-    limit the unique IDs used to download the features. The get_features method in the RESTServiceLoader class handles
-    all of these steps and should be used instead of calling the methods in this class directly.
-    &#34;&#34;&#34;
-
-    def __init__(self, layer_url, timeout=5, envelope_params=None, feature_params=None, where_clause=&#34;1=1&#34;):
-        &#34;&#34;&#34;Create an object representing a single layer
-
-        Args:
-            layer_url (str): The full URL to the desired layer
-            timeout (int, optional): Timeout for HTTP requests in seconds. Defaults to 5.
-            envelope_params (dict, optional): Bounding box and it&#39;s spatial reference to spatially limit feature
-                collection in the form {&#39;geometry&#39;: &#39;{xmin},{ymin},{xmax},{ymax}&#39;, &#39;inSR&#39;: &#39;{wkid}&#39;}. Defaults to None.
-            feature_params (dict, optional): Additional query parameters to pass to the service when downloading
-                features. Parameter defaults to None, and the query defaults to &#39;outFields&#39;: &#39;*&#39;, &#39;returnGeometry&#39;:
-                &#39;true&#39;. See the ArcGIS REST API documentation for more information.
-            where_clause (str, optional): Where clause to refine the features returned. Defaults to &#39;1=1&#39;.
-
-        &#34;&#34;&#34;
-
-        self._class_logger = logging.getLogger(__name__).getChild(self.__class__.__name__)
-
-        if layer_url[-1] == &#34;/&#34;:
-            layer_url = layer_url[:-1]
-        self.layer_url = layer_url
-        self.timeout = timeout
-
-        self.layer_properties_json = self._get_layer_info()
-        self.max_record_count = self.layer_properties_json[&#34;maxRecordCount&#34;]
-        self.oid_field = self._get_object_id_field()
-        self._check_layer_type()
-
-        self.envelope_params = None
-        if envelope_params:
-            try:
-                envelope_params[&#34;geometry&#34;] and envelope_params[&#34;inSR&#34;]
-            except KeyError as error:
-                raise ValueError(
-                    &#34;envelope_params must contain both the envelope geometry and its spatial reference&#34;
-                ) from error
-            self.envelope_params = {&#34;geometryType&#34;: &#34;esriGeometryEnvelope&#34;}
-            self.envelope_params.update(envelope_params)
-
-        self.feature_params = {&#34;outFields&#34;: &#34;*&#34;, &#34;returnGeometry&#34;: &#34;true&#34;}
-        if feature_params:
-            self.feature_params.update(feature_params)
-
-        self.where_clause = where_clause
-
-    def _get_layer_info(self):
-        &#34;&#34;&#34;Do a basic query to get the layer&#39;s information as a dictionary from the json response.
-
-        Raises:
-            RuntimeError: If the response does not contain &#39;capabilities&#39;, &#39;type&#39;, or &#39;maxRecordCount&#39; keys.
-
-        Returns:
-            dict: The query&#39;s json response as a dictionary
-        &#34;&#34;&#34;
-
-        response_json = utils.retry(requests.get, self.layer_url, params={&#34;f&#34;: &#34;json&#34;}, timeout=self.timeout).json()
-        try:
-            #: bogus boolean to make sure the keys exist
-            response_json[&#34;capabilities&#34;] and response_json[&#34;type&#34;]  # and response_json[&#39;maxRecordCount&#39;]
-        except KeyError as error:
-            raise RuntimeError(
-                &#34;Response does not contain layer information; ensure URL points to a valid layer&#34;
-            ) from error
-
-        try:
-            response_json[&#34;maxRecordCount&#34;]
-        except KeyError as error:
-            raise RuntimeError(
-                &#34;Response does not contain maxRecordCount; ensure URL points to a valid layer and is not a Group Layer&#34;
-            ) from error
-
-        return response_json
-
-    def check_capabilities(self, capability):
-        &#34;&#34;&#34;Raise error if the layer does not support capability
-
-        Args:
-            capability (str): The capability in question; will be casefolded.
-
-        Raises:
-            RuntimeError: if the casefolded capability is not present in the layer&#39;s capabilities.
-        &#34;&#34;&#34;
-        layer_capabilities = self.layer_properties_json[&#34;capabilities&#34;].casefold().split(&#34;,&#34;)
-        if capability.casefold() not in layer_capabilities:
-            raise RuntimeError(f&#34;{capability.casefold()} capability not in layer&#39;s capabilities ({layer_capabilities})&#34;)
-
-    def _check_layer_type(self):
-        &#34;&#34;&#34;Make sure the layer is a feature layer or table (and thus we can extract features from it)
-
-        Args:
-            response_json (dict): The JSON response from a basic query parsed as a dictionary.
-
-        Raises:
-            RuntimeError: If the REST response type is not Feature Layer or Table
-        &#34;&#34;&#34;
-
-        if self.layer_properties_json[&#34;type&#34;] not in [&#34;Feature Layer&#34;, &#34;Table&#34;]:
-            raise RuntimeError(
-                f&#39;Layer {self.layer_url} is a {self.layer_properties_json[&#34;type&#34;]}, not a feature layer or table&#39;
-            )
-
-    def _get_object_id_field(self):
-        &#34;&#34;&#34;Get the service&#39;s objectIdField attribute
-
-        Args:
-            response_json (dict): The JSON response from a basic query parsed as a dictionary.
-
-        Returns:
-            str: objectIdField
-        &#34;&#34;&#34;
-
-        try:
-            unique_id_field = self.layer_properties_json[&#34;objectIdField&#34;]
-        except KeyError:
-            self._class_logger.debug(&#34;No objectIdField found in %s, using OBJECTID instead&#34;, self.layer_url)
-            unique_id_field = &#34;OBJECTID&#34;
-
-        return unique_id_field
-
-    def get_object_ids(self):
-        &#34;&#34;&#34;Get the Object IDs of the feature service layer, using the bounding envelope and/or where clause if present.
-
-        Raises:
-            RuntimeError: If the response does not contain an &#39;objectIds&#39; key.
-
-        Returns:
-            list(int): The Object IDs
-        &#34;&#34;&#34;
-
-        objectid_params = {&#34;returnIdsOnly&#34;: &#34;true&#34;, &#34;f&#34;: &#34;json&#34;, &#34;where&#34;: self.where_clause}
-        if self.envelope_params is not None:
-            objectid_params.update(self.envelope_params)
-        self._class_logger.debug(&#34;OID params: %s&#34;, objectid_params)
-
-        response = utils.retry(requests.get, f&#34;{self.layer_url}/query&#34;, params=objectid_params, timeout=self.timeout)
-        oids = []
-        try:
-            oids = sorted(response.json()[&#34;objectIds&#34;])
-        except KeyError as error:
-            raise RuntimeError(f&#34;Could not get object IDs from {self.layer_url}&#34;) from error
-        except TypeError as error:
-            if &#34;&#39;NoneType&#39; object is not iterable&#34; in str(error):
-                oids = []
-
-        return oids
-
-    def get_unique_id_list_as_dataframe(self, unique_id_field, unique_id_list):
-        &#34;&#34;&#34;Use a REST query to download specified features from a MapService or FeatureService layer.
-
-        unique_id_list defines the ids in unique_id_field to download.
-
-        Args:
-            unique_id_field (str): The field in the service layer used as the unique ID.
-            unique_id_list (list): The list of unique IDs to download.
-
-        Raises:
-            Runtime Error: If the chunk&#39;s HTTP response code is not 200 (ie, the request failed)
-            Runtime Error: The response could not be parsed into JSON (a technically successful request but bad data)
-            Runtime Error: If the number of features downloaded does not match the number of OIDs requested
-
-        Returns:
-            pd.DataFrame.spatial: Spatially-enabled dataframe of the service layer&#39;s features
-        &#34;&#34;&#34;
-        unique_id_params = {&#34;f&#34;: &#34;json&#34;}
-        unique_id_params.update(self.feature_params)
-        unique_id_params.update({&#34;where&#34;: f&#39;{unique_id_field} in ({&#34;,&#34;.join([str(oid) for oid in unique_id_list])})&#39;})
-
-        self._class_logger.debug(&#34;OID range params: %s&#34;, unique_id_params)
-        response = requests.get(f&#34;{self.layer_url}/query&#34;, params=unique_id_params, timeout=self.timeout)
-
-        if response.status_code != 200:
-            raise RuntimeError(f&#34;Bad chunk response HTTP status code ({response.status_code})&#34;)
-
-        try:
-            fs = arcgis.features.FeatureSet.from_json(response.text)
-            features_df = fs.sdf.sort_values(by=unique_id_field)
-
-        except ujson.JSONDecodeError as error:
-            raise RuntimeError(&#34;Could not parse chunk features from response&#34;) from error
-
-        if len(features_df) != len(unique_id_list):
-            raise RuntimeError(
-                f&#34;Missing features. {len(unique_id_list)} OIDs requested, but {len(features_df)} features downloaded&#34;
-            )
-
-        return features_df
-
-
-class SalesforceApiUserCredentials:
-    &#34;&#34;&#34;A salesforce API user credential model&#34;&#34;&#34;
-
-    def __init__(self, secret, key) -&gt; None:
-        self.client_secret = secret
-        self.client_id = key
-
-
-class SalesforceSandboxCredentials:
-    &#34;&#34;&#34;A salesforce sandbox credential model&#34;&#34;&#34;
-
-    def __init__(self, username, password, token, secret, key) -&gt; None:
-        self.username = username
-        self.password = password + token
-        self.client_secret = secret
-        self.client_id = key
-
-
-class SalesforceRestLoader:
-    &#34;&#34;&#34;Queries a Salesforce organization using SOQL using the REST API.
-
-    To use this loader a connected app needs to be created in Salesforce which create the credentials.
-    You can then use the workbench, https://workbench.developerforce.com/query.php, to construct and test SOQL queries.
-
-    Create a Salesforce credential model and a SalesforceRest loader to authenticate and query Salesforce.
-    Call get_records with a SOQL query to get the results as a pandas dataframe.&#34;&#34;&#34;
-
-    sandbox = False
-
-    access_token_template = Template(&#34;https://$org.my.salesforce.com/services/oauth2/token&#34;)
-    access_token_url = &#34;&#34;
-    access_token = {}
-
-    org_template = Template(&#34;https://$org.my.salesforce.com&#34;)
-    org_url = &#34;&#34;
-
-    client_secret = None
-    client_id = None
-    username = None
-    password = None
-
-    token_lease_in_days = 30
-    access_token_timeout_in_seconds = 10
-    soql_query_timeout_in_seconds = 30
-
-    def __init__(self, org, credentials, sandbox=False) -&gt; None:
-        &#34;&#34;&#34;Create a SalesforceRestLoader to query Salesforce. Timeout values are set to default values and can be
-        modified by updating the instance variables.
-
-        token_lease_in_days: The number of days before the token expires. Defaults to 30 days.
-        access_token_timeout_in_seconds: The timeout for getting a new token. Defaults to 10 seconds.
-        soql_query_timeout_in_seconds: The timeout for a SOQL query. Defaults to 30 seconds.
-
-        Args:
-            org (string): the organization name from the salesforce url https://[org].my.salesforce.com
-            credentials (SalesforceApiUserCredentials | SalesforceSandboxCredentials): The credentials to use to
-            authenticate.
-            sandbox (bool, optional): The credentials for sandboxes are different than API users. Defaults to False if
-            it&#39;s not a sandbox instance of Salesforce.
-        &#34;&#34;&#34;
-        self.client_secret = credentials.client_secret
-        self.client_id = credentials.client_id
-
-        if sandbox:
-            self.username = credentials.username
-            self.password = credentials.password
-            org = org + &#34;.sandbox&#34;
-
-        self.access_token_url = self.access_token_template.substitute(org=org)
-        self.org_url = self.org_template.substitute(org=org)
-
-        self.sandbox = sandbox
-
-        self._class_logger = logging.getLogger(__name__).getChild(self.__class__.__name__)
-
-    def _is_token_valid(self, token: dict[str, str]) -&gt; bool:
-        &#34;&#34;&#34;Checks if the token is valid by looking at the issued_at field.
-
-        Args:
-            token (dict[str, str]): the sales force token response to check
-
-        Returns:
-            bool: true if the token is valid
-        &#34;&#34;&#34;
-        if &#34;issued_at&#34; not in token.keys():
-            return False
-
-        issued = timedelta.max
-        lease = timedelta(days=self.token_lease_in_days)
-
-        try:
-            ticks = int(token[&#34;issued_at&#34;])
-            issued = datetime.fromtimestamp(ticks / 1000)
-
-            self._class_logger.debug(&#34;Token is {%s} days old&#34;, issued)
-        except ValueError:
-            self._class_logger.warning(&#34;could not convert issued_at delta to a number %s&#34;, token)
-
-            return False
-
-        return datetime.now() &lt; (issued + lease)
-
-    def _get_token(self) -&gt; dict[str, str]:
-        &#34;&#34;&#34;Gets a new Salesforce access token if the current one is expired.&#34;&#34;&#34;
-        if self._is_token_valid(self.access_token):
-            return self.access_token
-
-        form_data = {
-            &#34;grant_type&#34;: &#34;client_credentials&#34;,
-            &#34;client_id&#34;: self.client_id,
-            &#34;client_secret&#34;: self.client_secret,
-        }
-
-        if self.sandbox:
-            form_data[&#34;grant_type&#34;] = &#34;password&#34;
-            form_data[&#34;username&#34;] = self.username
-            form_data[&#34;password&#34;] = self.password
-
-        response = requests.post(
-            self.access_token_url,
-            data=form_data,
-            headers={&#34;Content-Type&#34;: &#34;application/x-www-form-urlencoded&#34;},
-            timeout=self.access_token_timeout_in_seconds,
-        )
-
-        self._class_logger.debug(&#34;requesting new token %s&#34;, response)
-
-        response.raise_for_status()
-
-        self.access_token = response.json()
-
-        return self.access_token
-
-    def get_records(self, query_endpoint, query_string) -&gt; pd.DataFrame:
-        &#34;&#34;&#34;Queries the Salesforce API and returns the results as a dataframe.
-
-        Args:
-            query_endpoint (str): The REST endpoint to use for the query. Usually &#34;/services/data/vXX.X/query&#34;.
-            query_string (str): A SOQL query string.
-
-        Raises:
-            ValueError: If the query fails.
-
-        Returns:
-            pd.Dataframe: A dataframe of the results.
-        &#34;&#34;&#34;
-
-        response_data = self._query_records(query_endpoint, {&#34;q&#34;: query_string})
-
-        df = pd.DataFrame(response_data[&#34;records&#34;])
-
-        while response_data[&#34;done&#34;] is False:
-            response_data = self._query_records(response_data[&#34;nextRecordsUrl&#34;])
-            df = pd.concat([df, pd.DataFrame(response_data[&#34;records&#34;])])
-
-        return df.reset_index(drop=True)  #: the concatted index is just a repeat of 0:2000
-
-    def _query_records(self, query_endpoint, query_params=None) -&gt; dict:
-        &#34;&#34;&#34;Queries the Salesforce API and returns the results as a dictionary.
-
-        Args:
-            query_endpoint (str): The REST endpoint to use for the query, either &#39;query&#39; or the nextRecordsUrl.
-            query_params (dict): A dictionary of params holding the SOQL query. Defaults to None for paged queries.
-
-        Raises:
-            ValueError: If the query fails.
-
-        Returns:
-            dict: A dictionary of the results.
-        &#34;&#34;&#34;
-        token = self._get_token()
-
-        response = utils.retry(
-            requests.get,
-            f&#34;{self.org_url}/{query_endpoint}&#34;,
-            params=query_params,
-            headers={
-                &#34;Authorization&#34;: f&#34;Bearer {token[&#39;access_token&#39;]}&#34;,
-            },
-            timeout=self.soql_query_timeout_in_seconds,
-        )
-
-        try:
-            response.raise_for_status()
-        except requests.exceptions.HTTPError as error:
-            self._class_logger.error(&#34;Error getting records from Salesforce %s&#34;, error)
-
-            raise ValueError(f&#34;Error getting records from Salesforce {response.json()}&#34;) from error
-
-        return response.json()</code></pre>
-</details>
 </section>
 <section>
 </section>
@@ -1113,17 +54,6 @@ class SalesforceRestLoader:
 <span>(</span><span>credentials)</span>
 </code></dt>
 <dd>
-<div class="desc"><p>Loads data from a Google Sheets spreadsheet into a pandas data frame</p>
-<p>Requires either the path to a service account .json file that has access to the sheet in question or a
-<code>google.auth.credentials.Credentials</code> object. Calling <code>google.auth.default()</code> in a Google Cloud Function will give
-you a tuple of a <code>Credentials</code> object and the project id. You can use this <code>Credentials</code> object to authorize
-pygsheets as the same account the Cloud Function is running under.</p>
-<h2 id="args">Args</h2>
-<dl>
-<dt><strong><code>credentials</code></strong> :&ensp;<code>str</code> or <code>google.auth.credentials.Credentials</code></dt>
-<dd>Path to the service file OR credentials object
-obtained from google.auth.default() within a cloud function.</dd>
-</dl></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -1211,31 +141,23 @@ obtained from google.auth.default() within a cloud function.</dd>
         concatted_df = pd.concat(dataframes, keys=worksheet_dfs.keys(), names=[&#34;worksheet&#34;, &#34;row&#34;])
         return concatted_df.reset_index(level=&#34;worksheet&#34;)</code></pre>
 </details>
+<div class="desc"><p>Loads data from a Google Sheets spreadsheet into a pandas data frame</p>
+<p>Requires either the path to a service account .json file that has access to the sheet in question or a
+<code>google.auth.credentials.Credentials</code> object. Calling <code>google.auth.default()</code> in a Google Cloud Function will give
+you a tuple of a <code>Credentials</code> object and the project id. You can use this <code>Credentials</code> object to authorize
+pygsheets as the same account the Cloud Function is running under.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>credentials</code></strong> :&ensp;<code>str</code> or <code>google.auth.credentials.Credentials</code></dt>
+<dd>Path to the service file OR credentials object
+obtained from google.auth.default() within a cloud function.</dd>
+</dl></div>
 <h3>Methods</h3>
 <dl>
 <dt id="palletjack.extract.GSheetLoader.combine_worksheets_into_single_dataframe"><code class="name flex">
 <span>def <span class="ident">combine_worksheets_into_single_dataframe</span></span>(<span>self, worksheet_dfs)</span>
 </code></dt>
 <dd>
-<div class="desc"><p>Merge worksheet dataframes (having same columns) into a single dataframe with a new 'worksheet' column
-identifying the source worksheet.</p>
-<h2 id="args">Args</h2>
-<dl>
-<dt><strong><code>worksheet_dfs</code></strong> :&ensp;<code>dict</code></dt>
-<dd>{'worksheet_name': Worksheet as a dataframe}.</dd>
-</dl>
-<h2 id="raises">Raises</h2>
-<dl>
-<dt><code>ValueError</code></dt>
-<dd>If all the worksheets in worksheets_dfs don't have the same column index, it raises an error
-and bombs out.</dd>
-</dl>
-<h2 id="returns">Returns</h2>
-<dl>
-<dt><code>pd.DataFrame</code></dt>
-<dd>A single combined data frame with a new 'worksheet' column identifying the worksheet the row
-came from. The row index is the original row numbers and is probably not unique.</dd>
-</dl></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -1266,22 +188,30 @@ came from. The row index is the original row numbers and is probably not unique.
     concatted_df = pd.concat(dataframes, keys=worksheet_dfs.keys(), names=[&#34;worksheet&#34;, &#34;row&#34;])
     return concatted_df.reset_index(level=&#34;worksheet&#34;)</code></pre>
 </details>
+<div class="desc"><p>Merge worksheet dataframes (having same columns) into a single dataframe with a new 'worksheet' column
+identifying the source worksheet.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>worksheet_dfs</code></strong> :&ensp;<code>dict</code></dt>
+<dd>{'worksheet_name': Worksheet as a dataframe}.</dd>
+</dl>
+<h2 id="raises">Raises</h2>
+<dl>
+<dt><code>ValueError</code></dt>
+<dd>If all the worksheets in worksheets_dfs don't have the same column index, it raises an error
+and bombs out.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>pd.DataFrame</code></dt>
+<dd>A single combined data frame with a new 'worksheet' column identifying the worksheet the row
+came from. The row index is the original row numbers and is probably not unique.</dd>
+</dl></div>
 </dd>
 <dt id="palletjack.extract.GSheetLoader.load_all_worksheets_into_dataframes"><code class="name flex">
 <span>def <span class="ident">load_all_worksheets_into_dataframes</span></span>(<span>self, sheet_id)</span>
 </code></dt>
 <dd>
-<div class="desc"><p>Load all worksheets into a dictionary of dataframes. Keys are the worksheet.</p>
-<h2 id="args">Args</h2>
-<dl>
-<dt><strong><code>sheet_id</code></strong> :&ensp;<code>str</code></dt>
-<dd>The ID of the sheet (long alpha-numeric unique ID)</dd>
-</dl>
-<h2 id="returns">Returns</h2>
-<dl>
-<dt><code>dict</code></dt>
-<dd>{'worksheet_name': Worksheet as a dataframe}</dd>
-</dl></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -1303,26 +233,22 @@ came from. The row index is the original row numbers and is probably not unique.
 
     return worksheet_dfs</code></pre>
 </details>
+<div class="desc"><p>Load all worksheets into a dictionary of dataframes. Keys are the worksheet.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>sheet_id</code></strong> :&ensp;<code>str</code></dt>
+<dd>The ID of the sheet (long alpha-numeric unique ID)</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>dict</code></dt>
+<dd>{'worksheet_name': Worksheet as a dataframe}</dd>
+</dl></div>
 </dd>
 <dt id="palletjack.extract.GSheetLoader.load_specific_worksheet_into_dataframe"><code class="name flex">
 <span>def <span class="ident">load_specific_worksheet_into_dataframe</span></span>(<span>self, sheet_id, worksheet, by_title=False)</span>
 </code></dt>
 <dd>
-<div class="desc"><p>Load a single worksheet from a spreadsheet into a dataframe by worksheet index or title</p>
-<h2 id="args">Args</h2>
-<dl>
-<dt><strong><code>sheet_id</code></strong> :&ensp;<code>str</code></dt>
-<dd>The ID of the sheet (long alpha-numeric unique ID)</dd>
-<dt><strong><code>worksheet</code></strong> :&ensp;<code>int</code> or <code>str</code></dt>
-<dd>Zero-based index of the worksheet or the worksheet title</dd>
-<dt><strong><code>by_title</code></strong> :&ensp;<code>bool</code>, optional</dt>
-<dd>Search for worksheet by title instead of index. Defaults to False.</dd>
-</dl>
-<h2 id="returns">Returns</h2>
-<dl>
-<dt><code>pd.DataFrame</code></dt>
-<dd>The specified worksheet as a data frame.</dd>
-</dl></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -1349,6 +275,21 @@ came from. The row index is the original row numbers and is probably not unique.
         self._class_logger.debug(&#34;Loading worksheet by index %s&#34;, worksheet)
         return sheet.worksheet(&#34;index&#34;, worksheet).get_as_df()</code></pre>
 </details>
+<div class="desc"><p>Load a single worksheet from a spreadsheet into a dataframe by worksheet index or title</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>sheet_id</code></strong> :&ensp;<code>str</code></dt>
+<dd>The ID of the sheet (long alpha-numeric unique ID)</dd>
+<dt><strong><code>worksheet</code></strong> :&ensp;<code>int</code> or <code>str</code></dt>
+<dd>Zero-based index of the worksheet or the worksheet title</dd>
+<dt><strong><code>by_title</code></strong> :&ensp;<code>bool</code>, optional</dt>
+<dd>Search for worksheet by title instead of index. Defaults to False.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>pd.DataFrame</code></dt>
+<dd>The specified worksheet as a data frame.</dd>
+</dl></div>
 </dd>
 </dl>
 </dd>
@@ -1357,16 +298,6 @@ came from. The row index is the original row numbers and is probably not unique.
 <span>(</span><span>out_dir)</span>
 </code></dt>
 <dd>
-<div class="desc"><p>Provides methods to download any non-html file (ie, Content-Type != text/html) Google Drive file from it's
-sharing link (of the form <code>https://drive.google.com/file/d/big_long_id/etc</code>). The files may be publicly shared or shared with a service account.</p>
-<p>This class has two similar sets of methods. The <code>*_using_api</code> methods authenticate to the Google API using either a
-service account file or a <code>google.auth.credentials.Credentials</code> object and downloads using the API. The
-<code>*_using_api</code> methods are the most robust and should be used whenever possible.</p>
-<h2 id="args">Args</h2>
-<dl>
-<dt><strong><code>out_dir</code></strong> :&ensp;<code>str</code> or <code>Path</code></dt>
-<dd>Directory to save downloaded files. Can be reassigned later to change the directory.</dd>
-</dl></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -1641,30 +572,22 @@ service account file or a <code>google.auth.credentials.Credentials</code> objec
         )
         return dataframe</code></pre>
 </details>
+<div class="desc"><p>Provides methods to download any non-html file (ie, Content-Type != text/html) Google Drive file from it's
+sharing link (of the form <code>https://drive.google.com/file/d/big_long_id/etc</code>). The files may be publicly shared or shared with a service account.</p>
+<p>This class has two similar sets of methods. The <code>*_using_api</code> methods authenticate to the Google API using either a
+service account file or a <code>google.auth.credentials.Credentials</code> object and downloads using the API. The
+<code>*_using_api</code> methods are the most robust and should be used whenever possible.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>out_dir</code></strong> :&ensp;<code>str</code> or <code>Path</code></dt>
+<dd>Directory to save downloaded files. Can be reassigned later to change the directory.</dd>
+</dl></div>
 <h3>Methods</h3>
 <dl>
 <dt id="palletjack.extract.GoogleDriveDownloader.download_attachments_from_dataframe"><code class="name flex">
 <span>def <span class="ident">download_attachments_from_dataframe</span></span>(<span>self, dataframe, sharing_link_column, join_id_column, output_path_column)</span>
 </code></dt>
 <dd>
-<div class="desc"><p>Download the attachments linked in a dataframe column, creating a new column with the resulting path</p>
-<h2 id="args">Args</h2>
-<dl>
-<dt><strong><code>dataframe</code></strong> :&ensp;<code>pd.DataFrame</code></dt>
-<dd>Input dataframe with required columns</dd>
-<dt><strong><code>sharing_link_column</code></strong> :&ensp;<code>str</code></dt>
-<dd>Column holding the Google sharing link</dd>
-<dt><strong><code>join_id_column</code></strong> :&ensp;<code>str</code></dt>
-<dd>Column holding a unique key (for reporting purposes)</dd>
-<dt><strong><code>output_path_column</code></strong> :&ensp;<code>str</code></dt>
-<dd>Column for the resulting path; will be added if it doesn't exist in the
-dataframe</dd>
-</dl>
-<h2 id="returns">Returns</h2>
-<dl>
-<dt><code>pd.DataFrame</code></dt>
-<dd>Input dataframe with output path info</dd>
-</dl></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -1688,18 +611,9 @@ dataframe</dd>
     )
     return dataframe</code></pre>
 </details>
-</dd>
-<dt id="palletjack.extract.GoogleDriveDownloader.download_attachments_from_dataframe_using_api"><code class="name flex">
-<span>def <span class="ident">download_attachments_from_dataframe_using_api</span></span>(<span>self, credentials, dataframe, sharing_link_column, join_id_column, output_path_column)</span>
-</code></dt>
-<dd>
-<div class="desc"><p>Download the attachments linked in a dataframe column using an authenticated api client, creating a new
-column with the resulting path</p>
+<div class="desc"><p>Download the attachments linked in a dataframe column, creating a new column with the resulting path</p>
 <h2 id="args">Args</h2>
 <dl>
-<dt><strong><code>credentials</code></strong> :&ensp;<code>str</code> or <code>google.auth.credentials.Credentials</code></dt>
-<dd>Path to the service file OR credentials object
-obtained from google.auth.default() within a cloud function.</dd>
 <dt><strong><code>dataframe</code></strong> :&ensp;<code>pd.DataFrame</code></dt>
 <dd>Input dataframe with required columns</dd>
 <dt><strong><code>sharing_link_column</code></strong> :&ensp;<code>str</code></dt>
@@ -1707,7 +621,7 @@ obtained from google.auth.default() within a cloud function.</dd>
 <dt><strong><code>join_id_column</code></strong> :&ensp;<code>str</code></dt>
 <dd>Column holding a unique key (for reporting purposes)</dd>
 <dt><strong><code>output_path_column</code></strong> :&ensp;<code>str</code></dt>
-<dd>Column for the resulting path; will be added if it doesn't existing in the
+<dd>Column for the resulting path; will be added if it doesn't exist in the
 dataframe</dd>
 </dl>
 <h2 id="returns">Returns</h2>
@@ -1715,6 +629,11 @@ dataframe</dd>
 <dt><code>pd.DataFrame</code></dt>
 <dd>Input dataframe with output path info</dd>
 </dl></div>
+</dd>
+<dt id="palletjack.extract.GoogleDriveDownloader.download_attachments_from_dataframe_using_api"><code class="name flex">
+<span>def <span class="ident">download_attachments_from_dataframe_using_api</span></span>(<span>self, credentials, dataframe, sharing_link_column, join_id_column, output_path_column)</span>
+</code></dt>
+<dd>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -1746,31 +665,33 @@ dataframe</dd>
     )
     return dataframe</code></pre>
 </details>
+<div class="desc"><p>Download the attachments linked in a dataframe column using an authenticated api client, creating a new
+column with the resulting path</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>credentials</code></strong> :&ensp;<code>str</code> or <code>google.auth.credentials.Credentials</code></dt>
+<dd>Path to the service file OR credentials object
+obtained from google.auth.default() within a cloud function.</dd>
+<dt><strong><code>dataframe</code></strong> :&ensp;<code>pd.DataFrame</code></dt>
+<dd>Input dataframe with required columns</dd>
+<dt><strong><code>sharing_link_column</code></strong> :&ensp;<code>str</code></dt>
+<dd>Column holding the Google sharing link</dd>
+<dt><strong><code>join_id_column</code></strong> :&ensp;<code>str</code></dt>
+<dd>Column holding a unique key (for reporting purposes)</dd>
+<dt><strong><code>output_path_column</code></strong> :&ensp;<code>str</code></dt>
+<dd>Column for the resulting path; will be added if it doesn't existing in the
+dataframe</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>pd.DataFrame</code></dt>
+<dd>Input dataframe with output path info</dd>
+</dl></div>
 </dd>
 <dt id="palletjack.extract.GoogleDriveDownloader.download_file_from_google_drive"><code class="name flex">
 <span>def <span class="ident">download_file_from_google_drive</span></span>(<span>self, sharing_link, join_id, pause=0.0)</span>
 </code></dt>
 <dd>
-<div class="desc"><p>Download a publicly-shared image from Google Drive using it's sharing link</p>
-<p>Uses an anonymous HTTP request with support for sleeping between downloads to try to get around Google's
-blocking (I haven't found a good value yet).</p>
-<p>Logs a warning if the URL doesn't match the proper pattern or it can't extract the unique id from the sharing
-URL. Will also log a warning if the header's Content-Type is text/html, which usually indicates the HTTP
-response was an error message instead of the file.</p>
-<h2 id="args">Args</h2>
-<dl>
-<dt><strong><code>sharing_link</code></strong> :&ensp;<code>str</code></dt>
-<dd>The publicly-shared link to the image.</dd>
-<dt><strong><code>join_id</code></strong> :&ensp;<code>str</code> or <code>int</code></dt>
-<dd>The unique key for the row (used for reporting)</dd>
-<dt><strong><code>pause</code></strong> :&ensp;<code>flt</code>, optional</dt>
-<dd>Pause the specified number of seconds before downloading. Defaults to 0.</dd>
-</dl>
-<h2 id="returns">Returns</h2>
-<dl>
-<dt><code>Path</code></dt>
-<dd>Path of downloaded file or None if download fails/is not possible</dd>
-</dl></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -1815,30 +736,31 @@ response was an error message instead of the file.</p>
         self._class_logger.warning(err)
         return None</code></pre>
 </details>
-</dd>
-<dt id="palletjack.extract.GoogleDriveDownloader.download_file_from_google_drive_using_api"><code class="name flex">
-<span>def <span class="ident">download_file_from_google_drive_using_api</span></span>(<span>self, gsheets_client, sharing_link, join_id)</span>
-</code></dt>
-<dd>
-<div class="desc"><p>Download a file using the Google API via pygsheets authentication.</p>
-<p>Requires a pygsheets client object that handles authentication.</p>
+<div class="desc"><p>Download a publicly-shared image from Google Drive using it's sharing link</p>
+<p>Uses an anonymous HTTP request with support for sleeping between downloads to try to get around Google's
+blocking (I haven't found a good value yet).</p>
 <p>Logs a warning if the URL doesn't match the proper pattern or it can't extract the unique id from the sharing
 URL. Will also log a warning if the header's Content-Type is text/html, which usually indicates the HTTP
 response was an error message instead of the file.</p>
 <h2 id="args">Args</h2>
 <dl>
-<dt><strong><code>gsheets_client</code></strong> :&ensp;<code>pygsheets.Client</code></dt>
-<dd>The authenticated client object from pygsheets</dd>
 <dt><strong><code>sharing_link</code></strong> :&ensp;<code>str</code></dt>
-<dd>Sharing link to the file to be downloaded</dd>
+<dd>The publicly-shared link to the image.</dd>
 <dt><strong><code>join_id</code></strong> :&ensp;<code>str</code> or <code>int</code></dt>
-<dd>Unique key for the row (used for reporting)</dd>
+<dd>The unique key for the row (used for reporting)</dd>
+<dt><strong><code>pause</code></strong> :&ensp;<code>flt</code>, optional</dt>
+<dd>Pause the specified number of seconds before downloading. Defaults to 0.</dd>
 </dl>
 <h2 id="returns">Returns</h2>
 <dl>
 <dt><code>Path</code></dt>
 <dd>Path of downloaded file or None if download fails/is not possible</dd>
 </dl></div>
+</dd>
+<dt id="palletjack.extract.GoogleDriveDownloader.download_file_from_google_drive_using_api"><code class="name flex">
+<span>def <span class="ident">download_file_from_google_drive_using_api</span></span>(<span>self, gsheets_client, sharing_link, join_id)</span>
+</code></dt>
+<dd>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -1879,6 +801,25 @@ response was an error message instead of the file.</p>
         self._class_logger.warning(err)
         return None</code></pre>
 </details>
+<div class="desc"><p>Download a file using the Google API via pygsheets authentication.</p>
+<p>Requires a pygsheets client object that handles authentication.</p>
+<p>Logs a warning if the URL doesn't match the proper pattern or it can't extract the unique id from the sharing
+URL. Will also log a warning if the header's Content-Type is text/html, which usually indicates the HTTP
+response was an error message instead of the file.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>gsheets_client</code></strong> :&ensp;<code>pygsheets.Client</code></dt>
+<dd>The authenticated client object from pygsheets</dd>
+<dt><strong><code>sharing_link</code></strong> :&ensp;<code>str</code></dt>
+<dd>Sharing link to the file to be downloaded</dd>
+<dt><strong><code>join_id</code></strong> :&ensp;<code>str</code> or <code>int</code></dt>
+<dd>Unique key for the row (used for reporting)</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>Path</code></dt>
+<dd>Path of downloaded file or None if download fails/is not possible</dd>
+</dl></div>
 </dd>
 </dl>
 </dd>
@@ -1887,20 +828,6 @@ response was an error message instead of the file.</p>
 <span>(</span><span>host, database, username, password, port=5432)</span>
 </code></dt>
 <dd>
-<div class="desc"><p>Loads data from a Postgres/PostGIS database into a pandas data frame</p>
-<h2 id="args">Args</h2>
-<dl>
-<dt><strong><code>host</code></strong> :&ensp;<code>str</code></dt>
-<dd>Postgres server host name</dd>
-<dt><strong><code>database</code></strong> :&ensp;<code>str</code></dt>
-<dd>Database to connect to</dd>
-<dt><strong><code>username</code></strong> :&ensp;<code>str</code></dt>
-<dd>Database user</dd>
-<dt><strong><code>password</code></strong> :&ensp;<code>str</code></dt>
-<dd>Database password</dd>
-<dt><strong><code>port</code></strong> :&ensp;<code>int</code>, optional</dt>
-<dd>Database port. Defaults to 5432.</dd>
-</dl></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -1919,8 +846,8 @@ response was an error message instead of the file.</p>
         &#34;&#34;&#34;
 
         self._class_logger = logging.getLogger(__name__).getChild(self.__class__.__name__)
-        if os.environ.get(&#34;FUNCTION_TARGET&#34;) is not None:  #: this is an env var specific to cloud functions
-            self._class_logger.info(&#34;running in GCF, using unix socket&#34;)
+        if utils.is_running_in_gcp():
+            self._class_logger.info(&#34;running in GCP, using unix socket&#34;)
             self.engine = sqlalchemy.create_engine(
                 sqlalchemy.engine.url.URL.create(
                     drivername=&#34;postgresql+pg8000&#34;,
@@ -1963,9 +890,6 @@ response was an error message instead of the file.</p>
         )
 
         spatial_dataframe = pd.DataFrame.spatial.from_geodataframe(dataframe, column_name=spatial_column)
-        for column in spatial_dataframe.select_dtypes(include=[&#34;datetime64[ns, UTC]&#34;]):
-            self._class_logger.debug(&#34;Converting column `%s` to ISO string format&#34;, column)
-            spatial_dataframe[column] = spatial_dataframe[column].apply(pd.Timestamp.isoformat)
 
         self._class_logger.debug(&#34;Dataframe shape: %s&#34;, spatial_dataframe.shape)
         if len(spatial_dataframe.index) == 0:
@@ -1973,29 +897,26 @@ response was an error message instead of the file.</p>
 
         return spatial_dataframe</code></pre>
 </details>
+<div class="desc"><p>Loads data from a Postgres/PostGIS database into a pandas data frame</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>host</code></strong> :&ensp;<code>str</code></dt>
+<dd>Postgres server host name</dd>
+<dt><strong><code>database</code></strong> :&ensp;<code>str</code></dt>
+<dd>Database to connect to</dd>
+<dt><strong><code>username</code></strong> :&ensp;<code>str</code></dt>
+<dd>Database user</dd>
+<dt><strong><code>password</code></strong> :&ensp;<code>str</code></dt>
+<dd>Database password</dd>
+<dt><strong><code>port</code></strong> :&ensp;<code>int</code>, optional</dt>
+<dd>Database port. Defaults to 5432.</dd>
+</dl></div>
 <h3>Methods</h3>
 <dl>
 <dt id="palletjack.extract.PostgresLoader.read_table_into_dataframe"><code class="name flex">
 <span>def <span class="ident">read_table_into_dataframe</span></span>(<span>self, table_name, index_column, crs, spatial_column)</span>
 </code></dt>
 <dd>
-<div class="desc"><p>Read a table into a dataframe</p>
-<h2 id="args">Args</h2>
-<dl>
-<dt><strong><code>table_name</code></strong> :&ensp;<code>str</code></dt>
-<dd>Name of table or view to read in the following format: schema.table_name</dd>
-<dt><strong><code>index_column</code></strong> :&ensp;<code>str</code></dt>
-<dd>Name of column to use as the dataframe's index</dd>
-<dt><strong><code>crs</code></strong> :&ensp;<code>str</code></dt>
-<dd>Coordinate reference system of the table's geometry column</dd>
-<dt><strong><code>spatial_column</code></strong> :&ensp;<code>str</code></dt>
-<dd>Name of the table's geometry or geography column</dd>
-</dl>
-<h2 id="returns">Returns</h2>
-<dl>
-<dt><code>pd.DataFrame.spatial</code></dt>
-<dd>Table as a spatially enabled dataframe</dd>
-</dl></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -2020,9 +941,6 @@ response was an error message instead of the file.</p>
     )
 
     spatial_dataframe = pd.DataFrame.spatial.from_geodataframe(dataframe, column_name=spatial_column)
-    for column in spatial_dataframe.select_dtypes(include=[&#34;datetime64[ns, UTC]&#34;]):
-        self._class_logger.debug(&#34;Converting column `%s` to ISO string format&#34;, column)
-        spatial_dataframe[column] = spatial_dataframe[column].apply(pd.Timestamp.isoformat)
 
     self._class_logger.debug(&#34;Dataframe shape: %s&#34;, spatial_dataframe.shape)
     if len(spatial_dataframe.index) == 0:
@@ -2030,29 +948,31 @@ response was an error message instead of the file.</p>
 
     return spatial_dataframe</code></pre>
 </details>
+<div class="desc"><p>Read a table into a dataframe</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>table_name</code></strong> :&ensp;<code>str</code></dt>
+<dd>Name of table or view to read in the following format: schema.table_name</dd>
+<dt><strong><code>index_column</code></strong> :&ensp;<code>str</code></dt>
+<dd>Name of column to use as the dataframe's index</dd>
+<dt><strong><code>crs</code></strong> :&ensp;<code>str</code></dt>
+<dd>Coordinate reference system of the table's geometry column</dd>
+<dt><strong><code>spatial_column</code></strong> :&ensp;<code>str</code></dt>
+<dd>Name of the table's geometry or geography column</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>pd.DataFrame.spatial</code></dt>
+<dd>Table as a spatially enabled dataframe</dd>
+</dl></div>
 </dd>
 </dl>
 </dd>
 <dt id="palletjack.extract.RESTServiceLoader"><code class="flex name class">
 <span>class <span class="ident">RESTServiceLoader</span></span>
-<span>(</span><span>service_url, timeout=5)</span>
+<span>(</span><span>service_url, timeout=5, token=None)</span>
 </code></dt>
 <dd>
-<div class="desc"><p>Downloads features from a layer within a map service or feature service (with queries enabled) based on its REST
-endpoint.</p>
-<p>Create a RestServiceLoader object to represent the service and call get_features on the RESTServiceLoader object,
-passing in a ServiceLayer object representing the layer you want to download. This will use either a specified
-chunk size or the service's maxRecordCount to download the data in appropriately-sized chunks using the OIDs
-returned by the service. It will retry individual chunks three times in case of error to ensure the best chance of
-success.</p>
-<p>Create a representation of a REST FeatureService or MapService</p>
-<h2 id="args">Args</h2>
-<dl>
-<dt><strong><code>service_url</code></strong> :&ensp;<code>str</code></dt>
-<dd>The service's REST endpoint</dd>
-<dt><strong><code>timeout</code></strong> :&ensp;<code>int</code>, optional</dt>
-<dd>Timeout for HTTP requests in seconds. Defaults to 5.</dd>
-</dl></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -2068,18 +988,20 @@ success.</p>
     success.
     &#34;&#34;&#34;
 
-    def __init__(self, service_url, timeout=5):
+    def __init__(self, service_url, timeout=5, token=None):
         &#34;&#34;&#34;Create a representation of a REST FeatureService or MapService
 
         Args:
             service_url (str): The service&#39;s REST endpoint
             timeout (int, optional): Timeout for HTTP requests in seconds. Defaults to 5.
+            token (str, optional): Auth token for the service. Defaults to None.
         &#34;&#34;&#34;
 
         if service_url[-1] == &#34;/&#34;:
             service_url = service_url[:-1]
         self.url = service_url
         self.timeout = timeout
+        self.token = token
 
         self._class_logger = logging.getLogger(__name__).getChild(self.__class__.__name__)
 
@@ -2174,31 +1096,41 @@ success.</p>
             requests.Response: Raw response object from a /query request.
         &#34;&#34;&#34;
         self._class_logger.debug(&#34;Getting service information...&#34;)
-        response = requests.get(f&#34;{self.url}/query&#34;, params={&#34;f&#34;: &#34;json&#34;}, timeout=self.timeout)
+
+        params = {&#34;f&#34;: &#34;json&#34;}
+
+        if self.token:
+            params[&#34;token&#34;] = self.token
+
+        response = requests.get(f&#34;{self.url}/query&#34;, params=params, timeout=self.timeout)
 
         response.raise_for_status()
 
         return response</code></pre>
 </details>
+<div class="desc"><p>Downloads features from a layer within a map service or feature service (with queries enabled) based on its REST
+endpoint.</p>
+<p>Create a RestServiceLoader object to represent the service and call get_features on the RESTServiceLoader object,
+passing in a ServiceLayer object representing the layer you want to download. This will use either a specified
+chunk size or the service's maxRecordCount to download the data in appropriately-sized chunks using the OIDs
+returned by the service. It will retry individual chunks three times in case of error to ensure the best chance of
+success.</p>
+<p>Create a representation of a REST FeatureService or MapService</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>service_url</code></strong> :&ensp;<code>str</code></dt>
+<dd>The service's REST endpoint</dd>
+<dt><strong><code>timeout</code></strong> :&ensp;<code>int</code>, optional</dt>
+<dd>Timeout for HTTP requests in seconds. Defaults to 5.</dd>
+<dt><strong><code>token</code></strong> :&ensp;<code>str</code>, optional</dt>
+<dd>Auth token for the service. Defaults to None.</dd>
+</dl></div>
 <h3>Methods</h3>
 <dl>
 <dt id="palletjack.extract.RESTServiceLoader.get_feature_layers_info"><code class="name flex">
 <span>def <span class="ident">get_feature_layers_info</span></span>(<span>self)</span>
 </code></dt>
 <dd>
-<div class="desc"><p>Get the information dictionary for any and all feature layers and tables within the service.</p>
-<p>Retries the request to the service's REST endpoint three times in case of error.</p>
-<h2 id="raises">Raises</h2>
-<dl>
-<dt><code>RuntimeError</code></dt>
-<dd>If the response can't be parsed as JSON, the service does not contain layers, or the response
-does not contain information about the layer types</dd>
-</dl>
-<h2 id="returns">Returns</h2>
-<dl>
-<dt><code>dict</code></dt>
-<dd>The parsed JSON info of the service's feature layers</dd>
-</dl></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -2232,31 +1164,24 @@ does not contain information about the layer types</dd>
 
     return layers</code></pre>
 </details>
+<div class="desc"><p>Get the information dictionary for any and all feature layers and tables within the service.</p>
+<p>Retries the request to the service's REST endpoint three times in case of error.</p>
+<h2 id="raises">Raises</h2>
+<dl>
+<dt><code>RuntimeError</code></dt>
+<dd>If the response can't be parsed as JSON, the service does not contain layers, or the response
+does not contain information about the layer types</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>dict</code></dt>
+<dd>The parsed JSON info of the service's feature layers</dd>
+</dl></div>
 </dd>
 <dt id="palletjack.extract.RESTServiceLoader.get_features"><code class="name flex">
 <span>def <span class="ident">get_features</span></span>(<span>self, service_layer, chunk_size=100)</span>
 </code></dt>
 <dd>
-<div class="desc"><p>Download the features from a ServiceLayer by unique ID in chunk_size-limited requests.</p>
-<p>Uses either chunk_size or the service's maxRecordCount parameter to chunk the request into manageable-sized
-requests. 100 seems to be the sweet spot before requests start to error out consistently. To limit the number
-of features returned, you can specify a geographic bounding box or where clause when creating the ServiceLayer.
-Individual chunk requests and other HTML requests are wrapped in retries to handle momentary network glitches.</p>
-<p>This method does not catch any errors raised by the individual ServiceLayer methods it calls. See that class
-for more information on the individual errors.</p>
-<h2 id="args">Args</h2>
-<dl>
-<dt><strong><code>service_layer</code></strong> :&ensp;<code><a title="palletjack.extract.ServiceLayer" href="#palletjack.extract.ServiceLayer">ServiceLayer</a></code></dt>
-<dd>A ServiceLayer object representing the layer to download</dd>
-<dt><strong><code>chunk_size</code></strong> :&ensp;<code>int</code>, optional</dt>
-<dd>Number of features to download per chunk. Defaults to 100. If set to None, it
-will use the service's maxRecordCount. Adjust if the service is failing frequently.</dd>
-</dl>
-<h2 id="returns">Returns</h2>
-<dl>
-<dt><code>pd.DataFrame.spatial</code></dt>
-<dd>The service's features as a spatially-enabled dataframe</dd>
-</dl></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -2313,6 +1238,26 @@ will use the service's maxRecordCount. Adjust if the service is failing frequent
 
     return all_features_df</code></pre>
 </details>
+<div class="desc"><p>Download the features from a ServiceLayer by unique ID in chunk_size-limited requests.</p>
+<p>Uses either chunk_size or the service's maxRecordCount parameter to chunk the request into manageable-sized
+requests. 100 seems to be the sweet spot before requests start to error out consistently. To limit the number
+of features returned, you can specify a geographic bounding box or where clause when creating the ServiceLayer.
+Individual chunk requests and other HTML requests are wrapped in retries to handle momentary network glitches.</p>
+<p>This method does not catch any errors raised by the individual ServiceLayer methods it calls. See that class
+for more information on the individual errors.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>service_layer</code></strong> :&ensp;<code><a title="palletjack.extract.ServiceLayer" href="#palletjack.extract.ServiceLayer">ServiceLayer</a></code></dt>
+<dd>A ServiceLayer object representing the layer to download</dd>
+<dt><strong><code>chunk_size</code></strong> :&ensp;<code>int</code>, optional</dt>
+<dd>Number of features to download per chunk. Defaults to 100. If set to None, it
+will use the service's maxRecordCount. Adjust if the service is failing frequently.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>pd.DataFrame.spatial</code></dt>
+<dd>The service's features as a spatially-enabled dataframe</dd>
+</dl></div>
 </dd>
 </dl>
 </dd>
@@ -2321,20 +1266,6 @@ will use the service's maxRecordCount. Adjust if the service is failing frequent
 <span>(</span><span>host, username, password, knownhosts_file, download_dir)</span>
 </code></dt>
 <dd>
-<div class="desc"><p>Loads data from an SFTP share into a pandas DataFrame</p>
-<h2 id="args">Args</h2>
-<dl>
-<dt><strong><code>host</code></strong> :&ensp;<code>str</code></dt>
-<dd>The SFTP host to connect to</dd>
-<dt><strong><code>username</code></strong> :&ensp;<code>str</code></dt>
-<dd>SFTP username</dd>
-<dt><strong><code>password</code></strong> :&ensp;<code>str</code></dt>
-<dd>SFTP password</dd>
-<dt><strong><code>knownhosts_file</code></strong> :&ensp;<code>str</code></dt>
-<dd>Path to a known_hosts file for pysftp.CnOpts. Can be generated via ssh-keyscan.</dd>
-<dt><strong><code>download_dir</code></strong> :&ensp;<code>str</code> or <code>Path</code></dt>
-<dd>Directory to save downloaded files</dd>
-</dl></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -2437,18 +1368,26 @@ will use the service's maxRecordCount. Adjust if the service is failing frequent
             self._class_logger.warning(&#34;Dataframe contains no rows. Shape: %s&#34;, dataframe.shape)
         return dataframe</code></pre>
 </details>
+<div class="desc"><p>Loads data from an SFTP share into a pandas DataFrame</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>host</code></strong> :&ensp;<code>str</code></dt>
+<dd>The SFTP host to connect to</dd>
+<dt><strong><code>username</code></strong> :&ensp;<code>str</code></dt>
+<dd>SFTP username</dd>
+<dt><strong><code>password</code></strong> :&ensp;<code>str</code></dt>
+<dd>SFTP password</dd>
+<dt><strong><code>knownhosts_file</code></strong> :&ensp;<code>str</code></dt>
+<dd>Path to a known_hosts file for pysftp.CnOpts. Can be generated via ssh-keyscan.</dd>
+<dt><strong><code>download_dir</code></strong> :&ensp;<code>str</code> or <code>Path</code></dt>
+<dd>Directory to save downloaded files</dd>
+</dl></div>
 <h3>Methods</h3>
 <dl>
 <dt id="palletjack.extract.SFTPLoader.download_sftp_folder_contents"><code class="name flex">
 <span>def <span class="ident">download_sftp_folder_contents</span></span>(<span>self, sftp_folder='upload')</span>
 </code></dt>
 <dd>
-<div class="desc"><p>Download all files in sftp_folder to the SFTPLoader's download_dir</p>
-<h2 id="args">Args</h2>
-<dl>
-<dt><strong><code>sftp_folder</code></strong> :&ensp;<code>str</code>, optional</dt>
-<dd>Path of remote folder, relative to sftp home directory. Defaults to 'upload'.</dd>
-</dl></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -2476,29 +1415,17 @@ will use the service's maxRecordCount. Adjust if the service is failing frequent
         raise ValueError(&#34;No files downloaded&#34;)
     return downloaded_file_count</code></pre>
 </details>
+<div class="desc"><p>Download all files in sftp_folder to the SFTPLoader's download_dir</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>sftp_folder</code></strong> :&ensp;<code>str</code>, optional</dt>
+<dd>Path of remote folder, relative to sftp home directory. Defaults to 'upload'.</dd>
+</dl></div>
 </dd>
 <dt id="palletjack.extract.SFTPLoader.download_sftp_single_file"><code class="name flex">
 <span>def <span class="ident">download_sftp_single_file</span></span>(<span>self, filename, sftp_folder='upload')</span>
 </code></dt>
 <dd>
-<div class="desc"><p>Download filename into SFTPLoader's download_dir</p>
-<h2 id="args">Args</h2>
-<dl>
-<dt><strong><code>filename</code></strong> :&ensp;<code>str</code></dt>
-<dd>Filename to download; used as output filename as well.</dd>
-<dt><strong><code>sftp_folder</code></strong> :&ensp;<code>str</code>, optional</dt>
-<dd>Path of remote folder, relative to sftp home directory. Defaults to 'upload'.</dd>
-</dl>
-<h2 id="raises">Raises</h2>
-<dl>
-<dt><code>FileNotFoundError</code></dt>
-<dd>Will warn if pysftp can't find the file or folder on the sftp server</dd>
-</dl>
-<h2 id="returns">Returns</h2>
-<dl>
-<dt><code>Path</code></dt>
-<dd>Downloaded file's path</dd>
-</dl></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -2536,24 +1463,29 @@ will use the service's maxRecordCount. Adjust if the service is failing frequent
 
     return outfile</code></pre>
 </details>
+<div class="desc"><p>Download filename into SFTPLoader's download_dir</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>filename</code></strong> :&ensp;<code>str</code></dt>
+<dd>Filename to download; used as output filename as well.</dd>
+<dt><strong><code>sftp_folder</code></strong> :&ensp;<code>str</code>, optional</dt>
+<dd>Path of remote folder, relative to sftp home directory. Defaults to 'upload'.</dd>
+</dl>
+<h2 id="raises">Raises</h2>
+<dl>
+<dt><code>FileNotFoundError</code></dt>
+<dd>Will warn if pysftp can't find the file or folder on the sftp server</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>Path</code></dt>
+<dd>Downloaded file's path</dd>
+</dl></div>
 </dd>
 <dt id="palletjack.extract.SFTPLoader.read_csv_into_dataframe"><code class="name flex">
 <span>def <span class="ident">read_csv_into_dataframe</span></span>(<span>self, filename, column_types=None)</span>
 </code></dt>
 <dd>
-<div class="desc"><p>Read filename into a dataframe with optional column names and types</p>
-<h2 id="args">Args</h2>
-<dl>
-<dt><strong><code>filename</code></strong> :&ensp;<code>str</code></dt>
-<dd>Name of file in the SFTPLoader's download_dir</dd>
-<dt><strong><code>column_types</code></strong> :&ensp;<code>dict</code>, optional</dt>
-<dd>Column names and their dtypes(np.float64, str, etc). Defaults to None.</dd>
-</dl>
-<h2 id="returns">Returns</h2>
-<dl>
-<dt><code>pd.DataFrame</code></dt>
-<dd>CSV as a pandas dataframe</dd>
-</dl></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -2580,6 +1512,19 @@ will use the service's maxRecordCount. Adjust if the service is failing frequent
         self._class_logger.warning(&#34;Dataframe contains no rows. Shape: %s&#34;, dataframe.shape)
     return dataframe</code></pre>
 </details>
+<div class="desc"><p>Read filename into a dataframe with optional column names and types</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>filename</code></strong> :&ensp;<code>str</code></dt>
+<dd>Name of file in the SFTPLoader's download_dir</dd>
+<dt><strong><code>column_types</code></strong> :&ensp;<code>dict</code>, optional</dt>
+<dd>Column names and their dtypes(np.float64, str, etc). Defaults to None.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>pd.DataFrame</code></dt>
+<dd>CSV as a pandas dataframe</dd>
+</dl></div>
 </dd>
 </dl>
 </dd>
@@ -2588,7 +1533,6 @@ will use the service's maxRecordCount. Adjust if the service is failing frequent
 <span>(</span><span>secret, key)</span>
 </code></dt>
 <dd>
-<div class="desc"><p>A salesforce API user credential model</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -2600,32 +1544,13 @@ will use the service's maxRecordCount. Adjust if the service is failing frequent
         self.client_secret = secret
         self.client_id = key</code></pre>
 </details>
+<div class="desc"><p>A salesforce API user credential model</p></div>
 </dd>
 <dt id="palletjack.extract.SalesforceRestLoader"><code class="flex name class">
 <span>class <span class="ident">SalesforceRestLoader</span></span>
 <span>(</span><span>org, credentials, sandbox=False)</span>
 </code></dt>
 <dd>
-<div class="desc"><p>Queries a Salesforce organization using SOQL using the REST API.</p>
-<p>To use this loader a connected app needs to be created in Salesforce which create the credentials.
-You can then use the workbench, <a href="https://workbench.developerforce.com/query.php,">https://workbench.developerforce.com/query.php,</a> to construct and test SOQL queries.</p>
-<p>Create a Salesforce credential model and a SalesforceRest loader to authenticate and query Salesforce.
-Call get_records with a SOQL query to get the results as a pandas dataframe.</p>
-<p>Create a SalesforceRestLoader to query Salesforce. Timeout values are set to default values and can be
-modified by updating the instance variables.</p>
-<p>token_lease_in_days: The number of days before the token expires. Defaults to 30 days.
-access_token_timeout_in_seconds: The timeout for getting a new token. Defaults to 10 seconds.
-soql_query_timeout_in_seconds: The timeout for a SOQL query. Defaults to 30 seconds.</p>
-<h2 id="args">Args</h2>
-<dl>
-<dt><strong><code>org</code></strong> :&ensp;<code>string</code></dt>
-<dd>the organization name from the salesforce url <a href="https://[org].my.salesforce.com">https://[org].my.salesforce.com</a></dd>
-<dt>credentials (SalesforceApiUserCredentials | SalesforceSandboxCredentials): The credentials to use to</dt>
-<dt>authenticate.</dt>
-<dt><strong><code>sandbox</code></strong> :&ensp;<code>bool</code>, optional</dt>
-<dd>The credentials for sandboxes are different than API users. Defaults to False if</dd>
-</dl>
-<p>it's not a sandbox instance of Salesforce.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -2705,8 +1630,9 @@ soql_query_timeout_in_seconds: The timeout for a SOQL query. Defaults to 30 seco
         try:
             ticks = int(token[&#34;issued_at&#34;])
             issued = datetime.fromtimestamp(ticks / 1000)
+            days_from_today = (datetime.now() - issued).days
 
-            self._class_logger.debug(&#34;Token is {%s} days old&#34;, issued)
+            self._class_logger.debug(&#34;Token is %s days old&#34;, days_from_today)
         except ValueError:
             self._class_logger.warning(&#34;could not convert issued_at delta to a number %s&#34;, token)
 
@@ -2803,6 +1729,27 @@ soql_query_timeout_in_seconds: The timeout for a SOQL query. Defaults to 30 seco
 
         return response.json()</code></pre>
 </details>
+<div class="desc"><p>Queries a Salesforce organization using SOQL using the REST API.</p>
+<p>To use this loader a connected app needs to be created in Salesforce which create the credentials.
+You can then use the workbench, <a href="https://workbench.developerforce.com/query.php,">https://workbench.developerforce.com/query.php,</a> to construct and test SOQL queries.</p>
+<p>Create a Salesforce credential model and a SalesforceRest loader to authenticate and query Salesforce.
+Call get_records with a SOQL query to get the results as a pandas dataframe.</p>
+<p>Create a SalesforceRestLoader to query Salesforce. Timeout values are set to default values and can be
+modified by updating the instance variables.</p>
+<p>token_lease_in_days: The number of days before the token expires. Defaults to 30 days.
+access_token_timeout_in_seconds: The timeout for getting a new token. Defaults to 10 seconds.
+soql_query_timeout_in_seconds: The timeout for a SOQL query. Defaults to 30 seconds.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>org</code></strong> :&ensp;<code>string</code></dt>
+<dd>the organization name from the salesforce url <a href="https://[org].my.salesforce.com">https://[org].my.salesforce.com</a></dd>
+<dt><strong><code>credentials</code></strong> :&ensp;<code>SalesforceApiUserCredentials | SalesforceSandboxCredentials</code></dt>
+<dd>The credentials to use to</dd>
+<dt>authenticate.</dt>
+<dt><strong><code>sandbox</code></strong> :&ensp;<code>bool</code>, optional</dt>
+<dd>The credentials for sandboxes are different than API users. Defaults to False if</dd>
+</dl>
+<p>it's not a sandbox instance of Salesforce.</p></div>
 <h3>Class variables</h3>
 <dl>
 <dt id="palletjack.extract.SalesforceRestLoader.access_token"><code class="name">var <span class="ident">access_token</span></code></dt>
@@ -2864,24 +1811,6 @@ soql_query_timeout_in_seconds: The timeout for a SOQL query. Defaults to 30 seco
 <span>def <span class="ident">get_records</span></span>(<span>self, query_endpoint, query_string) ‑> pandas.core.frame.DataFrame</span>
 </code></dt>
 <dd>
-<div class="desc"><p>Queries the Salesforce API and returns the results as a dataframe.</p>
-<h2 id="args">Args</h2>
-<dl>
-<dt><strong><code>query_endpoint</code></strong> :&ensp;<code>str</code></dt>
-<dd>The REST endpoint to use for the query. Usually "/services/data/vXX.X/query".</dd>
-<dt><strong><code>query_string</code></strong> :&ensp;<code>str</code></dt>
-<dd>A SOQL query string.</dd>
-</dl>
-<h2 id="raises">Raises</h2>
-<dl>
-<dt><code>ValueError</code></dt>
-<dd>If the query fails.</dd>
-</dl>
-<h2 id="returns">Returns</h2>
-<dl>
-<dt><code>pd.Dataframe</code></dt>
-<dd>A dataframe of the results.</dd>
-</dl></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -2910,6 +1839,24 @@ soql_query_timeout_in_seconds: The timeout for a SOQL query. Defaults to 30 seco
 
     return df.reset_index(drop=True)  #: the concatted index is just a repeat of 0:2000</code></pre>
 </details>
+<div class="desc"><p>Queries the Salesforce API and returns the results as a dataframe.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>query_endpoint</code></strong> :&ensp;<code>str</code></dt>
+<dd>The REST endpoint to use for the query. Usually "/services/data/vXX.X/query".</dd>
+<dt><strong><code>query_string</code></strong> :&ensp;<code>str</code></dt>
+<dd>A SOQL query string.</dd>
+</dl>
+<h2 id="raises">Raises</h2>
+<dl>
+<dt><code>ValueError</code></dt>
+<dd>If the query fails.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>pd.Dataframe</code></dt>
+<dd>A dataframe of the results.</dd>
+</dl></div>
 </dd>
 </dl>
 </dd>
@@ -2918,7 +1865,6 @@ soql_query_timeout_in_seconds: The timeout for a SOQL query. Defaults to 30 seco
 <span>(</span><span>username, password, token, secret, key)</span>
 </code></dt>
 <dd>
-<div class="desc"><p>A salesforce sandbox credential model</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -2932,35 +1878,13 @@ soql_query_timeout_in_seconds: The timeout for a SOQL query. Defaults to 30 seco
         self.client_secret = secret
         self.client_id = key</code></pre>
 </details>
+<div class="desc"><p>A salesforce sandbox credential model</p></div>
 </dd>
 <dt id="palletjack.extract.ServiceLayer"><code class="flex name class">
 <span>class <span class="ident">ServiceLayer</span></span>
-<span>(</span><span>layer_url, timeout=5, envelope_params=None, feature_params=None, where_clause='1=1')</span>
+<span>(</span><span>layer_url,<br>timeout=5,<br>envelope_params=None,<br>feature_params=None,<br>where_clause='1=1',<br>token=None)</span>
 </code></dt>
 <dd>
-<div class="desc"><p>Represents a single layer within a service and provides methods for querying the layer and downloading features.</p>
-<p>The methods in this object represent the individual steps of a more complete download process involving sanity
-checks, getting the list of unique IDs to download, and then downloading based on those unique IDS. Any queries,
-where clauses, or subsetting can be done by specifying the envelope_params, feature_params, and/or where_clause to
-limit the unique IDs used to download the features. The get_features method in the RESTServiceLoader class handles
-all of these steps and should be used instead of calling the methods in this class directly.</p>
-<p>Create an object representing a single layer</p>
-<h2 id="args">Args</h2>
-<dl>
-<dt><strong><code>layer_url</code></strong> :&ensp;<code>str</code></dt>
-<dd>The full URL to the desired layer</dd>
-<dt><strong><code>timeout</code></strong> :&ensp;<code>int</code>, optional</dt>
-<dd>Timeout for HTTP requests in seconds. Defaults to 5.</dd>
-<dt><strong><code>envelope_params</code></strong> :&ensp;<code>dict</code>, optional</dt>
-<dd>Bounding box and it's spatial reference to spatially limit feature
-collection in the form {'geometry': '{xmin},{ymin},{xmax},{ymax}', 'inSR': '{wkid}'}. Defaults to None.</dd>
-<dt><strong><code>feature_params</code></strong> :&ensp;<code>dict</code>, optional</dt>
-<dd>Additional query parameters to pass to the service when downloading
-features. Parameter defaults to None, and the query defaults to 'outFields': '*', 'returnGeometry':
-'true'. See the ArcGIS REST API documentation for more information.</dd>
-<dt><strong><code>where_clause</code></strong> :&ensp;<code>str</code>, optional</dt>
-<dd>Where clause to refine the features returned. Defaults to '1=1'.</dd>
-</dl></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -2975,7 +1899,7 @@ features. Parameter defaults to None, and the query defaults to 'outFields': '*'
     all of these steps and should be used instead of calling the methods in this class directly.
     &#34;&#34;&#34;
 
-    def __init__(self, layer_url, timeout=5, envelope_params=None, feature_params=None, where_clause=&#34;1=1&#34;):
+    def __init__(self, layer_url, timeout=5, envelope_params=None, feature_params=None, where_clause=&#34;1=1&#34;, token=None):
         &#34;&#34;&#34;Create an object representing a single layer
 
         Args:
@@ -2987,6 +1911,7 @@ features. Parameter defaults to None, and the query defaults to 'outFields': '*'
                 features. Parameter defaults to None, and the query defaults to &#39;outFields&#39;: &#39;*&#39;, &#39;returnGeometry&#39;:
                 &#39;true&#39;. See the ArcGIS REST API documentation for more information.
             where_clause (str, optional): Where clause to refine the features returned. Defaults to &#39;1=1&#39;.
+            token (str, optional): Auth token for the service. Defaults to None.
 
         &#34;&#34;&#34;
 
@@ -2996,6 +1921,7 @@ features. Parameter defaults to None, and the query defaults to 'outFields': '*'
             layer_url = layer_url[:-1]
         self.layer_url = layer_url
         self.timeout = timeout
+        self.token = token
 
         self.layer_properties_json = self._get_layer_info()
         self.max_record_count = self.layer_properties_json[&#34;maxRecordCount&#34;]
@@ -3028,8 +1954,10 @@ features. Parameter defaults to None, and the query defaults to 'outFields': '*'
         Returns:
             dict: The query&#39;s json response as a dictionary
         &#34;&#34;&#34;
-
-        response_json = utils.retry(requests.get, self.layer_url, params={&#34;f&#34;: &#34;json&#34;}, timeout=self.timeout).json()
+        params = {&#34;f&#34;: &#34;json&#34;}
+        if self.token:
+            params[&#34;token&#34;] = self.token
+        response_json = utils.retry(requests.get, self.layer_url, params=params, timeout=self.timeout).json()
         try:
             #: bogus boolean to make sure the keys exist
             response_json[&#34;capabilities&#34;] and response_json[&#34;type&#34;]  # and response_json[&#39;maxRecordCount&#39;]
@@ -3072,7 +2000,7 @@ features. Parameter defaults to None, and the query defaults to 'outFields': '*'
 
         if self.layer_properties_json[&#34;type&#34;] not in [&#34;Feature Layer&#34;, &#34;Table&#34;]:
             raise RuntimeError(
-                f&#39;Layer {self.layer_url} is a {self.layer_properties_json[&#34;type&#34;]}, not a feature layer or table&#39;
+                f&#34;Layer {self.layer_url} is a {self.layer_properties_json[&#39;type&#39;]}, not a feature layer or table&#34;
             )
 
     def _get_object_id_field(self):
@@ -3107,6 +2035,8 @@ features. Parameter defaults to None, and the query defaults to 'outFields': '*'
         if self.envelope_params is not None:
             objectid_params.update(self.envelope_params)
         self._class_logger.debug(&#34;OID params: %s&#34;, objectid_params)
+        if self.token:
+            objectid_params[&#34;token&#34;] = self.token
 
         response = utils.retry(requests.get, f&#34;{self.layer_url}/query&#34;, params=objectid_params, timeout=self.timeout)
         oids = []
@@ -3139,10 +2069,13 @@ features. Parameter defaults to None, and the query defaults to 'outFields': '*'
         &#34;&#34;&#34;
         unique_id_params = {&#34;f&#34;: &#34;json&#34;}
         unique_id_params.update(self.feature_params)
-        unique_id_params.update({&#34;where&#34;: f&#39;{unique_id_field} in ({&#34;,&#34;.join([str(oid) for oid in unique_id_list])})&#39;})
+        unique_id_params.update({&#34;where&#34;: f&#34;{unique_id_field} in ({&#39;,&#39;.join([str(oid) for oid in unique_id_list])})&#34;})
+
+        if self.token:
+            unique_id_params[&#34;token&#34;] = self.token
 
         self._class_logger.debug(&#34;OID range params: %s&#34;, unique_id_params)
-        response = requests.get(f&#34;{self.layer_url}/query&#34;, params=unique_id_params, timeout=self.timeout)
+        response = requests.post(f&#34;{self.layer_url}/query&#34;, data=unique_id_params, timeout=self.timeout)
 
         if response.status_code != 200:
             raise RuntimeError(f&#34;Bad chunk response HTTP status code ({response.status_code})&#34;)
@@ -3161,23 +2094,37 @@ features. Parameter defaults to None, and the query defaults to 'outFields': '*'
 
         return features_df</code></pre>
 </details>
+<div class="desc"><p>Represents a single layer within a service and provides methods for querying the layer and downloading features.</p>
+<p>The methods in this object represent the individual steps of a more complete download process involving sanity
+checks, getting the list of unique IDs to download, and then downloading based on those unique IDS. Any queries,
+where clauses, or subsetting can be done by specifying the envelope_params, feature_params, and/or where_clause to
+limit the unique IDs used to download the features. The get_features method in the RESTServiceLoader class handles
+all of these steps and should be used instead of calling the methods in this class directly.</p>
+<p>Create an object representing a single layer</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>layer_url</code></strong> :&ensp;<code>str</code></dt>
+<dd>The full URL to the desired layer</dd>
+<dt><strong><code>timeout</code></strong> :&ensp;<code>int</code>, optional</dt>
+<dd>Timeout for HTTP requests in seconds. Defaults to 5.</dd>
+<dt><strong><code>envelope_params</code></strong> :&ensp;<code>dict</code>, optional</dt>
+<dd>Bounding box and it's spatial reference to spatially limit feature
+collection in the form {'geometry': '{xmin},{ymin},{xmax},{ymax}', 'inSR': '{wkid}'}. Defaults to None.</dd>
+<dt><strong><code>feature_params</code></strong> :&ensp;<code>dict</code>, optional</dt>
+<dd>Additional query parameters to pass to the service when downloading
+features. Parameter defaults to None, and the query defaults to 'outFields': '*', 'returnGeometry':
+'true'. See the ArcGIS REST API documentation for more information.</dd>
+<dt><strong><code>where_clause</code></strong> :&ensp;<code>str</code>, optional</dt>
+<dd>Where clause to refine the features returned. Defaults to '1=1'.</dd>
+<dt><strong><code>token</code></strong> :&ensp;<code>str</code>, optional</dt>
+<dd>Auth token for the service. Defaults to None.</dd>
+</dl></div>
 <h3>Methods</h3>
 <dl>
 <dt id="palletjack.extract.ServiceLayer.check_capabilities"><code class="name flex">
 <span>def <span class="ident">check_capabilities</span></span>(<span>self, capability)</span>
 </code></dt>
 <dd>
-<div class="desc"><p>Raise error if the layer does not support capability</p>
-<h2 id="args">Args</h2>
-<dl>
-<dt><strong><code>capability</code></strong> :&ensp;<code>str</code></dt>
-<dd>The capability in question; will be casefolded.</dd>
-</dl>
-<h2 id="raises">Raises</h2>
-<dl>
-<dt><code>RuntimeError</code></dt>
-<dd>if the casefolded capability is not present in the layer's capabilities.</dd>
-</dl></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -3195,19 +2142,22 @@ features. Parameter defaults to None, and the query defaults to 'outFields': '*'
     if capability.casefold() not in layer_capabilities:
         raise RuntimeError(f&#34;{capability.casefold()} capability not in layer&#39;s capabilities ({layer_capabilities})&#34;)</code></pre>
 </details>
+<div class="desc"><p>Raise error if the layer does not support capability</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>capability</code></strong> :&ensp;<code>str</code></dt>
+<dd>The capability in question; will be casefolded.</dd>
+</dl>
+<h2 id="raises">Raises</h2>
+<dl>
+<dt><code>RuntimeError</code></dt>
+<dd>if the casefolded capability is not present in the layer's capabilities.</dd>
+</dl></div>
 </dd>
 <dt id="palletjack.extract.ServiceLayer.get_object_ids"><code class="name flex">
 <span>def <span class="ident">get_object_ids</span></span>(<span>self)</span>
 </code></dt>
 <dd>
-<div class="desc"><p>Get the Object IDs of the feature service layer, using the bounding envelope and/or where clause if present.</p>
-<h2 id="raises">Raises</h2>
-<dl>
-<dt><code>RuntimeError</code></dt>
-<dd>If the response does not contain an 'objectIds' key.</dd>
-</dl>
-<h2 id="returns">Returns</h2>
-<p>list(int): The Object IDs</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -3226,6 +2176,8 @@ features. Parameter defaults to None, and the query defaults to 'outFields': '*'
     if self.envelope_params is not None:
         objectid_params.update(self.envelope_params)
     self._class_logger.debug(&#34;OID params: %s&#34;, objectid_params)
+    if self.token:
+        objectid_params[&#34;token&#34;] = self.token
 
     response = utils.retry(requests.get, f&#34;{self.layer_url}/query&#34;, params=objectid_params, timeout=self.timeout)
     oids = []
@@ -3239,34 +2191,19 @@ features. Parameter defaults to None, and the query defaults to 'outFields': '*'
 
     return oids</code></pre>
 </details>
+<div class="desc"><p>Get the Object IDs of the feature service layer, using the bounding envelope and/or where clause if present.</p>
+<h2 id="raises">Raises</h2>
+<dl>
+<dt><code>RuntimeError</code></dt>
+<dd>If the response does not contain an 'objectIds' key.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<p>list(int): The Object IDs</p></div>
 </dd>
 <dt id="palletjack.extract.ServiceLayer.get_unique_id_list_as_dataframe"><code class="name flex">
 <span>def <span class="ident">get_unique_id_list_as_dataframe</span></span>(<span>self, unique_id_field, unique_id_list)</span>
 </code></dt>
 <dd>
-<div class="desc"><p>Use a REST query to download specified features from a MapService or FeatureService layer.</p>
-<p>unique_id_list defines the ids in unique_id_field to download.</p>
-<h2 id="args">Args</h2>
-<dl>
-<dt><strong><code>unique_id_field</code></strong> :&ensp;<code>str</code></dt>
-<dd>The field in the service layer used as the unique ID.</dd>
-<dt><strong><code>unique_id_list</code></strong> :&ensp;<code>list</code></dt>
-<dd>The list of unique IDs to download.</dd>
-</dl>
-<h2 id="raises">Raises</h2>
-<dl>
-<dt><code>Runtime Error</code></dt>
-<dd>If the chunk's HTTP response code is not 200 (ie, the request failed)</dd>
-<dt><code>Runtime Error</code></dt>
-<dd>The response could not be parsed into JSON (a technically successful request but bad data)</dd>
-<dt><code>Runtime Error</code></dt>
-<dd>If the number of features downloaded does not match the number of OIDs requested</dd>
-</dl>
-<h2 id="returns">Returns</h2>
-<dl>
-<dt><code>pd.DataFrame.spatial</code></dt>
-<dd>Spatially-enabled dataframe of the service layer's features</dd>
-</dl></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -3290,10 +2227,13 @@ features. Parameter defaults to None, and the query defaults to 'outFields': '*'
     &#34;&#34;&#34;
     unique_id_params = {&#34;f&#34;: &#34;json&#34;}
     unique_id_params.update(self.feature_params)
-    unique_id_params.update({&#34;where&#34;: f&#39;{unique_id_field} in ({&#34;,&#34;.join([str(oid) for oid in unique_id_list])})&#39;})
+    unique_id_params.update({&#34;where&#34;: f&#34;{unique_id_field} in ({&#39;,&#39;.join([str(oid) for oid in unique_id_list])})&#34;})
+
+    if self.token:
+        unique_id_params[&#34;token&#34;] = self.token
 
     self._class_logger.debug(&#34;OID range params: %s&#34;, unique_id_params)
-    response = requests.get(f&#34;{self.layer_url}/query&#34;, params=unique_id_params, timeout=self.timeout)
+    response = requests.post(f&#34;{self.layer_url}/query&#34;, data=unique_id_params, timeout=self.timeout)
 
     if response.status_code != 200:
         raise RuntimeError(f&#34;Bad chunk response HTTP status code ({response.status_code})&#34;)
@@ -3312,6 +2252,29 @@ features. Parameter defaults to None, and the query defaults to 'outFields': '*'
 
     return features_df</code></pre>
 </details>
+<div class="desc"><p>Use a REST query to download specified features from a MapService or FeatureService layer.</p>
+<p>unique_id_list defines the ids in unique_id_field to download.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>unique_id_field</code></strong> :&ensp;<code>str</code></dt>
+<dd>The field in the service layer used as the unique ID.</dd>
+<dt><strong><code>unique_id_list</code></strong> :&ensp;<code>list</code></dt>
+<dd>The list of unique IDs to download.</dd>
+</dl>
+<h2 id="raises">Raises</h2>
+<dl>
+<dt><code>Runtime Error</code></dt>
+<dd>If the chunk's HTTP response code is not 200 (ie, the request failed)</dd>
+<dt><code>Runtime Error</code></dt>
+<dd>The response could not be parsed into JSON (a technically successful request but bad data)</dd>
+<dt><code>Runtime Error</code></dt>
+<dd>If the number of features downloaded does not match the number of OIDs requested</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>pd.DataFrame.spatial</code></dt>
+<dd>Spatially-enabled dataframe of the service layer's features</dd>
+</dl></div>
 </dd>
 </dl>
 </dd>
@@ -3319,7 +2282,6 @@ features. Parameter defaults to None, and the query defaults to 'outFields': '*'
 </section>
 </article>
 <nav id="sidebar">
-<h1>Index</h1>
 <div class="toc">
 <ul></ul>
 </div>
@@ -3408,7 +2370,7 @@ features. Parameter defaults to None, and the query defaults to 'outFields': '*'
 </nav>
 </main>
 <footer id="footer">
-<p>Generated by <a href="https://pdoc3.github.io/pdoc" title="pdoc: Python API documentation generator"><cite>pdoc</cite> 0.10.0</a>.</p>
+<p>Generated by <a href="https://pdoc3.github.io/pdoc" title="pdoc: Python API documentation generator"><cite>pdoc</cite> 0.11.5</a>.</p>
 </footer>
 </body>
 </html>

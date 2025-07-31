@@ -2,19 +2,33 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
-<meta name="generator" content="pdoc 0.10.0" />
+<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1">
+<meta name="generator" content="pdoc3 0.11.5">
 <title>palletjack.load API documentation</title>
 <meta name="description" content="Modify existing ArcGIS Online content (mostly hosted feature services). Contains classes for updating hosted feature
-service data, modifying the …" />
-<link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/sanitize.min.css" integrity="sha256-PK9q560IAAa6WVRRh76LtCaI8pjTJ2z11v0miyNNjrs=" crossorigin>
-<link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/typography.min.css" integrity="sha256-7l/o7C8jubJiy74VsKTidCy1yBkRtiUGbVkYBylBqUg=" crossorigin>
-<link rel="stylesheet preload" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.1/styles/github.min.css" crossorigin>
-<style>:root{--highlight-color:#fe9}.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:30px;overflow:hidden}#sidebar > *:last-child{margin-bottom:2cm}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:1em 0 .50em 0}h3{font-size:1.4em;margin:25px 0 10px 0}h4{margin:0;font-size:105%}h1:target,h2:target,h3:target,h4:target,h5:target,h6:target{background:var(--highlight-color);padding:.2em 0}a{color:#058;text-decoration:none;transition:color .3s ease-in-out}a:hover{color:#e82}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900}pre code{background:#f8f8f8;font-size:.8em;line-height:1.4em}code{background:#f2f2f1;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{background:#f8f8f8;border:0;border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0;padding:1ex}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{margin-top:.6em;font-weight:bold}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-weight:bold;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}dt:target .name{background:var(--highlight-color)}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}td{padding:0 .5em}.admonition{padding:.1em .5em;margin-bottom:1em}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
-<style media="screen and (min-width: 700px)">@media screen and (min-width:700px){#sidebar{width:30%;height:100vh;overflow:auto;position:sticky;top:0}#content{width:70%;max-width:100ch;padding:3em 4em;border-left:1px solid #ddd}pre code{font-size:1em}.item .name{font-size:1em}main{display:flex;flex-direction:row-reverse;justify-content:flex-end}.toc ul ul,#index ul{padding-left:1.5em}.toc > ul > li{margin-top:.5em}}</style>
+service data, modifying the …">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/sanitize.min.css" integrity="sha512-y1dtMcuvtTMJc1yPgEqF0ZjQbhnc/bFhyvIyVNb9Zk5mIGtqVaAB1Ttl28su8AvFMOY0EwRbAe+HCLqj6W7/KA==" crossorigin>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/typography.min.css" integrity="sha512-Y1DYSb995BAfxobCkKepB1BqJJTPrOp3zPL74AWFugHHmmdcvO+C48WLrUOlhGMc0QG7AE3f7gmvvcrmX2fDoA==" crossorigin>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css" crossorigin>
+<style>:root{--highlight-color:#fe9}.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:1.5em;overflow:hidden}#sidebar > *:last-child{margin-bottom:2cm}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:2em 0 .50em 0}h3{font-size:1.4em;margin:1.6em 0 .7em 0}h4{margin:0;font-size:105%}h1:target,h2:target,h3:target,h4:target,h5:target,h6:target{background:var(--highlight-color);padding:.2em 0}a{color:#058;text-decoration:none;transition:color .2s ease-in-out}a:visited{color:#503}a:hover{color:#b62}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900;font-weight:bold}pre code{font-size:.8em;line-height:1.4em;padding:1em;display:block}code{background:#f3f3f3;font-family:"DejaVu Sans Mono",monospace;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{margin-top:.6em;font-weight:bold}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}dt:target .name{background:var(--highlight-color)}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source > summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible;min-width:max-content}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}td{padding:0 .5em}.admonition{padding:.1em 1em;margin:1em 0}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
+<style media="screen and (min-width: 700px)">@media screen and (min-width:700px){#sidebar{width:30%;height:100vh;overflow:auto;position:sticky;top:0}#content{width:70%;max-width:100ch;padding:3em 4em;border-left:1px solid #ddd}pre code{font-size:1em}.name{font-size:1em}main{display:flex;flex-direction:row-reverse;justify-content:flex-end}.toc ul ul,#index ul ul{padding-left:1em}.toc > ul > li{margin-top:.5em}}</style>
 <style media="print">@media print{#sidebar h1{page-break-before:always}.source{display:none}}@media print{*{background:transparent !important;color:#000 !important;box-shadow:none !important;text-shadow:none !important}a[href]:after{content:" (" attr(href) ")";font-size:90%}a[href][title]:after{content:none}abbr[title]:after{content:" (" attr(title) ")"}.ir a:after,a[href^="javascript:"]:after,a[href^="#"]:after{content:""}pre,blockquote{border:1px solid #999;page-break-inside:avoid}thead{display:table-header-group}tr,img{page-break-inside:avoid}img{max-width:100% !important}@page{margin:0.5cm}p,h2,h3{orphans:3;widows:3}h1,h2,h3,h4,h5,h6{page-break-after:avoid}}</style>
-<script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.1/highlight.min.js" integrity="sha256-Uv3H6lx7dJmRfRvH8TH6kJD1TSK1aFcwgx+mdg3epi8=" crossorigin></script>
-<script>window.addEventListener('DOMContentLoaded', () => hljs.initHighlighting())</script>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js" integrity="sha512-D9gUyxqja7hBtkWpPWGt9wfbfaMGVt9gnyCvYa+jojwwPHLCzUm5i8rpk7vD7wNee9bA35eYIjobYPaQuKS1MQ==" crossorigin></script>
+<script>window.addEventListener('DOMContentLoaded', () => {
+hljs.configure({languages: ['bash', 'css', 'diff', 'graphql', 'ini', 'javascript', 'json', 'plaintext', 'python', 'python-repl', 'rust', 'shell', 'sql', 'typescript', 'xml', 'yaml']});
+hljs.highlightAll();
+/* Collapse source docstrings */
+setTimeout(() => {
+[...document.querySelectorAll('.hljs.language-python > .hljs-string')]
+.filter(el => el.innerHTML.length > 200 && ['"""', "'''"].includes(el.innerHTML.substring(0, 3)))
+.forEach(el => {
+let d = document.createElement('details');
+d.classList.add('hljs-string');
+d.innerHTML = '<summary>"""</summary>' + el.innerHTML.substring(3);
+el.replaceWith(d);
+});
+}, 100);
+})</script>
 </head>
 <body>
 <main>
@@ -25,849 +39,6 @@ service data, modifying the …" />
 <section id="section-intro">
 <p>Modify existing ArcGIS Online content (mostly hosted feature services). Contains classes for updating hosted feature
 service data, modifying the attachments on a hosted feature service, or modifying map symbology.</p>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">&#34;&#34;&#34;Modify existing ArcGIS Online content (mostly hosted feature services). Contains classes for updating hosted feature
-service data, modifying the attachments on a hosted feature service, or modifying map symbology.
-&#34;&#34;&#34;
-
-import json
-import logging
-import shutil
-import warnings
-from datetime import datetime
-from pathlib import Path
-from typing import Literal
-
-import arcgis
-import geopandas as gpd
-import numpy as np
-import pandas as pd
-import pyogrio
-from arcgis.features import GeoAccessor, GeoSeriesAccessor  # noqa: F401
-
-from palletjack import utils
-
-logger = logging.getLogger(__name__)
-
-
-class ServiceUpdater:
-    &#34;&#34;&#34;Update an AGOL Feature or Table Service with data from a pandas DataFrame or Spatially-enabled Dataframe.
-
-    This class represents the feature layer or table that will be updated and stores a reference to the dataset and it&#39;s containing gis. It contains four methods for updating the data: add, remove, update, and truncate_and_load.
-
-    It is the client&#39;s responsibility to separate out the new data into these different steps. If the extract/transform stages result in separate groups of records that need to be added, deleted, and updated, the client must call the three different methods with dataframes containing only the respective records for each operation.
-
-    The method used to upload the data to AGOL saves the updated data as a new layer or table named upload in working_dir/upload.gdb, zips the gdb, uploads it to AGOL (with the item name `gdb_item_prefix Temporary gdb upload`), and then uses this as the source data for a call to the feature layer or tables&#39;s .append() method. The geodatabase upload.gdb will be created in working_dir if it doesn&#39;t already exist. Ideally, working_dir should be a TemporaryDirectory unless persistent access to the gdb is desired.
-    &#34;&#34;&#34;
-
-    def __init__(
-        self,
-        gis: arcgis.gis.GIS,
-        itemid: str,
-        service_type: Literal[&#34;layer&#34;, &#34;table&#34;] = &#34;layer&#34;,
-        index: int = 0,
-        working_dir: Path | None = None,
-        gdb_item_prefix: str = &#34;palletjack&#34;,
-    ) -&gt; None:
-        &#34;&#34;&#34;
-        Args:
-            gis (arcgis.gis.GIS): The AGOL organization&#39;s gis object
-            itemid (str): The AGOL item ID of the feature layer or table to update
-            service_type (Literal[&#34;layer&#34;, &#34;table&#34;], optional): The type of service to update. Defaults to &#34;layer&#34;.
-            index (int, optional): The index of the layer or table within the item. Defaults to 0.
-            working_dir (Path, optional): The directory in which to save the gdb for uploading. Defaults to None.
-            gdb_item_prefix (str, optional): The prefix to use for the gdb item name. Defaults to &#34;palletjack&#34;.
-        &#34;&#34;&#34;
-        self._class_logger = logging.getLogger(__name__).getChild(self.__class__.__name__)
-        self.gis = gis
-
-        if service_type == &#34;table&#34;:
-            self.service = arcgis.features.Table.fromitem(gis.content.get(itemid), table_id=index)
-        else:
-            self.service = arcgis.features.FeatureLayer.fromitem(gis.content.get(itemid), layer_id=index)
-
-        self.service_type = service_type
-        self.index = index
-        self.itemid = itemid
-        self.working_dir = working_dir
-        self.gdb_item_prefix = gdb_item_prefix
-
-    def add(self, dataframe: pd.DataFrame) -&gt; int:
-        &#34;&#34;&#34;Adds new features/rows to existing hosted feature layer/table from a new dataframe.
-
-        If you are working with a feature layer, the new dataframe must have a &#39;SHAPE&#39; column containing geometries of the same type as the live data.
-
-        The new dataframe&#39;s columns and data must match the existing data&#39;s fields (with the exception of generated fields like shape area and length) in name, type, and allowable length. Live fields that are not nullable and don&#39;t have a default value must have a value in the new data; missing data in these fields will raise an error.
-
-        Args:
-            dataframe (pd.DataFrame): Dataframe of data to be added
-
-        Raises:
-            ValueError: If the new field and existing fields don&#39;t match, the SHAPE field is missing or has an incompatible type, the new data contains null fields, the new data exceeds the existing field lengths, or a specified field is missing from either new or live data.
-
-        Returns:
-            int: Number of features added
-        &#34;&#34;&#34;
-
-        self._class_logger.info(
-            &#34;Adding items to %s index `%s` in itemid `%s` in-place&#34;,
-            self.service_type,
-            self.index,
-            self.itemid,
-        )
-        fields = self.__class__._get_fields_from_dataframe(dataframe)
-        self._class_logger.debug(&#34;Using fields %s&#34;, fields)
-
-        #: Field checks to prevent various AGOL errors
-        utils.FieldChecker.check_fields(self.service.properties, dataframe, fields, add_oid=False)
-
-        #: Upload
-        append_count = self._upload_data(
-            dataframe,
-            upsert=False,
-        )
-
-        return append_count
-
-    def remove(self, delete_oids: list[int]) -&gt; int:
-        &#34;&#34;&#34;Deletes features/rows from a hosted feature layer/table based on list of Object IDs
-
-        This is a wrapper around the arcgis.FeatureLayer/Table.delete_features methods that adds some sanity checking. The delete operation is rolled back if any of the features/rows fail to delete using (rollback_on_failure=True). This function will raise a RuntimeError as well after delete() returns if any of them fail.
-
-        The sanity checks will raise errors or warnings as appropriate if any of them fail.
-
-        Args:
-            delete_oids (list[int]): List of OIDs to delete
-
-        Raises:
-            ValueError: If delete_string can&#39;t be split on `,`
-            TypeError: If any of the items in delete_string can&#39;t be cast to ints
-            ValueError: If delete_string is empty
-            UserWarning: If any of the Object IDs in delete_string don&#39;t exist in the live data
-            RuntimeError: If any of the OIDs fail to delete
-
-        Returns:
-            int: The number of features deleted
-        &#34;&#34;&#34;
-
-        self._class_logger.info(
-            &#34;Deleting features from %s index `%s` in itemid `%s`&#34;,
-            self.service_type,
-            self.index,
-            self.itemid,
-        )
-        self._class_logger.debug(&#34;Delete string: %s&#34;, delete_oids)
-
-        #: Verify delete list
-        oid_numeric = utils.DeleteUtils.check_delete_oids_are_ints(delete_oids)
-        utils.DeleteUtils.check_for_empty_oid_list(oid_numeric, delete_oids)
-        delete_string = &#34;,&#34;.join([str(oid) for oid in oid_numeric])
-        num_missing_oids = utils.DeleteUtils.check_delete_oids_are_in_live_data(
-            delete_string,
-            oid_numeric,
-            self.service,
-        )
-
-        #: Note: apparently not all services support rollback:
-        #: https://developers.arcgis.com/rest/services-reference/enterprise/delete-features.htm
-        deletes = utils.retry(
-            self.service.delete_features,
-            deletes=delete_string,
-            rollback_on_failure=True,
-        )
-
-        failed_deletes = [result[&#34;objectId&#34;] for result in deletes[&#34;deleteResults&#34;] if not result[&#34;success&#34;]]
-        if failed_deletes:
-            raise RuntimeError(f&#34;The following Object IDs failed to delete: {failed_deletes}&#34;)
-
-        #: The REST API still returns success: True on missing OIDs, so we have to track this ourselves
-        actual_delete_count = len(deletes[&#34;deleteResults&#34;]) - num_missing_oids
-
-        return actual_delete_count
-
-    def update(self, dataframe: pd.DataFrame, update_geometry: bool = True) -&gt; int:
-        &#34;&#34;&#34;Updates existing features/rows within a hosted feature layer/table using OBJECTID as the join field.
-
-        The new dataframe&#39;s columns and data must match the existing data&#39;s fields (with the exception of generated fields like shape area and length) in name, type, and allowable length. Live fields that are not nullable and don&#39;t have a default value must have a value in the new data; missing data in these fields will raise an error.
-
-        Uses the OBJECTID field to determine which features should be updated by the underlying FeatureLayer/Table.append() methods. The most robust way to do this is to load the live data as a dataframe, subset it down to the desired rows, make your edits based on a separate join id, and then pass that dataframe to this method.
-
-        The new data can have either attributes and geometries or only attributes based on the update_geometry flag. A combination of updates from a source with both attributes &amp; geometries and a source with attributes-only must be done with two separate calls. The geometries must be provided in a SHAPE column and be the same type as the live data.
-
-        Args:
-            dataframe (pd.DataFrame): Dataframe of data to be updated
-            update_geometry (bool): Whether to update attributes and geometry (True) or just attributes (False). Defaults to True for feature layers and is always False for tables.
-
-        Raises:
-            ValueError: If the new field and existing fields don&#39;t match, the SHAPE field is missing or has an incompatible type, the new data contains null fields, the new data exceeds the existing field lengths, or a specified field is missing from either new or live data.
-            ValueError: If update_geometry is True for a table
-
-        Returns:
-            int: Number of features updated
-        &#34;&#34;&#34;
-
-        self._class_logger.info(&#34;Updating layer `%s` in itemid `%s` in-place&#34;, self.index, self.itemid)
-
-        fields = self.__class__._get_fields_from_dataframe(dataframe)
-        self._class_logger.debug(&#34;Updating fields %s&#34;, fields)
-
-        #: Field checks to prevent various AGOL errors
-        utils.FieldChecker.check_fields(self.service.properties, dataframe, fields, add_oid=True)
-
-        #: Upload data
-        count = self._upload_data(
-            dataframe,
-            upsert=True,
-            upsert_matching_field=&#34;OBJECTID&#34;,
-            append_fields=fields,  #: Apparently this works if append_fields is all the fields, but not a subset?
-            update_geometry=update_geometry if self._is_feature_layer() else False,
-        )
-
-        return count
-
-    def truncate_and_load(self, dataframe: pd.DataFrame, save_old: bool = False) -&gt; int:
-        &#34;&#34;&#34;Overwrite a hosted feature layer or table by truncating and loading the new data.
-
-        When the existing dataset is truncated, a copy is kept in memory as a dataframe. If save_old is set, this is saved as a layer in self.working_dir/backup.gdb with the layer/table name {name}_{todays_date}.json (foobar_2022-12-31.json).
-
-        If you are working with a feature layer, the new dataframe must have a &#39;SHAPE&#39; column containing geometries of the same type as the live data. New OBJECTIDs will be automatically generated.
-
-        The new dataframe&#39;s columns and data must match the existing data&#39;s fields (with the exception of generated fields like shape area and length) in name, type, and allowable length. Live fields that are not nullable and don&#39;t have a default value must have a value in the new data; missing data in these fields will raise an error.
-
-        Args:
-            dataframe (pd.DataFrame): Spatially enabled dataframe of new data to be loaded
-            save_old (bool): Save existing data to backup.gdb in working_dir. Defaults to False
-
-        Returns:
-            int: Number of features loaded
-        &#34;&#34;&#34;
-        self._class_logger.info(
-            &#34;Truncating and loading %s index `%s` in itemid `%s`&#34;,
-            self.service_type,
-            self.index,
-            self.itemid,
-        )
-        start = datetime.now()
-
-        #: Save the data to disk if desired
-        if save_old:
-            self._class_logger.info(&#34;Saving existing data to %s&#34;, self.working_dir)
-            saved_layer_path = utils.save_to_gdb(self.service, self.working_dir)
-
-        fields = self.__class__._get_fields_from_dataframe(dataframe)
-
-        #: Field checks to prevent various AGOL errors
-        utils.FieldChecker.check_fields(self.service.properties, dataframe, fields, add_oid=False)
-
-        self._class_logger.info(&#34;Truncating existing data...&#34;)
-        self._truncate_existing_data()
-
-        try:
-            self._class_logger.info(&#34;Loading new data...&#34;)
-            append_count = self._upload_data(dataframe, upsert=False)
-            self._class_logger.debug(&#34;Total truncate and load time: %s&#34;, datetime.now() - start)
-        except Exception:
-            if save_old:
-                self._class_logger.error(&#34;Append failed. Data saved to %s&#34;, saved_layer_path)
-                raise
-            self._class_logger.error(&#34;Append failed. Old data not saved (save_old set to False)&#34;)
-            raise
-
-        return append_count
-
-    @staticmethod
-    def _get_fields_from_dataframe(dataframe: pd.DataFrame) -&gt; list[str]:
-        &#34;&#34;&#34;Get the fields from a dataframe, excluding Shape_Area and Shape_Length
-
-        Args:
-            dataframe (pd.DataFrame): Dataframe to get fields from
-
-        Returns:
-            list[str]: List of the columns of the dataframe, excluding Shape_Area and Shape_Length
-        &#34;&#34;&#34;
-
-        fields = list(dataframe.columns)
-        for auto_gen_field in [&#34;Shape_Area&#34;, &#34;Shape_Length&#34;]:
-            try:
-                fields.remove(auto_gen_field)
-            except ValueError:
-                continue
-
-        return fields
-
-    def _upload_data(self, dataframe: pd.DataFrame, **append_kwargs) -&gt; int:
-        &#34;&#34;&#34;Append a dataframe to a feature layer or table by uploading it as a zipped file gdb.
-
-        We first save the new dataframe as a layer or table in an empty geodatabase, then zip it and upload it to AGOL as a standalone item. We then call append on the target feature layer or table with this item as the source for the append, using upsert where appropriate to update existing data using OBJECTID as the join field. Afterwards, we delete the gdb item and the zipped gdb.
-
-        Args:
-            dataframe (pd.DataFrame): A dataframe containing data to be added or upserted to the feature layer or table. The fields must match the live fields in name, type, and length (where applicable). For feature layers, the dataframe must have a SHAPE column containing geometries of the same type as the live data.
-            **append_kwargs: Additional keyword arguments to pass to the append operation.
-
-        Raises:
-            ValueError: If the field used as a key for upsert matching is not present in either the new or live data.
-            RuntimeError: If the append operation fails.
-
-        Returns:
-            int: The number of records upserted.
-        &#34;&#34;&#34;
-        try:
-            if append_kwargs[&#34;upsert&#34;] and (
-                append_kwargs[&#34;upsert_matching_field&#34;] not in append_kwargs[&#34;append_fields&#34;]
-                or append_kwargs[&#34;upsert_matching_field&#34;] not in dataframe.columns
-            ):
-                raise ValueError(
-                    f&#39;Upsert matching field {append_kwargs[&#34;upsert_matching_field&#34;]} not found in either append fields or existing fields.&#39;
-                )
-        except KeyError:
-            pass
-        self._class_logger.debug(&#34;Saving data to gdb and zipping...&#34;)
-        zipped_gdb_path = self._save_to_gdb_and_zip(dataframe)
-
-        self._class_logger.debug(&#34;Uploading gdb to AGOL...&#34;)
-        gdb_item = self._upload_gdb(zipped_gdb_path)
-
-        self._class_logger.debug(&#34;Appending data from gdb to target...&#34;)
-        try:
-            result, messages = utils.retry(
-                self.service.append,
-                item_id=gdb_item.id,
-                upload_format=&#34;filegdb&#34;,
-                source_table_name=&#34;upload&#34;,
-                return_messages=True,
-                rollback=True,
-                **append_kwargs,
-            )
-            if not result:
-                raise RuntimeError(&#34;Append failed but did not error&#34;)
-        except Exception as error:
-            raise RuntimeError(&#34;Failed to append data from gdb, changes should have been rolled back&#34;) from error
-
-        self._cleanup(gdb_item, zipped_gdb_path)
-
-        return messages[&#34;recordCount&#34;]
-
-    def _save_to_gdb_and_zip(self, dataframe: pd.DataFrame) -&gt; Path:
-        &#34;&#34;&#34;Save a dataframe to a gdb feature class or table, zip it, and return path to the zipped file.
-
-        Requires self.working_dir to be set. Uses pyogrio to save the dataframe to the gdb, then uses shutil.make_archive to zip the gdb. The zipped gdb is saved in self.working_dir.
-
-        Args:
-            dataframe (pd.DataFrame): The input dataframe to be saved.
-
-        Raises:
-            ValueError: If self.working_dir is not set or the empty upload.gdb doesn&#39;t exist in it.
-
-        Returns:
-            Path: The path to the zipped GDB.
-        &#34;&#34;&#34;
-
-        try:
-            gdb_path = Path(self.working_dir) / &#34;upload.gdb&#34;
-        except TypeError as error:
-            raise AttributeError(f&#34;working_dir not specified on {self.__class__.__name__}&#34;) from error
-
-        try:
-            #: check if the dataframe is a spatially enabled dataframe
-            dataframe.spatial.geometry_type  # raises KeyError if this is a regular dataframe
-            gdf = utils.sedf_to_gdf(dataframe)
-        except KeyError:
-            gdf = gpd.GeoDataFrame(dataframe)
-
-        try:
-            gdf.to_file(gdb_path, layer=&#34;upload&#34;, engine=&#34;pyogrio&#34;, driver=&#34;OpenFileGDB&#34;)
-        except pyogrio.errors.DataSourceError as error:
-            raise ValueError(
-                f&#34;Error writing layer to {gdb_path}. Verify {self.working_dir} exists and is writable.&#34;
-            ) from error
-        try:
-            zipped_gdb_path = shutil.make_archive(gdb_path, &#34;zip&#34;, root_dir=gdb_path.parent, base_dir=gdb_path.name)
-        except OSError as error:
-            raise ValueError(f&#34;Error zipping {gdb_path}&#34;) from error
-
-        return zipped_gdb_path
-
-    def _upload_gdb(self, zipped_gdb_path: Path) -&gt; arcgis.gis.Item:
-        &#34;&#34;&#34;Add a zipped gdb to AGOL as an item to self.gis
-
-        Args:
-            zipped_gdb_path (Path): Path to the zipped gdb
-
-        Raises:
-            RuntimeError: If there is an error uploading the gdb to AGOL
-
-        Returns:
-            arcgis.gis.Item: Reference to the resulting Item object in self.gis
-        &#34;&#34;&#34;
-
-        try:
-            gdb_item = utils.retry(
-                self.gis.content.add,
-                item_properties={
-                    &#34;type&#34;: &#34;File Geodatabase&#34;,
-                    &#34;title&#34;: f&#34;{self.gdb_item_prefix} Temporary gdb upload&#34;,
-                    &#34;snippet&#34;: &#34;Temporary gdb upload from palletjack&#34;,
-                },
-                data=zipped_gdb_path,
-            )
-        except Exception as error:
-            raise RuntimeError(f&#34;Error uploading {zipped_gdb_path} to AGOL&#34;) from error
-        return gdb_item
-
-    def _cleanup(self, gdb_item: arcgis.gis.Item, zipped_gdb_path: Path) -&gt; None:
-        &#34;&#34;&#34;Remove the zipped gdb from disk and the gdb item from AGOL
-
-        Args:
-            gdb_item (arcgis.gis.Item): Reference to the gdb item in self.gis
-            zipped_gdb_path (Path): Path to the gdb on disk
-
-        Raises:
-            RuntimeError: If there are errors deleting the gdb item or the zipped gdb
-        &#34;&#34;&#34;
-
-        try:
-            gdb_item.delete()
-        except Exception as error:
-            warnings.warn(f&#34;Error deleting gdb item {gdb_item.id} from AGOL&#34;)
-            warnings.warn(repr(error))
-
-        try:
-            zipped_gdb_path.unlink()
-        except Exception as error:
-            warnings.warn(f&#34;Error deleting zipped gdb {zipped_gdb_path}&#34;)
-            warnings.warn(repr(error))
-
-    def _truncate_existing_data(self) -&gt; None:
-        &#34;&#34;&#34;Remove all existing features from the live dataset
-
-        Raises:
-            RuntimeError: If the truncate fails
-        &#34;&#34;&#34;
-
-        self._class_logger.debug(&#34;Truncating...&#34;)
-        truncate_result = utils.retry(
-            self.service.manager.truncate,
-            asynchronous=True,
-            wait=True,
-        )
-        self._class_logger.debug(truncate_result)
-        if truncate_result[&#34;status&#34;] != &#34;Completed&#34;:
-            raise RuntimeError(f&#34;Failed to truncate existing data in itemid {self.itemid}&#34;)
-
-    def _is_feature_layer(self) -&gt; bool:
-        &#34;&#34;&#34;Help function to determine if we are dealing with a feature layer as opposed to a table
-
-        Returns:
-            bool: True if the service is a feature layer, False if it is a table
-        &#34;&#34;&#34;
-
-        return self.service_type == &#34;layer&#34;
-
-
-class FeatureServiceAttachmentsUpdater:
-    &#34;&#34;&#34;Add or overwrite attachments in a feature service using a dataframe of the desired &#34;new&#34; attachments.
-
-    Updates the attachments based on a dataframe containing two columns: a join key present in the live data (the
-    dataframe column name must match the feature service field name) and the path of the file to attach to the feature.
-    While AGOL supports multiple attachments, this only accepts a single file as input.
-
-    If a matching feature in AGOl doesn&#39;t have an attachment, the file referred to by the dataframe will be uploaded.
-    If it does have an attachment, it checks the existing filename with the referenced file. If they are different, the
-    file from the dataframe will be updated. If they are the same, nothing happens.
-    &#34;&#34;&#34;
-
-    def __init__(self, gis):
-        &#34;&#34;&#34;
-        Args:
-            gis (arcgis.gis.GIS): The AGOL organization&#39;s gis object
-        &#34;&#34;&#34;
-
-        self.gis = gis
-        self._class_logger = logging.getLogger(__name__).getChild(self.__class__.__name__)
-        self.failed_dict = {}
-
-    def _get_live_oid_and_guid_from_join_field_values(self, live_features_as_df, attachment_join_field, attachments_df):
-        &#34;&#34;&#34;Get the live Object ID and guid from the live features for only the features in attachments_df
-
-        Args:
-            live_features_as_df (pd.DataFrame): Spatial dataframe of all the feature layer&#39;s live data from AGOL
-            attachment_join_field (str): Column in attachments_df to use as a join key with live data
-            attachments_df (pd.DataFrame): New attachment data, including the join key and a path to the &#34;new&#34;
-                attachment
-
-        Returns:
-            pd.DataFrame: Attachments dataframe with corresponding live OIDs and GUIDs.
-        &#34;&#34;&#34;
-
-        self._class_logger.debug(&#34;Using %s as the join field between live and new data&#34;, attachment_join_field)
-        subset_df = live_features_as_df.reindex(columns=[&#34;OBJECTID&#34;, &#34;GlobalID&#34;, attachment_join_field])
-        merged_df = subset_df.merge(attachments_df, on=attachment_join_field, how=&#34;inner&#34;)
-        self._class_logger.debug(&#34;%s features common to both live and new data&#34;, len(merged_df.index))
-
-        return merged_df
-
-    def _get_current_attachment_info_by_oid(self, live_data_subset_df):
-        &#34;&#34;&#34;Merge the live attachment data using the ObjectID as the join
-
-        Args:
-            live_data_subset_df (pd.DataFrame): Live data with &#39;OBJECTID&#39;, &#39;GlobalID&#39;, and new attachment data
-
-        Returns:
-            pd.DataFrame: Live and new attachment data in one dataframe
-        &#34;&#34;&#34;
-
-        live_attachments_df = pd.DataFrame(self.feature_layer.attachments.search())
-        live_attachments_subset_df = live_attachments_df.reindex(columns=[&#34;PARENTOBJECTID&#34;, &#34;NAME&#34;, &#34;ID&#34;])
-        merged_df = live_data_subset_df.merge(
-            live_attachments_subset_df, left_on=&#34;OBJECTID&#34;, right_on=&#34;PARENTOBJECTID&#34;, how=&#34;left&#34;
-        )
-        #: Cast ID field to nullable int to avoid conversion to float for np.nans
-        merged_df[&#34;ID&#34;] = merged_df[&#34;ID&#34;].astype(&#34;Int64&#34;)
-
-        return merged_df
-
-    def _create_attachment_action_df(self, attachment_eval_df, attachment_path_field):
-        &#34;&#34;&#34;Create a dataframe containing the action needed for each feature resulting from the attachment join.
-
-        If the live feature doesn&#39;t have an attachment, add the attachment. If it does, compare the file names and only
-        attach if they are different. Otherwise, leave null.
-
-        Args:
-            attachment_eval_df (pd.DataFrame): DataFrame of live attachment data, subsetted to features that matched
-                the join key in the new attachments
-            attachment_path_field (str): The column that holds the attachment path
-
-        Returns:
-            pd.DataFrame: attachment_eval_df with &#39;operation&#39; and &#39;new_filename&#39; columns added
-        &#34;&#34;&#34;
-
-        #: Get the file name from the full path
-        attachment_eval_df[&#34;new_filename&#34;] = attachment_eval_df[attachment_path_field].apply(
-            lambda path: Path(path).name
-        )
-
-        #: Overwrite if different names, add if no existing name, do nothing if names are the same
-        attachment_eval_df[&#34;operation&#34;] = np.nan
-        attachment_eval_df.loc[attachment_eval_df[&#34;NAME&#34;] != attachment_eval_df[&#34;new_filename&#34;], &#34;operation&#34;] = (
-            &#34;overwrite&#34;
-        )
-        attachment_eval_df.loc[attachment_eval_df[&#34;NAME&#34;].isna(), &#34;operation&#34;] = &#34;add&#34;
-
-        value_counts = attachment_eval_df[&#34;operation&#34;].value_counts(dropna=False)
-        for operation in [&#34;add&#34;, &#34;overwrite&#34;, np.nan]:
-            if operation not in value_counts:
-                value_counts[operation] = 0
-        self._class_logger.debug(
-            &#34;Calculated attachment operations: adds: %s, overwrites: %s, none: %s&#34;,
-            value_counts[&#34;add&#34;],
-            value_counts[&#34;overwrite&#34;],
-            value_counts[np.nan],
-        )
-
-        return attachment_eval_df
-
-    def _add_attachments_by_oid(self, attachment_action_df, attachment_path_field):
-        &#34;&#34;&#34;Add attachments using the feature&#39;s OID based on the &#39;operation&#39; field of the dataframe
-
-        Args:
-            attachment_action_df (pd.DataFrame): A dataframe containing &#39;operation&#39;, &#39;OBJECTID&#39;, and
-                attachment_path_field columns
-            attachment_path_field (str): The column that holds the attachment path
-
-        Returns:
-            int: The number of features that successfully have attachments added.
-        &#34;&#34;&#34;
-
-        adds_dict = attachment_action_df[attachment_action_df[&#34;operation&#34;] == &#34;add&#34;].to_dict(orient=&#34;index&#34;)
-        adds_count = 0
-
-        for row in adds_dict.values():
-            target_oid = row[&#34;OBJECTID&#34;]
-            filepath = row[attachment_path_field]
-
-            self._class_logger.debug(&#34;Add %s to OID %s&#34;, filepath, target_oid)
-            try:
-                result = self.feature_layer.attachments.add(target_oid, filepath)
-            except Exception:
-                self._class_logger.error(&#34;AGOL error while adding %s to OID %s&#34;, filepath, target_oid, exc_info=True)
-                self.failed_dict[target_oid] = (&#34;add&#34;, filepath)
-                continue
-
-            self._class_logger.debug(&#34;%s&#34;, result)
-            if not result[&#34;addAttachmentResult&#34;][&#34;success&#34;]:
-                warnings.warn(f&#34;Failed to attach {filepath} to OID {target_oid}&#34;)
-                self.failed_dict[target_oid] = (&#34;add&#34;, filepath)
-                continue
-
-            adds_count += 1
-
-        return adds_count
-
-    def _overwrite_attachments_by_oid(self, attachment_action_df, attachment_path_field):
-        &#34;&#34;&#34;Overwrite attachments using the feature&#39;s OID based on the &#39;operation&#39; field of the dataframe
-
-        Args:
-            attachment_action_df (pd.DataFrame): A dataframe containing &#39;operation&#39;, &#39;OBJECTID&#39;, &#39;ID&#39;, &#39;NAME&#39;, and
-                attachment_path_field columns
-            attachment_path_field (str): The column that holds the attachment path
-
-        Returns:
-            int: The number of features that successfully have their attachments overwritten.
-        &#34;&#34;&#34;
-
-        overwrites_dict = attachment_action_df[attachment_action_df[&#34;operation&#34;] == &#34;overwrite&#34;].to_dict(orient=&#34;index&#34;)
-        overwrites_count = 0
-
-        for row in overwrites_dict.values():
-            target_oid = row[&#34;OBJECTID&#34;]
-            filepath = row[attachment_path_field]
-            attachment_id = row[&#34;ID&#34;]
-            old_name = row[&#34;NAME&#34;]
-
-            self._class_logger.debug(
-                &#34;Overwriting %s (attachment ID %s) on OID %s with %s&#34;, old_name, attachment_id, target_oid, filepath
-            )
-            try:
-                result = self.feature_layer.attachments.update(target_oid, attachment_id, filepath)
-            except Exception:
-                self._class_logger.error(
-                    &#34;AGOL error while overwriting %s (attachment ID %s) on OID %s with %s&#34;,
-                    old_name,
-                    attachment_id,
-                    target_oid,
-                    filepath,
-                    exc_info=True,
-                )
-                self.failed_dict[target_oid] = (&#34;update&#34;, filepath)
-                continue
-
-            if not result[&#34;updateAttachmentResult&#34;][&#34;success&#34;]:
-                warnings.warn(
-                    f&#34;Failed to update {old_name}, attachment ID {attachment_id}, on OID {target_oid} with {filepath}&#34;
-                )
-                self.failed_dict[target_oid] = (&#34;update&#34;, filepath)
-                continue
-
-            overwrites_count += 1
-
-        return overwrites_count
-
-    @staticmethod
-    def _check_attachment_dataframe_for_invalid_column_names(attachment_dataframe, invalid_names):
-        invalid_names_index = pd.Index(invalid_names)
-        intersection = attachment_dataframe.columns.intersection(invalid_names_index)
-        if not intersection.empty:
-            raise RuntimeError(f&#34;Attachment dataframe contains the following invalid names: {list(intersection)}&#34;)
-
-    def update_attachments(
-        self, feature_layer_itemid, attachment_join_field, attachment_path_field, attachments_df, layer_number=0
-    ):
-        &#34;&#34;&#34;Update a feature layer&#39;s attachments based on info from a dataframe of desired attachment file names
-
-        Depends on a dataframe populated with a join key for the live data and the downloaded or locally-available
-        attachments. If the name of the &#34;new&#34; attachment is the same as an existing attachment for that feature, it is
-        not updated. If it is different or there isn&#39;t an existing attachment, the &#34;new&#34; attachment is attached to that
-        feature.
-
-        Args:
-            feature_layer_itemid (str): The AGOL Item ID of the feature layer to update
-            attachment_join_field (str): The field containing the join key between the attachments dataframe and the
-                live data
-            attachment_path_field (str): The field containing the desired attachment file path
-            attachments_df (pd.DataFrame): A dataframe of desired attachments, including a join key and the local path
-                to the attachment
-            layer_number (int, optional): The layer within the Item ID to update. Defaults to 0.
-
-        Returns:
-            (int, int): Tuple of counts of successful overwrites and adds.
-        &#34;&#34;&#34;
-
-        self._class_logger.info(&#34;Updating attachments...&#34;)
-        #: These names are present in the live attachment data downloaded from AGOL. Because we merge the dataframes
-        #: later, we need to make sure they&#39;re not the same. There may be better ways of handling this that allows the
-        #: client names to be preserved, but for now force them to fix this.
-        self._check_attachment_dataframe_for_invalid_column_names(
-            attachments_df, invalid_names=[&#34;OBJECTID&#34;, &#34;PARENTOBJECTID&#34;, &#34;NAME&#34;, &#34;ID&#34;]
-        )
-        self._class_logger.debug(&#34;Using layer %s from item ID %s&#34;, layer_number, feature_layer_itemid)
-        self.feature_layer = self.gis.content.get(feature_layer_itemid).layers[layer_number]
-        live_features_as_df = pd.DataFrame.spatial.from_layer(self.feature_layer)
-        live_data_subset_df = self._get_live_oid_and_guid_from_join_field_values(
-            live_features_as_df, attachment_join_field, attachments_df
-        )
-        #: TODO: Make sure layer supports attachments so we don&#39;t get an arcgis error.
-        #: Check out the feature layer .properties and FeatureLayerManager.add_to_definition to check/enable?
-        attachment_eval_df = self._get_current_attachment_info_by_oid(live_data_subset_df)
-        attachment_action_df = self._create_attachment_action_df(attachment_eval_df, attachment_path_field)
-
-        overwrites_count = self._overwrite_attachments_by_oid(attachment_action_df, attachment_path_field)
-        adds_count = self._add_attachments_by_oid(attachment_action_df, attachment_path_field)
-        self._class_logger.info(&#34;%s attachments added, %s attachments overwritten&#34;, adds_count, overwrites_count)
-
-        return overwrites_count, adds_count
-
-    @staticmethod
-    def build_attachments_dataframe(input_dataframe, join_column, attachment_column, out_dir):
-        &#34;&#34;&#34;Create an attachments dataframe by subsetting down to just the two fields and dropping any rows
-           with null/empty attachments
-
-        Args:
-            input_dataframe (pd.DataFrame): Input data containing at least the join and attachment filename columns
-            join_column (str): Unique key joining attachments to live data
-            attachment_column (str): Filename for each attachment
-            out_dir (str or Path): Output directory, will be used to build full path to attachment
-
-        Returns:
-            pd.DataFrame: Dataframe with join key, attachment name, and full attachment paths
-        &#34;&#34;&#34;
-
-        input_dataframe[attachment_column].replace(&#34;&#34;, np.nan, inplace=True)  #: pandas doesn&#39;t see empty strings as NAs
-        attachments_dataframe = (
-            input_dataframe[[join_column, attachment_column]].copy().dropna(subset=[attachment_column])
-        )
-        #: Create the full path by prepending the output directory using .apply and a lambda function
-        attachments_dataframe[&#34;full_file_path&#34;] = attachments_dataframe[attachment_column].apply(
-            lambda filename: str(Path(out_dir, filename))
-        )
-
-        return attachments_dataframe
-
-
-class ColorRampReclassifier:
-    &#34;&#34;&#34;Updates the interval ranges on a webmap&#39;s layer&#39;s classification renderer based on the layer&#39;s current data.
-
-    Manually edits the JSON definition to change a layer&#39;s color ramp values based on a simple unclassed scheme similar
-    to AGOL&#39;s unclassed ramp. The minimum value is the dataset minimum, the max is the mean value plus one standard
-    deviation.
-    &#34;&#34;&#34;
-
-    def __init__(self, webmap_item, gis):
-        &#34;&#34;&#34;
-        Args:
-            webmap_item (arcgis.mapping.WebMap): The webmap item in the AGOL organization
-            gis (arcgis.gis.GIS): The AGOL organization as a gis object
-        &#34;&#34;&#34;
-
-        self.webmap_item = webmap_item
-        self.gis = gis
-        self._class_logger = logging.getLogger(__name__).getChild(self.__class__.__name__)
-
-    def _get_layer_dataframe(self, layer_name, feature_layer_number=0):
-        &#34;&#34;&#34;Create a dataframe from layer_name in self.webmap_item
-
-        Args:
-            layer_name (str): The exact name of the layer
-            feature_layer_number (int): The number of the layer with the feature service to update. Defaults to 0.
-
-        Returns:
-            spatially-enabled data frame: The layer&#39;s data, including geometries.
-        &#34;&#34;&#34;
-
-        self._class_logger.info(&#34;Getting dataframe from `%s` on `%s`&#34;, layer_name, self.webmap_item.title)
-        webmap_object = arcgis.mapping.WebMap(self.webmap_item)
-        layer = webmap_object.get_layer(title=layer_name)
-        feature_layer = self.gis.content.get(layer[&#34;itemId&#34;])
-        layer_dataframe = pd.DataFrame.spatial.from_layer(feature_layer.layers[feature_layer_number])
-
-        return layer_dataframe
-
-    def _get_layer_id(self, layer_name):
-        &#34;&#34;&#34;Get the ID number of layer_name in self.webmap_item
-
-        Args:
-            layer_name (str): The exact name of the layer
-
-        Raises:
-            ValueError: If the layer is not found in the webmap
-
-        Returns:
-            int: The index (0-based) of the the layer in the web map
-        &#34;&#34;&#34;
-
-        data = self.webmap_item.get_data()
-        for layer_id, layer in enumerate(data[&#34;operationalLayers&#34;]):
-            if layer[&#34;title&#34;] == layer_name:
-                self._class_logger.debug(&#34;Layer `%s` has id `%s`&#34;, layer_name, layer_id)
-                return layer_id
-
-        #: If we haven&#39;t matched the title and returned a valid id, raise an error.
-        raise ValueError(f&#39;Could not find &#34;{layer_name}&#34; in {self.webmap_item.title}&#39;)
-
-    @staticmethod
-    def _calculate_new_stops(dataframe, column, stops):
-        &#34;&#34;&#34;Calculate new stop values for an AGOL color ramp using what appears to be AGOL&#39;s method for unclassed ramps.
-
-        Args:
-            dataframe (pd.DataFrame): Data being classified
-            column (str): Column to classify
-            stops (int, optional): Number of stops to create.
-
-        Returns:
-            List: New stops cast as ints
-        &#34;&#34;&#34;
-
-        if column not in dataframe.columns:
-            raise ValueError(f&#34;Column `{column}` not in dataframe&#34;)
-        minval = dataframe[column].min()
-        mean = dataframe[column].mean()
-        std_dev = dataframe[column].std()
-        upper = mean + std_dev  #: AGOL&#39;s default upper value for unclassed ramps seems to be mean + 1 std dev
-
-        new_stops = np.linspace(minval, upper, stops)
-        new_stops_ints = [int(stop) for stop in new_stops]
-
-        return new_stops_ints
-
-    def _update_stop_values(self, layer_number, new_stops):
-        &#34;&#34;&#34;Update the stop values of an (un)classified polygon renderer in an AGOL Webmap
-
-        Args:
-            layer_number (int): The index for the layer to be updated
-            new_stops (List): New values for the existing stops
-
-        Returns:
-            Bool: Success or failure of update operation
-        &#34;&#34;&#34;
-
-        #: Get short reference to the stops dictionary from the webmap&#39;s data json
-        data = self.webmap_item.get_data()
-        renderer = data[&#34;operationalLayers&#34;][layer_number][&#34;layerDefinition&#34;][&#34;drawingInfo&#34;][&#34;renderer&#34;]
-        stops = renderer[&#34;visualVariables&#34;][0][&#34;stops&#34;]
-
-        #: Overwrite the value, update the webmap item
-        for stop, new_value in zip(stops, new_stops):
-            stop[&#34;value&#34;] = new_value
-        self._class_logger.info(
-            &#34;Updating stop values on layer number `%s` in `%s`&#34;, layer_number, self.webmap_item.title
-        )
-        result = self.webmap_item.update(item_properties={&#34;text&#34;: json.dumps(data)})
-        self._class_logger.debug(&#34;Update result: %s&#34;, result)
-
-        return result
-
-    def update_color_ramp_values(self, layer_name, column_name, stops=5):
-        &#34;&#34;&#34;Update the color ramp ranges for layer_name in self.webmap_item.
-
-        Does not alter colors or introduce additional stops; only overwrites the values for existing breaks.
-
-        Args:
-            layer_name (str): The exact name of the layer to be updated
-            column_name (str): The name of the attribute being displayed as an (un)classified range
-            stops (int, optional): The number of stops to calculate. Must match existing stops. Defaults to 5.
-
-        Returns:
-            Bool: Success or failure of update operation
-        &#34;&#34;&#34;
-        layer_id = self._get_layer_id(layer_name)
-        dataframe = self._get_layer_dataframe(layer_name)
-        new_stops = self._calculate_new_stops(dataframe, column_name, stops)
-        result = self._update_stop_values(layer_id, new_stops)
-
-        return result</code></pre>
-</details>
 </section>
 <section>
 </section>
@@ -883,17 +54,6 @@ class ColorRampReclassifier:
 <span>(</span><span>webmap_item, gis)</span>
 </code></dt>
 <dd>
-<div class="desc"><p>Updates the interval ranges on a webmap's layer's classification renderer based on the layer's current data.</p>
-<p>Manually edits the JSON definition to change a layer's color ramp values based on a simple unclassed scheme similar
-to AGOL's unclassed ramp. The minimum value is the dataset minimum, the max is the mean value plus one standard
-deviation.</p>
-<h2 id="args">Args</h2>
-<dl>
-<dt><strong><code>webmap_item</code></strong> :&ensp;<code>arcgis.mapping.WebMap</code></dt>
-<dd>The webmap item in the AGOL organization</dd>
-<dt><strong><code>gis</code></strong> :&ensp;<code>arcgis.gis.GIS</code></dt>
-<dd>The AGOL organization as a gis object</dd>
-</dl></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -1030,28 +190,23 @@ deviation.</p>
 
         return result</code></pre>
 </details>
+<div class="desc"><p>Updates the interval ranges on a webmap's layer's classification renderer based on the layer's current data.</p>
+<p>Manually edits the JSON definition to change a layer's color ramp values based on a simple unclassed scheme similar
+to AGOL's unclassed ramp. The minimum value is the dataset minimum, the max is the mean value plus one standard
+deviation.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>webmap_item</code></strong> :&ensp;<code>arcgis.mapping.WebMap</code></dt>
+<dd>The webmap item in the AGOL organization</dd>
+<dt><strong><code>gis</code></strong> :&ensp;<code>arcgis.gis.GIS</code></dt>
+<dd>The AGOL organization as a gis object</dd>
+</dl></div>
 <h3>Methods</h3>
 <dl>
 <dt id="palletjack.load.ColorRampReclassifier.update_color_ramp_values"><code class="name flex">
 <span>def <span class="ident">update_color_ramp_values</span></span>(<span>self, layer_name, column_name, stops=5)</span>
 </code></dt>
 <dd>
-<div class="desc"><p>Update the color ramp ranges for layer_name in self.webmap_item.</p>
-<p>Does not alter colors or introduce additional stops; only overwrites the values for existing breaks.</p>
-<h2 id="args">Args</h2>
-<dl>
-<dt><strong><code>layer_name</code></strong> :&ensp;<code>str</code></dt>
-<dd>The exact name of the layer to be updated</dd>
-<dt><strong><code>column_name</code></strong> :&ensp;<code>str</code></dt>
-<dd>The name of the attribute being displayed as an (un)classified range</dd>
-<dt><strong><code>stops</code></strong> :&ensp;<code>int</code>, optional</dt>
-<dd>The number of stops to calculate. Must match existing stops. Defaults to 5.</dd>
-</dl>
-<h2 id="returns">Returns</h2>
-<dl>
-<dt><code>Bool</code></dt>
-<dd>Success or failure of update operation</dd>
-</dl></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -1076,6 +231,22 @@ deviation.</p>
 
     return result</code></pre>
 </details>
+<div class="desc"><p>Update the color ramp ranges for layer_name in self.webmap_item.</p>
+<p>Does not alter colors or introduce additional stops; only overwrites the values for existing breaks.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>layer_name</code></strong> :&ensp;<code>str</code></dt>
+<dd>The exact name of the layer to be updated</dd>
+<dt><strong><code>column_name</code></strong> :&ensp;<code>str</code></dt>
+<dd>The name of the attribute being displayed as an (un)classified range</dd>
+<dt><strong><code>stops</code></strong> :&ensp;<code>int</code>, optional</dt>
+<dd>The number of stops to calculate. Must match existing stops. Defaults to 5.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>Bool</code></dt>
+<dd>Success or failure of update operation</dd>
+</dl></div>
 </dd>
 </dl>
 </dd>
@@ -1084,18 +255,6 @@ deviation.</p>
 <span>(</span><span>gis)</span>
 </code></dt>
 <dd>
-<div class="desc"><p>Add or overwrite attachments in a feature service using a dataframe of the desired "new" attachments.</p>
-<p>Updates the attachments based on a dataframe containing two columns: a join key present in the live data (the
-dataframe column name must match the feature service field name) and the path of the file to attach to the feature.
-While AGOL supports multiple attachments, this only accepts a single file as input.</p>
-<p>If a matching feature in AGOl doesn't have an attachment, the file referred to by the dataframe will be uploaded.
-If it does have an attachment, it checks the existing filename with the referenced file. If they are different, the
-file from the dataframe will be updated. If they are the same, nothing happens.</p>
-<h2 id="args">Args</h2>
-<dl>
-<dt><strong><code>gis</code></strong> :&ensp;<code>arcgis.gis.GIS</code></dt>
-<dd>The AGOL organization's gis object</dd>
-</dl></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -1368,30 +527,24 @@ file from the dataframe will be updated. If they are the same, nothing happens.<
 
         return attachments_dataframe</code></pre>
 </details>
+<div class="desc"><p>Add or overwrite attachments in a feature service using a dataframe of the desired "new" attachments.</p>
+<p>Updates the attachments based on a dataframe containing two columns: a join key present in the live data (the
+dataframe column name must match the feature service field name) and the path of the file to attach to the feature.
+While AGOL supports multiple attachments, this only accepts a single file as input.</p>
+<p>If a matching feature in AGOl doesn't have an attachment, the file referred to by the dataframe will be uploaded.
+If it does have an attachment, it checks the existing filename with the referenced file. If they are different, the
+file from the dataframe will be updated. If they are the same, nothing happens.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>gis</code></strong> :&ensp;<code>arcgis.gis.GIS</code></dt>
+<dd>The AGOL organization's gis object</dd>
+</dl></div>
 <h3>Static methods</h3>
 <dl>
 <dt id="palletjack.load.FeatureServiceAttachmentsUpdater.build_attachments_dataframe"><code class="name flex">
 <span>def <span class="ident">build_attachments_dataframe</span></span>(<span>input_dataframe, join_column, attachment_column, out_dir)</span>
 </code></dt>
 <dd>
-<div class="desc"><p>Create an attachments dataframe by subsetting down to just the two fields and dropping any rows
-with null/empty attachments</p>
-<h2 id="args">Args</h2>
-<dl>
-<dt><strong><code>input_dataframe</code></strong> :&ensp;<code>pd.DataFrame</code></dt>
-<dd>Input data containing at least the join and attachment filename columns</dd>
-<dt><strong><code>join_column</code></strong> :&ensp;<code>str</code></dt>
-<dd>Unique key joining attachments to live data</dd>
-<dt><strong><code>attachment_column</code></strong> :&ensp;<code>str</code></dt>
-<dd>Filename for each attachment</dd>
-<dt><strong><code>out_dir</code></strong> :&ensp;<code>str</code> or <code>Path</code></dt>
-<dd>Output directory, will be used to build full path to attachment</dd>
-</dl>
-<h2 id="returns">Returns</h2>
-<dl>
-<dt><code>pd.DataFrame</code></dt>
-<dd>Dataframe with join key, attachment name, and full attachment paths</dd>
-</dl></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -1422,36 +575,32 @@ def build_attachments_dataframe(input_dataframe, join_column, attachment_column,
 
     return attachments_dataframe</code></pre>
 </details>
+<div class="desc"><p>Create an attachments dataframe by subsetting down to just the two fields and dropping any rows
+with null/empty attachments</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>input_dataframe</code></strong> :&ensp;<code>pd.DataFrame</code></dt>
+<dd>Input data containing at least the join and attachment filename columns</dd>
+<dt><strong><code>join_column</code></strong> :&ensp;<code>str</code></dt>
+<dd>Unique key joining attachments to live data</dd>
+<dt><strong><code>attachment_column</code></strong> :&ensp;<code>str</code></dt>
+<dd>Filename for each attachment</dd>
+<dt><strong><code>out_dir</code></strong> :&ensp;<code>str</code> or <code>Path</code></dt>
+<dd>Output directory, will be used to build full path to attachment</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>pd.DataFrame</code></dt>
+<dd>Dataframe with join key, attachment name, and full attachment paths</dd>
+</dl></div>
 </dd>
 </dl>
 <h3>Methods</h3>
 <dl>
 <dt id="palletjack.load.FeatureServiceAttachmentsUpdater.update_attachments"><code class="name flex">
-<span>def <span class="ident">update_attachments</span></span>(<span>self, feature_layer_itemid, attachment_join_field, attachment_path_field, attachments_df, layer_number=0)</span>
+<span>def <span class="ident">update_attachments</span></span>(<span>self,<br>feature_layer_itemid,<br>attachment_join_field,<br>attachment_path_field,<br>attachments_df,<br>layer_number=0)</span>
 </code></dt>
 <dd>
-<div class="desc"><p>Update a feature layer's attachments based on info from a dataframe of desired attachment file names</p>
-<p>Depends on a dataframe populated with a join key for the live data and the downloaded or locally-available
-attachments. If the name of the "new" attachment is the same as an existing attachment for that feature, it is
-not updated. If it is different or there isn't an existing attachment, the "new" attachment is attached to that
-feature.</p>
-<h2 id="args">Args</h2>
-<dl>
-<dt><strong><code>feature_layer_itemid</code></strong> :&ensp;<code>str</code></dt>
-<dd>The AGOL Item ID of the feature layer to update</dd>
-<dt><strong><code>attachment_join_field</code></strong> :&ensp;<code>str</code></dt>
-<dd>The field containing the join key between the attachments dataframe and the
-live data</dd>
-<dt><strong><code>attachment_path_field</code></strong> :&ensp;<code>str</code></dt>
-<dd>The field containing the desired attachment file path</dd>
-<dt><strong><code>attachments_df</code></strong> :&ensp;<code>pd.DataFrame</code></dt>
-<dd>A dataframe of desired attachments, including a join key and the local path
-to the attachment</dd>
-<dt><strong><code>layer_number</code></strong> :&ensp;<code>int</code>, optional</dt>
-<dd>The layer within the Item ID to update. Defaults to 0.</dd>
-</dl>
-<h2 id="returns">Returns</h2>
-<p>(int, int): Tuple of counts of successful overwrites and adds.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -1503,32 +652,36 @@ to the attachment</dd>
 
     return overwrites_count, adds_count</code></pre>
 </details>
+<div class="desc"><p>Update a feature layer's attachments based on info from a dataframe of desired attachment file names</p>
+<p>Depends on a dataframe populated with a join key for the live data and the downloaded or locally-available
+attachments. If the name of the "new" attachment is the same as an existing attachment for that feature, it is
+not updated. If it is different or there isn't an existing attachment, the "new" attachment is attached to that
+feature.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>feature_layer_itemid</code></strong> :&ensp;<code>str</code></dt>
+<dd>The AGOL Item ID of the feature layer to update</dd>
+<dt><strong><code>attachment_join_field</code></strong> :&ensp;<code>str</code></dt>
+<dd>The field containing the join key between the attachments dataframe and the
+live data</dd>
+<dt><strong><code>attachment_path_field</code></strong> :&ensp;<code>str</code></dt>
+<dd>The field containing the desired attachment file path</dd>
+<dt><strong><code>attachments_df</code></strong> :&ensp;<code>pd.DataFrame</code></dt>
+<dd>A dataframe of desired attachments, including a join key and the local path
+to the attachment</dd>
+<dt><strong><code>layer_number</code></strong> :&ensp;<code>int</code>, optional</dt>
+<dd>The layer within the Item ID to update. Defaults to 0.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<p>(int, int): Tuple of counts of successful overwrites and adds.</p></div>
 </dd>
 </dl>
 </dd>
 <dt id="palletjack.load.ServiceUpdater"><code class="flex name class">
 <span>class <span class="ident">ServiceUpdater</span></span>
-<span>(</span><span>gis: arcgis.gis.GIS, itemid: str, service_type: Literal['layer', 'table'] = 'layer', index: int = 0, working_dir: pathlib.Path | None = None, gdb_item_prefix: str = 'palletjack')</span>
+<span>(</span><span>gis: arcgis.gis.GIS,<br>itemid: str,<br>service_type: Literal['layer', 'table'] = 'layer',<br>index: int = 0,<br>working_dir: pathlib.Path | None = None,<br>gdb_item_prefix: str = 'palletjack')</span>
 </code></dt>
 <dd>
-<div class="desc"><p>Update an AGOL Feature or Table Service with data from a pandas DataFrame or Spatially-enabled Dataframe.</p>
-<p>This class represents the feature layer or table that will be updated and stores a reference to the dataset and it's containing gis. It contains four methods for updating the data: add, remove, update, and truncate_and_load.</p>
-<p>It is the client's responsibility to separate out the new data into these different steps. If the extract/transform stages result in separate groups of records that need to be added, deleted, and updated, the client must call the three different methods with dataframes containing only the respective records for each operation.</p>
-<p>The method used to upload the data to AGOL saves the updated data as a new layer or table named upload in working_dir/upload.gdb, zips the gdb, uploads it to AGOL (with the item name <code>gdb_item_prefix Temporary gdb upload</code>), and then uses this as the source data for a call to the feature layer or tables's .append() method. The geodatabase upload.gdb will be created in working_dir if it doesn't already exist. Ideally, working_dir should be a TemporaryDirectory unless persistent access to the gdb is desired.</p>
-<h2 id="args">Args</h2>
-<dl>
-<dt><strong><code>gis</code></strong> :&ensp;<code>arcgis.gis.GIS</code></dt>
-<dd>The AGOL organization's gis object</dd>
-<dt><strong><code>itemid</code></strong> :&ensp;<code>str</code></dt>
-<dd>The AGOL item ID of the feature layer or table to update</dd>
-<dt>service_type (Literal["layer", "table"], optional): The type of service to update. Defaults to "layer".</dt>
-<dt><strong><code>index</code></strong> :&ensp;<code>int</code>, optional</dt>
-<dd>The index of the layer or table within the item. Defaults to 0.</dd>
-<dt><strong><code>working_dir</code></strong> :&ensp;<code>Path</code>, optional</dt>
-<dd>The directory in which to save the gdb for uploading. Defaults to None.</dd>
-<dt><strong><code>gdb_item_prefix</code></strong> :&ensp;<code>str</code>, optional</dt>
-<dd>The prefix to use for the gdb item name. Defaults to "palletjack".</dd>
-</dl></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -1800,7 +953,7 @@ to the attachment</dd>
                 or append_kwargs[&#34;upsert_matching_field&#34;] not in dataframe.columns
             ):
                 raise ValueError(
-                    f&#39;Upsert matching field {append_kwargs[&#34;upsert_matching_field&#34;]} not found in either append fields or existing fields.&#39;
+                    f&#34;Upsert matching field {append_kwargs[&#39;upsert_matching_field&#39;]} not found in either append fields or existing fields.&#34;
                 )
         except KeyError:
             pass
@@ -1850,15 +1003,11 @@ to the attachment</dd>
         except TypeError as error:
             raise AttributeError(f&#34;working_dir not specified on {self.__class__.__name__}&#34;) from error
 
-        try:
-            #: check if the dataframe is a spatially enabled dataframe
-            dataframe.spatial.geometry_type  # raises KeyError if this is a regular dataframe
-            gdf = utils.sedf_to_gdf(dataframe)
-        except KeyError:
-            gdf = gpd.GeoDataFrame(dataframe)
+        gdf = utils.convert_to_gdf(dataframe)
 
         try:
-            gdf.to_file(gdb_path, layer=&#34;upload&#34;, engine=&#34;pyogrio&#34;, driver=&#34;OpenFileGDB&#34;)
+            #: promote_to_multi=True changes geometries to Multi* types if they aren&#39;t already
+            gdf.to_file(gdb_path, layer=&#34;upload&#34;, engine=&#34;pyogrio&#34;, driver=&#34;OpenFileGDB&#34;, promote_to_multi=True)
         except pyogrio.errors.DataSourceError as error:
             raise ValueError(
                 f&#34;Error writing layer to {gdb_path}. Verify {self.working_dir} exists and is writable.&#34;
@@ -1883,12 +1032,36 @@ to the attachment</dd>
             arcgis.gis.Item: Reference to the resulting Item object in self.gis
         &#34;&#34;&#34;
 
+        title = f&#34;{self.gdb_item_prefix} Temporary gdb upload&#34;
+        item_type = &#34;File Geodatabase&#34;
+
+        search_results = []
+        try:
+            search_results = utils.retry(
+                self.gis.content.search,
+                f&#39;title:&#34;{title}&#34; AND owner:{self.gis.users.me.username}&#39;,
+                item_type=item_type,
+                max_items=1,
+            )
+        except Exception as error:
+            self._class_logger.warning(f&#34;Error searching for existing gdb item with title {title}&#34;)
+            warnings.warn(repr(error))
+
+        if len(search_results) &gt; 0:
+            self._class_logger.debug(
+                &#34;Found existing gdb item %s, deleting it before uploading new gdb&#34;, search_results[0].id
+            )
+            try:
+                utils.retry(search_results[0].delete)
+            except Exception as error:
+                raise RuntimeError(f&#34;Error deleting existing gdb item with title {title}&#34;) from error
+
         try:
             gdb_item = utils.retry(
                 self.gis.content.add,
                 item_properties={
-                    &#34;type&#34;: &#34;File Geodatabase&#34;,
-                    &#34;title&#34;: f&#34;{self.gdb_item_prefix} Temporary gdb upload&#34;,
+                    &#34;type&#34;: item_type,
+                    &#34;title&#34;: title,
                     &#34;snippet&#34;: &#34;Temporary gdb upload from palletjack&#34;,
                 },
                 data=zipped_gdb_path,
@@ -1946,30 +1119,30 @@ to the attachment</dd>
 
         return self.service_type == &#34;layer&#34;</code></pre>
 </details>
+<div class="desc"><p>Update an AGOL Feature or Table Service with data from a pandas DataFrame or Spatially-enabled Dataframe.</p>
+<p>This class represents the feature layer or table that will be updated and stores a reference to the dataset and it's containing gis. It contains four methods for updating the data: add, remove, update, and truncate_and_load.</p>
+<p>It is the client's responsibility to separate out the new data into these different steps. If the extract/transform stages result in separate groups of records that need to be added, deleted, and updated, the client must call the three different methods with dataframes containing only the respective records for each operation.</p>
+<p>The method used to upload the data to AGOL saves the updated data as a new layer or table named upload in working_dir/upload.gdb, zips the gdb, uploads it to AGOL (with the item name <code>gdb_item_prefix Temporary gdb upload</code>), and then uses this as the source data for a call to the feature layer or tables's .append() method. The geodatabase upload.gdb will be created in working_dir if it doesn't already exist. Ideally, working_dir should be a TemporaryDirectory unless persistent access to the gdb is desired.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>gis</code></strong> :&ensp;<code>arcgis.gis.GIS</code></dt>
+<dd>The AGOL organization's gis object</dd>
+<dt><strong><code>itemid</code></strong> :&ensp;<code>str</code></dt>
+<dd>The AGOL item ID of the feature layer or table to update</dd>
+<dt>service_type (Literal["layer", "table"], optional): The type of service to update. Defaults to "layer".</dt>
+<dt><strong><code>index</code></strong> :&ensp;<code>int</code>, optional</dt>
+<dd>The index of the layer or table within the item. Defaults to 0.</dd>
+<dt><strong><code>working_dir</code></strong> :&ensp;<code>Path</code>, optional</dt>
+<dd>The directory in which to save the gdb for uploading. Defaults to None.</dd>
+<dt><strong><code>gdb_item_prefix</code></strong> :&ensp;<code>str</code>, optional</dt>
+<dd>The prefix to use for the gdb item name. Defaults to "palletjack".</dd>
+</dl></div>
 <h3>Methods</h3>
 <dl>
 <dt id="palletjack.load.ServiceUpdater.add"><code class="name flex">
 <span>def <span class="ident">add</span></span>(<span>self, dataframe: pandas.core.frame.DataFrame) ‑> int</span>
 </code></dt>
 <dd>
-<div class="desc"><p>Adds new features/rows to existing hosted feature layer/table from a new dataframe.</p>
-<p>If you are working with a feature layer, the new dataframe must have a 'SHAPE' column containing geometries of the same type as the live data.</p>
-<p>The new dataframe's columns and data must match the existing data's fields (with the exception of generated fields like shape area and length) in name, type, and allowable length. Live fields that are not nullable and don't have a default value must have a value in the new data; missing data in these fields will raise an error.</p>
-<h2 id="args">Args</h2>
-<dl>
-<dt><strong><code>dataframe</code></strong> :&ensp;<code>pd.DataFrame</code></dt>
-<dd>Dataframe of data to be added</dd>
-</dl>
-<h2 id="raises">Raises</h2>
-<dl>
-<dt><code>ValueError</code></dt>
-<dd>If the new field and existing fields don't match, the SHAPE field is missing or has an incompatible type, the new data contains null fields, the new data exceeds the existing field lengths, or a specified field is missing from either new or live data.</dd>
-</dl>
-<h2 id="returns">Returns</h2>
-<dl>
-<dt><code>int</code></dt>
-<dd>Number of features added</dd>
-</dl></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -2011,37 +1184,29 @@ to the attachment</dd>
 
     return append_count</code></pre>
 </details>
+<div class="desc"><p>Adds new features/rows to existing hosted feature layer/table from a new dataframe.</p>
+<p>If you are working with a feature layer, the new dataframe must have a 'SHAPE' column containing geometries of the same type as the live data.</p>
+<p>The new dataframe's columns and data must match the existing data's fields (with the exception of generated fields like shape area and length) in name, type, and allowable length. Live fields that are not nullable and don't have a default value must have a value in the new data; missing data in these fields will raise an error.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>dataframe</code></strong> :&ensp;<code>pd.DataFrame</code></dt>
+<dd>Dataframe of data to be added</dd>
+</dl>
+<h2 id="raises">Raises</h2>
+<dl>
+<dt><code>ValueError</code></dt>
+<dd>If the new field and existing fields don't match, the SHAPE field is missing or has an incompatible type, the new data contains null fields, the new data exceeds the existing field lengths, or a specified field is missing from either new or live data.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>int</code></dt>
+<dd>Number of features added</dd>
+</dl></div>
 </dd>
 <dt id="palletjack.load.ServiceUpdater.remove"><code class="name flex">
 <span>def <span class="ident">remove</span></span>(<span>self, delete_oids: list[int]) ‑> int</span>
 </code></dt>
 <dd>
-<div class="desc"><p>Deletes features/rows from a hosted feature layer/table based on list of Object IDs</p>
-<p>This is a wrapper around the arcgis.FeatureLayer/Table.delete_features methods that adds some sanity checking. The delete operation is rolled back if any of the features/rows fail to delete using (rollback_on_failure=True). This function will raise a RuntimeError as well after delete() returns if any of them fail.</p>
-<p>The sanity checks will raise errors or warnings as appropriate if any of them fail.</p>
-<h2 id="args">Args</h2>
-<dl>
-<dt><strong><code>delete_oids</code></strong> :&ensp;<code>list[int]</code></dt>
-<dd>List of OIDs to delete</dd>
-</dl>
-<h2 id="raises">Raises</h2>
-<dl>
-<dt><code>ValueError</code></dt>
-<dd>If delete_string can't be split on <code>,</code></dd>
-<dt><code>TypeError</code></dt>
-<dd>If any of the items in delete_string can't be cast to ints</dd>
-<dt><code>ValueError</code></dt>
-<dd>If delete_string is empty</dd>
-<dt><code>UserWarning</code></dt>
-<dd>If any of the Object IDs in delete_string don't exist in the live data</dd>
-<dt><code>RuntimeError</code></dt>
-<dd>If any of the OIDs fail to delete</dd>
-</dl>
-<h2 id="returns">Returns</h2>
-<dl>
-<dt><code>int</code></dt>
-<dd>The number of features deleted</dd>
-</dl></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -2102,27 +1267,37 @@ to the attachment</dd>
 
     return actual_delete_count</code></pre>
 </details>
+<div class="desc"><p>Deletes features/rows from a hosted feature layer/table based on list of Object IDs</p>
+<p>This is a wrapper around the arcgis.FeatureLayer/Table.delete_features methods that adds some sanity checking. The delete operation is rolled back if any of the features/rows fail to delete using (rollback_on_failure=True). This function will raise a RuntimeError as well after delete() returns if any of them fail.</p>
+<p>The sanity checks will raise errors or warnings as appropriate if any of them fail.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>delete_oids</code></strong> :&ensp;<code>list[int]</code></dt>
+<dd>List of OIDs to delete</dd>
+</dl>
+<h2 id="raises">Raises</h2>
+<dl>
+<dt><code>ValueError</code></dt>
+<dd>If delete_string can't be split on <code>,</code></dd>
+<dt><code>TypeError</code></dt>
+<dd>If any of the items in delete_string can't be cast to ints</dd>
+<dt><code>ValueError</code></dt>
+<dd>If delete_string is empty</dd>
+<dt><code>UserWarning</code></dt>
+<dd>If any of the Object IDs in delete_string don't exist in the live data</dd>
+<dt><code>RuntimeError</code></dt>
+<dd>If any of the OIDs fail to delete</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>int</code></dt>
+<dd>The number of features deleted</dd>
+</dl></div>
 </dd>
 <dt id="palletjack.load.ServiceUpdater.truncate_and_load"><code class="name flex">
 <span>def <span class="ident">truncate_and_load</span></span>(<span>self, dataframe: pandas.core.frame.DataFrame, save_old: bool = False) ‑> int</span>
 </code></dt>
 <dd>
-<div class="desc"><p>Overwrite a hosted feature layer or table by truncating and loading the new data.</p>
-<p>When the existing dataset is truncated, a copy is kept in memory as a dataframe. If save_old is set, this is saved as a layer in self.working_dir/backup.gdb with the layer/table name {name}_{todays_date}.json (foobar_2022-12-31.json).</p>
-<p>If you are working with a feature layer, the new dataframe must have a 'SHAPE' column containing geometries of the same type as the live data. New OBJECTIDs will be automatically generated.</p>
-<p>The new dataframe's columns and data must match the existing data's fields (with the exception of generated fields like shape area and length) in name, type, and allowable length. Live fields that are not nullable and don't have a default value must have a value in the new data; missing data in these fields will raise an error.</p>
-<h2 id="args">Args</h2>
-<dl>
-<dt><strong><code>dataframe</code></strong> :&ensp;<code>pd.DataFrame</code></dt>
-<dd>Spatially enabled dataframe of new data to be loaded</dd>
-<dt><strong><code>save_old</code></strong> :&ensp;<code>bool</code></dt>
-<dd>Save existing data to backup.gdb in working_dir. Defaults to False</dd>
-</dl>
-<h2 id="returns">Returns</h2>
-<dl>
-<dt><code>int</code></dt>
-<dd>Number of features loaded</dd>
-</dl></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -2177,34 +1352,27 @@ to the attachment</dd>
 
     return append_count</code></pre>
 </details>
+<div class="desc"><p>Overwrite a hosted feature layer or table by truncating and loading the new data.</p>
+<p>When the existing dataset is truncated, a copy is kept in memory as a dataframe. If save_old is set, this is saved as a layer in self.working_dir/backup.gdb with the layer/table name {name}_{todays_date}.json (foobar_2022-12-31.json).</p>
+<p>If you are working with a feature layer, the new dataframe must have a 'SHAPE' column containing geometries of the same type as the live data. New OBJECTIDs will be automatically generated.</p>
+<p>The new dataframe's columns and data must match the existing data's fields (with the exception of generated fields like shape area and length) in name, type, and allowable length. Live fields that are not nullable and don't have a default value must have a value in the new data; missing data in these fields will raise an error.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>dataframe</code></strong> :&ensp;<code>pd.DataFrame</code></dt>
+<dd>Spatially enabled dataframe of new data to be loaded</dd>
+<dt><strong><code>save_old</code></strong> :&ensp;<code>bool</code></dt>
+<dd>Save existing data to backup.gdb in working_dir. Defaults to False</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>int</code></dt>
+<dd>Number of features loaded</dd>
+</dl></div>
 </dd>
 <dt id="palletjack.load.ServiceUpdater.update"><code class="name flex">
 <span>def <span class="ident">update</span></span>(<span>self, dataframe: pandas.core.frame.DataFrame, update_geometry: bool = True) ‑> int</span>
 </code></dt>
 <dd>
-<div class="desc"><p>Updates existing features/rows within a hosted feature layer/table using OBJECTID as the join field.</p>
-<p>The new dataframe's columns and data must match the existing data's fields (with the exception of generated fields like shape area and length) in name, type, and allowable length. Live fields that are not nullable and don't have a default value must have a value in the new data; missing data in these fields will raise an error.</p>
-<p>Uses the OBJECTID field to determine which features should be updated by the underlying FeatureLayer/Table.append() methods. The most robust way to do this is to load the live data as a dataframe, subset it down to the desired rows, make your edits based on a separate join id, and then pass that dataframe to this method.</p>
-<p>The new data can have either attributes and geometries or only attributes based on the update_geometry flag. A combination of updates from a source with both attributes &amp; geometries and a source with attributes-only must be done with two separate calls. The geometries must be provided in a SHAPE column and be the same type as the live data.</p>
-<h2 id="args">Args</h2>
-<dl>
-<dt><strong><code>dataframe</code></strong> :&ensp;<code>pd.DataFrame</code></dt>
-<dd>Dataframe of data to be updated</dd>
-<dt><strong><code>update_geometry</code></strong> :&ensp;<code>bool</code></dt>
-<dd>Whether to update attributes and geometry (True) or just attributes (False). Defaults to True for feature layers and is always False for tables.</dd>
-</dl>
-<h2 id="raises">Raises</h2>
-<dl>
-<dt><code>ValueError</code></dt>
-<dd>If the new field and existing fields don't match, the SHAPE field is missing or has an incompatible type, the new data contains null fields, the new data exceeds the existing field lengths, or a specified field is missing from either new or live data.</dd>
-<dt><code>ValueError</code></dt>
-<dd>If update_geometry is True for a table</dd>
-</dl>
-<h2 id="returns">Returns</h2>
-<dl>
-<dt><code>int</code></dt>
-<dd>Number of features updated</dd>
-</dl></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -2249,6 +1417,29 @@ to the attachment</dd>
 
     return count</code></pre>
 </details>
+<div class="desc"><p>Updates existing features/rows within a hosted feature layer/table using OBJECTID as the join field.</p>
+<p>The new dataframe's columns and data must match the existing data's fields (with the exception of generated fields like shape area and length) in name, type, and allowable length. Live fields that are not nullable and don't have a default value must have a value in the new data; missing data in these fields will raise an error.</p>
+<p>Uses the OBJECTID field to determine which features should be updated by the underlying FeatureLayer/Table.append() methods. The most robust way to do this is to load the live data as a dataframe, subset it down to the desired rows, make your edits based on a separate join id, and then pass that dataframe to this method.</p>
+<p>The new data can have either attributes and geometries or only attributes based on the update_geometry flag. A combination of updates from a source with both attributes &amp; geometries and a source with attributes-only must be done with two separate calls. The geometries must be provided in a SHAPE column and be the same type as the live data.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>dataframe</code></strong> :&ensp;<code>pd.DataFrame</code></dt>
+<dd>Dataframe of data to be updated</dd>
+<dt><strong><code>update_geometry</code></strong> :&ensp;<code>bool</code></dt>
+<dd>Whether to update attributes and geometry (True) or just attributes (False). Defaults to True for feature layers and is always False for tables.</dd>
+</dl>
+<h2 id="raises">Raises</h2>
+<dl>
+<dt><code>ValueError</code></dt>
+<dd>If the new field and existing fields don't match, the SHAPE field is missing or has an incompatible type, the new data contains null fields, the new data exceeds the existing field lengths, or a specified field is missing from either new or live data.</dd>
+<dt><code>ValueError</code></dt>
+<dd>If update_geometry is True for a table</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>int</code></dt>
+<dd>Number of features updated</dd>
+</dl></div>
 </dd>
 </dl>
 </dd>
@@ -2256,7 +1447,6 @@ to the attachment</dd>
 </section>
 </article>
 <nav id="sidebar">
-<h1>Index</h1>
 <div class="toc">
 <ul></ul>
 </div>
@@ -2296,7 +1486,7 @@ to the attachment</dd>
 </nav>
 </main>
 <footer id="footer">
-<p>Generated by <a href="https://pdoc3.github.io/pdoc" title="pdoc: Python API documentation generator"><cite>pdoc</cite> 0.10.0</a>.</p>
+<p>Generated by <a href="https://pdoc3.github.io/pdoc" title="pdoc: Python API documentation generator"><cite>pdoc</cite> 0.11.5</a>.</p>
 </footer>
 </body>
 </html>

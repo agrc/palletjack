@@ -2,18 +2,32 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
-<meta name="generator" content="pdoc 0.10.0" />
+<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1">
+<meta name="generator" content="pdoc3 0.11.5">
 <title>palletjack.transform API documentation</title>
-<meta name="description" content="Transform pandas dataframes in preparation for loading to AGOL." />
-<link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/sanitize.min.css" integrity="sha256-PK9q560IAAa6WVRRh76LtCaI8pjTJ2z11v0miyNNjrs=" crossorigin>
-<link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/typography.min.css" integrity="sha256-7l/o7C8jubJiy74VsKTidCy1yBkRtiUGbVkYBylBqUg=" crossorigin>
-<link rel="stylesheet preload" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.1/styles/github.min.css" crossorigin>
-<style>:root{--highlight-color:#fe9}.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:30px;overflow:hidden}#sidebar > *:last-child{margin-bottom:2cm}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:1em 0 .50em 0}h3{font-size:1.4em;margin:25px 0 10px 0}h4{margin:0;font-size:105%}h1:target,h2:target,h3:target,h4:target,h5:target,h6:target{background:var(--highlight-color);padding:.2em 0}a{color:#058;text-decoration:none;transition:color .3s ease-in-out}a:hover{color:#e82}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900}pre code{background:#f8f8f8;font-size:.8em;line-height:1.4em}code{background:#f2f2f1;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{background:#f8f8f8;border:0;border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0;padding:1ex}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{margin-top:.6em;font-weight:bold}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-weight:bold;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}dt:target .name{background:var(--highlight-color)}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}td{padding:0 .5em}.admonition{padding:.1em .5em;margin-bottom:1em}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
-<style media="screen and (min-width: 700px)">@media screen and (min-width:700px){#sidebar{width:30%;height:100vh;overflow:auto;position:sticky;top:0}#content{width:70%;max-width:100ch;padding:3em 4em;border-left:1px solid #ddd}pre code{font-size:1em}.item .name{font-size:1em}main{display:flex;flex-direction:row-reverse;justify-content:flex-end}.toc ul ul,#index ul{padding-left:1.5em}.toc > ul > li{margin-top:.5em}}</style>
+<meta name="description" content="Transform pandas dataframes in preparation for loading to AGOL.">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/sanitize.min.css" integrity="sha512-y1dtMcuvtTMJc1yPgEqF0ZjQbhnc/bFhyvIyVNb9Zk5mIGtqVaAB1Ttl28su8AvFMOY0EwRbAe+HCLqj6W7/KA==" crossorigin>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/typography.min.css" integrity="sha512-Y1DYSb995BAfxobCkKepB1BqJJTPrOp3zPL74AWFugHHmmdcvO+C48WLrUOlhGMc0QG7AE3f7gmvvcrmX2fDoA==" crossorigin>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css" crossorigin>
+<style>:root{--highlight-color:#fe9}.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:1.5em;overflow:hidden}#sidebar > *:last-child{margin-bottom:2cm}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:2em 0 .50em 0}h3{font-size:1.4em;margin:1.6em 0 .7em 0}h4{margin:0;font-size:105%}h1:target,h2:target,h3:target,h4:target,h5:target,h6:target{background:var(--highlight-color);padding:.2em 0}a{color:#058;text-decoration:none;transition:color .2s ease-in-out}a:visited{color:#503}a:hover{color:#b62}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900;font-weight:bold}pre code{font-size:.8em;line-height:1.4em;padding:1em;display:block}code{background:#f3f3f3;font-family:"DejaVu Sans Mono",monospace;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{margin-top:.6em;font-weight:bold}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}dt:target .name{background:var(--highlight-color)}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source > summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible;min-width:max-content}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}td{padding:0 .5em}.admonition{padding:.1em 1em;margin:1em 0}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
+<style media="screen and (min-width: 700px)">@media screen and (min-width:700px){#sidebar{width:30%;height:100vh;overflow:auto;position:sticky;top:0}#content{width:70%;max-width:100ch;padding:3em 4em;border-left:1px solid #ddd}pre code{font-size:1em}.name{font-size:1em}main{display:flex;flex-direction:row-reverse;justify-content:flex-end}.toc ul ul,#index ul ul{padding-left:1em}.toc > ul > li{margin-top:.5em}}</style>
 <style media="print">@media print{#sidebar h1{page-break-before:always}.source{display:none}}@media print{*{background:transparent !important;color:#000 !important;box-shadow:none !important;text-shadow:none !important}a[href]:after{content:" (" attr(href) ")";font-size:90%}a[href][title]:after{content:none}abbr[title]:after{content:" (" attr(title) ")"}.ir a:after,a[href^="javascript:"]:after,a[href^="#"]:after{content:""}pre,blockquote{border:1px solid #999;page-break-inside:avoid}thead{display:table-header-group}tr,img{page-break-inside:avoid}img{max-width:100% !important}@page{margin:0.5cm}p,h2,h3{orphans:3;widows:3}h1,h2,h3,h4,h5,h6{page-break-after:avoid}}</style>
-<script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.1/highlight.min.js" integrity="sha256-Uv3H6lx7dJmRfRvH8TH6kJD1TSK1aFcwgx+mdg3epi8=" crossorigin></script>
-<script>window.addEventListener('DOMContentLoaded', () => hljs.initHighlighting())</script>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js" integrity="sha512-D9gUyxqja7hBtkWpPWGt9wfbfaMGVt9gnyCvYa+jojwwPHLCzUm5i8rpk7vD7wNee9bA35eYIjobYPaQuKS1MQ==" crossorigin></script>
+<script>window.addEventListener('DOMContentLoaded', () => {
+hljs.configure({languages: ['bash', 'css', 'diff', 'graphql', 'ini', 'javascript', 'json', 'plaintext', 'python', 'python-repl', 'rust', 'shell', 'sql', 'typescript', 'xml', 'yaml']});
+hljs.highlightAll();
+/* Collapse source docstrings */
+setTimeout(() => {
+[...document.querySelectorAll('.hljs.language-python > .hljs-string')]
+.filter(el => el.innerHTML.length > 200 && ['"""', "'''"].includes(el.innerHTML.substring(0, 3)))
+.forEach(el => {
+let d = document.createElement('details');
+d.classList.add('hljs-string');
+d.innerHTML = '<summary>"""</summary>' + el.innerHTML.substring(3);
+el.replaceWith(d);
+});
+}, 100);
+})</script>
 </head>
 <body>
 <main>
@@ -23,285 +37,6 @@
 </header>
 <section id="section-intro">
 <p>Transform pandas dataframes in preparation for loading to AGOL.</p>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">&#34;&#34;&#34;Transform pandas dataframes in preparation for loading to AGOL.&#34;&#34;&#34;
-
-import locale
-import logging
-import warnings
-from datetime import datetime
-
-import arcgis
-import pandas as pd
-from arcgis import GeoAccessor, GeoSeriesAccessor  # noqa: F401
-
-from palletjack import utils
-
-module_logger = logging.getLogger(__name__)
-
-
-class APIGeocoder:
-    &#34;&#34;&#34;Geocode a dataframe using the UGRC Web API Geocoder.
-
-    Instantiate an APIGeocoder object with an api key from developer.mapserv.utah.gov. It will attempt to validate the
-    API key. If validation fails, it will raise one of the following errors:
-
-    - RuntimeError: If there was a network or other error
-    - ValueError: If the key is invalid
-    - UserWarning: If the API responds with some other abnormal result
-
-    The individual geocoding steps are exposed in the `palletjack.utils.Geocoding` class in the utils module for use in
-    other settings.
-    &#34;&#34;&#34;
-
-    def __init__(self, api_key):
-        &#34;&#34;&#34;
-        Args:
-            api_key (str): API key obtained from developer.mapserv.utah.gov
-        &#34;&#34;&#34;
-        self.api_key = api_key
-        self._class_logger = logging.getLogger(__name__).getChild(self.__class__.__name__)
-        utils.Geocoding.validate_api_key(self.api_key)
-
-    def geocode_dataframe(self, dataframe, street_col, zone_col, wkid, rate_limits=(0.015, 0.03), **api_args):
-        &#34;&#34;&#34;Geocode a pandas dataframe into a spatially-enabled dataframe
-
-        Addresses that don&#39;t meet the threshold for geocoding (score &gt; 70) are returned as points at 0,0
-
-        Args:
-            dataframe (pd.DataFrame): Input data with separate columns for street address and zip or city
-            street_col (str): The column containing the street address
-            zone_col (str): The column containing either the zip code or the city name
-            wkid (int): The projection to return the x/y points in
-            rate_limits(Tuple &lt;float&gt;): A lower and upper bound in seconds for pausing between API calls. Defaults to
-                (0.015, 0.03)
-            **api_args (dict): Keyword arguments to be passed as parameters in the API GET call.
-
-        Returns:
-            pd.DataFrame.spatial: Geocoded data as a spatially-enabled DataFrame
-        &#34;&#34;&#34;
-
-        start = datetime.now()
-
-        #: Should this return? Should it raise an error instead?
-        if dataframe.empty:
-            warnings.warn(&#34;No records to geocode (empty dataframe)&#34;, RuntimeWarning)
-
-        dataframe_length = len(dataframe.index)
-        reporting_interval = utils.calc_modulus_for_reporting_interval(dataframe_length)
-        self._class_logger.info(&#34;Geocoding %s rows...&#34;, dataframe_length)
-
-        street_col_index = dataframe.columns.get_loc(street_col)
-        zone_col_index = dataframe.columns.get_loc(zone_col)
-        new_rows = []
-        for i, row in enumerate(dataframe.itertuples(index=False)):
-            if i % reporting_interval == 0:
-                self._class_logger.info(&#34;Geocoding row %s of %s, %s%%&#34;, i, dataframe_length, i / dataframe_length * 100)
-            row_dict = row._asdict()
-            results = utils.Geocoding.geocode_addr(
-                row[street_col_index],
-                row[zone_col_index],
-                self.api_key,
-                rate_limits,
-                spatialReference=str(wkid),
-                **api_args,
-            )
-            self._class_logger.debug(
-                &#34;%s of %s: %s, %s = %s&#34;, i, dataframe_length, row[street_col_index], row[zone_col_index], results
-            )
-            row_dict[&#34;x&#34;], row_dict[&#34;y&#34;], row_dict[&#34;score&#34;], row_dict[&#34;matchAddress&#34;] = results
-            new_rows.append(row_dict)
-
-        spatial_dataframe = pd.DataFrame.spatial.from_xy(pd.DataFrame(new_rows), &#34;x&#34;, &#34;y&#34;, sr=int(wkid))
-
-        end = datetime.now()
-        self._class_logger.info(&#34;%s Records geocoded in %s&#34;, len(spatial_dataframe.index), (end - start))
-        try:
-            self._class_logger.debug(&#34;Average time per record: %s&#34;, (end - start) / len(spatial_dataframe.index))
-        except ZeroDivisionError:
-            warnings.warn(&#34;Empty spatial dataframe after geocoding&#34;, RuntimeWarning)
-        return spatial_dataframe
-
-
-class FeatureServiceMerging:
-    &#34;&#34;&#34;Get the live dataframe from a feature service and update it from another dataframe&#34;&#34;&#34;
-
-    @staticmethod
-    def update_live_data_with_new_data(live_dataframe, new_dataframe, join_column):
-        &#34;&#34;&#34;Update a dataframe with data from another
-
-        Args:
-            live_dataframe (pd.DataFrame): The dataframe containing info to be updated
-            new_dataframe (pd.DataFrame): Dataframe containing source info to use in the update
-            join_column (str): The column with unique IDs to be used as a key between the two dataframes
-
-        Raises:
-            ValueError: If the join_column is missing from either live or new data
-            RuntimeWarning: If there are rows in the new data that are not found in the live data; these will not be
-                added to the live dataframe.
-
-        Returns:
-            pd.DataFrame: The updated dataframe, with data types converted via .convert_dtypes()
-        &#34;&#34;&#34;
-
-        try:
-            live_dataframe.set_index(join_column, inplace=True)
-            new_dataframe.set_index(join_column, inplace=True)
-        except KeyError as error:
-            raise ValueError(&#34;Join column not found in live or new dataframes&#34;) from error
-
-        indicator_dataframe = live_dataframe.merge(new_dataframe, on=join_column, how=&#34;outer&#34;, indicator=True)
-        new_only_dataframe = indicator_dataframe[indicator_dataframe[&#34;_merge&#34;] == &#34;right_only&#34;]
-        if not new_only_dataframe.empty:
-            keys_not_found = list(new_only_dataframe.index)
-            warnings.warn(
-                f&#34;The following keys from the new data were not found in the existing dataset: {keys_not_found}&#34;,
-                RuntimeWarning,
-            )
-
-        live_dataframe.update(new_dataframe)
-        return live_dataframe.reset_index().convert_dtypes()
-
-    @staticmethod
-    def get_live_dataframe(gis, feature_service_itemid, layer_index=0):
-        &#34;&#34;&#34;Get a spatially-enabled dataframe representation of a hosted feature layer
-
-        Args:
-            gis (arcgis.gis.GIS): GIS object of the desired organization
-            feature_service_itemid (str): itemid in the gis of the desired hosted feature service
-            layer_index (int, optional): Index of the desired layer within the hosted feature service. Defaults to 0.
-
-        Raises:
-            RuntimeError: If it fails to load the data
-
-        Returns:
-            pd.DataFrame.spatial: Spatially-enabled dataframe representation of the hosted feature layer
-        &#34;&#34;&#34;
-
-        try:
-            feature_layer = arcgis.features.FeatureLayer.fromitem(
-                gis.content.get(feature_service_itemid), layer_id=layer_index
-            )
-            live_dataframe = feature_layer.query(as_df=True)
-        except Exception as error:
-            raise RuntimeError(&#34;Failed to load live dataframe&#34;) from error
-
-        return live_dataframe
-
-
-class DataCleaning:
-    &#34;&#34;&#34;Static methods for cleaning dataframes prior to uploading to AGOL&#34;&#34;&#34;
-
-    @staticmethod
-    def switch_to_nullable_int(dataframe, fields_that_should_be_ints):
-        &#34;&#34;&#34;Convert specified fields to panda&#39;s nullable Int64 type to preserve int to EsriFieldTypeInteger mapping
-
-        Args:
-            dataframe (pd.DataFrame): Input dataframe with columns to be converted
-            fields_that_should_be_ints (list[str]): List of column names to be converted
-
-        Raises:
-            TypeError: If any of the conversions fail. Often caused by values that aren&#39;t int-castable floats (ie. x.0)
-                or np.nans.
-
-        Returns:
-            pd.DataFrame: Input dataframe with columns converted to nullable Int64
-        &#34;&#34;&#34;
-
-        retyped = dataframe.copy()
-        try:
-            for field in fields_that_should_be_ints:
-                retyped[field] = DataCleaning._switch_series_to_numeric_dtype(retyped[field], &#34;Int64&#34;)
-        except (TypeError, ValueError) as error:
-            raise TypeError(
-                &#34;Cannot convert one or more fields to nullable ints. Check for non-int/non-np.nan values.&#34;
-            ) from error
-        return retyped
-
-    @staticmethod
-    def switch_to_float(dataframe, fields_that_should_be_floats):
-        &#34;&#34;&#34;Convert specified fields to float, converting empty strings to None first as required
-
-        Args:
-            dataframe (pd.DataFrame): Input dataframe with columns to be converted
-            fields_that_should_be_floats (list[str]): List of column names to be converted
-
-        Raises:
-            TypeError: If any of the conversions fail. Often caused by values that aren&#39;t castable to floats
-                (non-empty, non-numeric strings, etc)
-
-        Returns:
-            pd.DataFrame: Input dataframe with columns converted to float
-        &#34;&#34;&#34;
-
-        retyped = dataframe.copy()
-        try:
-            for field in fields_that_should_be_floats:
-                retyped[field] = DataCleaning._switch_series_to_numeric_dtype(retyped[field], &#34;float&#34;)
-        except (TypeError, ValueError) as error:
-            raise TypeError(
-                &#34;Cannot convert one or more fields to floats. Check for non-float/non-null values.&#34;
-            ) from error
-        return retyped
-
-    @staticmethod
-    def _switch_series_to_numeric_dtype(series, dtype):
-        &#34;&#34;&#34;Switch the dtype of a series to the specified dtype
-
-        Series of dtype &#39;object&#39; (ie, series of strings or mixed strings and numbers) are converted to str so that they
-        can be de-localized to remove comma thousands separators
-
-        Args:
-            series (pd.Series): The series to be converted
-            dtype (str): The dtype to convert to
-
-        Returns:
-            pd.Series: The converted series
-        &#34;&#34;&#34;
-
-        if series.dtype == &#34;object&#34;:
-            series = series.astype(str).apply(locale.delocalize)
-            series.replace(&#34;&#34;, None, inplace=True)
-        return series.astype(dtype)
-
-    @staticmethod
-    def switch_to_datetime(dataframe, date_fields, **to_datetime_kwargs):
-        &#34;&#34;&#34;Convert specified fields to datetime dtypes to ensure proper date formatting for AGOL
-
-        Args:
-            dataframe (pd.DataFrame): The source dataframe
-            date_fields (List[int]): The fields to convert to datetime
-            **to_datetime_kwargs (keyword arguments, optional): Arguments to pass through to pd.to_datetime
-
-        Returns:
-            pd.DataFrame: The source dataframe with converted fields.
-        &#34;&#34;&#34;
-
-        for field in date_fields:
-            dataframe[field] = (
-                pd.to_datetime(dataframe[field], **to_datetime_kwargs).dt.as_unit(&#34;ns&#34;).dt.tz_localize(None)
-            )
-
-        return dataframe
-
-    @staticmethod
-    def rename_dataframe_columns_for_agol(dataframe):
-        &#34;&#34;&#34;Rename all the columns in a dataframe to valid AGOL column names
-
-        Args:
-            dataframe (pd.DataFrame): Dataframe to be renamed
-
-        Returns:
-            pd.DataFrame: Input dataframe with renamed columns
-        &#34;&#34;&#34;
-
-        rename_dict = utils.rename_columns_for_agol(dataframe.columns)
-        renamed_dataframe = dataframe.rename(columns=rename_dict)
-        return renamed_dataframe</code></pre>
-</details>
 </section>
 <section>
 </section>
@@ -317,21 +52,6 @@ class DataCleaning:
 <span>(</span><span>api_key)</span>
 </code></dt>
 <dd>
-<div class="desc"><p>Geocode a dataframe using the UGRC Web API Geocoder.</p>
-<p>Instantiate an APIGeocoder object with an api key from developer.mapserv.utah.gov. It will attempt to validate the
-API key. If validation fails, it will raise one of the following errors:</p>
-<ul>
-<li>RuntimeError: If there was a network or other error</li>
-<li>ValueError: If the key is invalid</li>
-<li>UserWarning: If the API responds with some other abnormal result</li>
-</ul>
-<p>The individual geocoding steps are exposed in the <code><a title="palletjack.utils.Geocoding" href="utils.html#palletjack.utils.Geocoding">Geocoding</a></code> class in the utils module for use in
-other settings.</p>
-<h2 id="args">Args</h2>
-<dl>
-<dt><strong><code>api_key</code></strong> :&ensp;<code>str</code></dt>
-<dd>API key obtained from developer.mapserv.utah.gov</dd>
-</dl></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -418,34 +138,27 @@ other settings.</p>
             warnings.warn(&#34;Empty spatial dataframe after geocoding&#34;, RuntimeWarning)
         return spatial_dataframe</code></pre>
 </details>
+<div class="desc"><p>Geocode a dataframe using the UGRC Web API Geocoder.</p>
+<p>Instantiate an APIGeocoder object with an api key from developer.mapserv.utah.gov. It will attempt to validate the
+API key. If validation fails, it will raise one of the following errors:</p>
+<ul>
+<li>RuntimeError: If there was a network or other error</li>
+<li>ValueError: If the key is invalid</li>
+<li>UserWarning: If the API responds with some other abnormal result</li>
+</ul>
+<p>The individual geocoding steps are exposed in the <code><a title="palletjack.utils.Geocoding" href="utils.html#palletjack.utils.Geocoding">Geocoding</a></code> class in the utils module for use in
+other settings.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>api_key</code></strong> :&ensp;<code>str</code></dt>
+<dd>API key obtained from developer.mapserv.utah.gov</dd>
+</dl></div>
 <h3>Methods</h3>
 <dl>
 <dt id="palletjack.transform.APIGeocoder.geocode_dataframe"><code class="name flex">
 <span>def <span class="ident">geocode_dataframe</span></span>(<span>self, dataframe, street_col, zone_col, wkid, rate_limits=(0.015, 0.03), **api_args)</span>
 </code></dt>
 <dd>
-<div class="desc"><p>Geocode a pandas dataframe into a spatially-enabled dataframe</p>
-<p>Addresses that don't meet the threshold for geocoding (score &gt; 70) are returned as points at 0,0</p>
-<h2 id="args">Args</h2>
-<dl>
-<dt><strong><code>dataframe</code></strong> :&ensp;<code>pd.DataFrame</code></dt>
-<dd>Input data with separate columns for street address and zip or city</dd>
-<dt><strong><code>street_col</code></strong> :&ensp;<code>str</code></dt>
-<dd>The column containing the street address</dd>
-<dt><strong><code>zone_col</code></strong> :&ensp;<code>str</code></dt>
-<dd>The column containing either the zip code or the city name</dd>
-<dt><strong><code>wkid</code></strong> :&ensp;<code>int</code></dt>
-<dd>The projection to return the x/y points in</dd>
-<dt>rate_limits(Tuple <float>): A lower and upper bound in seconds for pausing between API calls. Defaults to</dt>
-<dt>(0.015, 0.03)</dt>
-<dt><strong><code>**api_args</code></strong> :&ensp;<code>dict</code></dt>
-<dd>Keyword arguments to be passed as parameters in the API GET call.</dd>
-</dl>
-<h2 id="returns">Returns</h2>
-<dl>
-<dt><code>pd.DataFrame.spatial</code></dt>
-<dd>Geocoded data as a spatially-enabled DataFrame</dd>
-</dl></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -509,6 +222,28 @@ other settings.</p>
         warnings.warn(&#34;Empty spatial dataframe after geocoding&#34;, RuntimeWarning)
     return spatial_dataframe</code></pre>
 </details>
+<div class="desc"><p>Geocode a pandas dataframe into a spatially-enabled dataframe</p>
+<p>Addresses that don't meet the threshold for geocoding (score &gt; 70) are returned as points at 0,0</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>dataframe</code></strong> :&ensp;<code>pd.DataFrame</code></dt>
+<dd>Input data with separate columns for street address and zip or city</dd>
+<dt><strong><code>street_col</code></strong> :&ensp;<code>str</code></dt>
+<dd>The column containing the street address</dd>
+<dt><strong><code>zone_col</code></strong> :&ensp;<code>str</code></dt>
+<dd>The column containing either the zip code or the city name</dd>
+<dt><strong><code>wkid</code></strong> :&ensp;<code>int</code></dt>
+<dd>The projection to return the x/y points in</dd>
+<dt>rate_limits(Tuple <float>): A lower and upper bound in seconds for pausing between API calls. Defaults to</dt>
+<dt>(0.015, 0.03)</dt>
+<dt><strong><code>**api_args</code></strong> :&ensp;<code>dict</code></dt>
+<dd>Keyword arguments to be passed as parameters in the API GET call.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>pd.DataFrame.spatial</code></dt>
+<dd>Geocoded data as a spatially-enabled DataFrame</dd>
+</dl></div>
 </dd>
 </dl>
 </dd>
@@ -516,7 +251,6 @@ other settings.</p>
 <span>class <span class="ident">DataCleaning</span></span>
 </code></dt>
 <dd>
-<div class="desc"><p>Static methods for cleaning dataframes prior to uploading to AGOL</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -631,23 +365,13 @@ other settings.</p>
         renamed_dataframe = dataframe.rename(columns=rename_dict)
         return renamed_dataframe</code></pre>
 </details>
+<div class="desc"><p>Static methods for cleaning dataframes prior to uploading to AGOL</p></div>
 <h3>Static methods</h3>
 <dl>
 <dt id="palletjack.transform.DataCleaning.rename_dataframe_columns_for_agol"><code class="name flex">
 <span>def <span class="ident">rename_dataframe_columns_for_agol</span></span>(<span>dataframe)</span>
 </code></dt>
 <dd>
-<div class="desc"><p>Rename all the columns in a dataframe to valid AGOL column names</p>
-<h2 id="args">Args</h2>
-<dl>
-<dt><strong><code>dataframe</code></strong> :&ensp;<code>pd.DataFrame</code></dt>
-<dd>Dataframe to be renamed</dd>
-</dl>
-<h2 id="returns">Returns</h2>
-<dl>
-<dt><code>pd.DataFrame</code></dt>
-<dd>Input dataframe with renamed columns</dd>
-</dl></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -667,26 +391,22 @@ def rename_dataframe_columns_for_agol(dataframe):
     renamed_dataframe = dataframe.rename(columns=rename_dict)
     return renamed_dataframe</code></pre>
 </details>
+<div class="desc"><p>Rename all the columns in a dataframe to valid AGOL column names</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>dataframe</code></strong> :&ensp;<code>pd.DataFrame</code></dt>
+<dd>Dataframe to be renamed</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>pd.DataFrame</code></dt>
+<dd>Input dataframe with renamed columns</dd>
+</dl></div>
 </dd>
 <dt id="palletjack.transform.DataCleaning.switch_to_datetime"><code class="name flex">
 <span>def <span class="ident">switch_to_datetime</span></span>(<span>dataframe, date_fields, **to_datetime_kwargs)</span>
 </code></dt>
 <dd>
-<div class="desc"><p>Convert specified fields to datetime dtypes to ensure proper date formatting for AGOL</p>
-<h2 id="args">Args</h2>
-<dl>
-<dt><strong><code>dataframe</code></strong> :&ensp;<code>pd.DataFrame</code></dt>
-<dd>The source dataframe</dd>
-<dt><strong><code>date_fields</code></strong> :&ensp;<code>List[int]</code></dt>
-<dd>The fields to convert to datetime</dd>
-<dt><strong><code>**to_datetime_kwargs</code></strong> :&ensp;<code>keyword arguments</code>, optional</dt>
-<dd>Arguments to pass through to pd.to_datetime</dd>
-</dl>
-<h2 id="returns">Returns</h2>
-<dl>
-<dt><code>pd.DataFrame</code></dt>
-<dd>The source dataframe with converted fields.</dd>
-</dl></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -711,30 +431,26 @@ def switch_to_datetime(dataframe, date_fields, **to_datetime_kwargs):
 
     return dataframe</code></pre>
 </details>
+<div class="desc"><p>Convert specified fields to datetime dtypes to ensure proper date formatting for AGOL</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>dataframe</code></strong> :&ensp;<code>pd.DataFrame</code></dt>
+<dd>The source dataframe</dd>
+<dt><strong><code>date_fields</code></strong> :&ensp;<code>List[int]</code></dt>
+<dd>The fields to convert to datetime</dd>
+<dt><strong><code>**to_datetime_kwargs</code></strong> :&ensp;<code>keyword arguments</code>, optional</dt>
+<dd>Arguments to pass through to pd.to_datetime</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>pd.DataFrame</code></dt>
+<dd>The source dataframe with converted fields.</dd>
+</dl></div>
 </dd>
 <dt id="palletjack.transform.DataCleaning.switch_to_float"><code class="name flex">
 <span>def <span class="ident">switch_to_float</span></span>(<span>dataframe, fields_that_should_be_floats)</span>
 </code></dt>
 <dd>
-<div class="desc"><p>Convert specified fields to float, converting empty strings to None first as required</p>
-<h2 id="args">Args</h2>
-<dl>
-<dt><strong><code>dataframe</code></strong> :&ensp;<code>pd.DataFrame</code></dt>
-<dd>Input dataframe with columns to be converted</dd>
-<dt><strong><code>fields_that_should_be_floats</code></strong> :&ensp;<code>list[str]</code></dt>
-<dd>List of column names to be converted</dd>
-</dl>
-<h2 id="raises">Raises</h2>
-<dl>
-<dt><code>TypeError</code></dt>
-<dd>If any of the conversions fail. Often caused by values that aren't castable to floats
-(non-empty, non-numeric strings, etc)</dd>
-</dl>
-<h2 id="returns">Returns</h2>
-<dl>
-<dt><code>pd.DataFrame</code></dt>
-<dd>Input dataframe with columns converted to float</dd>
-</dl></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -765,30 +481,30 @@ def switch_to_float(dataframe, fields_that_should_be_floats):
         ) from error
     return retyped</code></pre>
 </details>
-</dd>
-<dt id="palletjack.transform.DataCleaning.switch_to_nullable_int"><code class="name flex">
-<span>def <span class="ident">switch_to_nullable_int</span></span>(<span>dataframe, fields_that_should_be_ints)</span>
-</code></dt>
-<dd>
-<div class="desc"><p>Convert specified fields to panda's nullable Int64 type to preserve int to EsriFieldTypeInteger mapping</p>
+<div class="desc"><p>Convert specified fields to float, converting empty strings to None first as required</p>
 <h2 id="args">Args</h2>
 <dl>
 <dt><strong><code>dataframe</code></strong> :&ensp;<code>pd.DataFrame</code></dt>
 <dd>Input dataframe with columns to be converted</dd>
-<dt><strong><code>fields_that_should_be_ints</code></strong> :&ensp;<code>list[str]</code></dt>
+<dt><strong><code>fields_that_should_be_floats</code></strong> :&ensp;<code>list[str]</code></dt>
 <dd>List of column names to be converted</dd>
 </dl>
 <h2 id="raises">Raises</h2>
 <dl>
 <dt><code>TypeError</code></dt>
-<dd>If any of the conversions fail. Often caused by values that aren't int-castable floats (ie. x.0)
-or np.nans.</dd>
+<dd>If any of the conversions fail. Often caused by values that aren't castable to floats
+(non-empty, non-numeric strings, etc)</dd>
 </dl>
 <h2 id="returns">Returns</h2>
 <dl>
 <dt><code>pd.DataFrame</code></dt>
-<dd>Input dataframe with columns converted to nullable Int64</dd>
+<dd>Input dataframe with columns converted to float</dd>
 </dl></div>
+</dd>
+<dt id="palletjack.transform.DataCleaning.switch_to_nullable_int"><code class="name flex">
+<span>def <span class="ident">switch_to_nullable_int</span></span>(<span>dataframe, fields_that_should_be_ints)</span>
+</code></dt>
+<dd>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -819,6 +535,25 @@ def switch_to_nullable_int(dataframe, fields_that_should_be_ints):
         ) from error
     return retyped</code></pre>
 </details>
+<div class="desc"><p>Convert specified fields to panda's nullable Int64 type to preserve int to EsriFieldTypeInteger mapping</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>dataframe</code></strong> :&ensp;<code>pd.DataFrame</code></dt>
+<dd>Input dataframe with columns to be converted</dd>
+<dt><strong><code>fields_that_should_be_ints</code></strong> :&ensp;<code>list[str]</code></dt>
+<dd>List of column names to be converted</dd>
+</dl>
+<h2 id="raises">Raises</h2>
+<dl>
+<dt><code>TypeError</code></dt>
+<dd>If any of the conversions fail. Often caused by values that aren't int-castable floats (ie. x.0)
+or np.nans.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>pd.DataFrame</code></dt>
+<dd>Input dataframe with columns converted to nullable Int64</dd>
+</dl></div>
 </dd>
 </dl>
 </dd>
@@ -826,7 +561,6 @@ def switch_to_nullable_int(dataframe, fields_that_should_be_ints):
 <span>class <span class="ident">FeatureServiceMerging</span></span>
 </code></dt>
 <dd>
-<div class="desc"><p>Get the live dataframe from a feature service and update it from another dataframe</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -896,32 +630,13 @@ def switch_to_nullable_int(dataframe, fields_that_should_be_ints):
 
         return live_dataframe</code></pre>
 </details>
+<div class="desc"><p>Get the live dataframe from a feature service and update it from another dataframe</p></div>
 <h3>Static methods</h3>
 <dl>
 <dt id="palletjack.transform.FeatureServiceMerging.get_live_dataframe"><code class="name flex">
 <span>def <span class="ident">get_live_dataframe</span></span>(<span>gis, feature_service_itemid, layer_index=0)</span>
 </code></dt>
 <dd>
-<div class="desc"><p>Get a spatially-enabled dataframe representation of a hosted feature layer</p>
-<h2 id="args">Args</h2>
-<dl>
-<dt><strong><code>gis</code></strong> :&ensp;<code>arcgis.gis.GIS</code></dt>
-<dd>GIS object of the desired organization</dd>
-<dt><strong><code>feature_service_itemid</code></strong> :&ensp;<code>str</code></dt>
-<dd>itemid in the gis of the desired hosted feature service</dd>
-<dt><strong><code>layer_index</code></strong> :&ensp;<code>int</code>, optional</dt>
-<dd>Index of the desired layer within the hosted feature service. Defaults to 0.</dd>
-</dl>
-<h2 id="raises">Raises</h2>
-<dl>
-<dt><code>RuntimeError</code></dt>
-<dd>If it fails to load the data</dd>
-</dl>
-<h2 id="returns">Returns</h2>
-<dl>
-<dt><code>pd.DataFrame.spatial</code></dt>
-<dd>Spatially-enabled dataframe representation of the hosted feature layer</dd>
-</dl></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -952,34 +667,31 @@ def get_live_dataframe(gis, feature_service_itemid, layer_index=0):
 
     return live_dataframe</code></pre>
 </details>
+<div class="desc"><p>Get a spatially-enabled dataframe representation of a hosted feature layer</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>gis</code></strong> :&ensp;<code>arcgis.gis.GIS</code></dt>
+<dd>GIS object of the desired organization</dd>
+<dt><strong><code>feature_service_itemid</code></strong> :&ensp;<code>str</code></dt>
+<dd>itemid in the gis of the desired hosted feature service</dd>
+<dt><strong><code>layer_index</code></strong> :&ensp;<code>int</code>, optional</dt>
+<dd>Index of the desired layer within the hosted feature service. Defaults to 0.</dd>
+</dl>
+<h2 id="raises">Raises</h2>
+<dl>
+<dt><code>RuntimeError</code></dt>
+<dd>If it fails to load the data</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>pd.DataFrame.spatial</code></dt>
+<dd>Spatially-enabled dataframe representation of the hosted feature layer</dd>
+</dl></div>
 </dd>
 <dt id="palletjack.transform.FeatureServiceMerging.update_live_data_with_new_data"><code class="name flex">
 <span>def <span class="ident">update_live_data_with_new_data</span></span>(<span>live_dataframe, new_dataframe, join_column)</span>
 </code></dt>
 <dd>
-<div class="desc"><p>Update a dataframe with data from another</p>
-<h2 id="args">Args</h2>
-<dl>
-<dt><strong><code>live_dataframe</code></strong> :&ensp;<code>pd.DataFrame</code></dt>
-<dd>The dataframe containing info to be updated</dd>
-<dt><strong><code>new_dataframe</code></strong> :&ensp;<code>pd.DataFrame</code></dt>
-<dd>Dataframe containing source info to use in the update</dd>
-<dt><strong><code>join_column</code></strong> :&ensp;<code>str</code></dt>
-<dd>The column with unique IDs to be used as a key between the two dataframes</dd>
-</dl>
-<h2 id="raises">Raises</h2>
-<dl>
-<dt><code>ValueError</code></dt>
-<dd>If the join_column is missing from either live or new data</dd>
-<dt><code>RuntimeWarning</code></dt>
-<dd>If there are rows in the new data that are not found in the live data; these will not be
-added to the live dataframe.</dd>
-</dl>
-<h2 id="returns">Returns</h2>
-<dl>
-<dt><code>pd.DataFrame</code></dt>
-<dd>The updated dataframe, with data types converted via .convert_dtypes()</dd>
-</dl></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -1020,6 +732,29 @@ def update_live_data_with_new_data(live_dataframe, new_dataframe, join_column):
     live_dataframe.update(new_dataframe)
     return live_dataframe.reset_index().convert_dtypes()</code></pre>
 </details>
+<div class="desc"><p>Update a dataframe with data from another</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>live_dataframe</code></strong> :&ensp;<code>pd.DataFrame</code></dt>
+<dd>The dataframe containing info to be updated</dd>
+<dt><strong><code>new_dataframe</code></strong> :&ensp;<code>pd.DataFrame</code></dt>
+<dd>Dataframe containing source info to use in the update</dd>
+<dt><strong><code>join_column</code></strong> :&ensp;<code>str</code></dt>
+<dd>The column with unique IDs to be used as a key between the two dataframes</dd>
+</dl>
+<h2 id="raises">Raises</h2>
+<dl>
+<dt><code>ValueError</code></dt>
+<dd>If the join_column is missing from either live or new data</dd>
+<dt><code>RuntimeWarning</code></dt>
+<dd>If there are rows in the new data that are not found in the live data; these will not be
+added to the live dataframe.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>pd.DataFrame</code></dt>
+<dd>The updated dataframe, with data types converted via .convert_dtypes()</dd>
+</dl></div>
 </dd>
 </dl>
 </dd>
@@ -1027,7 +762,6 @@ def update_live_data_with_new_data(live_dataframe, new_dataframe, join_column):
 </section>
 </article>
 <nav id="sidebar">
-<h1>Index</h1>
 <div class="toc">
 <ul></ul>
 </div>
@@ -1067,7 +801,7 @@ def update_live_data_with_new_data(live_dataframe, new_dataframe, join_column):
 </nav>
 </main>
 <footer id="footer">
-<p>Generated by <a href="https://pdoc3.github.io/pdoc" title="pdoc: Python API documentation generator"><cite>pdoc</cite> 0.10.0</a>.</p>
+<p>Generated by <a href="https://pdoc3.github.io/pdoc" title="pdoc: Python API documentation generator"><cite>pdoc</cite> 0.11.5</a>.</p>
 </footer>
 </body>
 </html>
