@@ -1,5 +1,22 @@
 # Changelog
 
+## [5.2.4-0](https://github.com/agrc/palletjack/compare/v5.2.3...v5.2.4-0) (2025-07-31)
+
+
+### Features
+
+* generalized method to convert any df to gdf ([c314223](https://github.com/agrc/palletjack/commit/c314223ed2eba7cb6a220bea6186fbacf352df00))
+
+
+### Bug Fixes
+
+* handle gdf types in geometry checker ([eb77ae1](https://github.com/agrc/palletjack/commit/eb77ae1d7c410b26d145e84e23edf8a72ea8a65e))
+
+
+### Dependencies
+
+* update for dbot ([9024368](https://github.com/agrc/palletjack/commit/9024368296706b07be957ea58582be43d985b9ae))
+
 ## [5.2.3](https://github.com/agrc/palletjack/compare/v5.2.2...v5.2.3) (2025-06-23)
 
 
