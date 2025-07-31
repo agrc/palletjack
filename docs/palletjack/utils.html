@@ -437,10 +437,10 @@ class FieldChecker:
         &#34;&#34;&#34;
 
         field_checker = cls(live_data_properties, new_dataframe)
+        field_checker.check_fields_present(fields, add_oid=add_oid)
         field_checker.check_live_and_new_field_types_match(fields)
         field_checker.check_for_non_null_fields(fields)
         field_checker.check_field_length(fields)
-        field_checker.check_fields_present(fields, add_oid=add_oid)
         field_checker.check_srs_wgs84()
         field_checker.check_nullable_ints_shapely()
 
@@ -647,6 +647,7 @@ class FieldChecker:
         live_fields = set(self.fields_dataframe[&#39;name&#39;])
         new_fields = set(self.new_dataframe.columns)
         working_fields = set(fields)
+        working_fields.discard(&#39;SHAPE&#39;)  #: The fields from the feature layer properties don&#39;t include the SHAPE field.
         if add_oid:
             working_fields.add(&#39;OBJECTID&#39;)
 
@@ -1995,10 +1996,10 @@ Provides the check_fields class method to run all the checks in one call with ha
         &#34;&#34;&#34;
 
         field_checker = cls(live_data_properties, new_dataframe)
+        field_checker.check_fields_present(fields, add_oid=add_oid)
         field_checker.check_live_and_new_field_types_match(fields)
         field_checker.check_for_non_null_fields(fields)
         field_checker.check_field_length(fields)
-        field_checker.check_fields_present(fields, add_oid=add_oid)
         field_checker.check_srs_wgs84()
         field_checker.check_nullable_ints_shapely()
 
@@ -2205,6 +2206,7 @@ Provides the check_fields class method to run all the checks in one call with ha
         live_fields = set(self.fields_dataframe[&#39;name&#39;])
         new_fields = set(self.new_dataframe.columns)
         working_fields = set(fields)
+        working_fields.discard(&#39;SHAPE&#39;)  #: The fields from the feature layer properties don&#39;t include the SHAPE field.
         if add_oid:
             working_fields.add(&#39;OBJECTID&#39;)
 
@@ -2309,10 +2311,10 @@ def check_fields(cls, live_data_properties, new_dataframe, fields, add_oid):
     &#34;&#34;&#34;
 
     field_checker = cls(live_data_properties, new_dataframe)
+    field_checker.check_fields_present(fields, add_oid=add_oid)
     field_checker.check_live_and_new_field_types_match(fields)
     field_checker.check_for_non_null_fields(fields)
     field_checker.check_field_length(fields)
-    field_checker.check_fields_present(fields, add_oid=add_oid)
     field_checker.check_srs_wgs84()
     field_checker.check_nullable_ints_shapely()</code></pre>
 </details>
@@ -2407,6 +2409,7 @@ OBJECTID, such as upsert)</dd>
     live_fields = set(self.fields_dataframe[&#39;name&#39;])
     new_fields = set(self.new_dataframe.columns)
     working_fields = set(fields)
+    working_fields.discard(&#39;SHAPE&#39;)  #: The fields from the feature layer properties don&#39;t include the SHAPE field.
     if add_oid:
         working_fields.add(&#39;OBJECTID&#39;)
 
