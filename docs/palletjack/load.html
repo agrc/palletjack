@@ -234,7 +234,7 @@ class FeatureServiceUpdater:
         utils.FieldChecker.check_fields(self.feature_layer.properties, self.new_dataframe, self.fields, add_oid=False)
 
         #: Upsert
-        append_count = self._upsert_data(
+        append_count = self._upload_data(
             self.feature_layer,
             self.new_dataframe,
             upsert=False,
@@ -311,7 +311,7 @@ class FeatureServiceUpdater:
         utils.FieldChecker.check_fields(self.feature_layer.properties, self.new_dataframe, self.fields, add_oid=True)
 
         #: Upsert
-        append_count = self._upsert_data(
+        append_count = self._upload_data(
             self.feature_layer,
             self.new_dataframe,
             upsert=True,
@@ -322,7 +322,7 @@ class FeatureServiceUpdater:
         return append_count
 
     #: TODO: rename this method? not everything is an upsert
-    def _upsert_data(self, target_featurelayer, dataframe, **append_kwargs):
+    def _upload_data(self, target_featurelayer, dataframe, **append_kwargs):
         &#34;&#34;&#34;UPdate and inSERT data into live dataset with featurelayer.append()
 
         Note: The call to to_featureset() in this method will add new OBJECTIDs to the new data if they aren&#39;t already present.
@@ -419,7 +419,7 @@ class FeatureServiceUpdater:
 
         try:
             self._class_logger.info(&#39;Loading new data...&#39;)
-            append_count = self._upsert_data(self.feature_layer, self.new_dataframe, upsert=False)
+            append_count = self._upload_data(self.feature_layer, self.new_dataframe, upsert=False)
             self._class_logger.debug(&#39;Total truncate and load time: %s&#39;, datetime.now() - start)
         except Exception:
             if self.failsafe_dir:
@@ -1683,7 +1683,7 @@ data to match the hosted feature service's projection.</p></div>
         utils.FieldChecker.check_fields(self.feature_layer.properties, self.new_dataframe, self.fields, add_oid=False)
 
         #: Upsert
-        append_count = self._upsert_data(
+        append_count = self._upload_data(
             self.feature_layer,
             self.new_dataframe,
             upsert=False,
@@ -1760,7 +1760,7 @@ data to match the hosted feature service's projection.</p></div>
         utils.FieldChecker.check_fields(self.feature_layer.properties, self.new_dataframe, self.fields, add_oid=True)
 
         #: Upsert
-        append_count = self._upsert_data(
+        append_count = self._upload_data(
             self.feature_layer,
             self.new_dataframe,
             upsert=True,
@@ -1771,7 +1771,7 @@ data to match the hosted feature service's projection.</p></div>
         return append_count
 
     #: TODO: rename this method? not everything is an upsert
-    def _upsert_data(self, target_featurelayer, dataframe, **append_kwargs):
+    def _upload_data(self, target_featurelayer, dataframe, **append_kwargs):
         &#34;&#34;&#34;UPdate and inSERT data into live dataset with featurelayer.append()
 
         Note: The call to to_featureset() in this method will add new OBJECTIDs to the new data if they aren&#39;t already present.
@@ -1868,7 +1868,7 @@ data to match the hosted feature service's projection.</p></div>
 
         try:
             self._class_logger.info(&#39;Loading new data...&#39;)
-            append_count = self._upsert_data(self.feature_layer, self.new_dataframe, upsert=False)
+            append_count = self._upload_data(self.feature_layer, self.new_dataframe, upsert=False)
             self._class_logger.debug(&#39;Total truncate and load time: %s&#39;, datetime.now() - start)
         except Exception:
             if self.failsafe_dir:
