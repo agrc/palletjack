@@ -46,6 +46,7 @@ setup(
         "pygsheets==2.0.*",
         "pysftp==0.2.9",
         "SQLAlchemy>=1.4,<2.1",
+        "paramiko<4.0.0",
     ],
     extras_require={
         "tests": [
