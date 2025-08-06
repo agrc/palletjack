@@ -1,5 +1,12 @@
 # Changelog
 
+## [5.2.5-rc.1](https://github.com/agrc/palletjack/compare/v5.2.4...v5.2.5-rc.1) (2025-08-06)
+
+
+### Bug Fixes
+
+* **deps:** pin to working version of paramiko ([45d3374](https://github.com/agrc/palletjack/commit/45d337467f46d55dde7d4eb21a396b380ff9f5a9))
+
 ## [5.2.4](https://github.com/agrc/palletjack/compare/v5.2.3...v5.2.4) (2025-07-31)
 
 
