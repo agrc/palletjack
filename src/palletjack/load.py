@@ -341,8 +341,11 @@ class ServiceUpdater:
         gdf = utils.convert_to_gdf(dataframe)
 
         try:
-            #: promote_to_multi=True changes geometries to Multi* types if they aren't already
-            gdf.to_file(gdb_path, layer="upload", engine="pyogrio", driver="OpenFileGDB", promote_to_multi=True)
+            #: promote non-point geometries to their Multi* equivalents
+            geom_types = gdf.geometry.geom_type.astype(str).str.lower().unique()
+            promote = not any("point" in gt for gt in geom_types)
+
+            gdf.to_file(gdb_path, layer="upload", engine="pyogrio", driver="OpenFileGDB", promote_to_multi=promote)
         except pyogrio.errors.DataSourceError as error:
             raise ValueError(
                 f"Error writing layer to {gdb_path}. Verify {self.working_dir} exists and is writable."
