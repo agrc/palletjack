@@ -1119,17 +1119,17 @@ class TestCondenseGeopandasMultiTypes:
 
         np.testing.assert_array_equal(result, ["MultiLineString"])
 
-    def test__condense_geopandas_multi_types_point_and_multipoint_condenses_to_multipoint(self, mocker):
+    def test__condense_geopandas_multi_types_point_and_multipoint_does_not_condense(self, mocker):
         unique_types = np.array(["Point", "MultiPoint"])
         result = palletjack.utils.FieldChecker._condense_geopandas_multi_types(mocker.Mock(), unique_types)
 
-        np.testing.assert_array_equal(result, ["MultiPoint"])
+        np.testing.assert_array_equal(result, ["Point", "MultiPoint"])
 
     def test__condense_geopandas_multi_types_passes_heterogenous_types(self, mocker):
-        unique_types = np.array(["Point", "MultiPoint", "Polygon"])
+        unique_types = np.array(["LineString", "MultiLineString", "Polygon"])
         result = palletjack.utils.FieldChecker._condense_geopandas_multi_types(mocker.Mock(), unique_types)
 
-        np.testing.assert_array_equal(result, ["MultiPoint", "Polygon"])
+        np.testing.assert_array_equal(result, ["MultiLineString", "Polygon"])
 
 
 class TestNullableIntWarning:

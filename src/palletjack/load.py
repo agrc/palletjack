@@ -342,6 +342,7 @@ class ServiceUpdater:
 
         try:
             #: promote non-point geometries to their Multi* equivalents
+            #: At this point, we assume that the field checker has verified homogenous geometry types
             geom_types = gdf.geometry.geom_type.astype(str).str.lower().unique()
             promote = not any("point" in gt for gt in geom_types)
 
