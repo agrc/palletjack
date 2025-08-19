@@ -1,5 +1,13 @@
 # Changelog
 
+## [5.2.6](https://github.com/agrc/palletjack/compare/v5.2.5...v5.2.6) (2025-08-19)
+
+
+### Bug Fixes
+
+* don't condense points and multipoints in field check ([fca734c](https://github.com/agrc/palletjack/commit/fca734ce0aebed373edc346f84d9eb5999aa7b87))
+* don't promote points to multipoints ([8dbe8c1](https://github.com/agrc/palletjack/commit/8dbe8c11ea98b49bc731fcac903dc3cda55f4ae9))
+
 ## [5.2.5](https://github.com/agrc/palletjack/compare/v5.2.4...v5.2.5) (2025-08-06)
 
 
