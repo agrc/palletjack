@@ -638,8 +638,6 @@ class FieldChecker:
             unique_types = unique_types[unique_types != "Polygon"]
         if "MultiLineString" in unique_types and "LineString" in unique_types:
             unique_types = unique_types[unique_types != "LineString"]
-        if "MultiPoint" in unique_types and "Point" in unique_types:
-            unique_types = unique_types[unique_types != "Point"]
 
         return unique_types
 
