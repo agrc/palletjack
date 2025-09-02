@@ -1,5 +1,12 @@
 # Changelog
 
+## [5.2.7](https://github.com/agrc/palletjack/compare/v5.2.6...v5.2.7) (2025-09-02)
+
+
+### Features
+
+* separate gdb upload from service update ([64b98f7](https://github.com/agrc/palletjack/commit/64b98f75c4edfc5238563cfb15348b2b55ea260b))
+
 ## [5.2.6](https://github.com/agrc/palletjack/compare/v5.2.5...v5.2.6) (2025-08-19)
 
 
