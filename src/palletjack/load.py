@@ -15,6 +15,7 @@ import numpy as np
 import pandas as pd
 import pyogrio
 from arcgis.features import GeoAccessor, GeoSeriesAccessor  # noqa: F401
+from arcgis.gis import Item
 
 from palletjack import utils
 
@@ -93,8 +94,9 @@ class ServiceUpdater:
         utils.FieldChecker.check_fields(self.service.properties, dataframe, fields, add_oid=False)
 
         #: Upload
-        append_count = self._upload_data(
-            dataframe,
+        gdb_item = self._upload_dataframe(dataframe)
+        append_count = self._update_service(
+            gdb_item,
             upsert=False,
         )
 
@@ -186,8 +188,10 @@ class ServiceUpdater:
         utils.FieldChecker.check_fields(self.service.properties, dataframe, fields, add_oid=True)
 
         #: Upload data
-        count = self._upload_data(
-            dataframe,
+        gdb_item = self._upload_dataframe(dataframe)
+        count = self._update_service(
+            gdb_item,
+            dataframe.columns,
             upsert=True,
             upsert_matching_field="OBJECTID",
             append_fields=fields,  #: Apparently this works if append_fields is all the fields, but not a subset?
@@ -230,12 +234,15 @@ class ServiceUpdater:
         #: Field checks to prevent various AGOL errors
         utils.FieldChecker.check_fields(self.service.properties, dataframe, fields, add_oid=False)
 
+        self._class_logger.info("Uploading new data...")
+        gdb_item = self._upload_dataframe(dataframe)
+
         self._class_logger.info("Truncating existing data...")
         self._truncate_existing_data()
 
         try:
             self._class_logger.info("Loading new data...")
-            append_count = self._upload_data(dataframe, upsert=False)
+            append_count = self._update_service(gdb_item, upsert=False)
             self._class_logger.debug("Total truncate and load time: %s", datetime.now() - start)
         except Exception:
             if save_old:
@@ -266,13 +273,34 @@ class ServiceUpdater:
 
         return fields
 
-    def _upload_data(self, dataframe: pd.DataFrame, **append_kwargs) -> int:
-        """Append a dataframe to a feature layer or table by uploading it as a zipped file gdb.
-
-        We first save the new dataframe as a layer or table in an empty geodatabase, then zip it and upload it to AGOL as a standalone item. We then call append on the target feature layer or table with this item as the source for the append, using upsert where appropriate to update existing data using OBJECTID as the join field. Afterwards, we delete the gdb item and the zipped gdb.
+    def _upload_dataframe(self, dataframe: pd.DataFrame) -> Item:
+        """Upload dataframe to AGOL as a zipped GDB for later use in _update_service.
 
         Args:
             dataframe (pd.DataFrame): A dataframe containing data to be added or upserted to the feature layer or table. The fields must match the live fields in name, type, and length (where applicable). For feature layers, the dataframe must have a SHAPE column containing geometries of the same type as the live data.
+
+        Returns:
+            Item: Reference to the GDB item in AGOL.
+        """
+
+        self._class_logger.debug("Saving data to gdb and zipping...")
+        zipped_gdb_path = self._save_to_gdb_and_zip(dataframe)
+
+        self._class_logger.debug("Uploading gdb to AGOL...")
+        gdb_item = self._upload_gdb(zipped_gdb_path)
+
+        self._cleanup(zipped_gdb_path=zipped_gdb_path)
+
+        return gdb_item
+
+    def _update_service(self, gdb_item: Item, dataframe_columns: pd.Index | None = None, **append_kwargs) -> int:
+        """Append a dataframe to a feature layer or table from a pre-uploaded GDB.
+
+        We call append on the target feature layer or table with the supplied GDB item as the source for the append, using upsert where appropriate to update existing data using OBJECTID as the join field. Afterwards, we delete the gdb item.
+
+        Args:
+            gdb_item (Item): A reference to a zipped gdb item already uploaded to AGOL. Checks should have already been performed on the source dataframe to ensure a smooth operation.
+            dataframe_columns (pd.Index, optional): The columns of the source dataframe. Required if using upsert. Defaults to None.
             **append_kwargs: Additional keyword arguments to pass to the append operation.
 
         Raises:
@@ -282,23 +310,18 @@ class ServiceUpdater:
         Returns:
             int: The number of records upserted.
         """
+
         try:
             if append_kwargs["upsert"] and (
                 append_kwargs["upsert_matching_field"] not in append_kwargs["append_fields"]
-                or append_kwargs["upsert_matching_field"] not in dataframe.columns
+                or append_kwargs["upsert_matching_field"] not in dataframe_columns
             ):
                 raise ValueError(
                     f"Upsert matching field {append_kwargs['upsert_matching_field']} not found in either append fields or existing fields."
                 )
         except KeyError:
             pass
-        self._class_logger.debug("Saving data to gdb and zipping...")
-        zipped_gdb_path = self._save_to_gdb_and_zip(dataframe)
 
-        self._class_logger.debug("Uploading gdb to AGOL...")
-        gdb_item = self._upload_gdb(zipped_gdb_path)
-
-        self._class_logger.debug("Appending data from gdb to target...")
         try:
             result, messages = utils.retry(
                 self.service.append,
@@ -314,7 +337,7 @@ class ServiceUpdater:
         except Exception as error:
             raise RuntimeError("Failed to append data from gdb, changes should have been rolled back") from error
 
-        self._cleanup(gdb_item, zipped_gdb_path)
+        self._cleanup(gdb_item=gdb_item)
 
         return messages["recordCount"]
 
@@ -358,7 +381,7 @@ class ServiceUpdater:
 
         return zipped_gdb_path
 
-    def _upload_gdb(self, zipped_gdb_path: Path) -> arcgis.gis.Item:
+    def _upload_gdb(self, zipped_gdb_path: Path) -> Item:
         """Add a zipped gdb to AGOL as an item to self.gis
 
         Args:
@@ -368,7 +391,7 @@ class ServiceUpdater:
             RuntimeError: If there is an error uploading the gdb to AGOL
 
         Returns:
-            arcgis.gis.Item: Reference to the resulting Item object in self.gis
+            Item: Reference to the resulting Item object in self.gis
         """
 
         title = f"{self.gdb_item_prefix} Temporary gdb upload"
@@ -409,28 +432,30 @@ class ServiceUpdater:
             raise RuntimeError(f"Error uploading {zipped_gdb_path} to AGOL") from error
         return gdb_item
 
-    def _cleanup(self, gdb_item: arcgis.gis.Item, zipped_gdb_path: Path) -> None:
+    def _cleanup(self, gdb_item: Item | None = None, zipped_gdb_path: Path | None = None) -> None:
         """Remove the zipped gdb from disk and the gdb item from AGOL
 
         Args:
-            gdb_item (arcgis.gis.Item): Reference to the gdb item in self.gis
+            gdb_item (Item): Reference to the gdb item in self.gis
             zipped_gdb_path (Path): Path to the gdb on disk
 
         Raises:
             RuntimeError: If there are errors deleting the gdb item or the zipped gdb
         """
 
-        try:
-            gdb_item.delete()
-        except Exception as error:
-            warnings.warn(f"Error deleting gdb item {gdb_item.id} from AGOL")
-            warnings.warn(repr(error))
+        if gdb_item:
+            try:
+                gdb_item.delete()
+            except Exception as error:
+                warnings.warn(f"Error deleting gdb item {gdb_item.id} from AGOL")
+                warnings.warn(repr(error))
 
-        try:
-            zipped_gdb_path.unlink()
-        except Exception as error:
-            warnings.warn(f"Error deleting zipped gdb {zipped_gdb_path}")
-            warnings.warn(repr(error))
+        if zipped_gdb_path:
+            try:
+                zipped_gdb_path.unlink()
+            except Exception as error:
+                warnings.warn(f"Error deleting zipped gdb {zipped_gdb_path}")
+                warnings.warn(repr(error))
 
     def _truncate_existing_data(self) -> None:
         """Remove all existing features from the live dataset
