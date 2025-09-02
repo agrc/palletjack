@@ -93,14 +93,15 @@ class TestUpdateLayer:
         fl_mock = mocker.Mock()
         updater_mock.service = fl_mock
 
-        updater_mock._upload_data.return_value = {"recordCount": 1}
+        updater_mock._update_service.return_value = {"recordCount": 1}
 
         field_checker_mock = mocker.patch("palletjack.utils.FieldChecker")
 
         load.ServiceUpdater.update(updater_mock, new_dataframe, update_geometry=True)
 
-        updater_mock._upload_data.assert_called_once_with(
-            new_dataframe,
+        updater_mock._update_service.assert_called_once_with(
+            updater_mock._upload_dataframe.return_value,
+            new_dataframe.columns,
             upsert=True,
             upsert_matching_field="OBJECTID",
             append_fields=["foo", "bar", "OBJECTID", "SHAPE"],
@@ -122,7 +123,7 @@ class TestUpdateLayer:
         updater_mock.service = mocker.Mock()
         updater_mock.service.properties.fields = {"a": [1], "b": [2]}
 
-        updater_mock._upload_data.return_value = {"recordCount": 1}
+        updater_mock._update_service.return_value = {"recordCount": 1}
 
         mocker.patch.multiple(
             "palletjack.utils.FieldChecker",
@@ -156,15 +157,16 @@ class TestUpdateLayer:
         updater_mock.service.properties = {"geometryType": "esriGeometryPoint"}
         updater_mock.index = 0
 
-        updater_mock._upload_data.return_value = {"recordCount": 1}
+        updater_mock._update_service.return_value = {"recordCount": 1}
 
         field_checker_mock = mocker.patch("palletjack.utils.FieldChecker")
         null_generator_mock = mocker.patch("palletjack.utils.get_null_geometries", return_value="Nullo")
 
         load.ServiceUpdater.update(updater_mock, new_dataframe, update_geometry=False)
 
-        updater_mock._upload_data.assert_called_once_with(
-            new_dataframe,
+        updater_mock._update_service.assert_called_once_with(
+            updater_mock._upload_dataframe.return_value,
+            new_dataframe.columns,
             upsert=True,
             upsert_matching_field="OBJECTID",
             append_fields=["foo", "bar", "OBJECTID"],
@@ -187,14 +189,14 @@ class TestAddToLayer:
         updater_mock.service = mocker.Mock()
         updater_mock.index = 0
 
-        updater_mock._upload_data.return_value = {"recordCount": 1}
+        updater_mock._update_service.return_value = {"recordCount": 1}
 
         field_checker_mock = mocker.patch("palletjack.utils.FieldChecker")
 
         load.ServiceUpdater.add(updater_mock, new_dataframe)
 
-        updater_mock._upload_data.assert_called_once_with(
-            new_dataframe,
+        updater_mock._update_service.assert_called_once_with(
+            updater_mock._upload_dataframe.return_value,
             upsert=False,
         )
 
@@ -213,7 +215,7 @@ class TestAddToLayer:
         updater_mock.service.properties.fields = {"a": [1], "b": [2]}
         updater_mock.index = 0
 
-        updater_mock._upload_data.return_value = {"recordCount": 1}
+        updater_mock._update_service.return_value = {"recordCount": 1}
 
         mocker.patch.multiple(
             "palletjack.utils.FieldChecker",
@@ -340,7 +342,7 @@ class TestTruncateAndLoadLayer:
 
         mocker.patch("palletjack.utils.FieldChecker")
 
-        updater_mock._upload_data.return_value = 42
+        updater_mock._update_service.return_value = 42
 
         uploaded_features = load.ServiceUpdater.truncate_and_load(updater_mock, new_dataframe)
 
@@ -363,14 +365,14 @@ class TestTruncateAndLoadLayer:
         mocker.patch("palletjack.utils.sleep")
         mocker.patch("palletjack.utils.save_to_gdb", return_value="bar_path")
 
-        updater_mock._upload_data.side_effect = RuntimeError(
+        updater_mock._update_service.side_effect = RuntimeError(
             "Failed to append data. Append operation should have been rolled back."
         )
 
         with pytest.raises(RuntimeError, match="Failed to append data. Append operation should have been rolled back."):
             uploaded_features = load.ServiceUpdater.truncate_and_load(updater_mock, new_dataframe, save_old=True)
 
-        updater_mock._upload_data.assert_called_once_with(new_dataframe, upsert=False)
+        updater_mock._update_service.assert_called_once_with(updater_mock._upload_dataframe.return_value, upsert=False)
         assert "Append failed. Data saved to bar_path" in caplog.text
 
     def test_truncate_and_load_append_fails_save_old_false(self, mocker, caplog):
@@ -389,14 +391,14 @@ class TestTruncateAndLoadLayer:
         mocker.patch("palletjack.utils.sleep")
         mocker.patch("palletjack.utils.save_to_gdb", return_value="bar_path")
 
-        updater_mock._upload_data.side_effect = RuntimeError(
+        updater_mock._update_service.side_effect = RuntimeError(
             "Failed to append data. Append operation should have been rolled back."
         )
 
         with pytest.raises(RuntimeError, match="Failed to append data. Append operation should have been rolled back."):
             uploaded_features = load.ServiceUpdater.truncate_and_load(updater_mock, new_dataframe)
 
-        updater_mock._upload_data.assert_called_once_with(new_dataframe, upsert=False)
+        updater_mock._update_service.assert_called_once_with(updater_mock._upload_dataframe.return_value, upsert=False)
 
         assert "Append failed. Old data not saved (save_old set to False)" in caplog.text
 
@@ -428,7 +430,7 @@ class TestTruncateAndLoadLayer:
             check_nullable_ints_shapely=mocker.DEFAULT,
         )
 
-        updater_mock._upload_data.return_value = 42
+        updater_mock._update_service.return_value = 42
 
         uploaded_features = load.ServiceUpdater.truncate_and_load(updater_mock, new_dataframe)
 
@@ -486,7 +488,7 @@ class TestTruncateAndLoadLayer:
 
         mocker.patch("palletjack.utils.sleep")
 
-        updater_mock._upload_data.return_value = {"recordCount": 42}
+        updater_mock._update_service.return_value = {"recordCount": 42}
 
         #: Should not raise
         uploaded_features = load.ServiceUpdater.truncate_and_load(updater_mock, spatial_df)
@@ -971,8 +973,8 @@ class TestAttachments:
         ]
 
 
-class TestUploadData:
-    def test_upload_data_calls_append_with_proper_args(self, mocker):
+class TestUpdateService:
+    def test_update_service_calls_append_with_proper_args(self, mocker):
         expected_kwargs = {
             "item_id": "1234",
             "upload_format": "filegdb",
@@ -982,67 +984,127 @@ class TestUploadData:
             "return_messages": True,
         }
         updater_mock = mocker.Mock()
-        updater_mock._upload_gdb.return_value.id = "1234"
         updater_mock.service = mocker.Mock()
         updater_mock.service.append.return_value = (True, {"recordCount": 42})
 
-        load.ServiceUpdater._upload_data(updater_mock, mocker.Mock(), upsert=True)
+        gdb_item_mock = mocker.Mock()
+        gdb_item_mock.id = "1234"
+
+        load.ServiceUpdater._update_service(updater_mock, gdb_item_mock, upsert=True)
 
         updater_mock.service.append.assert_called_once_with(**expected_kwargs)
 
-    def test_upload_data_retries_on_exception(self, mocker):
+    def test_update_service_retries_on_exception(self, mocker):
         updater_mock = mocker.Mock()
-        updater_mock._upload_gdb.return_value.id = "1234"
         updater_mock.service = mocker.Mock()
         updater_mock.service.append.side_effect = [Exception, (True, {"recordCount": 42})]
         mocker.patch("palletjack.utils.sleep")
 
-        load.ServiceUpdater._upload_data(updater_mock, mocker.Mock(), upsert=True)
+        load.ServiceUpdater._update_service(updater_mock, mocker.Mock(), upsert=True)
 
         assert updater_mock.service.append.call_count == 2
 
-    def test_upload_data_raises_on_False_result(self, mocker):
+    def test_update_service_raises_on_False_result(self, mocker):
         expected_inner_error = "Append failed but did not error"
         expected_outer_error = "Failed to append data from gdb, changes should have been rolled back"
         updater_mock = mocker.Mock()
-        updater_mock._upload_gdb.return_value.id = "1234"
         updater_mock.service = mocker.Mock()
         updater_mock.service.append.return_value = (False, {"message": "foo"})
 
+        gdb_item_mock = mocker.Mock()
+        gdb_item_mock.id = "1234"
+
         with pytest.raises(RuntimeError) as exc_info:
-            load.ServiceUpdater._upload_data(updater_mock, mocker.Mock(), upsert=True)
+            load.ServiceUpdater._update_service(updater_mock, gdb_item_mock, upsert=True)
 
         assert exc_info.value.args[0] == expected_outer_error
         assert exc_info.value.__cause__.args[0] == expected_inner_error
 
-    def test_upload_data_raises_on_upsert_field_not_in_append_fields(self, mocker):
+    def test_update_service_raises_on_upsert_field_not_in_append_fields(self, mocker):
         append_kwargs = {"upsert_matching_field": "foo", "append_fields": ["bar", "baz"], "upsert": True}
         with pytest.raises(ValueError) as exc_info:
-            load.ServiceUpdater._upload_data(mocker.Mock(), mocker.Mock(), **append_kwargs)
+            load.ServiceUpdater._update_service(mocker.Mock(), mocker.Mock(), **append_kwargs)
 
         assert (
             exc_info.value.args[0] == "Upsert matching field foo not found in either append fields or existing fields."
         )
 
-    def test_upload_data_raises_on_upsert_field_not_in_dataframe_columns(self, mocker):
+    def test_update_service_raises_on_upsert_field_not_in_dataframe_columns(self, mocker):
         append_kwargs = {"upsert_matching_field": "foo", "append_fields": ["foo", "bar"], "upsert": True}
         df = pd.DataFrame(columns=["bar", "baz"])
         with pytest.raises(ValueError) as exc_info:
-            load.ServiceUpdater._upload_data(mocker.Mock(), df, **append_kwargs)
+            load.ServiceUpdater._update_service(mocker.Mock(), mocker.Mock(), df.columns, **append_kwargs)
 
         assert (
             exc_info.value.args[0] == "Upsert matching field foo not found in either append fields or existing fields."
         )
 
-    def test_upload_data_raises_on_upsert_field_not_in_dataframe_columns_and_append_fields(self, mocker):
+    def test_update_service_raises_on_upsert_field_not_in_dataframe_columns_and_append_fields(self, mocker):
         append_kwargs = {"upsert_matching_field": "foo", "append_fields": ["bar", "baz"], "upsert": True}
         df = pd.DataFrame(columns=["bar", "baz"])
         with pytest.raises(ValueError) as exc_info:
-            load.ServiceUpdater._upload_data(mocker.Mock(), df, **append_kwargs)
+            load.ServiceUpdater._update_service(mocker.Mock(), mocker.Mock(), df.columns, **append_kwargs)
 
         assert (
             exc_info.value.args[0] == "Upsert matching field foo not found in either append fields or existing fields."
         )
+
+
+class TestUploadDataframe:
+    def test_upload_dataframe_calls_cleanup_with_zipped_path(self, mocker):
+        updater_mock = mocker.Mock()
+
+        load.ServiceUpdater._upload_dataframe(updater_mock, mocker.Mock())
+
+        assert updater_mock._cleanup.called_once_with(updater_mock._upload_gdb.return_value)
+
+
+class TestCleanup:
+    def test_cleanup_calls_item_delete(self, mocker):
+        gdb_item_mock = mocker.Mock()
+        updater_mock = mocker.Mock()
+
+        load.ServiceUpdater._cleanup(updater_mock, gdb_item=gdb_item_mock)
+
+        gdb_item_mock.delete.assert_called_once()
+
+    def test_cleanup_removes_zipped_file_on_filesystem(self, mocker):
+        gdb_path_mock = mocker.Mock(spec=Path)
+
+        updater_mock = mocker.Mock()
+
+        load.ServiceUpdater._cleanup(updater_mock, zipped_gdb_path=gdb_path_mock)
+
+        gdb_path_mock.unlink.assert_called_once()
+
+    def test_cleanup_does_both(self, mocker):
+        gdb_item_mock = mocker.Mock()
+        gdb_path_mock = mocker.Mock(spec=Path)
+
+        updater_mock = mocker.Mock()
+
+        load.ServiceUpdater._cleanup(updater_mock, gdb_item=gdb_item_mock, zipped_gdb_path=gdb_path_mock)
+
+        gdb_item_mock.delete.assert_called_once()
+        gdb_path_mock.unlink.assert_called_once()
+
+    def test_cleanup_warns_on_exceptions(self, mocker):
+        gdb_item_mock = mocker.Mock()
+        gdb_item_mock.delete.side_effect = Exception("foo")
+        gdb_path_mock = mocker.Mock(spec=Path)
+        gdb_path_mock.unlink.side_effect = Exception("bar")
+
+        updater_mock = mocker.Mock()
+        updater_mock._class_logger = logging.getLogger("mock logger")
+
+        with warnings.catch_warnings(record=True) as warning_list:
+            load.ServiceUpdater._cleanup(updater_mock, gdb_item=gdb_item_mock, zipped_gdb_path=gdb_path_mock)
+
+        assert len(warning_list) == 4
+        assert "Error deleting gdb item" in str(warning_list[0].message)
+        assert "foo" in str(warning_list[1].message)
+        assert "Error deleting zipped gdb" in str(warning_list[2].message)
+        assert "bar" in str(warning_list[3].message)
 
 
 class TestColorRampReclassifier:
@@ -1397,14 +1459,14 @@ class TestAddToTable:
         updater_mock.service_type = "table"
         updater_mock.index = 0
 
-        updater_mock._upload_data.return_value = {"recordCount": 1}
+        updater_mock._update_service.return_value = {"recordCount": 1}
 
         field_checker_mock = mocker.patch("palletjack.utils.FieldChecker")
 
         load.ServiceUpdater.add(updater_mock, new_dataframe)
 
-        updater_mock._upload_data.assert_called_once_with(
-            new_dataframe,
+        updater_mock._update_service.assert_called_once_with(
+            updater_mock._upload_dataframe.return_value,
             upsert=False,
         )
 
@@ -1423,7 +1485,7 @@ class TestAddToTable:
         updater_mock.service.properties.fields = {"a": [1], "b": [2]}
         updater_mock.index = 0
 
-        updater_mock._upload_data.return_value = {"recordCount": 1}
+        updater_mock._update_service.return_value = {"recordCount": 1}
 
         mocker.patch.multiple(
             "palletjack.utils.FieldChecker",

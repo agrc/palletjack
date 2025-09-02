@@ -34,6 +34,7 @@ pip-log.txt
 arc.dir
 .pytest_cache
 __pycache__
+.ruff_cache
 
 .env/
 .DS_Store
