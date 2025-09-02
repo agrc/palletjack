@@ -1334,6 +1334,25 @@ class TestGDBStuff:
             promote_to_multi=False,
         )
 
+    def test__save_to_gdb_and_zip_does_not_promote_on_non_spatial_data(self, mocker):
+        updater_mock = mocker.Mock()
+        updater_mock.working_dir = "/foo/bar"
+        mocker.patch("palletjack.load.shutil.make_archive")
+        gdf_mock = mocker.patch("palletjack.utils.convert_to_gdf").return_value
+        gdf_mock.geometry.side_effect = AttributeError("No geometry column")
+
+        gdb_path = Path("/foo/bar/upload.gdb")
+
+        load.ServiceUpdater._save_to_gdb_and_zip(updater_mock, mocker.Mock())
+
+        assert gdf_mock.to_file.called_with(
+            gdb_path,
+            layer="upload",
+            engine="pyogrio",
+            driver="FileGDB",
+            promote_to_multi=False,
+        )
+
     def test__upload_gdb_calls_add_default_name(self, mocker):
         gdb_path = Path("/foo/bar/upload.gdb")
         expected_call_kwargs = {
