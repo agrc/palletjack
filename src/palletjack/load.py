@@ -364,11 +364,14 @@ class ServiceUpdater:
         gdf = utils.convert_to_gdf(dataframe)
 
         try:
-            #: promote non-point geometries to their Multi* equivalents
+            #: Figure out if we need to promote non-point geometries to their Multi* equivalents
             #: At this point, we assume that the field checker has verified homogenous geometry types
             geom_types = gdf.geometry.geom_type.astype(str).str.lower().unique()
             promote = not any("point" in gt for gt in geom_types)
+        except AttributeError:  #: A non-spatial gdf throws an AttributeError on gdf.geometry
+            promote = False
 
+        try:
             gdf.to_file(gdb_path, layer="upload", engine="pyogrio", driver="OpenFileGDB", promote_to_multi=promote)
         except pyogrio.errors.DataSourceError as error:
             raise ValueError(
