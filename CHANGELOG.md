@@ -1,5 +1,12 @@
 # Changelog
 
+## [5.2.8-rc.1](https://github.com/agrc/palletjack/compare/v5.2.7...v5.2.8-rc.1) (2025-09-02)
+
+
+### Bug Fixes
+
+* handle promote_to_multi check failing on non-spatial gdfs ([9caca7e](https://github.com/agrc/palletjack/commit/9caca7eafeaa7bdd09c9fe70d50d2e99167e7f56))
+
 ## [5.2.7](https://github.com/agrc/palletjack/compare/v5.2.6...v5.2.7) (2025-09-02)
 
 
