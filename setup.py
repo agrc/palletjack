@@ -55,7 +55,7 @@ setup(
             "pdoc3>=0.10,<0.12",
             "pytest-cov>=3,<7",
             "pytest-instafail~=0.4",
-            "pytest-mock>=3.10,<3.15",
+            "pytest-mock>=3.10,<3.16",
             "pytest-watch~=4.2",
             "pytest>=6,<9",
             "requests-mock==1.*",
