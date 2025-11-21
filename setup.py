@@ -57,7 +57,7 @@ setup(
             "pytest-instafail~=0.4",
             "pytest-mock>=3.10,<3.16",
             "pytest-watch~=4.2",
-            "pytest>=6,<9",
+            "pytest>=6,<10",
             "requests-mock==1.*",
             "ruff==0.*",
         ]
