@@ -1,5 +1,12 @@
 # Changelog
 
+## [5.2.9](https://github.com/agrc/palletjack/compare/v5.2.8...v5.2.9) (2025-11-21)
+
+
+### Dependencies
+
+* q4 dbot, dbot frequency ([543b32a](https://github.com/agrc/palletjack/commit/543b32aaa8edf9f4d61597245689b39456fb7788))
+
 ## [5.2.8](https://github.com/agrc/palletjack/compare/v5.2.7...v5.2.8) (2025-09-18)
 
 
