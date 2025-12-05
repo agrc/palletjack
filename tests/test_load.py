@@ -1409,16 +1409,53 @@ class TestGDBStuff:
     def test__upload_gdb_deletes_existing_item(self, mocker):
         gdb_path = Path("/foo/bar/upload.gdb")
         updater_mock = mocker.Mock()
-        deleteFunction = mocker.Mock()
-        updater_mock.gis.content.search.return_value = [mocker.Mock(id="1234", delete=deleteFunction)]
+        delete_function = mocker.Mock()
+        updater_mock.gis.content.search.return_value = [mocker.Mock(id="1234", delete=delete_function)]
         updater_mock.gis.content.add.return_value = mocker.Mock()
         updater_mock.gdb_item_prefix = "palletjack"
         updater_mock.gis.users.me.username = "test_user"
 
         load.ServiceUpdater._upload_gdb(updater_mock, gdb_path)
 
-        deleteFunction.assert_called_once()
+        delete_function.assert_called_once()
         updater_mock.gis.content.add.assert_called_once()
+
+    def test__upload_gdb_handles_missing_gdb_after_finding_gdb_and_continues(self, mocker, caplog):
+        caplog.set_level(logging.DEBUG)
+        gdb_path = Path("/foo/bar/upload.gdb")
+        updater_mock = mocker.Mock()
+        delete_function = mocker.Mock()
+        updater_mock.gis.content.search.return_value = [mocker.Mock(id="1234", delete=delete_function)]
+        updater_mock.gis.content.add.return_value = mocker.Mock()
+        delete_function.side_effect = [Exception("Item does not exist or is inaccessible.")] * 4
+        mocker.patch("palletjack.utils.sleep")
+
+        load.ServiceUpdater._upload_gdb(updater_mock, gdb_path)
+
+        # assert "Can't find or delete existing gdb, attempting to continue" in caplog.text
+        assert updater_mock._class_logger.debug.call_count == 2
+        assert (
+            updater_mock._class_logger.debug.call_args_list[1][0][0]
+            == "Can't find or delete existing gdb, attempting to continue"
+        )
+        assert delete_function.call_count == 4  #: retries
+        updater_mock.gis.content.add.assert_called_once()
+
+    def test__upload_gdb_raises_delete_error(self, mocker):
+        gdb_path = Path("/foo/bar/upload.gdb")
+        updater_mock = mocker.Mock()
+        delete_function = mocker.Mock()
+        updater_mock.gis.content.search.return_value = [mocker.Mock(id="1234", delete=delete_function)]
+        updater_mock.gis.content.add.return_value = mocker.Mock()
+        delete_function.side_effect = [RuntimeError("foo")] * 4
+        mocker.patch("palletjack.utils.sleep")
+        updater_mock.gdb_item_prefix = "palletjack"
+
+        with pytest.raises(RuntimeError) as exc_info:
+            load.ServiceUpdater._upload_gdb(updater_mock, gdb_path)
+
+        assert exc_info.value.args[0] == "Error deleting existing gdb item with title palletjack Temporary gdb upload"
+        assert delete_function.call_count == 4  #: retries
 
     def test__cleanup_deletes_agol_and_file(self, mocker):
         zipped_path = Path("/foo/bar/upload.gdb.zip")
