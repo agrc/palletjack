@@ -419,7 +419,10 @@ class ServiceUpdater:
             try:
                 utils.retry(search_results[0].delete)
             except Exception as error:
-                raise RuntimeError(f"Error deleting existing gdb item with title {title}") from error
+                if "Item does not exist or is inaccessible." in str(error):
+                    self._class_logger.debug("Can't find or delete existing gdb, attempting to continue")
+                else:
+                    raise RuntimeError(f"Error deleting existing gdb item with title {title}") from error
 
         try:
             gdb_item = utils.retry(
