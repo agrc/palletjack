@@ -1,5 +1,12 @@
 # Changelog
 
+## [5.2.10-rc.2](https://github.com/agrc/palletjack/compare/v5.2.10-rc.1...v5.2.10-rc.2) (2025-12-05)
+
+
+### Dependencies
+
+* preemptive dbot ([7d157a5](https://github.com/agrc/palletjack/commit/7d157a5e77b0f2314c7480970494cc308219a7c3))
+
 ## [5.2.10-rc.1](https://github.com/agrc/palletjack/compare/v5.2.9...v5.2.10-rc.1) (2025-12-05)
 
 
