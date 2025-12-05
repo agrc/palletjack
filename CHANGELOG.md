@@ -1,5 +1,12 @@
 # Changelog
 
+## [5.2.10-rc.1](https://github.com/agrc/palletjack/compare/v5.2.9...v5.2.10-rc.1) (2025-12-05)
+
+
+### Bug Fixes
+
+* continue if it can't find temp gdb to delete ([de67c91](https://github.com/agrc/palletjack/commit/de67c91e7ed86787a9024395fb157887e7fd9ed6))
+
 ## [5.2.9](https://github.com/agrc/palletjack/compare/v5.2.8...v5.2.9) (2025-11-21)
 
 
