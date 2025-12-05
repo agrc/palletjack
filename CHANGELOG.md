@@ -1,5 +1,12 @@
 # Changelog
 
+## [5.2.11](https://github.com/agrc/palletjack/compare/v5.2.10...v5.2.11) (2025-12-05)
+
+
+### Bug Fixes
+
+* empty commit for version bump ([a63ff83](https://github.com/agrc/palletjack/commit/a63ff83b484bed73e534c9fcebd1a515cf2399de))
+
 ## [5.2.10](https://github.com/agrc/palletjack/compare/v5.2.9...v5.2.10) (2025-12-05)
 
 
