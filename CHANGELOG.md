@@ -1,5 +1,17 @@
 # Changelog
 
+## [5.2.10](https://github.com/agrc/palletjack/compare/v5.2.9...v5.2.10) (2025-12-05)
+
+
+### Bug Fixes
+
+* continue if it can't find temp gdb to delete ([a0ea05e](https://github.com/agrc/palletjack/commit/a0ea05e8815d8018496d0950a035bc62d3fad6c4))
+
+
+### Dependencies
+
+* preemptive dbot ([b69ef8d](https://github.com/agrc/palletjack/commit/b69ef8d0eecb5a1ef41f0480520f20a78b08f202))
+
 ## [5.2.10-rc.1](https://github.com/agrc/palletjack/compare/v5.2.9...v5.2.10-rc.1) (2025-12-05)
 
 
