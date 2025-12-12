@@ -523,6 +523,7 @@ class FieldChecker:
             "esriFieldTypeSingle": ["float32"],
             "esriFieldTypeString": ["str", "object", "string"],
             "esriFieldTypeDate": ["datetime64[ns]"],
+            "esriFieldTypeDateOnly": ["datetime64[ns]"],
             "esriFieldTypeGeometry": ["geometry"],
             "esriFieldTypeOID": ["int"] + short_ints + long_ints,
             #  'esriFieldTypeBlob': [],
