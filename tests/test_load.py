@@ -11,7 +11,6 @@ import pandas as pd
 import pandas.testing as tm
 import pyogrio
 import pytest
-from arcgis import GeoAccessor, GeoSeriesAccessor  # noqa: F401
 
 from palletjack import load
 
