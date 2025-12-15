@@ -59,6 +59,7 @@ setup(
             "pytest-watch~=4.2",
             "pytest>=6,<10",
             "requests-mock==1.*",
+            "setuptools",
             "ruff==0.*",
         ]
     },
