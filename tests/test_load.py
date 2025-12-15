@@ -1056,7 +1056,7 @@ class TestUploadDataframe:
 
         load.ServiceUpdater._upload_dataframe(updater_mock, mocker.Mock())
 
-        assert updater_mock._cleanup.called_once_with(updater_mock._upload_gdb.return_value)
+        updater_mock._cleanup.assert_called_once_with(zipped_gdb_path=updater_mock._save_to_gdb_and_zip.return_value)
 
 
 class TestCleanup:
@@ -1218,7 +1218,7 @@ class TestColorRampReclassifier:
             {"value": 400},
         ]
 
-        assert update_mock.called_with(item_properties={"text": json.dumps(data)})
+        update_mock.assert_called_with(item_properties={"text": json.dumps(data)})
 
 
 class TestGDBStuff:
@@ -1266,7 +1266,9 @@ class TestGDBStuff:
 
     def test__save_to_gdb_and_zip_raises_missing_working_dir_attribute(self, mocker):
         expected_outer_error = "working_dir not specified"
-        expected_inner_error = "expected str, bytes or os.PathLike object, not NoneType"
+        expected_inner_error = (
+            "argument should be a str or an os.PathLike object where __fspath__ returns a str, not 'NoneType'"
+        )
 
         updater_mock = mocker.Mock()
         updater_mock.working_dir = None
@@ -1288,11 +1290,11 @@ class TestGDBStuff:
 
         load.ServiceUpdater._save_to_gdb_and_zip(updater_mock, mocker.Mock())
 
-        assert gdf_mock.to_file.called_with(
+        gdf_mock.to_file.assert_called_with(
             gdb_path,
             layer="upload",
             engine="pyogrio",
-            driver="FileGDB",
+            driver="OpenFileGDB",
             promote_to_multi=True,
         )
 
@@ -1307,11 +1309,11 @@ class TestGDBStuff:
 
         load.ServiceUpdater._save_to_gdb_and_zip(updater_mock, mocker.Mock())
 
-        assert gdf_mock.to_file.called_with(
+        gdf_mock.to_file.assert_called_with(
             gdb_path,
             layer="upload",
             engine="pyogrio",
-            driver="FileGDB",
+            driver="OpenFileGDB",
             promote_to_multi=False,
         )
 
@@ -1326,11 +1328,11 @@ class TestGDBStuff:
 
         load.ServiceUpdater._save_to_gdb_and_zip(updater_mock, mocker.Mock())
 
-        assert gdf_mock.to_file.called_with(
+        gdf_mock.to_file.assert_called_with(
             gdb_path,
             layer="upload",
             engine="pyogrio",
-            driver="FileGDB",
+            driver="OpenFileGDB",
             promote_to_multi=False,
         )
 
@@ -1339,17 +1341,17 @@ class TestGDBStuff:
         updater_mock.working_dir = "/foo/bar"
         mocker.patch("palletjack.load.shutil.make_archive")
         gdf_mock = mocker.patch("palletjack.utils.convert_to_gdf").return_value
-        gdf_mock.geometry.side_effect = AttributeError("No geometry column")
+        gdf_mock.geometry.geom_type = AttributeError("No geometry column")
 
         gdb_path = Path("/foo/bar/upload.gdb")
 
         load.ServiceUpdater._save_to_gdb_and_zip(updater_mock, mocker.Mock())
 
-        assert gdf_mock.to_file.called_with(
+        gdf_mock.to_file.assert_called_with(
             gdb_path,
             layer="upload",
             engine="pyogrio",
-            driver="FileGDB",
+            driver="OpenFileGDB",
             promote_to_multi=False,
         )
 
