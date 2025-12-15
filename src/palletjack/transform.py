@@ -7,6 +7,7 @@ from datetime import datetime
 
 import arcgis
 import pandas as pd
+from arcgis import GeoAccessor, GeoSeriesAccessor  # noqa: F401
 
 from palletjack import utils
 
