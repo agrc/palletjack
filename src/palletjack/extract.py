@@ -20,10 +20,10 @@ from time import sleep
 import arcgis
 import geopandas as gpd
 import pandas as pd
-import pysftp
 import requests
 import sqlalchemy
 import ujson
+from fabric import Connection
 from googleapiclient.http import MediaIoBaseDownload
 
 from palletjack import utils
@@ -389,78 +389,78 @@ class GoogleDriveDownloader:
 class SFTPLoader:
     """Loads data from an SFTP share into a pandas DataFrame"""
 
-    def __init__(self, host, username, password, knownhosts_file, download_dir):
+    def __init__(self, host, username, password, download_dir):
         """
         Args:
             host (str): The SFTP host to connect to
             username (str): SFTP username
             password (str): SFTP password
-            knownhosts_file (str): Path to a known_hosts file for pysftp.CnOpts. Can be generated via ssh-keyscan.
             download_dir (str or Path): Directory to save downloaded files
         """
 
         self.host = host
         self.username = username
         self.password = password
-        self.knownhosts_file = knownhosts_file
         self.download_dir = download_dir
         self._class_logger = logging.getLogger(__name__).getChild(self.__class__.__name__)
 
-    def download_sftp_folder_contents(self, sftp_folder="upload"):
-        """Download all files in sftp_folder to the SFTPLoader's download_dir
+    def download_sftp_folder_contents(self, remote_directory):
+        """Download all files in remote_directory to the SFTPLoader's download_dir
 
         Args:
-            sftp_folder (str, optional): Path of remote folder, relative to sftp home directory. Defaults to 'upload'.
+            remote_directory (str, optional): Absolute path to remote_directory on the SFTP server
         """
 
-        self._class_logger.info("Downloading files from `%s:%s` to `%s`", self.host, sftp_folder, self.download_dir)
+        self._class_logger.info(
+            "Downloading files from `%s:%s` to `%s`", self.host, remote_directory, self.download_dir
+        )
         starting_file_count = len(list(self.download_dir.iterdir()))
         self._class_logger.debug("SFTP Username: %s", self.username)
-        connection_opts = pysftp.CnOpts(knownhosts=self.knownhosts_file)
-        with pysftp.Connection(
-            self.host, username=self.username, password=self.password, cnopts=connection_opts
-        ) as sftp:
-            try:
-                sftp.get_d(sftp_folder, self.download_dir, preserve_mtime=True)
-            except FileNotFoundError as error:
-                raise FileNotFoundError(f"Folder `{sftp_folder}` not found on SFTP server") from error
+
+        with Connection(self.host, user=self.username, connect_kwargs={"password": self.password}) as connection:
+            with connection.sftp() as sftp:
+                try:
+                    file_list = sftp.listdir(remote_directory)
+                except FileNotFoundError as error:
+                    raise FileNotFoundError(f"Directory `{remote_directory}` not found on SFTP server") from error
+            for file_name in file_list:
+                try:
+                    connection.get(f"{remote_directory}/{file_name}", local=self.download_dir)
+                except FileNotFoundError as error:
+                    raise FileNotFoundError(
+                        f"File `{remote_directory}/{file_name}` not found on SFTP server"
+                    ) from error
+
         downloaded_file_count = len(list(self.download_dir.iterdir())) - starting_file_count
         if not downloaded_file_count:
             raise ValueError("No files downloaded")
         return downloaded_file_count
 
-    def download_sftp_single_file(self, filename, sftp_folder="upload"):
-        """Download filename into SFTPLoader's download_dir
+    def download_sftp_single_file(self, remote_file):
+        """Download remote_file into SFTPLoader's download_dir
 
         Args:
-            filename (str): Filename to download; used as output filename as well.
-            sftp_folder (str, optional): Path of remote folder, relative to sftp home directory. Defaults to 'upload'.
-
+            remote_file (str): Remote file to download; see fabric.transfer.get() for path details
         Raises:
-            FileNotFoundError: Will warn if pysftp can't find the file or folder on the sftp server
+            FileNotFoundError: If fabric can't find remote_file on the sftp server
 
         Returns:
             Path: Downloaded file's path
         """
 
-        outfile = Path(self.download_dir, filename)
-
-        self._class_logger.info("Downloading %s from `%s:%s` to `%s`", filename, self.host, sftp_folder, outfile)
+        self._class_logger.info("Downloading %s from `%s` to `%s`", remote_file, self.host, self.download_dir)
         self._class_logger.debug("SFTP Username: %s", self.username)
-        connection_opts = pysftp.CnOpts(knownhosts=self.knownhosts_file)
         try:
-            with pysftp.Connection(
+            with Connection(
                 self.host,
-                username=self.username,
-                password=self.password,
-                cnopts=connection_opts,
-                default_path=sftp_folder,
-            ) as sftp:
-                sftp.get(filename, localpath=outfile, preserve_mtime=True)
+                user=self.username,
+                connect_kwargs={"password": self.password},
+            ) as connection:
+                get_result = connection.get(remote_file, local=self.download_dir, preserve_mtime=True)
         except FileNotFoundError as error:
-            raise FileNotFoundError(f"File `{filename}` or folder `{sftp_folder}`` not found on SFTP server") from error
+            raise FileNotFoundError(f"File `{remote_file}` not found on SFTP server") from error
 
-        return outfile
+        return Path(get_result.local)
 
     def read_csv_into_dataframe(self, filename, column_types=None):
         """Read filename into a dataframe with optional column names and types
