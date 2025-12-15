@@ -548,7 +548,7 @@ class TestAuthorization:
 
         client = palletjack.utils.authorize_pygsheets("file")
 
-        assert pygsheets_mock.authorize.called_once_with("file")
+        pygsheets_mock.authorize.assert_called_once_with(service_file="file")
         assert client == "authed"
 
     def test_authorize_pygsheets_auths_from_custom_credentials_file_not_found(self, mocker, caplog):
@@ -802,12 +802,12 @@ class TestCheckFieldsMatch:
                     "0f45d56f-249e-494a-863e-6b3999619bae",
                     "d3a64873-8a09-4351-9ea0-802e450329ea",
                 ],
-                "dates": ["2015-09-02T23:08:12+00:00", "2015-09-02T23:08:13+00:00", "2015-09-02T23:08:14+00:00",],
-                "OnlyDates": [
-                    np.datetime64('2024-01-10'),
-                    np.datetime64('2024-01-10'),
-                    np.datetime64('2024-01-10')
+                "dates": [
+                    "2015-09-02T23:08:12+00:00",
+                    "2015-09-02T23:08:13+00:00",
+                    "2015-09-02T23:08:14+00:00",
                 ],
+                "OnlyDates": [np.datetime64("2024-01-10"), np.datetime64("2024-01-10"), np.datetime64("2024-01-10")],
             }
         )
         new_df["datetimes"] = pd.to_datetime(new_df["dates"]).dt.tz_localize(None)
@@ -824,7 +824,9 @@ class TestCheckFieldsMatch:
 
         #: If it raises an error, it failed.
         checker = palletjack.utils.FieldChecker(properties_mock, new_df)
-        checker.check_live_and_new_field_types_match(["ints", "floats", "strings", "OBJECTID", "GlobalID", "datetimes", "OnlyDates"])
+        checker.check_live_and_new_field_types_match(
+            ["ints", "floats", "strings", "OBJECTID", "GlobalID", "datetimes", "OnlyDates"]
+        )
 
     def test_check_live_and_new_field_types_match_converted(self, mocker):
         new_df = pd.DataFrame(
