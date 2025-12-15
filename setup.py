@@ -40,7 +40,7 @@ setup(
     install_requires=[
         "arcgis>=2.3,<2.5",
         "geopandas>=0.14,<1.2",
-        "geodatasets>=2023.12,<2024.9",
+        "geodatasets>=2023.12,<=2025.12",
         "pg8000>=1.29,<1.32",
         "psycopg2-binary==2.9.*",
         "pygsheets==2.0.*",
@@ -54,7 +54,7 @@ setup(
         "tests": [
             "pdoc3>=0.10,<0.12",
             "pytest-cov>=3,<8",
-            "pytest-instafail~=0.4",
+            "pytest-instafail~=0.5",
             "pytest-mock>=3.10,<3.16",
             "pytest-watch~=4.2",
             "pytest>=6,<10",
