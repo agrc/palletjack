@@ -14,6 +14,7 @@ import arcgis
 import numpy as np
 import pandas as pd
 import pyogrio
+from arcgis.features import GeoAccessor, GeoSeriesAccessor  # noqa: F401
 from arcgis.gis import Item
 
 from palletjack import utils
