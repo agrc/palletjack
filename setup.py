@@ -45,6 +45,7 @@ setup(
         "psycopg2-binary==2.9.*",
         "pygsheets==2.0.*",
         "pysftp==0.2.9",
+        "setuptools==80.*",
         "SQLAlchemy>=1.4,<2.1",
         # Temporary pin to override pysftp's dependency resolution.
         # TODO: Migrate away from pysftp to use paramiko directly. See https://github.com/agrc/palletjack/issues/123
@@ -59,7 +60,6 @@ setup(
             "pytest-watch~=4.2",
             "pytest>=6,<10",
             "requests-mock==1.*",
-            "setuptools",
             "ruff==0.*",
         ]
     },
