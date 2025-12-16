@@ -794,6 +794,7 @@ class TestCheckFieldsMatch:
         new_df = pd.DataFrame(
             {
                 "ints": [1, 2, 3],
+                "bigInts": [9223372036854775807, 9223372036854775806, 9223372036854775805],
                 "floats": [4.0, 5.0, 6.0],
                 "strings": ["a", "b", "c"],
                 "OBJECTID": [11, 12, 13],
@@ -816,6 +817,7 @@ class TestCheckFieldsMatch:
             {"name": "OBJECTID", "type": "esriFieldTypeOID"},
             {"name": "strings", "type": "esriFieldTypeString"},
             {"name": "ints", "type": "esriFieldTypeInteger"},
+            {"name": "bigInts", "type": "esriFieldTypeBigInteger"},
             {"name": "floats", "type": "esriFieldTypeDouble"},
             {"name": "GlobalID", "type": "esriFieldTypeGlobalID"},
             {"name": "datetimes", "type": "esriFieldTypeDate"},
@@ -921,22 +923,24 @@ class TestCheckFieldsMatch:
             {
                 "a": [1, 2, 3],
                 "b": [1.1, 1.2, np.nan],
+                "c": [1.1, 1.2, np.nan],
             }
         )
         properties_mock = mocker.Mock()
         properties_mock.fields = [
             {"name": "a", "type": "esriFieldTypeDouble"},
             {"name": "b", "type": "esriFieldTypeInteger"},
+            {"name": "c", "type": "esriFieldTypeBigInteger"},
         ]
 
         with pytest.raises(
             palletjack.IntFieldAsFloatError,
             match=re.escape(
-                "Field type incompatibilities (field, live type, new type): [('a', 'esriFieldTypeDouble', 'int64'), ('b', 'esriFieldTypeInteger', 'float64')]\nCheck the following int fields for null/np.nan values and convert to panda's nullable int dtype: b"
+                "Field type incompatibilities (field, live type, new type): [('a', 'esriFieldTypeDouble', 'int64'), ('b', 'esriFieldTypeInteger', 'float64'), ('c', 'esriFieldTypeBigInteger', 'float64')]\nCheck the following int fields for null/np.nan values and convert to panda's nullable int dtype: b, c"
             ),
         ):
             checker = palletjack.utils.FieldChecker(properties_mock, new_df)
-            checker.check_live_and_new_field_types_match(["a", "b"])
+            checker.check_live_and_new_field_types_match(["a", "b", "c"])
 
     def test_check_live_and_new_field_types_match_raises_on_timezone_aware_datetime(self, mocker):
         new_df = pd.DataFrame(
@@ -991,6 +995,25 @@ class TestCheckFieldsMatch:
         checker = palletjack.utils.FieldChecker(properties_mock, new_df)
         checker.check_live_and_new_field_types_match(["ints", "SHAPE"])
         geocheck_mock.assert_called_once()
+
+    def test_check_live_and_new_field_types_warns_on_bigint_on_esri_int_field(self, mocker):
+        new_df = pd.DataFrame(
+            {
+                "ints": [1, 2, 3],
+            }
+        )
+
+        properties_mock = mocker.Mock()
+        properties_mock.fields = [{"name": "ints", "type": "esriFieldTypeInteger"}]
+
+        with pytest.warns(
+            UserWarning,
+            match=re.escape(
+                "Field ints has a source 64bit dtype (int64) which may be incompatible with Esri field type esriFieldTypeInteger."
+            ),
+        ):
+            checker = palletjack.utils.FieldChecker(properties_mock, new_df)
+            checker.check_live_and_new_field_types_match(["ints"])
 
     def test_check_geometry_types_normal(self, mocker):
         new_df = pd.DataFrame.spatial.from_xy(
