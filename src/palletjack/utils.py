@@ -507,17 +507,20 @@ class FieldChecker:
         Raises:
             ValueError: If the field types or spatial types are incompatible, the new data has multiple geometry types,
                 or the new data is not a valid spatially-enabled dataframe.
+            UserWarning: If the live data field is esriFieldTypeInteger but the new data field has a 64bit length.
             NotImplementedError: If the live data has a field that has not yet been mapped to a pandas dtype.
         """
 
         #: Converting dtypes to str and comparing seems to be the only way to break out into shorts and longs, singles
         #: and doubles. Otherwise, checking subclass is probably more pythonic.
         short_ints = ["uint8", "uint16", "int8", "int16"]
-        long_ints = ["int", "uint32", "uint64", "int32", "int64"]
+        long_ints = ["uint32", "int32"]
+        big_ints = ["int", "uint64", "int64"]
 
         #: Leaving the commented types here for future implementation if necessary
         esri_to_pandas_types_mapping = {
-            "esriFieldTypeInteger": ["int"] + short_ints + long_ints,
+            "esriFieldTypeBigInteger": short_ints + long_ints + big_ints,
+            "esriFieldTypeInteger": short_ints + long_ints + big_ints,
             "esriFieldTypeSmallInteger": short_ints,
             "esriFieldTypeDouble": ["float", "float32", "float64"],
             "esriFieldTypeSingle": ["float32"],
@@ -525,7 +528,7 @@ class FieldChecker:
             "esriFieldTypeDate": ["datetime64[ns]"],
             "esriFieldTypeDateOnly": ["datetime64[ns]"],
             "esriFieldTypeGeometry": ["geometry"],
-            "esriFieldTypeOID": ["int"] + short_ints + long_ints,
+            "esriFieldTypeOID": short_ints + long_ints + big_ints,
             #  'esriFieldTypeBlob': [],
             "esriFieldTypeGlobalID": ["str", "object", "string"],
             #  'esriFieldTypeRaster': [],
@@ -554,10 +557,15 @@ class FieldChecker:
                 if new_dtype in ["float", "float32", "float64"] and live_type in [
                     "esriFieldTypeInteger",
                     "esriFieldTypeSmallInteger",
+                    "esriFieldTypeBigInteger",
                 ]:
                     int_fields_as_floats.append(field)
                 if "datetime64" in new_dtype and new_dtype != "datetime64[ns]" and live_type == "esriFieldTypeDate":
                     datetime_fields_with_timezone.append(field)
+                if new_dtype in ["int", "uint64", "int64"] and live_type == "esriFieldTypeInteger":
+                    warnings.warn(
+                        f"Field {field} has a source 64bit dtype ({new_dtype}) which may be incompatible with Esri field type esriFieldTypeInteger."
+                    )
             except KeyError:
                 # pylint: disable-next=raise-missing-from
                 raise NotImplementedError(f'Live field "{field}" type "{live_type}" not yet mapped to a pandas dtype')
