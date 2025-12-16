@@ -49,7 +49,7 @@ setup(
         "SQLAlchemy>=1.4,<2.1",
         # Temporary pin to override pysftp's dependency resolution.
         # TODO: Migrate away from pysftp to use paramiko directly. See https://github.com/agrc/palletjack/issues/123
-        "paramiko<4.0.0",
+        "paramiko<5.0.0",
     ],
     extras_require={
         "tests": [
