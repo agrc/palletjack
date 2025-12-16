@@ -1,5 +1,24 @@
 # Changelog
 
+## [5.2.12](https://github.com/agrc/palletjack/compare/v5.2.11...v5.2.12) (2025-12-16)
+
+
+### Features
+
+* python 3.13 ([917af26](https://github.com/agrc/palletjack/commit/917af2644f123431cccccba2ca4d0377624bd35a))
+
+
+### Bug Fixes
+
+* add missing date only esri field type ([5298d53](https://github.com/agrc/palletjack/commit/5298d530fd89000193b0d4ab35417e33f2c6cf71))
+* add support for esriFieldTypeBigInteger ([9deca0c](https://github.com/agrc/palletjack/commit/9deca0c8a1b4465715a972d1bfbf7c690bba05c6))
+
+
+### Dependencies
+
+* make sure setuptools is installed for arcgis sedf imports ([858720f](https://github.com/agrc/palletjack/commit/858720f7e9947db460d7dee895064ceb63e3c366))
+* update after 3.13 manual check ([64aea10](https://github.com/agrc/palletjack/commit/64aea10b6915d4fbe3519b020e0780b10c132fa5))
+
 ## [5.2.11](https://github.com/agrc/palletjack/compare/v5.2.10...v5.2.11) (2025-12-05)
 
 
