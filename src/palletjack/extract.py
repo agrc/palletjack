@@ -411,6 +411,9 @@ class SFTPLoader:
             remote_directory (str, optional): Absolute path to remote_directory on the SFTP server
         """
 
+        if not remote_directory.endswith("/"):
+            remote_directory += "/"
+
         self._class_logger.info(
             "Downloading files from `%s:%s` to `%s`", self.host, remote_directory, self.download_dir
         )
