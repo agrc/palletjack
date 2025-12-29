@@ -525,7 +525,6 @@ class TestGoogleDriveDownloaderAPI:
 class TestSFTPLoader:
     def test_download_sftp_folder_contents_uses_right_credentials(self, mocker):
         sftploader_mock = mocker.Mock()
-        sftploader_mock.knownhosts_file = "knownhosts_file"
         sftploader_mock.host = "sftp_host"
         sftploader_mock.username = "username"
         sftploader_mock.password = "password"
@@ -533,43 +532,167 @@ class TestSFTPLoader:
         download_dir_mock.iterdir.side_effect = [[], ["file_a", "file_b"]]
         sftploader_mock.download_dir = download_dir_mock
 
-        connection_mock = mocker.MagicMock()
-        context_manager_mock = mocker.MagicMock()
-        context_manager_mock.return_value.__enter__.return_value = connection_mock
-        mocker.patch("pysftp.Connection", new=context_manager_mock)
+        context_manager_mock = mocker.patch("palletjack.extract.Connection", autospec=True)
 
-        cnopts_mock = mocker.Mock()
-        cnopts_mock.side_effect = lambda knownhosts: knownhosts
-        mocker.patch("pysftp.CnOpts", new=cnopts_mock)
+        extract.SFTPLoader.download_sftp_folder_contents(sftploader_mock, "remote/dir")
 
-        extract.SFTPLoader.download_sftp_folder_contents(sftploader_mock)
+        context_manager_mock.assert_called_with("sftp_host", user="username", connect_kwargs={"password": "password"})
 
-        context_manager_mock.assert_called_with(
-            "sftp_host", username="username", password="password", cnopts="knownhosts_file"
-        )
-
-    def test_download_sftp_single_file_uses_right_credentials(self, mocker):
+    def test_download_sftp_folder_contents_creates_two_separate_connections_with_proper_calls(self, mocker):
         sftploader_mock = mocker.Mock()
-        sftploader_mock.knownhosts_file = "knownhosts_file"
         sftploader_mock.host = "sftp_host"
         sftploader_mock.username = "username"
         sftploader_mock.password = "password"
-        sftploader_mock.download_dir = "download_dir"
 
-        connection_mock = mocker.MagicMock()
-        context_manager_mock = mocker.MagicMock()
-        context_manager_mock.return_value.__enter__.return_value = connection_mock
-        mocker.patch("pysftp.Connection", new=context_manager_mock)
+        sftploader_mock.download_dir = Path("local/dir")
+        mocker.patch("palletjack.extract.Path.iterdir", autospec=True, side_effect=[[], ["file_a", "file_b"]])
 
-        cnopts_mock = mocker.Mock()
-        cnopts_mock.side_effect = lambda knownhosts: knownhosts
-        mocker.patch("pysftp.CnOpts", new=cnopts_mock)
+        #: get a reference to the sftp context manager's enter return value to test call args
+        connection_mock_1 = mocker.MagicMock(name="connection1")
+        sftp_mock = connection_mock_1.sftp.return_value.__enter__.return_value
+        sftp_mock.name = "sftp_mock"
+        sftp_mock.listdir.return_value = [Path("file_a"), Path("file_b")]
+        connection_mock_2 = mocker.MagicMock(name="connection2")
 
-        extract.SFTPLoader.download_sftp_single_file(sftploader_mock, "filename", "upload")
+        #: Mock the Connection class context manager to return two different mocks
+        connection_class_mock = mocker.patch("palletjack.extract.Connection", autospec=True)
+        connection_class_mock.return_value.__enter__.side_effect = [connection_mock_1, connection_mock_2]
 
-        context_manager_mock.assert_called_with(
-            "sftp_host", username="username", password="password", cnopts="knownhosts_file", default_path="upload"
-        )
+        extract.SFTPLoader.download_sftp_folder_contents(sftploader_mock, "remote/dir/")
+
+        assert connection_class_mock.call_count == 2
+        sftp_mock.listdir.assert_called_once_with("remote/dir/")
+        connection_mock_2.get.assert_any_call("remote/dir/file_a", local="local\\dir\\file_a")
+        connection_mock_2.get.assert_any_call("remote/dir/file_b", local="local\\dir\\file_b")
+
+    def test_download_sftp_folder_contents_adds_trailing_slash_if_missing(self, mocker):
+        sftploader_mock = mocker.Mock()
+        sftploader_mock.host = "sftp_host"
+        sftploader_mock.username = "username"
+        sftploader_mock.password = "password"
+        download_dir_mock = mocker.Mock()
+        download_dir_mock.iterdir.side_effect = [[], ["file_a", "file_b"]]
+        sftploader_mock.download_dir = download_dir_mock
+
+        connection_class_mock = mocker.patch("palletjack.extract.Connection", autospec=True)
+
+        extract.SFTPLoader.download_sftp_folder_contents(sftploader_mock, "remote/dir")
+
+        connection_instance = connection_class_mock.return_value.__enter__.return_value
+        sftp_instance = connection_instance.sftp.return_value.__enter__.return_value
+        sftp_instance.listdir.assert_called_once_with("remote/dir/")
+
+    def test_download_sftp_folder_contents_doesnt_add_trailing_slash_if_present(self, mocker):
+        sftploader_mock = mocker.Mock()
+        sftploader_mock.host = "sftp_host"
+        sftploader_mock.username = "username"
+        sftploader_mock.password = "password"
+        download_dir_mock = mocker.Mock()
+        download_dir_mock.iterdir.side_effect = [[], ["file_a", "file_b"]]
+        sftploader_mock.download_dir = download_dir_mock
+
+        connection_class_mock = mocker.patch("palletjack.extract.Connection", autospec=True)
+
+        extract.SFTPLoader.download_sftp_folder_contents(sftploader_mock, "remote/dir/")
+
+        connection_instance = connection_class_mock.return_value.__enter__.return_value
+        sftp_instance = connection_instance.sftp.return_value.__enter__.return_value
+        sftp_instance.listdir.assert_called_once_with("remote/dir/")
+
+    def test_download_sftp_folder_contents_raises_error_on_no_files_downloaded(self, mocker):
+        sftploader_mock = mocker.Mock()
+        download_dir_mock = mocker.Mock()
+        #: Setting the iterdir return to an empty list leads to 0 - 0 => 0 => False
+        download_dir_mock.iterdir.return_value = []
+        sftploader_mock.download_dir = download_dir_mock
+
+        mocker.patch("palletjack.extract.Connection", autospec=True)
+
+        with pytest.raises(ValueError, match="No files downloaded"):
+            extract.SFTPLoader.download_sftp_folder_contents(sftploader_mock, "remote/dir/")
+
+    def test_download_sftp_folder_contents_raises_on_remote_dir_not_found(self, mocker):
+        sftploader_mock = mocker.Mock()
+        sftploader_mock.host = "sftp_host"
+        sftploader_mock.username = "username"
+        sftploader_mock.password = "password"
+
+        sftploader_mock.download_dir = Path("local/dir")
+        mocker.patch("palletjack.extract.Path.iterdir", autospec=True, side_effect=[[], ["file_a", "file_b"]])
+
+        connection_mock = mocker.MagicMock(name="connection")
+        sftp_mock = connection_mock.sftp.return_value.__enter__.return_value
+        sftp_mock.listdir.side_effect = FileNotFoundError("No such directory")
+
+        connection_class_mock = mocker.patch("palletjack.extract.Connection", autospec=True)
+        connection_class_mock.return_value.__enter__.return_value = connection_mock
+
+        with pytest.raises(FileNotFoundError, match="Directory `remote/dir/` not found on SFTP server"):
+            extract.SFTPLoader.download_sftp_folder_contents(sftploader_mock, "remote/dir/")
+
+    def test_download_sftp_folder_contents_raises_on_file_not_found_during_get(self, mocker):
+        sftploader_mock = mocker.Mock()
+        sftploader_mock.host = "sftp_host"
+        sftploader_mock.username = "username"
+        sftploader_mock.password = "password"
+        sftploader_mock.download_dir = Path("local/dir")
+        mocker.patch("palletjack.extract.Path.iterdir", autospec=True, side_effect=[[], ["file_a", "file_b"]])
+
+        connection_mock = mocker.MagicMock(name="connection")
+        sftp_mock = connection_mock.sftp.return_value.__enter__.return_value
+        sftp_mock.listdir.return_value = [Path("file_a"), Path("file_b")]
+        connection_mock.get.side_effect = FileNotFoundError("No such file")
+
+        connection_class_mock = mocker.patch("palletjack.extract.Connection", autospec=True)
+        connection_class_mock.return_value.__enter__.return_value = connection_mock
+
+        with pytest.raises(FileNotFoundError, match="File `remote/dir/file_a` not found on SFTP server"):
+            extract.SFTPLoader.download_sftp_folder_contents(sftploader_mock, "remote/dir/")
+
+    def test_download_sftp_single_file_uses_right_credentials(self, mocker):
+        sftploader_mock = mocker.Mock()
+        sftploader_mock.host = "sftp_host"
+        sftploader_mock.username = "username"
+        sftploader_mock.password = "password"
+        sftploader_mock.download_dir = Path("local/dir")
+
+        context_manager_mock = mocker.patch("palletjack.extract.Connection", autospec=True)
+
+        extract.SFTPLoader.download_sftp_single_file(sftploader_mock, "remote/file.txt")
+
+        context_manager_mock.assert_called_with("sftp_host", user="username", connect_kwargs={"password": "password"})
+
+    def test_download_sftp_single_file_calls_get_with_proper_args(self, mocker):
+        sftploader_mock = mocker.Mock()
+        sftploader_mock.host = "sftp_host"
+        sftploader_mock.username = "username"
+        sftploader_mock.password = "password"
+        sftploader_mock.download_dir = Path("local/dir")
+
+        connection_mock = mocker.MagicMock(name="connection")
+
+        connection_class_mock = mocker.patch("palletjack.extract.Connection", autospec=True)
+        connection_class_mock.return_value.__enter__.return_value = connection_mock
+
+        extract.SFTPLoader.download_sftp_single_file(sftploader_mock, "remote/file.txt")
+
+        connection_mock.get.assert_called_once_with("remote/file.txt", local="local\\dir\\file.txt")
+
+    def test_download_sftp_single_file_raises_on_file_not_found_during_get(self, mocker):
+        sftploader_mock = mocker.Mock()
+        sftploader_mock.host = "sftp_host"
+        sftploader_mock.username = "username"
+        sftploader_mock.password = "password"
+        sftploader_mock.download_dir = Path("local/dir")
+
+        connection_mock = mocker.MagicMock(name="connection")
+        connection_mock.get.side_effect = FileNotFoundError("No such file")
+
+        connection_class_mock = mocker.patch("palletjack.extract.Connection", autospec=True)
+        connection_class_mock.return_value.__enter__.return_value = connection_mock
+
+        with pytest.raises(FileNotFoundError, match="File `remote/file.txt` not found on SFTP server"):
+            extract.SFTPLoader.download_sftp_single_file(sftploader_mock, "remote/file.txt")
 
     def test_read_csv_into_dataframe_with_column_names(self, mocker):
         pd_mock = mocker.Mock()
