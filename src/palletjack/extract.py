@@ -417,19 +417,20 @@ class SFTPLoader:
         starting_file_count = len(list(self.download_dir.iterdir()))
         self._class_logger.debug("SFTP Username: %s", self.username)
 
-        with Connection(self.host, user=self.username, connect_kwargs={"password": self.password}) as connection:
-            with connection.sftp() as sftp:
+        with Connection(self.host, user=self.username, connect_kwargs={"password": self.password}) as list_connection:
+            with list_connection.sftp() as sftp:
                 try:
                     file_list = sftp.listdir(remote_directory)
                 except FileNotFoundError as error:
                     raise FileNotFoundError(f"Directory `{remote_directory}` not found on SFTP server") from error
+
+        with Connection(self.host, user=self.username, connect_kwargs={"password": self.password}) as get_connection:
             for file_name in file_list:
                 try:
-                    connection.get(f"{remote_directory}/{file_name}", local=self.download_dir)
+                    outfile_path = self.download_dir / file_name
+                    get_connection.get(f"{remote_directory}{file_name}", local=str(outfile_path))
                 except FileNotFoundError as error:
-                    raise FileNotFoundError(
-                        f"File `{remote_directory}/{file_name}` not found on SFTP server"
-                    ) from error
+                    raise FileNotFoundError(f"File `{remote_directory}{file_name}` not found on SFTP server") from error
 
         downloaded_file_count = len(list(self.download_dir.iterdir())) - starting_file_count
         if not downloaded_file_count:
@@ -456,7 +457,8 @@ class SFTPLoader:
                 user=self.username,
                 connect_kwargs={"password": self.password},
             ) as connection:
-                get_result = connection.get(remote_file, local=self.download_dir, preserve_mtime=True)
+                outfile_path = self.download_dir / Path(remote_file).name
+                get_result = connection.get(remote_file, local=str(outfile_path))
         except FileNotFoundError as error:
             raise FileNotFoundError(f"File `{remote_file}` not found on SFTP server") from error
 
