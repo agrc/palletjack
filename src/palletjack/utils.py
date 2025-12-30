@@ -483,6 +483,7 @@ class FieldChecker:
         field_checker.check_field_length(fields)
         # field_checker.check_srs_wgs84()
         field_checker.check_nullable_ints_shapely()
+        field_checker.check_for_np_inf()
 
     def __init__(self, live_data_properties, new_dataframe):
         """
@@ -795,6 +796,25 @@ class FieldChecker:
             warnings.warn(
                 "The following columns have null values that will be replaced by 0 due to shapely conventions: "
                 f"{', '.join(columns_with_nulls)}"
+            )
+
+    def check_for_np_inf(self):
+        """Raise a warning if any of the new dataframe's fields contain np.inf or -np.inf values.
+
+        Raises:
+            UserWarning: If any of the new dataframe's fields contain np.inf or -np.inf values.
+        """
+
+        columns_with_inf = []
+        non_spatial_columns = [col for col in self.new_dataframe.columns if self.new_dataframe[col].dtype != "geometry"]
+        for column in non_spatial_columns:
+            if np.isinf(self.new_dataframe[column]).any():
+                columns_with_inf.append(column)
+
+        if columns_with_inf:
+            warnings.warn(
+                "The following columns have np.inf or -np.inf values, which may cause empty feature services: "
+                f"{', '.join(columns_with_inf)}"
             )
 
 

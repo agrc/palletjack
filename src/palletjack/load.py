@@ -425,18 +425,19 @@ class ServiceUpdater:
                     raise RuntimeError(f"Error deleting existing gdb item with title {title}") from error
 
         try:
-            gdb_item = utils.retry(
-                self.gis.content.add,
+            root_folder = self.gis.content.folders.get()
+            add_job = utils.retry(
+                root_folder.add,
                 item_properties={
                     "type": item_type,
                     "title": title,
                     "snippet": "Temporary gdb upload from palletjack",
                 },
-                data=zipped_gdb_path,
+                file=str(zipped_gdb_path),
             )
         except Exception as error:
             raise RuntimeError(f"Error uploading {zipped_gdb_path} to AGOL") from error
-        return gdb_item
+        return add_job.result()
 
     def _cleanup(self, gdb_item: Item | None = None, zipped_gdb_path: Path | None = None) -> None:
         """Remove the zipped gdb from disk and the gdb item from AGOL
@@ -747,7 +748,8 @@ class FeatureServiceAttachmentsUpdater:
             pd.DataFrame: Dataframe with join key, attachment name, and full attachment paths
         """
 
-        input_dataframe[attachment_column].replace("", np.nan, inplace=True)  #: pandas doesn't see empty strings as NAs
+        #: pandas doesn't see empty strings as NAs
+        input_dataframe[attachment_column] = input_dataframe[attachment_column].replace("", np.nan)
         attachments_dataframe = (
             input_dataframe[[join_column, attachment_column]].copy().dropna(subset=[attachment_column])
         )

@@ -46,10 +46,8 @@ setup(
         "pygsheets==2.0.*",
         "pysftp==0.2.9",
         "setuptools==80.*",
+        "fabric>=3.2,<4.0",
         "SQLAlchemy>=1.4,<2.1",
-        # Temporary pin to override pysftp's dependency resolution.
-        # TODO: Migrate away from pysftp to use paramiko directly. See https://github.com/agrc/palletjack/issues/123
-        "paramiko<4.0.0",
     ],
     extras_require={
         "tests": [

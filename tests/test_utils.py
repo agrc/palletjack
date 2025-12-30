@@ -4,6 +4,7 @@ import re
 from collections import namedtuple
 from pathlib import Path
 
+import geopandas as gpd
 import numpy as np
 import pandas as pd
 import pyogrio
@@ -1596,6 +1597,130 @@ class TestSRSCheck:
 
         #: Should not raise
         palletjack.utils.FieldChecker.check_srs_wgs84(checker_mock)
+
+
+class TestNpInfChecker:
+    def test_check_for_np_inf_warns_on_inf_in_dataframe(self, mocker):
+        new_df = pd.DataFrame(
+            {
+                "a": [1, 2, np.inf],
+                "b": [4.1, 5.1, 6.1],
+            }
+        )
+        properties_mock = mocker.Mock()
+        properties_mock.fields = [{"name": "foo"}, {"name": "bar"}]
+
+        checker = palletjack.utils.FieldChecker(properties_mock, new_df)
+
+        with pytest.warns(
+            UserWarning,
+            match=re.escape(
+                "The following columns have np.inf or -np.inf values, which may cause empty feature services: a"
+            ),
+        ):
+            checker.check_for_np_inf()
+
+    def test_check_for_np_inf_doesnt_raise_on_normal_dataframe(self, mocker):
+        new_df = pd.DataFrame(
+            {
+                "a": [1, 2, 3],
+                "b": [4.1, 5.1, 6.1],
+            }
+        )
+        properties_mock = mocker.Mock()
+        properties_mock.fields = [{"name": "foo"}, {"name": "bar"}]
+
+        checker = palletjack.utils.FieldChecker(properties_mock, new_df)
+
+        #: Should not raise
+        checker.check_for_np_inf()
+
+    def test_check_for_np_inf_warns_on_neg_inf_in_dataframe(self, mocker):
+        new_df = pd.DataFrame(
+            {
+                "a": [1, -np.inf, 3],
+                "b": [4.1, 5.1, 6.1],
+            }
+        )
+
+        properties_mock = mocker.Mock()
+        properties_mock.fields = [{"name": "foo"}, {"name": "bar"}]
+
+        checker = palletjack.utils.FieldChecker(properties_mock, new_df)
+
+        with pytest.warns(
+            UserWarning,
+            match=re.escape(
+                "The following columns have np.inf or -np.inf values, which may cause empty feature services: a"
+            ),
+        ):
+            checker.check_for_np_inf()
+
+    def test_check_for_np_inf_doesnt_warn_on_nan(self, mocker):
+        new_df = pd.DataFrame(
+            {
+                "a": [1, 2, np.nan],
+                "b": [4.1, 5.1, 6.1],
+            }
+        )
+
+        properties_mock = mocker.Mock()
+        properties_mock.fields = [{"name": "foo"}, {"name": "bar"}]
+
+        checker = palletjack.utils.FieldChecker(properties_mock, new_df)
+
+        #: Should not raise
+        checker.check_for_np_inf()
+
+    def test_check_for_np_inf_handles_spatially_enabled_dataframe(self, mocker):
+        new_sedf = pd.DataFrame.spatial.from_xy(
+            pd.DataFrame(
+                {
+                    "a": [1, 2, np.inf],
+                    "b": [4.1, 5.1, 6.1],
+                    "x": [0, 0, 0],
+                    "y": [0, 0, 0],
+                }
+            ),
+            x_column="x",
+            y_column="y",
+        )
+
+        properties_mock = mocker.Mock()
+        properties_mock.fields = [{"name": "foo"}, {"name": "bar"}]
+
+        checker = palletjack.utils.FieldChecker(properties_mock, new_sedf)
+
+        with pytest.warns(
+            UserWarning,
+            match=re.escape(
+                "The following columns have np.inf or -np.inf values, which may cause empty feature services: a"
+            ),
+        ):
+            checker.check_for_np_inf()
+
+    def test_check_for_np_inf_handles_geodataframe(self, mocker):
+        new_gdf = gpd.GeoDataFrame(
+            {
+                "a": [1, 2, np.inf],
+                "b": [4.1, 5.1, 6.1],
+                "geometry": gpd.points_from_xy([0, 0, 0], [0, 0, 0]),
+            },
+            crs="EPSG:4326",
+        )
+
+        properties_mock = mocker.Mock()
+        properties_mock.fields = [{"name": "foo"}, {"name": "bar"}]
+
+        checker = palletjack.utils.FieldChecker(properties_mock, new_gdf)
+
+        with pytest.warns(
+            UserWarning,
+            match=re.escape(
+                "The following columns have np.inf or -np.inf values, which may cause empty feature services: a"
+            ),
+        ):
+            checker.check_for_np_inf()
 
 
 class TestNullGeometryGenerators:
