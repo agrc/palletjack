@@ -562,8 +562,8 @@ class TestSFTPLoader:
 
         assert connection_class_mock.call_count == 2
         sftp_mock.listdir.assert_called_once_with("remote/dir/")
-        connection_mock_2.get.assert_any_call("remote/dir/file_a", local="local\\dir\\file_a")
-        connection_mock_2.get.assert_any_call("remote/dir/file_b", local="local\\dir\\file_b")
+        connection_mock_2.get.assert_any_call("remote/dir/file_a", local=str(Path("local/dir/file_a")))
+        connection_mock_2.get.assert_any_call("remote/dir/file_b", local=str(Path("local/dir/file_b")))
 
     def test_download_sftp_folder_contents_adds_trailing_slash_if_missing(self, mocker):
         sftploader_mock = mocker.Mock()
@@ -676,7 +676,7 @@ class TestSFTPLoader:
 
         extract.SFTPLoader.download_sftp_single_file(sftploader_mock, "remote/file.txt")
 
-        connection_mock.get.assert_called_once_with("remote/file.txt", local="local\\dir\\file.txt")
+        connection_mock.get.assert_called_once_with("remote/file.txt", local=str(Path("local/dir/file.txt")))
 
     def test_download_sftp_single_file_raises_on_file_not_found_during_get(self, mocker):
         sftploader_mock = mocker.Mock()
