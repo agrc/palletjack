@@ -748,7 +748,8 @@ class FeatureServiceAttachmentsUpdater:
             pd.DataFrame: Dataframe with join key, attachment name, and full attachment paths
         """
 
-        input_dataframe[attachment_column].replace("", np.nan, inplace=True)  #: pandas doesn't see empty strings as NAs
+        #: pandas doesn't see empty strings as NAs
+        input_dataframe[attachment_column] = input_dataframe[attachment_column].replace("", np.nan)
         attachments_dataframe = (
             input_dataframe[[join_column, attachment_column]].copy().dropna(subset=[attachment_column])
         )
