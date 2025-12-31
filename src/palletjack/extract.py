@@ -134,7 +134,7 @@ class GoogleDriveDownloader:
         self._class_logger.debug("Initializing GoogleDriveDownloader")
         self._class_logger.debug("Output directory: %s", out_dir)
         self.out_dir = Path(out_dir)
-        regex_pattern = "(\/|=)([-\w]{25,})"  # pylint:disable=anomalous-backslash-in-string
+        regex_pattern = r"(/|=)([-\w]{25,})"
         self._class_logger.debug("Regex pattern: %s", regex_pattern)
         self.regex = re.compile(regex_pattern)
 
@@ -192,7 +192,7 @@ class GoogleDriveDownloader:
         """
 
         content = response.headers["Content-Disposition"]
-        all_filenames = re.findall("filename\*?=([^;]+)", content, flags=re.IGNORECASE)  # pylint:disable=anomalous-backslash-in-string
+        all_filenames = re.findall(r"filename\*?=([^;]+)", content, flags=re.IGNORECASE)
         if all_filenames:
             #: Remove spurious whitespace and "s
             return all_filenames[0].strip().strip('"')

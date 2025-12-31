@@ -574,7 +574,7 @@ class FeatureServiceAttachmentsUpdater:
         )
 
         #: Overwrite if different names, add if no existing name, do nothing if names are the same
-        attachment_eval_df["operation"] = np.nan
+        attachment_eval_df["operation"] = pd.Series(dtype="object")
         attachment_eval_df.loc[attachment_eval_df["NAME"] != attachment_eval_df["new_filename"], "operation"] = (
             "overwrite"
         )
