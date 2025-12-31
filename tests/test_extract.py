@@ -8,6 +8,7 @@ import geodatasets
 import geopandas as gpd
 import numpy as np
 import pandas as pd
+import paramiko
 import pytest
 import requests
 import requests_mock
@@ -713,6 +714,159 @@ class TestSFTPLoader:
 
         with pytest.raises(FileNotFoundError, match="File `remote/file.txt` not found on SFTP server"):
             extract.SFTPLoader.download_sftp_single_file(sftploader_mock, "remote/file.txt")
+
+    def test_sftp_connection_context_manager_success(self, mocker):
+        """Test successful SFTP connection with proper cleanup"""
+        loader = extract.SFTPLoader("test_host", "test_user", "test_pass", Path("/tmp"))
+        
+        transport_mock = mocker.MagicMock()
+        sftp_mock = mocker.MagicMock()
+        
+        transport_class_mock = mocker.patch("palletjack.extract.paramiko.Transport", return_value=transport_mock)
+        sftp_class_mock = mocker.patch("palletjack.extract.paramiko.SFTPClient")
+        sftp_class_mock.from_transport.return_value = sftp_mock
+        
+        with loader._sftp_connection() as sftp:
+            assert sftp == sftp_mock
+        
+        # Verify connection was established
+        transport_class_mock.assert_called_once_with(("test_host", 22))
+        transport_mock.connect.assert_called_once_with(username="test_user", password="test_pass")
+        sftp_class_mock.from_transport.assert_called_once_with(transport_mock)
+        
+        # Verify cleanup happened
+        sftp_mock.close.assert_called_once()
+        transport_mock.close.assert_called_once()
+
+    def test_sftp_connection_context_manager_connection_failure(self, mocker):
+        """Test that cleanup happens when transport.connect fails"""
+        loader = extract.SFTPLoader("test_host", "test_user", "test_pass", Path("/tmp"))
+        
+        transport_mock = mocker.MagicMock()
+        transport_mock.connect.side_effect = Exception("Connection failed")
+        
+        mocker.patch("palletjack.extract.paramiko.Transport", return_value=transport_mock)
+        
+        with pytest.raises(Exception, match="Connection failed"):
+            with loader._sftp_connection() as sftp:
+                pass
+        
+        # Verify cleanup happened even though connection failed
+        # sftp was never created, so it shouldn't be closed
+        transport_mock.close.assert_called_once()
+
+    def test_sftp_connection_context_manager_auth_failure(self, mocker):
+        """Test that cleanup happens when authentication fails"""
+        loader = extract.SFTPLoader("test_host", "bad_user", "bad_pass", Path("/tmp"))
+        
+        transport_mock = mocker.MagicMock()
+        transport_mock.connect.side_effect = paramiko.AuthenticationException("Authentication failed")
+        
+        mocker.patch("palletjack.extract.paramiko.Transport", return_value=transport_mock)
+        
+        with pytest.raises(paramiko.AuthenticationException, match="Authentication failed"):
+            with loader._sftp_connection() as sftp:
+                pass
+        
+        # Verify cleanup happened
+        transport_mock.close.assert_called_once()
+
+    def test_sftp_connection_context_manager_sftp_client_failure(self, mocker):
+        """Test that cleanup happens when SFTPClient.from_transport fails"""
+        loader = extract.SFTPLoader("test_host", "test_user", "test_pass", Path("/tmp"))
+        
+        transport_mock = mocker.MagicMock()
+        sftp_class_mock = mocker.patch("palletjack.extract.paramiko.SFTPClient")
+        sftp_class_mock.from_transport.side_effect = Exception("SFTP client creation failed")
+        
+        mocker.patch("palletjack.extract.paramiko.Transport", return_value=transport_mock)
+        
+        with pytest.raises(Exception, match="SFTP client creation failed"):
+            with loader._sftp_connection() as sftp:
+                pass
+        
+        # Verify cleanup happened - transport should be closed even though sftp wasn't created
+        transport_mock.close.assert_called_once()
+
+    def test_sftp_connection_context_manager_exception_during_operation(self, mocker):
+        """Test that cleanup happens when exception occurs during SFTP operations"""
+        loader = extract.SFTPLoader("test_host", "test_user", "test_pass", Path("/tmp"))
+        
+        transport_mock = mocker.MagicMock()
+        sftp_mock = mocker.MagicMock()
+        
+        mocker.patch("palletjack.extract.paramiko.Transport", return_value=transport_mock)
+        sftp_class_mock = mocker.patch("palletjack.extract.paramiko.SFTPClient")
+        sftp_class_mock.from_transport.return_value = sftp_mock
+        
+        with pytest.raises(RuntimeError, match="Operation failed"):
+            with loader._sftp_connection() as sftp:
+                # Simulate an exception during file operations
+                raise RuntimeError("Operation failed")
+        
+        # Verify cleanup happened despite the exception
+        sftp_mock.close.assert_called_once()
+        transport_mock.close.assert_called_once()
+
+    def test_download_sftp_folder_contents_with_real_context_manager(self, mocker):
+        """Test download_sftp_folder_contents using real context manager (not mocked)"""
+        loader = extract.SFTPLoader("test_host", "test_user", "test_pass", Path("/tmp/test"))
+        
+        transport_mock = mocker.MagicMock()
+        sftp_mock_1 = mocker.MagicMock()
+        sftp_mock_1.listdir.return_value = ["file1.txt", "file2.txt"]
+        sftp_mock_2 = mocker.MagicMock()
+        
+        mocker.patch("palletjack.extract.paramiko.Transport", return_value=transport_mock)
+        sftp_class_mock = mocker.patch("palletjack.extract.paramiko.SFTPClient")
+        sftp_class_mock.from_transport.side_effect = [sftp_mock_1, sftp_mock_2]
+        
+        # Mock Path.iterdir for file counting
+        mocker.patch.object(Path, "iterdir", side_effect=[[], ["file1.txt", "file2.txt"]])
+        
+        result = loader.download_sftp_folder_contents("/remote/dir")
+        
+        # Verify both connections were made
+        assert transport_mock.connect.call_count == 2
+        assert sftp_class_mock.from_transport.call_count == 2
+        
+        # Verify both connections were cleaned up
+        assert sftp_mock_1.close.call_count == 1
+        assert sftp_mock_2.close.call_count == 1
+        assert transport_mock.close.call_count == 2
+        
+        # Verify operations
+        sftp_mock_1.listdir.assert_called_once_with("/remote/dir/")
+        sftp_mock_2.get.assert_any_call("/remote/dir/file1.txt", "/tmp/test/file1.txt")
+        sftp_mock_2.get.assert_any_call("/remote/dir/file2.txt", "/tmp/test/file2.txt")
+        
+        assert result == 2
+
+    def test_download_sftp_single_file_with_real_context_manager(self, mocker):
+        """Test download_sftp_single_file using real context manager (not mocked)"""
+        loader = extract.SFTPLoader("test_host", "test_user", "test_pass", Path("/tmp/test"))
+        
+        transport_mock = mocker.MagicMock()
+        sftp_mock = mocker.MagicMock()
+        
+        mocker.patch("palletjack.extract.paramiko.Transport", return_value=transport_mock)
+        sftp_class_mock = mocker.patch("palletjack.extract.paramiko.SFTPClient")
+        sftp_class_mock.from_transport.return_value = sftp_mock
+        
+        result = loader.download_sftp_single_file("/remote/file.txt")
+        
+        # Verify connection was made
+        transport_mock.connect.assert_called_once_with(username="test_user", password="test_pass")
+        sftp_class_mock.from_transport.assert_called_once_with(transport_mock)
+        
+        # Verify cleanup happened
+        sftp_mock.close.assert_called_once()
+        transport_mock.close.assert_called_once()
+        
+        # Verify operation
+        sftp_mock.get.assert_called_once_with("/remote/file.txt", "/tmp/test/file.txt")
+        
+        assert result == Path("/tmp/test/file.txt")
 
     def test_read_csv_into_dataframe_with_column_names(self, mocker):
         pd_mock = mocker.Mock()
