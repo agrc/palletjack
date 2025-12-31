@@ -11,6 +11,7 @@ import random
 import re
 import time
 import warnings
+from contextlib import contextmanager
 from datetime import datetime, timedelta
 from io import BytesIO
 from pathlib import Path
@@ -404,6 +405,26 @@ class SFTPLoader:
         self.download_dir = download_dir
         self._class_logger = logging.getLogger(__name__).getChild(self.__class__.__name__)
 
+    @contextmanager
+    def _sftp_connection(self):
+        """Context manager for SFTP connections that ensures proper cleanup.
+        
+        Yields:
+            paramiko.SFTPClient: An active SFTP client
+        """
+        transport = None
+        sftp = None
+        try:
+            transport = paramiko.Transport((self.host, 22))
+            transport.connect(username=self.username, password=self.password)
+            sftp = paramiko.SFTPClient.from_transport(transport)
+            yield sftp
+        finally:
+            if sftp:
+                sftp.close()
+            if transport:
+                transport.close()
+
     def download_sftp_folder_contents(self, remote_directory):
         """Download all files in remote_directory to the SFTPLoader's download_dir
 
@@ -420,41 +441,19 @@ class SFTPLoader:
         starting_file_count = len(list(self.download_dir.iterdir()))
         self._class_logger.debug("SFTP Username: %s", self.username)
 
-        transport = None
-        sftp = None
-        try:
-            transport = paramiko.Transport((self.host, 22))
-            transport.connect(username=self.username, password=self.password)
-            sftp = paramiko.SFTPClient.from_transport(transport)
-            
+        with self._sftp_connection() as sftp:
             try:
                 file_list = sftp.listdir(remote_directory)
             except FileNotFoundError as error:
                 raise FileNotFoundError(f"Directory `{remote_directory}` not found on SFTP server") from error
-        finally:
-            if sftp:
-                sftp.close()
-            if transport:
-                transport.close()
 
-        transport = None
-        sftp = None
-        try:
-            transport = paramiko.Transport((self.host, 22))
-            transport.connect(username=self.username, password=self.password)
-            sftp = paramiko.SFTPClient.from_transport(transport)
-            
+        with self._sftp_connection() as sftp:
             for file_name in file_list:
                 try:
                     outfile_path = self.download_dir / file_name
                     sftp.get(f"{remote_directory}{file_name}", str(outfile_path))
                 except FileNotFoundError as error:
                     raise FileNotFoundError(f"File `{remote_directory}{file_name}` not found on SFTP server") from error
-        finally:
-            if sftp:
-                sftp.close()
-            if transport:
-                transport.close()
 
         downloaded_file_count = len(list(self.download_dir.iterdir())) - starting_file_count
         if not downloaded_file_count:
@@ -476,23 +475,12 @@ class SFTPLoader:
         self._class_logger.info("Downloading %s from `%s` to `%s`", remote_file, self.host, self.download_dir)
         self._class_logger.debug("SFTP Username: %s", self.username)
         
-        transport = None
-        sftp = None
-        try:
-            transport = paramiko.Transport((self.host, 22))
-            transport.connect(username=self.username, password=self.password)
-            sftp = paramiko.SFTPClient.from_transport(transport)
-            
+        with self._sftp_connection() as sftp:
             outfile_path = self.download_dir / Path(remote_file).name
             try:
                 sftp.get(remote_file, str(outfile_path))
             except FileNotFoundError as error:
                 raise FileNotFoundError(f"File `{remote_file}` not found on SFTP server") from error
-        finally:
-            if sftp:
-                sftp.close()
-            if transport:
-                transport.close()
 
         return outfile_path
 
