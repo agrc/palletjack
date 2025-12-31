@@ -812,9 +812,11 @@ class TestSFTPLoader:
         """Test download_sftp_folder_contents using real context manager (not mocked)"""
         loader = extract.SFTPLoader("test_host", "test_user", "test_pass", Path("/tmp/test"))
         
+        test_files = ["file1.txt", "file2.txt"]
+        
         transport_mock = mocker.MagicMock()
         sftp_mock_1 = mocker.MagicMock()
-        sftp_mock_1.listdir.return_value = ["file1.txt", "file2.txt"]
+        sftp_mock_1.listdir.return_value = test_files
         sftp_mock_2 = mocker.MagicMock()
         
         mocker.patch("palletjack.extract.paramiko.Transport", return_value=transport_mock)
@@ -822,7 +824,7 @@ class TestSFTPLoader:
         sftp_class_mock.from_transport.side_effect = [sftp_mock_1, sftp_mock_2]
         
         # Mock Path.iterdir for file counting
-        mocker.patch.object(Path, "iterdir", side_effect=[[], ["file1.txt", "file2.txt"]])
+        mocker.patch.object(Path, "iterdir", side_effect=[[], test_files])
         
         result = loader.download_sftp_folder_contents("/remote/dir")
         
