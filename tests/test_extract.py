@@ -532,14 +532,14 @@ class TestSFTPLoader:
         download_dir_mock.iterdir.side_effect = [[], ["file_a", "file_b"]]
         sftploader_mock.download_dir = download_dir_mock
 
-        transport_mock = mocker.patch("palletjack.extract.paramiko.Transport", autospec=True)
-        sftp_client_mock = mocker.patch("palletjack.extract.paramiko.SFTPClient", autospec=True)
+        # Mock the context manager helper method
+        sftp_instance = mocker.MagicMock()
+        sftploader_mock._sftp_connection = mocker.MagicMock(return_value=mocker.MagicMock(__enter__=mocker.Mock(return_value=sftp_instance), __exit__=mocker.Mock(return_value=False)))
 
         extract.SFTPLoader.download_sftp_folder_contents(sftploader_mock, "remote/dir")
 
-        transport_mock.assert_called_with(("sftp_host", 22))
-        assert transport_mock.return_value.connect.call_count == 2
-        transport_mock.return_value.connect.assert_called_with(username="username", password="password")
+        # Verify the connection method was called (connection is abstracted behind the helper)
+        assert sftploader_mock._sftp_connection.call_count >= 1
 
     def test_download_sftp_folder_contents_creates_two_separate_connections_with_proper_calls(self, mocker):
         sftploader_mock = mocker.Mock()
@@ -557,11 +557,14 @@ class TestSFTPLoader:
         sftp_instance_1.listdir.return_value = [Path("file_a"), Path("file_b")]
         sftp_instance_2 = mocker.MagicMock(name="sftp2")
         
-        sftp_client_mock.from_transport.side_effect = [sftp_instance_1, sftp_instance_2]
+        # Mock the context manager helper method to return different instances
+        context_manager_1 = mocker.MagicMock(__enter__=mocker.Mock(return_value=sftp_instance_1), __exit__=mocker.Mock(return_value=False))
+        context_manager_2 = mocker.MagicMock(__enter__=mocker.Mock(return_value=sftp_instance_2), __exit__=mocker.Mock(return_value=False))
+        sftploader_mock._sftp_connection = mocker.Mock(side_effect=[context_manager_1, context_manager_2])
 
         extract.SFTPLoader.download_sftp_folder_contents(sftploader_mock, "remote/dir/")
 
-        assert transport_mock.call_count == 2
+        assert sftploader_mock._sftp_connection.call_count == 2
         sftp_instance_1.listdir.assert_called_once_with("remote/dir/")
         sftp_instance_2.get.assert_any_call("remote/dir/file_a", str(Path("local/dir/file_a")))
         sftp_instance_2.get.assert_any_call("remote/dir/file_b", str(Path("local/dir/file_b")))
@@ -579,7 +582,7 @@ class TestSFTPLoader:
         sftp_client_mock = mocker.patch("palletjack.extract.paramiko.SFTPClient", autospec=True)
         
         sftp_instance = mocker.MagicMock()
-        sftp_client_mock.from_transport.return_value = sftp_instance
+        sftploader_mock._sftp_connection = mocker.MagicMock(return_value=mocker.MagicMock(__enter__=mocker.Mock(return_value=sftp_instance), __exit__=mocker.Mock(return_value=False)))
 
         extract.SFTPLoader.download_sftp_folder_contents(sftploader_mock, "remote/dir")
 
@@ -598,7 +601,7 @@ class TestSFTPLoader:
         sftp_client_mock = mocker.patch("palletjack.extract.paramiko.SFTPClient", autospec=True)
         
         sftp_instance = mocker.MagicMock()
-        sftp_client_mock.from_transport.return_value = sftp_instance
+        sftploader_mock._sftp_connection = mocker.MagicMock(return_value=mocker.MagicMock(__enter__=mocker.Mock(return_value=sftp_instance), __exit__=mocker.Mock(return_value=False)))
 
         extract.SFTPLoader.download_sftp_folder_contents(sftploader_mock, "remote/dir/")
 
@@ -613,6 +616,9 @@ class TestSFTPLoader:
 
         mocker.patch("palletjack.extract.paramiko.Transport", autospec=True)
         mocker.patch("palletjack.extract.paramiko.SFTPClient", autospec=True)
+        
+        sftp_instance = mocker.MagicMock()
+        sftploader_mock._sftp_connection = mocker.MagicMock(return_value=mocker.MagicMock(__enter__=mocker.Mock(return_value=sftp_instance), __exit__=mocker.Mock(return_value=False)))
 
         with pytest.raises(ValueError, match="No files downloaded"):
             extract.SFTPLoader.download_sftp_folder_contents(sftploader_mock, "remote/dir/")
@@ -631,7 +637,7 @@ class TestSFTPLoader:
         
         sftp_instance = mocker.MagicMock()
         sftp_instance.listdir.side_effect = FileNotFoundError("No such directory")
-        sftp_client_mock.from_transport.return_value = sftp_instance
+        sftploader_mock._sftp_connection = mocker.MagicMock(return_value=mocker.MagicMock(__enter__=mocker.Mock(return_value=sftp_instance), __exit__=mocker.Mock(return_value=False)))
 
         with pytest.raises(FileNotFoundError, match="Directory `remote/dir/` not found on SFTP server"):
             extract.SFTPLoader.download_sftp_folder_contents(sftploader_mock, "remote/dir/")
@@ -652,7 +658,9 @@ class TestSFTPLoader:
         sftp_instance_2 = mocker.MagicMock()
         sftp_instance_2.get.side_effect = FileNotFoundError("No such file")
         
-        sftp_client_mock.from_transport.side_effect = [sftp_instance_1, sftp_instance_2]
+        context_manager_1 = mocker.MagicMock(__enter__=mocker.Mock(return_value=sftp_instance_1), __exit__=mocker.Mock(return_value=False))
+        context_manager_2 = mocker.MagicMock(__enter__=mocker.Mock(return_value=sftp_instance_2), __exit__=mocker.Mock(return_value=False))
+        sftploader_mock._sftp_connection = mocker.Mock(side_effect=[context_manager_1, context_manager_2])
 
         with pytest.raises(FileNotFoundError, match="File `remote/dir/file_a` not found on SFTP server"):
             extract.SFTPLoader.download_sftp_folder_contents(sftploader_mock, "remote/dir/")
@@ -664,13 +672,13 @@ class TestSFTPLoader:
         sftploader_mock.password = "password"
         sftploader_mock.download_dir = Path("local/dir")
 
-        transport_mock = mocker.patch("palletjack.extract.paramiko.Transport", autospec=True)
-        mocker.patch("palletjack.extract.paramiko.SFTPClient", autospec=True)
+        sftp_instance = mocker.MagicMock()
+        sftploader_mock._sftp_connection = mocker.MagicMock(return_value=mocker.MagicMock(__enter__=mocker.Mock(return_value=sftp_instance), __exit__=mocker.Mock(return_value=False)))
 
         extract.SFTPLoader.download_sftp_single_file(sftploader_mock, "remote/file.txt")
 
-        transport_mock.assert_called_with(("sftp_host", 22))
-        transport_mock.return_value.connect.assert_called_with(username="username", password="password")
+        # Verify the connection method was called
+        sftploader_mock._sftp_connection.assert_called_once()
 
     def test_download_sftp_single_file_calls_get_with_proper_args(self, mocker):
         sftploader_mock = mocker.Mock()
@@ -683,7 +691,7 @@ class TestSFTPLoader:
         sftp_client_mock = mocker.patch("palletjack.extract.paramiko.SFTPClient", autospec=True)
         
         sftp_instance = mocker.MagicMock()
-        sftp_client_mock.from_transport.return_value = sftp_instance
+        sftploader_mock._sftp_connection = mocker.MagicMock(return_value=mocker.MagicMock(__enter__=mocker.Mock(return_value=sftp_instance), __exit__=mocker.Mock(return_value=False)))
 
         extract.SFTPLoader.download_sftp_single_file(sftploader_mock, "remote/file.txt")
 
@@ -701,7 +709,7 @@ class TestSFTPLoader:
         
         sftp_instance = mocker.MagicMock()
         sftp_instance.get.side_effect = FileNotFoundError("No such file")
-        sftp_client_mock.from_transport.return_value = sftp_instance
+        sftploader_mock._sftp_connection = mocker.MagicMock(return_value=mocker.MagicMock(__enter__=mocker.Mock(return_value=sftp_instance), __exit__=mocker.Mock(return_value=False)))
 
         with pytest.raises(FileNotFoundError, match="File `remote/file.txt` not found on SFTP server"):
             extract.SFTPLoader.download_sftp_single_file(sftploader_mock, "remote/file.txt")
