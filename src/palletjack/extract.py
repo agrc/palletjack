@@ -11,6 +11,7 @@ import random
 import re
 import time
 import warnings
+from contextlib import contextmanager
 from datetime import datetime, timedelta
 from io import BytesIO
 from pathlib import Path
@@ -20,10 +21,10 @@ from time import sleep
 import arcgis
 import geopandas as gpd
 import pandas as pd
+import paramiko
 import requests
 import sqlalchemy
 import ujson
-from fabric import Connection
 from googleapiclient.http import MediaIoBaseDownload
 
 from palletjack import utils
@@ -133,7 +134,7 @@ class GoogleDriveDownloader:
         self._class_logger.debug("Initializing GoogleDriveDownloader")
         self._class_logger.debug("Output directory: %s", out_dir)
         self.out_dir = Path(out_dir)
-        regex_pattern = "(\/|=)([-\w]{25,})"  # pylint:disable=anomalous-backslash-in-string
+        regex_pattern = r"(/|=)([-\w]{25,})"
         self._class_logger.debug("Regex pattern: %s", regex_pattern)
         self.regex = re.compile(regex_pattern)
 
@@ -191,7 +192,7 @@ class GoogleDriveDownloader:
         """
 
         content = response.headers["Content-Disposition"]
-        all_filenames = re.findall("filename\*?=([^;]+)", content, flags=re.IGNORECASE)  # pylint:disable=anomalous-backslash-in-string
+        all_filenames = re.findall(r"filename\*?=([^;]+)", content, flags=re.IGNORECASE)
         if all_filenames:
             #: Remove spurious whitespace and "s
             return all_filenames[0].strip().strip('"')
@@ -404,11 +405,38 @@ class SFTPLoader:
         self.download_dir = download_dir
         self._class_logger = logging.getLogger(__name__).getChild(self.__class__.__name__)
 
-    def download_sftp_folder_contents(self, remote_directory):
+    @contextmanager
+    def _sftp_connection(self):
+        """Context manager for SFTP connections that ensures proper cleanup.
+        
+        Yields:
+            paramiko.SFTPClient: An active SFTP client
+        """
+        transport = None
+        sftp = None
+        try:
+            transport = paramiko.Transport((self.host, 22))
+            transport.connect(username=self.username, password=self.password)
+            sftp = paramiko.SFTPClient.from_transport(transport)
+            yield sftp
+        finally:
+            if sftp:
+                sftp.close()
+            if transport:
+                transport.close()
+
+    def download_sftp_folder_contents(self, remote_directory, overwrite_existing_files=True):
         """Download all files in remote_directory to the SFTPLoader's download_dir
 
         Args:
             remote_directory (str, optional): Absolute path to remote_directory on the SFTP server
+            overwrite_existing_files (bool, optional): If False, raise an error if a file already exists 
+                in download_dir. Defaults to True.
+        
+        Raises:
+            FileExistsError: If overwrite_existing_files is False and a file already exists
+            FileNotFoundError: If the remote directory or file is not found
+            ValueError: If no files were downloaded
         """
 
         if not remote_directory.endswith("/"):
@@ -417,36 +445,43 @@ class SFTPLoader:
         self._class_logger.info(
             "Downloading files from `%s:%s` to `%s`", self.host, remote_directory, self.download_dir
         )
-        starting_file_count = len(list(self.download_dir.iterdir()))
         self._class_logger.debug("SFTP Username: %s", self.username)
 
-        with Connection(self.host, user=self.username, connect_kwargs={"password": self.password}) as list_connection:
-            with list_connection.sftp() as sftp:
-                try:
-                    file_list = sftp.listdir(remote_directory)
-                except FileNotFoundError as error:
-                    raise FileNotFoundError(f"Directory `{remote_directory}` not found on SFTP server") from error
+        with self._sftp_connection() as sftp:
+            try:
+                file_list = sftp.listdir(remote_directory)
+            except FileNotFoundError as error:
+                raise FileNotFoundError(f"Directory `{remote_directory}` not found on SFTP server") from error
+            
+            if not file_list:
+                raise ValueError("No files to download from remote directory")
 
-        with Connection(self.host, user=self.username, connect_kwargs={"password": self.password}) as get_connection:
+        downloaded_files = []
+        with self._sftp_connection() as sftp:
             for file_name in file_list:
+                outfile_path = self.download_dir / file_name
+                
+                # Check if file exists and overwrite is disabled
+                if not overwrite_existing_files and outfile_path.exists():
+                    raise FileExistsError(f"File `{outfile_path}` already exists and overwrite_existing_files is False")
+                
                 try:
-                    outfile_path = self.download_dir / file_name
-                    get_connection.get(f"{remote_directory}{file_name}", local=str(outfile_path))
+                    sftp.get(f"{remote_directory}{file_name}", outfile_path.as_posix())
+                    downloaded_files.append(file_name)
                 except FileNotFoundError as error:
                     raise FileNotFoundError(f"File `{remote_directory}{file_name}` not found on SFTP server") from error
 
-        downloaded_file_count = len(list(self.download_dir.iterdir())) - starting_file_count
-        if not downloaded_file_count:
+        if not downloaded_files:
             raise ValueError("No files downloaded")
-        return downloaded_file_count
+        return len(downloaded_files)
 
     def download_sftp_single_file(self, remote_file):
         """Download remote_file into SFTPLoader's download_dir
 
         Args:
-            remote_file (str): Remote file to download; see fabric.transfer.get() for path details
+            remote_file (str): Remote file to download; see paramiko.SFTPClient.get() for path details
         Raises:
-            FileNotFoundError: If fabric can't find remote_file on the sftp server
+            FileNotFoundError: If paramiko can't find remote_file on the sftp server
 
         Returns:
             Path: Downloaded file's path
@@ -454,18 +489,15 @@ class SFTPLoader:
 
         self._class_logger.info("Downloading %s from `%s` to `%s`", remote_file, self.host, self.download_dir)
         self._class_logger.debug("SFTP Username: %s", self.username)
-        try:
-            with Connection(
-                self.host,
-                user=self.username,
-                connect_kwargs={"password": self.password},
-            ) as connection:
-                outfile_path = self.download_dir / Path(remote_file).name
-                get_result = connection.get(remote_file, local=str(outfile_path))
-        except FileNotFoundError as error:
-            raise FileNotFoundError(f"File `{remote_file}` not found on SFTP server") from error
+        
+        with self._sftp_connection() as sftp:
+            outfile_path = self.download_dir / Path(remote_file).name
+            try:
+                sftp.get(remote_file, outfile_path.as_posix())
+            except FileNotFoundError as error:
+                raise FileNotFoundError(f"File `{remote_file}` not found on SFTP server") from error
 
-        return Path(get_result.local)
+        return outfile_path
 
     def read_csv_into_dataframe(self, filename, column_types=None):
         """Read filename into a dataframe with optional column names and types
