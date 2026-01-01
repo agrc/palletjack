@@ -425,11 +425,18 @@ class SFTPLoader:
             if transport:
                 transport.close()
 
-    def download_sftp_folder_contents(self, remote_directory):
+    def download_sftp_folder_contents(self, remote_directory, overwrite_existing_files=True):
         """Download all files in remote_directory to the SFTPLoader's download_dir
 
         Args:
             remote_directory (str, optional): Absolute path to remote_directory on the SFTP server
+            overwrite_existing_files (bool, optional): If False, raise an error if a file already exists 
+                in download_dir. Defaults to True.
+        
+        Raises:
+            FileExistsError: If overwrite_existing_files is False and a file already exists
+            FileNotFoundError: If the remote directory or file is not found
+            ValueError: If no files were downloaded
         """
 
         if not remote_directory.endswith("/"):
@@ -438,7 +445,6 @@ class SFTPLoader:
         self._class_logger.info(
             "Downloading files from `%s:%s` to `%s`", self.host, remote_directory, self.download_dir
         )
-        starting_file_count = len(list(self.download_dir.iterdir()))
         self._class_logger.debug("SFTP Username: %s", self.username)
 
         with self._sftp_connection() as sftp:
@@ -447,18 +453,27 @@ class SFTPLoader:
             except FileNotFoundError as error:
                 raise FileNotFoundError(f"Directory `{remote_directory}` not found on SFTP server") from error
 
+        if not file_list:
+            raise ValueError("No files to download from remote directory")
+
+        downloaded_files = []
         with self._sftp_connection() as sftp:
             for file_name in file_list:
+                outfile_path = self.download_dir / file_name
+                
+                # Check if file exists and overwrite is disabled
+                if not overwrite_existing_files and outfile_path.exists():
+                    raise FileExistsError(f"File `{outfile_path}` already exists and overwrite_existing_files is False")
+                
                 try:
-                    outfile_path = self.download_dir / file_name
-                    sftp.get(f"{remote_directory}{file_name}", str(outfile_path))
+                    sftp.get(f"{remote_directory}{file_name}", outfile_path.as_posix())
+                    downloaded_files.append(file_name)
                 except FileNotFoundError as error:
                     raise FileNotFoundError(f"File `{remote_directory}{file_name}` not found on SFTP server") from error
 
-        downloaded_file_count = len(list(self.download_dir.iterdir())) - starting_file_count
-        if not downloaded_file_count:
+        if not downloaded_files:
             raise ValueError("No files downloaded")
-        return downloaded_file_count
+        return len(downloaded_files)
 
     def download_sftp_single_file(self, remote_file):
         """Download remote_file into SFTPLoader's download_dir
@@ -478,7 +493,7 @@ class SFTPLoader:
         with self._sftp_connection() as sftp:
             outfile_path = self.download_dir / Path(remote_file).name
             try:
-                sftp.get(remote_file, str(outfile_path))
+                sftp.get(remote_file, outfile_path.as_posix())
             except FileNotFoundError as error:
                 raise FileNotFoundError(f"File `{remote_file}` not found on SFTP server") from error
 
