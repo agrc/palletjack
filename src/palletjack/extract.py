@@ -452,9 +452,9 @@ class SFTPLoader:
                 file_list = sftp.listdir(remote_directory)
             except FileNotFoundError as error:
                 raise FileNotFoundError(f"Directory `{remote_directory}` not found on SFTP server") from error
-
-        if not file_list:
-            raise ValueError("No files to download from remote directory")
+            
+            if not file_list:
+                raise ValueError("No files to download from remote directory")
 
         downloaded_files = []
         with self._sftp_connection() as sftp:
