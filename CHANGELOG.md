@@ -1,5 +1,22 @@
 # Changelog
 
+## [5.2.13-rc.1](https://github.com/agrc/palletjack/compare/v5.2.12...v5.2.13-rc.1) (2026-01-05)
+
+
+### ⚠ BREAKING CHANGES
+
+* ftp breaking changes (empty)
+
+### Features
+
+* ftp breaking changes (empty) ([954c25e](https://github.com/agrc/palletjack/commit/954c25e109f8928d41f9c0c62a5d879febb616e7))
+* replace pysftp with fabric, paramiko. ([a278034](https://github.com/agrc/palletjack/commit/a278034ff5b20abc9356603b71ef4e985e7374a1))
+
+
+### Bug Fixes
+
+* use folder.add instead of content.add to upload gdb ([3e119ee](https://github.com/agrc/palletjack/commit/3e119eef695ac87557875c941a507e98e292f709))
+
 ## [5.2.12](https://github.com/agrc/palletjack/compare/v5.2.11...v5.2.12) (2025-12-16)
 
 
