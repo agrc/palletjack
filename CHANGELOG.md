@@ -1,5 +1,27 @@
 # Changelog
 
+## [6.0.0](https://github.com/agrc/palletjack/compare/v5.2.12...v6.0.0) (2026-01-09)
+
+
+### ⚠ BREAKING CHANGES
+
+* The API for the SFTP loaders changed; there's no longer the option to pass in a known_hosts file.
+
+### Features
+
+* empty commit to trigger major version bump ([0c0e168](https://github.com/agrc/palletjack/commit/0c0e1683b8fef8325b2476f9b84f38faa14b5679))
+* replace pysftp with fabric, paramiko. ([933c355](https://github.com/agrc/palletjack/commit/933c35518641e725fce34b6507dd14736b536e6e))
+
+
+### Bug Fixes
+
+* use folder.add instead of content.add to upload gdb ([3f1d84a](https://github.com/agrc/palletjack/commit/3f1d84ae797b49e6545ae620255c2277713f24e1))
+
+
+### Dependencies
+
+* update paramiko requirement from &lt;4.0.0 to &lt;5.0.0 ([3820c70](https://github.com/agrc/palletjack/commit/3820c708c46019885298e15a95022d3e547b02b8))
+
 ## [5.2.12](https://github.com/agrc/palletjack/compare/v5.2.11...v5.2.12) (2025-12-16)
 
 
