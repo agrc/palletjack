@@ -1393,7 +1393,7 @@ class TestFieldLength:
         with pytest.raises(ValueError) as exc_info:
             checker.check_field_length(["foo"])
 
-        assert "Row 2, column foo in new data exceeds the live data max length of 10" in str(exc_info.value)
+        assert "Row 2, column foo length of 27 in new data exceeds the live data max length of 10" in str(exc_info.value)
 
     def test_check_field_length_uses_fields_arg(self, mocker):
         properties_mock = mocker.Mock()

@@ -714,7 +714,7 @@ class FieldChecker:
             new_max_length = new_data_lengths.max()
             if not pd.isna(new_max_length) and new_max_length > live_max_length:
                 raise ValueError(
-                    f"Row {new_data_lengths.argmax()}, column {field} in new data exceeds the live data max length of {live_max_length}"
+                    f"Row {new_data_lengths.argmax()}, column {field} length of {new_max_length} in new data exceeds the live data max length of {live_max_length}"
                 )
 
     def check_fields_present(self, fields, add_oid):
