@@ -1,4 +1,4 @@
-# Palletjack - Agent Onboarding Guide
+# palletjack - Agent Onboarding Guide
 
 ## Commits
 
