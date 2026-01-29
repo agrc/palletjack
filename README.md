@@ -83,3 +83,7 @@ To generate the docs, run `pdoc --html -o docs\ c:\palletjack\repo\src\palletjac
 `docs/README.md` is included at the top package level by adding the line `.. include:: ../../docs/README.md` in `__init__.py`'s docstring. This tells pdoc to insert that markdown into the HTML generated for that docstring, and the include directive can be used for more in-depth documentation anywhere else as well. Note that `pdoc` tries to create links for anything surrounded by backticks, which are also used for code blocks. You may need to manually edit the HTML to remove the links if they change the content of your code blocks (such as in the example import statement).
 
 Once the contents of `docs/palletjack` look correct, force push the `gh-pages` branch to github. This will trigger the action to republish the site. The docs are then accessible at [agrc.github.io/palletjack/palletjack/index.html].
+
+## Attribution
+
+This project was developed with the assistance of [GitHub Copilot](https://github.com/features/copilot).
