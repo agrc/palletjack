@@ -1722,6 +1722,47 @@ class TestNpInfChecker:
         ):
             checker.check_for_np_inf()
 
+    def test_check_for_np_inf_handles_text_columns(self, mocker):
+        """Test that check_for_np_inf doesn't raise an error on text columns."""
+        new_df = pd.DataFrame(
+            {
+                "text_field": ["apple", "banana", "cherry"],
+                "float_field": [1.0, 2.0, 3.0],
+                "int_field": [1, 2, 3],
+            }
+        )
+
+        properties_mock = mocker.Mock()
+        properties_mock.fields = [{"name": "foo"}, {"name": "bar"}]
+
+        checker = palletjack.utils.FieldChecker(properties_mock, new_df)
+
+        #: Should not raise
+        checker.check_for_np_inf()
+
+    def test_check_for_np_inf_warns_on_inf_in_float_but_not_text(self, mocker):
+        """Test that check_for_np_inf only warns on float columns with inf, ignoring text columns."""
+        new_df = pd.DataFrame(
+            {
+                "text_field": ["apple", "banana", "cherry"],
+                "float_field_with_inf": [1.0, np.inf, 3.0],
+                "float_field_without_inf": [1.0, 2.0, 3.0],
+            }
+        )
+
+        properties_mock = mocker.Mock()
+        properties_mock.fields = [{"name": "foo"}, {"name": "bar"}]
+
+        checker = palletjack.utils.FieldChecker(properties_mock, new_df)
+
+        with pytest.warns(
+            UserWarning,
+            match=re.escape(
+                "The following columns have np.inf or -np.inf values, which may cause empty feature services: float_field_with_inf"
+            ),
+        ):
+            checker.check_for_np_inf()
+
 
 class TestNullGeometryGenerators:
     def test_get_null_geometries_point(self, mocker):

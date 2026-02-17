@@ -808,8 +808,10 @@ class FieldChecker:
         columns_with_inf = []
         non_spatial_columns = [col for col in self.new_dataframe.columns if self.new_dataframe[col].dtype != "geometry"]
         for column in non_spatial_columns:
-            if np.isinf(self.new_dataframe[column]).any():
-                columns_with_inf.append(column)
+            #: Only check float columns, as np.isinf only works with float dtypes and int/text columns cannot contain inf
+            if pd.api.types.is_float_dtype(self.new_dataframe[column].dtype):
+                if np.isinf(self.new_dataframe[column]).any():
+                    columns_with_inf.append(column)
 
         if columns_with_inf:
             warnings.warn(
