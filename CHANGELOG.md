@@ -1,5 +1,12 @@
 # Changelog
 
+## [6.0.1](https://github.com/agrc/palletjack/compare/v6.0.0...v6.0.1) (2026-02-17)
+
+
+### Bug Fixes
+
+* only check float columns for np.inf in check_for_np_inf ([92fe81b](https://github.com/agrc/palletjack/commit/92fe81b814e409f4162005034e1d658c31e2b95a))
+
 ## [6.0.0](https://github.com/agrc/palletjack/compare/v5.2.12...v6.0.0) (2026-01-09)
 
 
