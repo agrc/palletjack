@@ -534,7 +534,11 @@ class TestSFTPLoader:
         # Mock the context manager helper method
         sftp_instance = mocker.MagicMock()
         sftp_instance.listdir.return_value = ["file_a", "file_b"]
-        sftploader_mock._sftp_connection = mocker.MagicMock(return_value=mocker.MagicMock(__enter__=mocker.Mock(return_value=sftp_instance), __exit__=mocker.Mock(return_value=False)))
+        sftploader_mock._sftp_connection = mocker.MagicMock(
+            return_value=mocker.MagicMock(
+                __enter__=mocker.Mock(return_value=sftp_instance), __exit__=mocker.Mock(return_value=False)
+            )
+        )
 
         extract.SFTPLoader.download_sftp_folder_contents(sftploader_mock, "remote/dir")
 
@@ -551,14 +555,18 @@ class TestSFTPLoader:
 
         transport_mock = mocker.patch("palletjack.extract.paramiko.Transport", autospec=True)
         sftp_client_mock = mocker.patch("palletjack.extract.paramiko.SFTPClient", autospec=True)
-        
+
         sftp_instance_1 = mocker.MagicMock(name="sftp1")
         sftp_instance_1.listdir.return_value = [Path("file_a"), Path("file_b")]
         sftp_instance_2 = mocker.MagicMock(name="sftp2")
-        
+
         # Mock the context manager helper method to return different instances
-        context_manager_1 = mocker.MagicMock(__enter__=mocker.Mock(return_value=sftp_instance_1), __exit__=mocker.Mock(return_value=False))
-        context_manager_2 = mocker.MagicMock(__enter__=mocker.Mock(return_value=sftp_instance_2), __exit__=mocker.Mock(return_value=False))
+        context_manager_1 = mocker.MagicMock(
+            __enter__=mocker.Mock(return_value=sftp_instance_1), __exit__=mocker.Mock(return_value=False)
+        )
+        context_manager_2 = mocker.MagicMock(
+            __enter__=mocker.Mock(return_value=sftp_instance_2), __exit__=mocker.Mock(return_value=False)
+        )
         sftploader_mock._sftp_connection = mocker.Mock(side_effect=[context_manager_1, context_manager_2])
 
         extract.SFTPLoader.download_sftp_folder_contents(sftploader_mock, "remote/dir/")
@@ -577,10 +585,14 @@ class TestSFTPLoader:
 
         transport_mock = mocker.patch("palletjack.extract.paramiko.Transport", autospec=True)
         sftp_client_mock = mocker.patch("palletjack.extract.paramiko.SFTPClient", autospec=True)
-        
+
         sftp_instance = mocker.MagicMock()
         sftp_instance.listdir.return_value = ["file_a", "file_b"]
-        sftploader_mock._sftp_connection = mocker.MagicMock(return_value=mocker.MagicMock(__enter__=mocker.Mock(return_value=sftp_instance), __exit__=mocker.Mock(return_value=False)))
+        sftploader_mock._sftp_connection = mocker.MagicMock(
+            return_value=mocker.MagicMock(
+                __enter__=mocker.Mock(return_value=sftp_instance), __exit__=mocker.Mock(return_value=False)
+            )
+        )
 
         extract.SFTPLoader.download_sftp_folder_contents(sftploader_mock, "remote/dir")
 
@@ -595,10 +607,14 @@ class TestSFTPLoader:
 
         transport_mock = mocker.patch("palletjack.extract.paramiko.Transport", autospec=True)
         sftp_client_mock = mocker.patch("palletjack.extract.paramiko.SFTPClient", autospec=True)
-        
+
         sftp_instance = mocker.MagicMock()
         sftp_instance.listdir.return_value = ["file_a", "file_b"]
-        sftploader_mock._sftp_connection = mocker.MagicMock(return_value=mocker.MagicMock(__enter__=mocker.Mock(return_value=sftp_instance), __exit__=mocker.Mock(return_value=False)))
+        sftploader_mock._sftp_connection = mocker.MagicMock(
+            return_value=mocker.MagicMock(
+                __enter__=mocker.Mock(return_value=sftp_instance), __exit__=mocker.Mock(return_value=False)
+            )
+        )
 
         extract.SFTPLoader.download_sftp_folder_contents(sftploader_mock, "remote/dir/")
 
@@ -610,10 +626,14 @@ class TestSFTPLoader:
 
         mocker.patch("palletjack.extract.paramiko.Transport", autospec=True)
         mocker.patch("palletjack.extract.paramiko.SFTPClient", autospec=True)
-        
+
         sftp_instance = mocker.MagicMock()
         sftp_instance.listdir.return_value = []
-        sftploader_mock._sftp_connection = mocker.MagicMock(return_value=mocker.MagicMock(__enter__=mocker.Mock(return_value=sftp_instance), __exit__=mocker.Mock(return_value=False)))
+        sftploader_mock._sftp_connection = mocker.MagicMock(
+            return_value=mocker.MagicMock(
+                __enter__=mocker.Mock(return_value=sftp_instance), __exit__=mocker.Mock(return_value=False)
+            )
+        )
 
         with pytest.raises(ValueError, match="No files to download from remote directory"):
             extract.SFTPLoader.download_sftp_folder_contents(sftploader_mock, "remote/dir/")
@@ -628,10 +648,14 @@ class TestSFTPLoader:
 
         transport_mock = mocker.patch("palletjack.extract.paramiko.Transport", autospec=True)
         sftp_client_mock = mocker.patch("palletjack.extract.paramiko.SFTPClient", autospec=True)
-        
+
         sftp_instance = mocker.MagicMock()
         sftp_instance.listdir.side_effect = FileNotFoundError("No such directory")
-        sftploader_mock._sftp_connection = mocker.MagicMock(return_value=mocker.MagicMock(__enter__=mocker.Mock(return_value=sftp_instance), __exit__=mocker.Mock(return_value=False)))
+        sftploader_mock._sftp_connection = mocker.MagicMock(
+            return_value=mocker.MagicMock(
+                __enter__=mocker.Mock(return_value=sftp_instance), __exit__=mocker.Mock(return_value=False)
+            )
+        )
 
         with pytest.raises(FileNotFoundError, match="Directory `remote/dir/` not found on SFTP server"):
             extract.SFTPLoader.download_sftp_folder_contents(sftploader_mock, "remote/dir/")
@@ -645,14 +669,18 @@ class TestSFTPLoader:
 
         transport_mock = mocker.patch("palletjack.extract.paramiko.Transport", autospec=True)
         sftp_client_mock = mocker.patch("palletjack.extract.paramiko.SFTPClient", autospec=True)
-        
+
         sftp_instance_1 = mocker.MagicMock()
         sftp_instance_1.listdir.return_value = [Path("file_a"), Path("file_b")]
         sftp_instance_2 = mocker.MagicMock()
         sftp_instance_2.get.side_effect = FileNotFoundError("No such file")
-        
-        context_manager_1 = mocker.MagicMock(__enter__=mocker.Mock(return_value=sftp_instance_1), __exit__=mocker.Mock(return_value=False))
-        context_manager_2 = mocker.MagicMock(__enter__=mocker.Mock(return_value=sftp_instance_2), __exit__=mocker.Mock(return_value=False))
+
+        context_manager_1 = mocker.MagicMock(
+            __enter__=mocker.Mock(return_value=sftp_instance_1), __exit__=mocker.Mock(return_value=False)
+        )
+        context_manager_2 = mocker.MagicMock(
+            __enter__=mocker.Mock(return_value=sftp_instance_2), __exit__=mocker.Mock(return_value=False)
+        )
         sftploader_mock._sftp_connection = mocker.Mock(side_effect=[context_manager_1, context_manager_2])
 
         with pytest.raises(FileNotFoundError, match="File `remote/dir/file_a` not found on SFTP server"):
@@ -666,7 +694,11 @@ class TestSFTPLoader:
         sftploader_mock.download_dir = Path("local/dir")
 
         sftp_instance = mocker.MagicMock()
-        sftploader_mock._sftp_connection = mocker.MagicMock(return_value=mocker.MagicMock(__enter__=mocker.Mock(return_value=sftp_instance), __exit__=mocker.Mock(return_value=False)))
+        sftploader_mock._sftp_connection = mocker.MagicMock(
+            return_value=mocker.MagicMock(
+                __enter__=mocker.Mock(return_value=sftp_instance), __exit__=mocker.Mock(return_value=False)
+            )
+        )
 
         extract.SFTPLoader.download_sftp_single_file(sftploader_mock, "remote/file.txt")
 
@@ -682,9 +714,13 @@ class TestSFTPLoader:
 
         transport_mock = mocker.patch("palletjack.extract.paramiko.Transport", autospec=True)
         sftp_client_mock = mocker.patch("palletjack.extract.paramiko.SFTPClient", autospec=True)
-        
+
         sftp_instance = mocker.MagicMock()
-        sftploader_mock._sftp_connection = mocker.MagicMock(return_value=mocker.MagicMock(__enter__=mocker.Mock(return_value=sftp_instance), __exit__=mocker.Mock(return_value=False)))
+        sftploader_mock._sftp_connection = mocker.MagicMock(
+            return_value=mocker.MagicMock(
+                __enter__=mocker.Mock(return_value=sftp_instance), __exit__=mocker.Mock(return_value=False)
+            )
+        )
 
         extract.SFTPLoader.download_sftp_single_file(sftploader_mock, "remote/file.txt")
 
@@ -699,10 +735,14 @@ class TestSFTPLoader:
 
         transport_mock = mocker.patch("palletjack.extract.paramiko.Transport", autospec=True)
         sftp_client_mock = mocker.patch("palletjack.extract.paramiko.SFTPClient", autospec=True)
-        
+
         sftp_instance = mocker.MagicMock()
         sftp_instance.get.side_effect = FileNotFoundError("No such file")
-        sftploader_mock._sftp_connection = mocker.MagicMock(return_value=mocker.MagicMock(__enter__=mocker.Mock(return_value=sftp_instance), __exit__=mocker.Mock(return_value=False)))
+        sftploader_mock._sftp_connection = mocker.MagicMock(
+            return_value=mocker.MagicMock(
+                __enter__=mocker.Mock(return_value=sftp_instance), __exit__=mocker.Mock(return_value=False)
+            )
+        )
 
         with pytest.raises(FileNotFoundError, match="File `remote/file.txt` not found on SFTP server"):
             extract.SFTPLoader.download_sftp_single_file(sftploader_mock, "remote/file.txt")
@@ -710,18 +750,18 @@ class TestSFTPLoader:
     def test_download_sftp_folder_contents_raises_on_file_exists_when_overwrite_disabled(self, mocker):
         """Test that FileExistsError is raised when overwrite_existing_files=False and file exists"""
         loader = extract.SFTPLoader("test_host", "test_user", "test_pass", Path("/tmp/test"))
-        
+
         # Mock Path to return a path that exists
         mock_path = mocker.MagicMock(spec=Path)
         mock_path.exists.return_value = True
         mock_path.as_posix.return_value = "/tmp/test/existing_file.txt"
-        
+
         # Patch Path.__truediv__ to return our mock path
         mocker.patch.object(Path, "__truediv__", return_value=mock_path)
-        
+
         sftp_instance = mocker.MagicMock()
         sftp_instance.listdir.return_value = ["existing_file.txt"]
-        
+
         transport_mock = mocker.MagicMock()
         mocker.patch("palletjack.extract.paramiko.Transport", return_value=transport_mock)
         sftp_class_mock = mocker.patch("palletjack.extract.paramiko.SFTPClient")
@@ -736,7 +776,7 @@ class TestSFTPLoader:
 
         sftp_instance = mocker.MagicMock()
         sftp_instance.listdir.return_value = ["file.txt"]
-        
+
         transport_mock = mocker.MagicMock()
         mocker.patch("palletjack.extract.paramiko.Transport", return_value=transport_mock)
         sftp_class_mock = mocker.patch("palletjack.extract.paramiko.SFTPClient")
@@ -749,22 +789,22 @@ class TestSFTPLoader:
     def test_sftp_connection_context_manager_success(self, mocker):
         """Test successful SFTP connection with proper cleanup"""
         loader = extract.SFTPLoader("test_host", "test_user", "test_pass", Path("/tmp"))
-        
+
         transport_mock = mocker.MagicMock()
         sftp_mock = mocker.MagicMock()
-        
+
         transport_class_mock = mocker.patch("palletjack.extract.paramiko.Transport", return_value=transport_mock)
         sftp_class_mock = mocker.patch("palletjack.extract.paramiko.SFTPClient")
         sftp_class_mock.from_transport.return_value = sftp_mock
-        
+
         with loader._sftp_connection() as sftp:
             assert sftp == sftp_mock
-        
+
         # Verify connection was established
         transport_class_mock.assert_called_once_with(("test_host", 22))
         transport_mock.connect.assert_called_once_with(username="test_user", password="test_pass")
         sftp_class_mock.from_transport.assert_called_once_with(transport_mock)
-        
+
         # Verify cleanup happened
         sftp_mock.close.assert_called_once()
         transport_mock.close.assert_called_once()
@@ -772,16 +812,16 @@ class TestSFTPLoader:
     def test_sftp_connection_context_manager_connection_failure(self, mocker):
         """Test that cleanup happens when transport.connect fails"""
         loader = extract.SFTPLoader("test_host", "test_user", "test_pass", Path("/tmp"))
-        
+
         transport_mock = mocker.MagicMock()
         transport_mock.connect.side_effect = Exception("Connection failed")
-        
+
         mocker.patch("palletjack.extract.paramiko.Transport", return_value=transport_mock)
-        
+
         with pytest.raises(Exception, match="Connection failed"):
             with loader._sftp_connection() as sftp:
                 pass
-        
+
         # Verify cleanup happened even though connection failed
         # sftp was never created, so it shouldn't be closed
         transport_mock.close.assert_called_once()
@@ -789,52 +829,52 @@ class TestSFTPLoader:
     def test_sftp_connection_context_manager_auth_failure(self, mocker):
         """Test that cleanup happens when authentication fails"""
         loader = extract.SFTPLoader("test_host", "bad_user", "bad_pass", Path("/tmp"))
-        
+
         transport_mock = mocker.MagicMock()
         transport_mock.connect.side_effect = paramiko.AuthenticationException("Authentication failed")
-        
+
         mocker.patch("palletjack.extract.paramiko.Transport", return_value=transport_mock)
-        
+
         with pytest.raises(paramiko.AuthenticationException, match="Authentication failed"):
             with loader._sftp_connection() as sftp:
                 pass
-        
+
         # Verify cleanup happened
         transport_mock.close.assert_called_once()
 
     def test_sftp_connection_context_manager_sftp_client_failure(self, mocker):
         """Test that cleanup happens when SFTPClient.from_transport fails"""
         loader = extract.SFTPLoader("test_host", "test_user", "test_pass", Path("/tmp"))
-        
+
         transport_mock = mocker.MagicMock()
         sftp_class_mock = mocker.patch("palletjack.extract.paramiko.SFTPClient")
         sftp_class_mock.from_transport.side_effect = Exception("SFTP client creation failed")
-        
+
         mocker.patch("palletjack.extract.paramiko.Transport", return_value=transport_mock)
-        
+
         with pytest.raises(Exception, match="SFTP client creation failed"):
             with loader._sftp_connection() as sftp:
                 pass
-        
+
         # Verify cleanup happened - transport should be closed even though sftp wasn't created
         transport_mock.close.assert_called_once()
 
     def test_sftp_connection_context_manager_exception_during_operation(self, mocker):
         """Test that cleanup happens when exception occurs during SFTP operations"""
         loader = extract.SFTPLoader("test_host", "test_user", "test_pass", Path("/tmp"))
-        
+
         transport_mock = mocker.MagicMock()
         sftp_mock = mocker.MagicMock()
-        
+
         mocker.patch("palletjack.extract.paramiko.Transport", return_value=transport_mock)
         sftp_class_mock = mocker.patch("palletjack.extract.paramiko.SFTPClient")
         sftp_class_mock.from_transport.return_value = sftp_mock
-        
+
         with pytest.raises(RuntimeError, match="Operation failed"):
             with loader._sftp_connection() as sftp:
                 # Simulate an exception during file operations
                 raise RuntimeError("Operation failed")
-        
+
         # Verify cleanup happened despite the exception
         sftp_mock.close.assert_called_once()
         transport_mock.close.assert_called_once()
@@ -842,60 +882,60 @@ class TestSFTPLoader:
     def test_download_sftp_folder_contents_with_real_context_manager(self, mocker):
         """Test download_sftp_folder_contents using real context manager (not mocked)"""
         loader = extract.SFTPLoader("test_host", "test_user", "test_pass", Path("/tmp/test"))
-        
+
         test_files = ["file1.txt", "file2.txt"]
-        
+
         transport_mock = mocker.MagicMock()
         sftp_mock_1 = mocker.MagicMock()
         sftp_mock_1.listdir.return_value = test_files
         sftp_mock_2 = mocker.MagicMock()
-        
+
         mocker.patch("palletjack.extract.paramiko.Transport", return_value=transport_mock)
         sftp_class_mock = mocker.patch("palletjack.extract.paramiko.SFTPClient")
         sftp_class_mock.from_transport.side_effect = [sftp_mock_1, sftp_mock_2]
-        
+
         result = loader.download_sftp_folder_contents("/remote/dir")
-        
+
         # Verify both connections were made
         assert transport_mock.connect.call_count == 2
         assert sftp_class_mock.from_transport.call_count == 2
-        
+
         # Verify both connections were cleaned up
         assert sftp_mock_1.close.call_count == 1
         assert sftp_mock_2.close.call_count == 1
         assert transport_mock.close.call_count == 2
-        
+
         # Verify operations
         sftp_mock_1.listdir.assert_called_once_with("/remote/dir/")
         sftp_mock_2.get.assert_any_call("/remote/dir/file1.txt", (Path("/tmp/test") / "file1.txt").as_posix())
         sftp_mock_2.get.assert_any_call("/remote/dir/file2.txt", (Path("/tmp/test") / "file2.txt").as_posix())
-        
+
         assert result == 2
 
     def test_download_sftp_single_file_with_real_context_manager(self, mocker):
         """Test download_sftp_single_file using real context manager (not mocked)"""
         loader = extract.SFTPLoader("test_host", "test_user", "test_pass", Path("/tmp/test"))
-        
+
         transport_mock = mocker.MagicMock()
         sftp_mock = mocker.MagicMock()
-        
+
         mocker.patch("palletjack.extract.paramiko.Transport", return_value=transport_mock)
         sftp_class_mock = mocker.patch("palletjack.extract.paramiko.SFTPClient")
         sftp_class_mock.from_transport.return_value = sftp_mock
-        
+
         result = loader.download_sftp_single_file("/remote/file.txt")
-        
+
         # Verify connection was made
         transport_mock.connect.assert_called_once_with(username="test_user", password="test_pass")
         sftp_class_mock.from_transport.assert_called_once_with(transport_mock)
-        
+
         # Verify cleanup happened
         sftp_mock.close.assert_called_once()
         transport_mock.close.assert_called_once()
-        
+
         # Verify operation - use as_posix() for cross-platform compatibility
         sftp_mock.get.assert_called_once_with("/remote/file.txt", (Path("/tmp/test") / "file.txt").as_posix())
-        
+
         assert result == Path("/tmp/test/file.txt")
 
     def test_read_csv_into_dataframe_with_column_names(self, mocker):
@@ -1702,3 +1742,251 @@ class TestSalesForceLoader:
 
         tm.assert_frame_equal(output_df, test_df)
         assert query_mock.call_count == 3
+
+
+WP_BASE_URL = "https://example.com"
+WP_ENDPOINT = "posts"
+WP_FULL_URL = f"{WP_BASE_URL}/wp-json/wp/v2/{WP_ENDPOINT}"
+
+
+class TestWordpressRestLoader:
+    @pytest.fixture
+    def loader(self):
+        return extract.WordpressRestLoader(WP_BASE_URL)
+
+    def test_get_posts_single_page(self, loader):
+        records = [{"id": 1, "title": "Hello"}, {"id": 2, "title": "World"}]
+        with requests_mock.Mocker() as m:
+            m.get(WP_FULL_URL, json=records, headers={"X-WP-TotalPages": "1"})
+            df = loader.get_posts(WP_ENDPOINT)
+
+        assert list(df.columns) == ["id", "title"]
+        assert len(df) == 2
+        assert df.iloc[0]["id"] == 1
+
+    def test_get_posts_multiple_pages(self, loader):
+        page1 = [{"id": 1}, {"id": 2}]
+        page2 = [{"id": 3}]
+        with requests_mock.Mocker() as m:
+            m.get(
+                WP_FULL_URL,
+                [
+                    {"json": page1, "headers": {"X-WP-TotalPages": "2"}},
+                    {"json": page2, "headers": {"X-WP-TotalPages": "2"}},
+                ],
+            )
+            df = loader.get_posts(WP_ENDPOINT)
+
+        assert len(df) == 3
+        assert list(df["id"]) == [1, 2, 3]
+
+    def test_get_posts_empty_response(self, loader):
+        with requests_mock.Mocker() as m:
+            m.get(WP_FULL_URL, json=[], headers={"X-WP-TotalPages": "1"})
+            df = loader.get_posts(WP_ENDPOINT)
+
+        assert isinstance(df, pd.DataFrame)
+        assert len(df) == 0
+
+    def test_get_posts_raises_on_http_error(self, loader):
+        with requests_mock.Mocker() as m:
+            m.get(WP_FULL_URL, status_code=404)
+            with pytest.raises(requests.exceptions.HTTPError):
+                loader.get_posts(WP_ENDPOINT)
+
+    def test_get_posts_passes_extra_params(self, loader):
+        with requests_mock.Mocker() as m:
+            m.get(WP_FULL_URL, json=[{"id": 1}], headers={"X-WP-TotalPages": "1"})
+            loader.get_posts(WP_ENDPOINT, params={"categories": "5", "status": "publish"})
+
+        assert m.last_request.qs["categories"] == ["5"]
+        assert m.last_request.qs["status"] == ["publish"]
+
+    def test_expand_acf_flattens_acf_fields(self, loader):
+        records = [
+            {"id": 1, "title": "Post A", "acf": {"color": "red", "size": "large"}},
+            {"id": 2, "title": "Post B", "acf": {"color": "blue", "size": "small"}},
+        ]
+        with requests_mock.Mocker() as m:
+            m.get(WP_FULL_URL, json=records, headers={"X-WP-TotalPages": "1"})
+            df = loader.get_posts(WP_ENDPOINT, expand_acf=True)
+
+        assert "acf" not in df.columns
+        assert "color" in df.columns
+        assert "size" in df.columns
+        assert list(df["color"]) == ["red", "blue"]
+
+    def test_expand_acf_prefixes_colliding_field_names(self, loader):
+        # "title" already exists as a top-level column — ACF field of same name gets prefixed
+        records = [{"id": 1, "title": "Top", "acf": {"title": "ACF Title", "color": "green"}}]
+        with requests_mock.Mocker() as m:
+            m.get(WP_FULL_URL, json=records, headers={"X-WP-TotalPages": "1"})
+            df = loader.get_posts(WP_ENDPOINT, expand_acf=True)
+
+        assert df.iloc[0]["title"] == "Top"
+        assert df.iloc[0]["acf_title"] == "ACF Title"
+        assert df.iloc[0]["color"] == "green"
+
+    def test_expand_acf_false_leaves_acf_column_intact(self, loader):
+        records = [{"id": 1, "acf": {"color": "red"}}]
+        with requests_mock.Mocker() as m:
+            m.get(WP_FULL_URL, json=records, headers={"X-WP-TotalPages": "1"})
+            df = loader.get_posts(WP_ENDPOINT, expand_acf=False)
+
+        assert "acf" in df.columns
+        assert "color" not in df.columns
+
+    def test_expand_acf_raises_if_no_acf_column(self, loader):
+        records = [{"id": 1, "title": "No ACF"}]
+        with requests_mock.Mocker() as m:
+            m.get(WP_FULL_URL, json=records, headers={"X-WP-TotalPages": "1"})
+            with pytest.raises(ValueError, match="no 'acf' column"):
+                loader.get_posts(WP_ENDPOINT, expand_acf=True)
+
+    def test_get_posts_endpoint_with_leading_slash(self, loader):
+        with requests_mock.Mocker() as m:
+            m.get(WP_FULL_URL, json=[], headers={"X-WP-TotalPages": "1"})
+            loader.get_posts(f"/{WP_ENDPOINT}")  # leading slash should be stripped
+
+        assert m.last_request.url.startswith(WP_FULL_URL)
+        assert "//" not in m.last_request.url.replace("https://", "")
+
+    def test_trailing_slash_stripped_from_base_url(self):
+        loader = extract.WordpressRestLoader("https://example.com/")
+        assert loader.base_url == "https://example.com"
+
+    def test_default_user_agent_sent_in_request(self, loader):
+        with requests_mock.Mocker() as m:
+            m.get(WP_FULL_URL, json=[], headers={"X-WP-TotalPages": "1"})
+            loader.get_posts(WP_ENDPOINT)
+
+        assert m.last_request.headers["User-Agent"] == "PalletjackWordpressLoader"
+
+    def test_custom_user_agent_sent_in_request(self):
+        loader = extract.WordpressRestLoader(WP_BASE_URL, user_agent="MyCustomAgent")
+        with requests_mock.Mocker() as m:
+            m.get(WP_FULL_URL, json=[], headers={"X-WP-TotalPages": "1"})
+            loader.get_posts(WP_ENDPOINT)
+
+        assert m.last_request.headers["User-Agent"] == "MyCustomAgent"
+
+    def test_get_media_item_returns_media_item(self, loader):
+        media_dict = {
+            "id": 99,
+            "date": "2024-03-01T12:00:00",
+            "date_gmt": None,
+            "modified": None,
+            "modified_gmt": None,
+            "guid": {"rendered": "https://example.com/wp-content/uploads/img.jpg"},
+            "slug": "img",
+            "status": "inherit",
+            "link": "https://example.com/?attachment_id=99",
+            "title": {"rendered": "Image"},
+            "author": 1,
+            "alt_text": "",
+            "caption": {"rendered": ""},
+            "description": {"rendered": ""},
+            "media_type": "image",
+            "mime_type": "image/jpeg",
+            "source_url": "https://example.com/wp-content/uploads/img.jpg",
+            "post": None,
+            "media_details": {"width": 800, "height": 600, "file": "img.jpg", "filesize": 51200, "sizes": {}},
+        }
+        with requests_mock.Mocker() as m:
+            m.get("https://example.com/wp-json/wp/v2/media/99", json=media_dict)
+            item = loader.get_media_item(99)
+
+        assert isinstance(item, extract.WordpressMediaItem)
+        assert item.id == 99
+        assert item.guid == "https://example.com/wp-content/uploads/img.jpg"
+        assert item.media_details.width == 800
+
+    def test_get_media_item_raises_on_not_found(self, loader):
+        with requests_mock.Mocker() as m:
+            m.get("https://example.com/wp-json/wp/v2/media/999", status_code=404)
+            with pytest.raises(requests.exceptions.HTTPError):
+                loader.get_media_item(999)
+
+    @pytest.fixture
+    def full_media_dict(self):
+        return {
+            "id": 42,
+            "date": "2024-01-15T10:00:00",
+            "date_gmt": "2024-01-15T17:00:00",
+            "modified": "2024-01-16T09:00:00",
+            "modified_gmt": "2024-01-16T16:00:00",
+            "guid": {"rendered": "https://example.com/wp-content/uploads/photo.jpg"},
+            "slug": "photo",
+            "status": "inherit",
+            "link": "https://example.com/?attachment_id=42",
+            "title": {"rendered": "Photo Title"},
+            "author": 1,
+            "alt_text": "A descriptive alt",
+            "caption": {"rendered": "<p>A caption</p>"},
+            "description": {"rendered": "<p>A description</p>"},
+            "media_type": "image",
+            "mime_type": "image/jpeg",
+            "source_url": "https://example.com/wp-content/uploads/photo.jpg",
+            "post": 7,
+            "media_details": {
+                "width": 1920,
+                "height": 1080,
+                "file": "2024/01/photo.jpg",
+                "filesize": 204800,
+                "sizes": {
+                    "thumbnail": {
+                        "file": "photo-150x150.jpg",
+                        "width": 150,
+                        "height": 150,
+                        "mime_type": "image/jpeg",
+                        "source_url": "https://example.com/wp-content/uploads/photo-150x150.jpg",
+                    },
+                    "full": {
+                        "file": "photo.jpg",
+                        "width": 1920,
+                        "height": 1080,
+                        "mime_type": "image/jpeg",
+                        "source_url": "https://example.com/wp-content/uploads/photo.jpg",
+                    },
+                },
+            },
+        }
+
+    def test_from_dict_full(self, full_media_dict):
+        item = extract.WordpressMediaItem.from_dict(full_media_dict)
+
+        assert item.id == 42
+        assert item.guid == "https://example.com/wp-content/uploads/photo.jpg"
+        assert item.title == "Photo Title"
+        assert item.caption == "<p>A caption</p>"
+        assert item.description == "<p>A description</p>"
+        assert item.post == 7
+        assert item.media_details is not None
+        assert item.media_details.width == 1920
+        assert item.media_details.filesize == 204800
+        assert "thumbnail" in item.media_details.sizes
+        assert item.media_details.sizes["thumbnail"].width == 150
+        assert item.media_details.sizes["thumbnail"].slug == "thumbnail"
+        assert item.media_details.sizes["full"].source_url == "https://example.com/wp-content/uploads/photo.jpg"
+
+    def test_from_dict_null_post(self, full_media_dict):
+        full_media_dict["post"] = None
+        item = extract.WordpressMediaItem.from_dict(full_media_dict)
+        assert item.post is None
+
+    def test_from_dict_empty_media_details(self, full_media_dict):
+        full_media_dict["media_details"] = {}
+        item = extract.WordpressMediaItem.from_dict(full_media_dict)
+        assert item.media_details is not None
+        assert item.media_details.width is None
+        assert item.media_details.sizes == {}
+
+    def test_from_dict_missing_media_details(self, full_media_dict):
+        del full_media_dict["media_details"]
+        item = extract.WordpressMediaItem.from_dict(full_media_dict)
+        assert item.media_details is None
+
+    def test_from_dict_missing_sizes_key(self, full_media_dict):
+        del full_media_dict["media_details"]["sizes"]
+        item = extract.WordpressMediaItem.from_dict(full_media_dict)
+        assert item.media_details.sizes == {}

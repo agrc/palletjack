@@ -12,6 +12,7 @@ import re
 import time
 import warnings
 from contextlib import contextmanager
+from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from io import BytesIO
 from pathlib import Path
@@ -30,6 +31,148 @@ from googleapiclient.http import MediaIoBaseDownload
 from palletjack import utils
 
 logger = logging.getLogger(__name__)
+
+
+@dataclass
+class WordpressMediaSize:
+    """A single image size variant for a WordPress media item.
+
+    Corresponds to one entry in the ``media_details.sizes`` dict returned by
+    the WordPress REST API (e.g. ``thumbnail``, ``medium``, ``full``).
+    """
+
+    slug: str
+    file: str
+    width: int
+    height: int
+    mime_type: str
+    source_url: str
+
+    @classmethod
+    def from_dict(cls, slug: str, data: dict) -> "WordpressMediaSize":
+        """Build a WordpressMediaSize from a size dict returned by the WP REST API.
+
+        Args:
+            slug (str): The size key (e.g. ``"thumbnail"``).
+            data (dict): The size entry dict from ``media_details.sizes``.
+
+        Returns:
+            WordpressMediaSize: The populated data class.
+        """
+        return cls(
+            slug=slug,
+            file=data.get("file", ""),
+            width=data.get("width", 0),
+            height=data.get("height", 0),
+            mime_type=data.get("mime_type", ""),
+            source_url=data.get("source_url", ""),
+        )
+
+
+@dataclass
+class WordpressMediaDetails:
+    """Metadata about a WordPress media item's file dimensions and available sizes.
+
+    Corresponds to the ``media_details`` object in the WordPress REST API response.
+    """
+
+    width: int | None
+    height: int | None
+    file: str | None
+    filesize: int | None
+    sizes: dict[str, WordpressMediaSize] = field(default_factory=dict)
+
+    @classmethod
+    def from_dict(cls, data: dict) -> "WordpressMediaDetails":
+        """Build a WordpressMediaDetails from the ``media_details`` dict in a WP REST response.
+
+        Args:
+            data (dict): The ``media_details`` object from a WP REST media item response.
+
+        Returns:
+            WordpressMediaDetails: The populated data class.
+        """
+        sizes = {
+            slug: WordpressMediaSize.from_dict(slug, size_data) for slug, size_data in data.get("sizes", {}).items()
+        }
+        return cls(
+            width=data.get("width"),
+            height=data.get("height"),
+            file=data.get("file"),
+            filesize=data.get("filesize"),
+            sizes=sizes,
+        )
+
+
+@dataclass
+class WordpressMediaItem:
+    """A WordPress media library item as returned by the ``/wp/v2/media`` REST endpoint.
+
+    All fields match the top-level keys of the WP REST API media response.
+    Rendered fields (``guid``, ``title``, ``caption``, ``description``) are
+    automatically unwrapped from their ``{"rendered": "..."}`` wrapper.
+    """
+
+    id: int
+    date: str | None
+    date_gmt: str | None
+    modified: str | None
+    modified_gmt: str | None
+    guid: str | None
+    slug: str | None
+    status: str | None
+    link: str | None
+    title: str | None
+    author: int | None
+    alt_text: str | None
+    caption: str | None
+    description: str | None
+    media_type: str | None
+    mime_type: str | None
+    source_url: str | None
+    post: int | None
+    media_details: WordpressMediaDetails | None
+
+    @classmethod
+    def from_dict(cls, data: dict) -> "WordpressMediaItem":
+        """Build a WordpressMediaItem from a WP REST API media response dict.
+
+        Automatically unwraps ``{"rendered": "..."}`` from ``guid``, ``title``,
+        ``caption``, and ``description``. Delegates ``media_details`` to
+        :class:`WordpressMediaDetails`.
+
+        Args:
+            data (dict): A single item from the WP REST ``/wp/v2/media`` endpoint.
+
+        Returns:
+            WordpressMediaItem: The populated data class.
+        """
+        raw_details = data.get("media_details")
+        return cls(
+            id=data.get("id"),
+            date=data.get("date"),
+            date_gmt=data.get("date_gmt"),
+            modified=data.get("modified"),
+            modified_gmt=data.get("modified_gmt"),
+            guid=data.get("guid", {}).get("rendered") if isinstance(data.get("guid"), dict) else data.get("guid"),
+            slug=data.get("slug"),
+            status=data.get("status"),
+            link=data.get("link"),
+            title=data.get("title", {}).get("rendered") if isinstance(data.get("title"), dict) else data.get("title"),
+            author=data.get("author"),
+            alt_text=data.get("alt_text"),
+            caption=data.get("caption", {}).get("rendered")
+            if isinstance(data.get("caption"), dict)
+            else data.get("caption"),
+            description=data.get("description", {}).get("rendered")
+            if isinstance(data.get("description"), dict)
+            else data.get("description"),
+            media_type=data.get("media_type"),
+            mime_type=data.get("mime_type"),
+            source_url=data.get("source_url"),
+            post=data.get("post"),
+            media_details=WordpressMediaDetails.from_dict(raw_details) if raw_details is not None else None,
+        )
 
 
 class GSheetLoader:
@@ -408,7 +551,7 @@ class SFTPLoader:
     @contextmanager
     def _sftp_connection(self):
         """Context manager for SFTP connections that ensures proper cleanup.
-        
+
         Yields:
             paramiko.SFTPClient: An active SFTP client
         """
@@ -430,9 +573,9 @@ class SFTPLoader:
 
         Args:
             remote_directory (str, optional): Absolute path to remote_directory on the SFTP server
-            overwrite_existing_files (bool, optional): If False, raise an error if a file already exists 
+            overwrite_existing_files (bool, optional): If False, raise an error if a file already exists
                 in download_dir. Defaults to True.
-        
+
         Raises:
             FileExistsError: If overwrite_existing_files is False and a file already exists
             FileNotFoundError: If the remote directory or file is not found
@@ -452,7 +595,7 @@ class SFTPLoader:
                 file_list = sftp.listdir(remote_directory)
             except FileNotFoundError as error:
                 raise FileNotFoundError(f"Directory `{remote_directory}` not found on SFTP server") from error
-            
+
             if not file_list:
                 raise ValueError("No files to download from remote directory")
 
@@ -460,11 +603,11 @@ class SFTPLoader:
         with self._sftp_connection() as sftp:
             for file_name in file_list:
                 outfile_path = self.download_dir / file_name
-                
+
                 # Check if file exists and overwrite is disabled
                 if not overwrite_existing_files and outfile_path.exists():
                     raise FileExistsError(f"File `{outfile_path}` already exists and overwrite_existing_files is False")
-                
+
                 try:
                     sftp.get(f"{remote_directory}{file_name}", outfile_path.as_posix())
                     downloaded_files.append(file_name)
@@ -489,7 +632,7 @@ class SFTPLoader:
 
         self._class_logger.info("Downloading %s from `%s` to `%s`", remote_file, self.host, self.download_dir)
         self._class_logger.debug("SFTP Username: %s", self.username)
-        
+
         with self._sftp_connection() as sftp:
             outfile_path = self.download_dir / Path(remote_file).name
             try:
@@ -1117,3 +1260,154 @@ class SalesforceRestLoader:
             raise ValueError(f"Error getting records from Salesforce {response.json()}") from error
 
         return response.json()
+
+
+class WordpressRestLoader:
+    """Loads data from a public WordPress REST API into pandas DataFrames.
+
+    Handles transparent pagination using the ``X-WP-TotalPages`` response header.
+    Designed for public (unauthenticated) WordPress sites; authentication is not
+    currently supported.
+
+    Example::
+
+        loader = WordpressRestLoader("https://example.com")
+        posts_df = loader.get_posts("wp/v2/posts", params={"categories": 5})
+    """
+
+    def __init__(self, base_url: str, timeout: int = 10, user_agent: str = "PalletjackWordpressLoader"):
+        """
+        Args:
+            base_url (str): The root URL of the WordPress site (e.g. ``"https://example.com"``).
+                Trailing slashes are stripped automatically.
+            timeout (int): HTTP request timeout in seconds. Defaults to 10.
+            user_agent (str): Value sent as the ``User-Agent`` request header.
+                Defaults to ``"PalletjackWordpressLoader"``.
+        """
+        self._class_logger = logging.getLogger(__name__).getChild(self.__class__.__name__)
+        self.base_url = base_url.rstrip("/")
+        self.timeout = timeout
+        self.user_agent = user_agent
+
+    def _get_page(self, url: str, params: dict) -> requests.Response:
+        """Fetch a single page from the WordPress REST API.
+
+        Wraps the GET request in the standard retry mechanism and raises on
+        non-2xx HTTP responses.
+
+        Args:
+            url (str): The full URL to request.
+            params (dict): Query parameters to include in the request.
+
+        Raises:
+            requests.exceptions.HTTPError: If the server returns a non-2xx status code.
+
+        Returns:
+            requests.Response: The successful HTTP response.
+        """
+        response = utils.retry(
+            requests.get, url, params=params, headers={"User-Agent": self.user_agent}, timeout=self.timeout
+        )
+        response.raise_for_status()
+        return response
+
+    def get_posts(self, endpoint: str, params: dict | None = None, expand_acf: bool = False) -> pd.DataFrame:
+        """Fetch all items from an arbitrary WordPress REST endpoint.
+
+        Pages through the results automatically using the ``X-WP-TotalPages``
+        response header. Each page requests up to 100 items (``per_page=100``).
+        Caller-supplied ``params`` are merged in and take precedence over
+        defaults, except that ``page`` is always managed internally.
+
+        Args:
+            endpoint (str): The resource path beneath ``/wp-json/wp/v2/``
+                (e.g. ``"posts"`` or ``"/media"``).  A leading slash is
+                stripped automatically.
+            params (dict, optional): Extra query parameters forwarded to every
+                request (e.g. ``{"categories": 5, "status": "publish"}``).
+                Defaults to None.
+            expand_acf (bool): When ``True``, the ``acf`` dict on each record is
+                flattened into the top-level row. Field names that collide with an
+                existing column are prefixed with ``acf_``; others are added
+                without a prefix. The original ``acf`` column is dropped. Raises
+                ``ValueError`` if the response contains no ``acf`` column.
+                Defaults to ``False``.
+
+        Returns:
+            pd.DataFrame: All records from all pages combined into a single
+                DataFrame.  Returns an empty DataFrame if the endpoint returns
+                no items.
+        """
+        url = f"{self.base_url}/wp-json/wp/v2/{endpoint.lstrip('/')}"
+        request_params = {"per_page": 100, **(params or {})}
+
+        self._class_logger.debug("Fetching WordPress endpoint: %s", url)
+
+        all_records: list[dict] = []
+        page = 1
+
+        while True:
+            request_params["page"] = page
+            response = self._get_page(url, request_params)
+            page_data = response.json()
+            all_records.extend(page_data)
+
+            total_pages = int(response.headers.get("X-WP-TotalPages", 1))
+            self._class_logger.debug("Fetched page %d of %d from %s", page, total_pages, url)
+
+            if page >= total_pages:
+                break
+            page += 1
+
+        self._class_logger.info("Retrieved %d records from %s", len(all_records), url)
+        df = pd.DataFrame(all_records)
+
+        if expand_acf:
+            df = self._expand_acf(df)
+
+        return df
+
+    @staticmethod
+    def _expand_acf(df: pd.DataFrame) -> pd.DataFrame:
+        """Flatten the ``acf`` column of a DataFrame into individual columns.
+
+        Each ACF field is added directly to the DataFrame. If a field name
+        already exists as a column, it is prefixed with ``acf_`` to avoid
+        collision. The original ``acf`` column is dropped.
+
+        Args:
+            df (pd.DataFrame): DataFrame containing an ``acf`` column whose
+                values are dicts (as returned by the WordPress REST API).
+
+        Raises:
+            ValueError: If the DataFrame does not contain an ``acf`` column.
+
+        Returns:
+            pd.DataFrame: A new DataFrame with the ``acf`` fields inlined.
+        """
+        if "acf" not in df.columns:
+            raise ValueError("expand_acf is True but the DataFrame has no 'acf' column")
+
+        acf_df = pd.json_normalize(df["acf"].where(df["acf"].notna(), other={}))
+        existing = set(df.columns) - {"acf"}
+        acf_df.columns = [f"acf_{col}" if col in existing else col for col in acf_df.columns]
+        return pd.concat([df.drop(columns="acf"), acf_df], axis=1)
+
+    def get_media_item(self, media_id: int) -> WordpressMediaItem:
+        """Fetch a single media item by its WordPress ID.
+
+        Args:
+            media_id (int): The WordPress media item ID.
+
+        Raises:
+            requests.exceptions.HTTPError: If the server returns a non-2xx status
+                (e.g. 404 when the item does not exist).
+
+        Returns:
+            WordpressMediaItem: The media item populated from the API response.
+        """
+        url = f"{self.base_url}/wp-json/wp/v2/media/{media_id}"
+        self._class_logger.debug("Fetching WordPress media item: %s", url)
+        response = self._get_page(url, {})
+        self._class_logger.info("Retrieved media item %d from %s", media_id, url)
+        return WordpressMediaItem.from_dict(response.json())
