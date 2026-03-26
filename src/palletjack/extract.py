@@ -1272,7 +1272,7 @@ class WordpressRestLoader:
     Example::
 
         loader = WordpressRestLoader("https://example.com")
-        posts_df = loader.get_posts("posts", params={"categories": 5})
+        posts_df = loader.get_from_endpoint("posts", params={"categories": 5})
     """
 
     def __init__(self, base_url: str, timeout: int = 10, user_agent: str = "PalletjackWordpressLoader"):
@@ -1311,7 +1311,7 @@ class WordpressRestLoader:
         response.raise_for_status()
         return response
 
-    def get_posts(self, endpoint: str, params: dict | None = None, expand_acf: bool = False) -> pd.DataFrame:
+    def get_from_endpoint(self, endpoint: str, params: dict | None = None, expand_acf: bool = False) -> pd.DataFrame:
         """Fetch all items from an arbitrary WordPress REST endpoint.
 
         Pages through the results automatically using the ``X-WP-TotalPages``

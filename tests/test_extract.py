@@ -1758,7 +1758,7 @@ class TestWordpressRestLoader:
         records = [{"id": 1, "title": "Hello"}, {"id": 2, "title": "World"}]
         with requests_mock.Mocker() as m:
             m.get(WP_FULL_URL, json=records, headers={"X-WP-TotalPages": "1"})
-            df = loader.get_posts(WP_ENDPOINT)
+            df = loader.get_from_endpoint(WP_ENDPOINT)
 
         assert list(df.columns) == ["id", "title"]
         assert len(df) == 2
@@ -1775,7 +1775,7 @@ class TestWordpressRestLoader:
                     {"json": page2, "headers": {"X-WP-TotalPages": "2"}},
                 ],
             )
-            df = loader.get_posts(WP_ENDPOINT)
+            df = loader.get_from_endpoint(WP_ENDPOINT)
 
         assert len(df) == 3
         assert list(df["id"]) == [1, 2, 3]
@@ -1783,7 +1783,7 @@ class TestWordpressRestLoader:
     def test_get_posts_empty_response(self, loader):
         with requests_mock.Mocker() as m:
             m.get(WP_FULL_URL, json=[], headers={"X-WP-TotalPages": "1"})
-            df = loader.get_posts(WP_ENDPOINT)
+            df = loader.get_from_endpoint(WP_ENDPOINT)
 
         assert isinstance(df, pd.DataFrame)
         assert len(df) == 0
@@ -1792,12 +1792,12 @@ class TestWordpressRestLoader:
         with requests_mock.Mocker() as m:
             m.get(WP_FULL_URL, status_code=404)
             with pytest.raises(requests.exceptions.HTTPError):
-                loader.get_posts(WP_ENDPOINT)
+                loader.get_from_endpoint(WP_ENDPOINT)
 
     def test_get_posts_passes_extra_params(self, loader):
         with requests_mock.Mocker() as m:
             m.get(WP_FULL_URL, json=[{"id": 1}], headers={"X-WP-TotalPages": "1"})
-            loader.get_posts(WP_ENDPOINT, params={"categories": "5", "status": "publish"})
+            loader.get_from_endpoint(WP_ENDPOINT, params={"categories": "5", "status": "publish"})
 
         assert m.last_request.qs["categories"] == ["5"]
         assert m.last_request.qs["status"] == ["publish"]
@@ -1809,7 +1809,7 @@ class TestWordpressRestLoader:
         ]
         with requests_mock.Mocker() as m:
             m.get(WP_FULL_URL, json=records, headers={"X-WP-TotalPages": "1"})
-            df = loader.get_posts(WP_ENDPOINT, expand_acf=True)
+            df = loader.get_from_endpoint(WP_ENDPOINT, expand_acf=True)
 
         assert "acf" not in df.columns
         assert "color" in df.columns
@@ -1821,7 +1821,7 @@ class TestWordpressRestLoader:
         records = [{"id": 1, "title": "Top", "acf": {"title": "ACF Title", "color": "green"}}]
         with requests_mock.Mocker() as m:
             m.get(WP_FULL_URL, json=records, headers={"X-WP-TotalPages": "1"})
-            df = loader.get_posts(WP_ENDPOINT, expand_acf=True)
+            df = loader.get_from_endpoint(WP_ENDPOINT, expand_acf=True)
 
         assert df.iloc[0]["title"] == "Top"
         assert df.iloc[0]["acf_title"] == "ACF Title"
@@ -1831,7 +1831,7 @@ class TestWordpressRestLoader:
         records = [{"id": 1, "acf": {"color": "red"}}]
         with requests_mock.Mocker() as m:
             m.get(WP_FULL_URL, json=records, headers={"X-WP-TotalPages": "1"})
-            df = loader.get_posts(WP_ENDPOINT, expand_acf=False)
+            df = loader.get_from_endpoint(WP_ENDPOINT, expand_acf=False)
 
         assert "acf" in df.columns
         assert "color" not in df.columns
@@ -1841,12 +1841,12 @@ class TestWordpressRestLoader:
         with requests_mock.Mocker() as m:
             m.get(WP_FULL_URL, json=records, headers={"X-WP-TotalPages": "1"})
             with pytest.raises(ValueError, match="no 'acf' column"):
-                loader.get_posts(WP_ENDPOINT, expand_acf=True)
+                loader.get_from_endpoint(WP_ENDPOINT, expand_acf=True)
 
     def test_get_posts_endpoint_with_leading_slash(self, loader):
         with requests_mock.Mocker() as m:
             m.get(WP_FULL_URL, json=[], headers={"X-WP-TotalPages": "1"})
-            loader.get_posts(f"/{WP_ENDPOINT}")  # leading slash should be stripped
+            loader.get_from_endpoint(f"/{WP_ENDPOINT}")  # leading slash should be stripped
 
         assert m.last_request.url.startswith(WP_FULL_URL)
         assert "//" not in m.last_request.url.replace("https://", "")
@@ -1858,7 +1858,7 @@ class TestWordpressRestLoader:
     def test_default_user_agent_sent_in_request(self, loader):
         with requests_mock.Mocker() as m:
             m.get(WP_FULL_URL, json=[], headers={"X-WP-TotalPages": "1"})
-            loader.get_posts(WP_ENDPOINT)
+            loader.get_from_endpoint(WP_ENDPOINT)
 
         assert m.last_request.headers["User-Agent"] == "PalletjackWordpressLoader"
 
@@ -1866,7 +1866,7 @@ class TestWordpressRestLoader:
         loader = extract.WordpressRestLoader(WP_BASE_URL, user_agent="MyCustomAgent")
         with requests_mock.Mocker() as m:
             m.get(WP_FULL_URL, json=[], headers={"X-WP-TotalPages": "1"})
-            loader.get_posts(WP_ENDPOINT)
+            loader.get_from_endpoint(WP_ENDPOINT)
 
         assert m.last_request.headers["User-Agent"] == "MyCustomAgent"
 
