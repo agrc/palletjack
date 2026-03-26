@@ -1272,7 +1272,7 @@ class WordpressRestLoader:
     Example::
 
         loader = WordpressRestLoader("https://example.com")
-        posts_df = loader.get_posts("wp/v2/posts", params={"categories": 5})
+        posts_df = loader.get_posts("posts", params={"categories": 5})
     """
 
     def __init__(self, base_url: str, timeout: int = 10, user_agent: str = "PalletjackWordpressLoader"):
@@ -1380,12 +1380,17 @@ class WordpressRestLoader:
                 values are dicts (as returned by the WordPress REST API).
 
         Raises:
-            ValueError: If the DataFrame does not contain an ``acf`` column.
+            ValueError: If the DataFrame is not empty and does not contain an
+                ``acf`` column.
 
         Returns:
             pd.DataFrame: A new DataFrame with the ``acf`` fields inlined.
         """
+        # Treat an empty DataFrame as a no-op so expand_acf can be used as a
+        # convenience flag without breaking on empty endpoint responses.
         if "acf" not in df.columns:
+            if df.empty:
+                return df
             raise ValueError("expand_acf is True but the DataFrame has no 'acf' column")
 
         acf_df = pd.json_normalize(df["acf"].where(df["acf"].notna(), other={}))
