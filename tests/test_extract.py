@@ -1843,6 +1843,59 @@ class TestWordpressRestLoader:
             with pytest.raises(ValueError, match="no 'acf' column"):
                 loader.get_from_endpoint(WP_ENDPOINT, expand_acf=True)
 
+    def test_expand_acf_no_op_on_empty_response(self, loader):
+        # expand_acf=True on an empty endpoint response should return an empty
+        # DataFrame without raising, because there are no rows to expand.
+        with requests_mock.Mocker() as m:
+            m.get(WP_FULL_URL, json=[], headers={"X-WP-TotalPages": "1"})
+            df = loader.get_from_endpoint(WP_ENDPOINT, expand_acf=True)
+
+        assert isinstance(df, pd.DataFrame)
+        assert len(df) == 0
+
+    def test_get_from_endpoint_dict_response_treated_as_single_record(self, loader):
+        # Some WP endpoints return a single dict instead of a list (e.g. /wp/v2/settings).
+        single_record = {"option_a": "value_a", "option_b": "value_b"}
+        with requests_mock.Mocker() as m:
+            m.get(WP_FULL_URL, json=single_record, headers={"X-WP-TotalPages": "1"})
+            df = loader.get_from_endpoint(WP_ENDPOINT)
+
+        assert len(df) == 1
+        assert df.iloc[0]["option_a"] == "value_a"
+        assert df.iloc[0]["option_b"] == "value_b"
+
+    def test_get_from_endpoint_unexpected_json_type_raises(self, loader):
+        # If the endpoint returns something other than list or dict, a clear
+        # ValueError should be raised.
+        with requests_mock.Mocker() as m:
+            m.get(WP_FULL_URL, json="unexpected string response", headers={"X-WP-TotalPages": "1"})
+            with pytest.raises(ValueError, match="Unexpected JSON type"):
+                loader.get_from_endpoint(WP_ENDPOINT)
+
+    def test_get_from_endpoint_missing_total_pages_header_defaults_to_1(self, loader):
+        # When X-WP-TotalPages is absent the loader should treat it as 1 page
+        # and make only a single request.
+        records = [{"id": 1}, {"id": 2}]
+        with requests_mock.Mocker() as m:
+            m.get(WP_FULL_URL, json=records)  # no X-WP-TotalPages header
+            df = loader.get_from_endpoint(WP_ENDPOINT)
+
+        assert len(df) == 2
+        assert m.call_count == 1
+
+    def test_get_from_endpoint_malformed_total_pages_header_defaults_to_1(self, loader, caplog):
+        # When X-WP-TotalPages contains a non-numeric value the loader should
+        # log a warning and fall back to 1 page rather than raising.
+        records = [{"id": 1}]
+        with requests_mock.Mocker() as m:
+            m.get(WP_FULL_URL, json=records, headers={"X-WP-TotalPages": "not-a-number"})
+            with caplog.at_level(logging.WARNING):
+                df = loader.get_from_endpoint(WP_ENDPOINT)
+
+        assert len(df) == 1
+        assert m.call_count == 1
+        assert any("Invalid X-WP-TotalPages" in record.message for record in caplog.records)
+
     def test_get_posts_endpoint_with_leading_slash(self, loader):
         with requests_mock.Mocker() as m:
             m.get(WP_FULL_URL, json=[], headers={"X-WP-TotalPages": "1"})
