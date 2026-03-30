@@ -1350,9 +1350,31 @@ class WordpressRestLoader:
             request_params["page"] = page
             response = self._get_page(url, request_params)
             page_data = response.json()
-            all_records.extend(page_data)
 
-            total_pages = int(response.headers.get("X-WP-TotalPages", 1))
+            if isinstance(page_data, list):
+                all_records.extend(page_data)
+            elif isinstance(page_data, dict):
+                # Some WordPress endpoints return a single object instead of a list.
+                # Treat that as a single record so we still produce a sensible DataFrame.
+                all_records.append(page_data)
+            else:
+                raise ValueError(
+                    f"Unexpected JSON type {type(page_data).__name__} from {url} on page {page}; "
+                    "expected list or dict."
+                )
+            total_pages_header = response.headers.get("X-WP-TotalPages")
+            if not total_pages_header:
+                total_pages = 1
+            else:
+                try:
+                    total_pages = int(total_pages_header)
+                except (TypeError, ValueError):
+                    self._class_logger.warning(
+                        "Invalid X-WP-TotalPages header %r from %s; defaulting to 1",
+                        total_pages_header,
+                        url,
+                    )
+                    total_pages = 1
             self._class_logger.debug("Fetched page %d of %d from %s", page, total_pages, url)
 
             if page >= total_pages:
