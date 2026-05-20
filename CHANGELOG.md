@@ -1,5 +1,13 @@
 # Changelog
 
+## [6.0.3-rc.1](https://github.com/agrc/palletjack/compare/v6.0.2...v6.0.3-rc.1) (2026-05-20)
+
+
+### Dependencies
+
+* pin arcgis to &lt;2.4.3 ([e1ed390](https://github.com/agrc/palletjack/commit/e1ed390b2b572999f83331f62d11bfdf37bfbee9))
+* Q2 dbot updates ([2d5b739](https://github.com/agrc/palletjack/commit/2d5b7396156a739e7c5ffc34fb030991d1bed3cf))
+
 ## [6.0.2](https://github.com/agrc/palletjack/compare/v6.0.1...v6.0.2) (2026-03-31)
 
 
