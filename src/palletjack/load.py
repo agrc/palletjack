@@ -54,9 +54,9 @@ class ServiceUpdater:
         self.gis = gis
 
         if service_type == "table":
-            self.service = arcgis.features.Table.fromitem(gis.content.get(itemid), table_id=index)
+            self.service = arcgis.features.Table.fromitem(gis.content.get(itemid), index)
         else:
-            self.service = arcgis.features.FeatureLayer.fromitem(gis.content.get(itemid), layer_id=index)
+            self.service = arcgis.features.FeatureLayer.fromitem(gis.content.get(itemid), index)
 
         self.service_type = service_type
         self.index = index
