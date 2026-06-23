@@ -1,5 +1,12 @@
 # Changelog
 
+## [6.0.4](https://github.com/agrc/palletjack/compare/v6.0.3...v6.0.4) (2026-06-23)
+
+
+### Bug Fixes
+
+* deal with arcgis package breaking change ([97537e5](https://github.com/agrc/palletjack/commit/97537e54c28f6b9d8b0aa60ee22a8791aad64a98))
+
 ## [6.0.3](https://github.com/agrc/palletjack/compare/v6.0.2...v6.0.3) (2026-05-20)
 
 
