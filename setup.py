@@ -38,7 +38,7 @@ setup(
     },
     keywords=["gis"],
     install_requires=[
-        "arcgis>=2.3,<2.4.3",
+        "arcgis>=2.3,<2.4.4",
         "geopandas>=0.14,<1.2",
         "geodatasets>=2023.12,<=2026.5.0",
         "pg8000>=1.29,<1.32",
