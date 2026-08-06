@@ -158,34 +158,44 @@ class ServiceUpdater:
 
         return actual_delete_count
 
-    def update(self, dataframe: pd.DataFrame, update_geometry: bool = True) -> int:
-        """Updates existing features/rows within a hosted feature layer/table using OBJECTID as the join field.
+    def update(
+        self,
+        dataframe: pd.DataFrame,
+        update_geometry: bool = True,
+        *,
+        matching_field: str = "OBJECTID",
+    ) -> int:
+        """Insert or update features/rows within a hosted feature layer/table using a matching field.
 
         The new dataframe's columns and data must match the existing data's fields (with the exception of generated fields like shape area and length) in name, type, and allowable length. Live fields that are not nullable and don't have a default value must have a value in the new data; missing data in these fields will raise an error.
 
-        Uses the OBJECTID field to determine which features should be updated by the underlying FeatureLayer/Table.append() methods. The most robust way to do this is to load the live data as a dataframe, subset it down to the desired rows, make your edits based on a separate join id, and then pass that dataframe to this method.
+        Existing records with a matching value are updated, and records without a match are inserted. The matching field
+        must be present in both the dataframe and target service. By default, OBJECTID is used as the matching field.
 
         The new data can have either attributes and geometries or only attributes based on the update_geometry flag. A combination of updates from a source with both attributes & geometries and a source with attributes-only must be done with two separate calls. The geometries must be provided in a SHAPE column and be the same type as the live data.
 
         Args:
-            dataframe (pd.DataFrame): Dataframe of data to be updated
+            dataframe (pd.DataFrame): Dataframe of data to insert or update.
             update_geometry (bool): Whether to update attributes and geometry (True) or just attributes (False). Defaults to True for feature layers and is always False for tables.
+            matching_field (str): Field used to match existing records. Defaults to "OBJECTID".
 
         Raises:
-            ValueError: If the new field and existing fields don't match, the SHAPE field is missing or has an incompatible type, the new data contains null fields, the new data exceeds the existing field lengths, or a specified field is missing from either new or live data.
-            ValueError: If update_geometry is True for a table
+            ValueError: If matching_field is not present in dataframe.
+            RuntimeError: If a dataframe field, including matching_field, is not present in the target service.
 
         Returns:
-            int: Number of features updated
+            int: Number of records inserted or updated.
         """
 
         self._class_logger.info("Updating layer `%s` in itemid `%s` in-place", self.index, self.itemid)
 
         fields = self.__class__._get_fields_from_dataframe(dataframe)
-        self._class_logger.debug("Updating fields %s", fields)
+        if matching_field not in fields:
+            raise ValueError(f"Update matching field {matching_field} not found in dataframe fields.")
+        self._class_logger.debug("Updating fields %s using matching field %s", fields, matching_field)
 
         #: Field checks to prevent various AGOL errors
-        utils.FieldChecker.check_fields(self.service.properties, dataframe, fields, add_oid=True)
+        utils.FieldChecker.check_fields(self.service.properties, dataframe, fields, add_oid=False)
 
         #: Upload data
         gdb_item = self._upload_dataframe(dataframe)
@@ -193,7 +203,7 @@ class ServiceUpdater:
             gdb_item,
             dataframe.columns,
             upsert=True,
-            upsert_matching_field="OBJECTID",
+            upsert_matching_field=matching_field,
             append_fields=fields,  #: Apparently this works if append_fields is all the fields, but not a subset?
             update_geometry=update_geometry if self._is_feature_layer() else False,
         )
@@ -574,7 +584,9 @@ class FeatureServiceAttachmentsUpdater:
         )
 
         #: Overwrite if different names, add if no existing name, do nothing if names are the same
-        attachment_eval_df["operation"] = pd.Series([np.nan] * len(attachment_eval_df), dtype="object", index=attachment_eval_df.index)
+        attachment_eval_df["operation"] = pd.Series(
+            [np.nan] * len(attachment_eval_df), dtype="object", index=attachment_eval_df.index
+        )
         attachment_eval_df.loc[attachment_eval_df["NAME"] != attachment_eval_df["new_filename"], "operation"] = (
             "overwrite"
         )

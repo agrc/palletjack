@@ -139,7 +139,7 @@ class TestUpdateLayer:
         load.utils.FieldChecker.check_live_and_new_field_types_match.assert_called_once_with(["foo", "bar", "OBJECTID"])
         load.utils.FieldChecker.check_for_non_null_fields.assert_called_once_with(["foo", "bar", "OBJECTID"])
         load.utils.FieldChecker.check_field_length.assert_called_once_with(["foo", "bar", "OBJECTID"])
-        load.utils.FieldChecker.check_fields_present.assert_called_once_with(["foo", "bar", "OBJECTID"], add_oid=True)
+        load.utils.FieldChecker.check_fields_present.assert_called_once_with(["foo", "bar", "OBJECTID"], add_oid=False)
         load.utils.FieldChecker.check_nullable_ints_shapely.assert_called_once()
 
     def test_update_no_geometry_calls_upsert_correctly(self, mocker):
@@ -172,6 +172,99 @@ class TestUpdateLayer:
             append_fields=["foo", "bar", "OBJECTID"],
             update_geometry=False,
         )
+
+
+class TestUpdateMatchingField:
+    def test_update_uses_objectid_and_updates_feature_geometry(self, mocker):
+        new_dataframe = pd.DataFrame({"OBJECTID": [11], "report_id": [42], "SHAPE": ["s1"]})
+        updater_mock = mocker.Mock(spec=load.ServiceUpdater)
+        updater_mock._class_logger = logging.getLogger("mock logger")
+        updater_mock.service_type = "layer"
+        updater_mock.itemid = "foo123"
+        updater_mock.index = 0
+        updater_mock.service = mocker.Mock()
+        updater_mock._is_feature_layer.return_value = True
+        mocker.patch("palletjack.utils.FieldChecker")
+
+        load.ServiceUpdater.update(updater_mock, new_dataframe)
+
+        updater_mock._update_service.assert_called_once_with(
+            updater_mock._upload_dataframe.return_value,
+            new_dataframe.columns,
+            upsert=True,
+            upsert_matching_field="OBJECTID",
+            append_fields=["OBJECTID", "report_id", "SHAPE"],
+            update_geometry=True,
+        )
+
+    def test_update_uses_business_key_and_inserts_or_updates(self, mocker):
+        new_dataframe = pd.DataFrame({"report_id": [42], "status": ["new"]})
+        updater_mock = mocker.Mock(spec=load.ServiceUpdater)
+        updater_mock._class_logger = logging.getLogger("mock logger")
+        updater_mock.service_type = "layer"
+        updater_mock.itemid = "foo123"
+        updater_mock.index = 0
+        updater_mock.service = mocker.Mock()
+        updater_mock._is_feature_layer.return_value = True
+        updater_mock._update_service.return_value = 2
+        mocker.patch("palletjack.utils.FieldChecker")
+
+        result = load.ServiceUpdater.update(updater_mock, new_dataframe, matching_field="report_id")
+
+        assert result == 2
+        updater_mock._update_service.assert_called_once_with(
+            updater_mock._upload_dataframe.return_value,
+            new_dataframe.columns,
+            upsert=True,
+            upsert_matching_field="report_id",
+            append_fields=["report_id", "status"],
+            update_geometry=True,
+        )
+
+    def test_update_disables_geometry_for_table(self, mocker):
+        new_dataframe = pd.DataFrame({"report_id": [42], "status": ["new"]})
+        updater_mock = mocker.Mock(spec=load.ServiceUpdater)
+        updater_mock._class_logger = logging.getLogger("mock logger")
+        updater_mock.service_type = "table"
+        updater_mock.itemid = "foo123"
+        updater_mock.index = 0
+        updater_mock.service = mocker.Mock()
+        updater_mock._is_feature_layer.return_value = False
+        mocker.patch("palletjack.utils.FieldChecker")
+
+        load.ServiceUpdater.update(updater_mock, new_dataframe, matching_field="report_id")
+
+        assert updater_mock._update_service.call_args.kwargs["update_geometry"] is False
+
+    def test_update_rejects_absent_matching_field_before_upload(self, mocker):
+        new_dataframe = pd.DataFrame({"report_id": [42]})
+        updater_mock = mocker.Mock(spec=load.ServiceUpdater)
+        updater_mock._class_logger = logging.getLogger("mock logger")
+        updater_mock.service_type = "layer"
+        updater_mock.itemid = "foo123"
+        updater_mock.index = 0
+        updater_mock.service = mocker.Mock()
+
+        with pytest.raises(ValueError, match="Update matching field route_id not found in dataframe fields"):
+            load.ServiceUpdater.update(updater_mock, new_dataframe, matching_field="route_id")
+
+        updater_mock._upload_dataframe.assert_not_called()
+
+    def test_update_rejects_matching_field_absent_from_target_before_upload(self, mocker):
+        new_dataframe = pd.DataFrame({"report_id": [42]})
+        updater_mock = mocker.Mock(spec=load.ServiceUpdater)
+        updater_mock._class_logger = logging.getLogger("mock logger")
+        updater_mock.service_type = "layer"
+        updater_mock.itemid = "foo123"
+        updater_mock.index = 0
+        updater_mock.service = mocker.Mock()
+        field_checker = mocker.patch("palletjack.utils.FieldChecker.check_fields")
+        field_checker.side_effect = RuntimeError("Fields missing in live data: report_id")
+
+        with pytest.raises(RuntimeError, match="Fields missing in live data: report_id"):
+            load.ServiceUpdater.update(updater_mock, new_dataframe, matching_field="report_id")
+
+        updater_mock._upload_dataframe.assert_not_called()
 
 
 class TestAddToLayer:
