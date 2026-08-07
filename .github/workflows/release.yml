@@ -21,7 +21,7 @@ jobs:
         with:
           python-version-file: .python-version
           cache: pip
-          cache-dependency-path: setup.py
+          cache-dependency-path: pyproject.toml
 
       - name: 📦 Build package
         run: pipx run build

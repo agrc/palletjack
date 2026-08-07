@@ -1,8 +1,63 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "ugrc-palletjack"
+version = "6.0.4"
+description = "Updating AGOL feature services with data from external tables."
+readme = { file = "README.md", content-type = "text/markdown" }
+requires-python = ">=3.11,<3.15"
+authors = [{ name = "Jake Adams, UGRC", email = "jdadams@utah.gov" }]
+classifiers = [
+  "Development Status :: 5 - Production/Stable",
+  "Intended Audience :: Developers",
+  "License :: OSI Approved :: MIT License",
+  "Topic :: Utilities",
+]
+keywords = ["gis"]
+dependencies = [
+  "arcgis>=2.3,<2.4.3",
+  "geopandas>=0.14,<1.2",
+  "geodatasets>=2023.12,<=2026.5.1",
+  "pg8000>=1.29,<1.32",
+  "psycopg2-binary==2.9.*",
+  "pygsheets==2.0.*",
+  "pysftp==0.2.9",
+  "setuptools>=80,<83",
+  "paramiko>=3.0,<6.0",
+  "SQLAlchemy>=1.4,<2.1",
+]
+
+[project.urls]
+Homepage = "https://github.com/agrc/palletjack"
+"Issue Tracker" = "https://github.com/agrc/palletjack/issues"
+
+[project.optional-dependencies]
+tests = [
+  "pdoc3>=0.10,<0.12",
+  "pytest-cov>=3,<8",
+  "pytest-instafail~=0.5",
+  "pytest-mock>=3.10,<3.16",
+  "pytest-watch~=4.2",
+  "pytest>=6,<10",
+  "requests-mock==1.*",
+  "ruff==0.*",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/palletjack"]
+
+[tool.hatch.build]
+exclude = ["/.github", "/.vscode"]
+
 [tool.ruff]
 line-length = 120
 lint.ignore = ["E501"]
+
 [tool.ruff.lint.per-file-ignores]
 "tests/*.py" = ["F841"]
+
 [tool.pytest.ini_options]
 minversion = "6.0"
 testpaths = ["tests", "src"]
