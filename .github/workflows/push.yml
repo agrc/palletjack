@@ -11,6 +11,21 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  update-base-coverage:
+    name: Update base code coverage
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: ⬇️ Set up code
+        uses: actions/checkout@v7
+        with:
+          show-progress: false
+
+      - name: 🧪 Test and upload coverage
+        uses: ./.github/actions/test-and-coverage
+        with:
+          codecov-token: ${{ secrets.CODECOV_TOKEN }}
+
   release-please:
     name: Create release
     runs-on: ubuntu-latest
