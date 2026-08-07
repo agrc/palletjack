@@ -13,7 +13,7 @@ Pallet jack: [forklift's](https://www.github.com/agrc/forklift) little brother.
 
 ## Dependencies
 
-`palletjack` relies on the dependencies listed in `setup.py`. These are all available on PyPI and can be installed in most environments, including Google Cloud Functions.
+`palletjack` relies on the dependencies listed in `pyproject.toml`. These are all available on PyPI and can be installed in most environments, including Google Cloud Functions.
 
 The `arcgis` library does all the heavy lifting for spatial data. If the `arcpy` library is not available (such as in a cloud function), it relies on `shapely` for its geometry engine.
 

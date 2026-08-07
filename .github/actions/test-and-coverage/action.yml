@@ -14,7 +14,7 @@ runs:
       with:
         python-version-file: .python-version
         cache: pip
-        cache-dependency-path: setup.py
+        cache-dependency-path: pyproject.toml
 
     - name: 📥 Install dependencies
       shell: bash
