@@ -57,9 +57,9 @@ palletjack takes full advantage of python's built-in [`logging`](https://docs.py
 The client can get a reference to the palletjack logger and add their handlers, formatters, etc to it alongside its own logger:
 
 ```python
-myapp_logger = logging.getLogger('my_app')
+myapp_logger = logging.getLogger("my_app")
 myapp_logger.setLevel(logging.INFO)
-palletjack_logger = logging.getLogger('palletjack')
+palletjack_logger = logging.getLogger("palletjack")
 palletjack_logger.setLevel(logging.INFO)
 #: set up handlers and formatters
 #: ...

@@ -34,20 +34,20 @@ The `arcgis` library does all the heavy lifting for spatial data. If the `arcpy`
 
    #: Load the data from a Google Sheet
    gsheet_extractor = extract.GSheetLoader(path_to_service_account_json)
-   sheet_df = gsheet_extractor.load_specific_worksheet_into_dataframe(sheet_id, 'title of desired sheet', by_title=True)
+   sheet_df = gsheet_extractor.load_specific_worksheet_into_dataframe(sheet_id, "title of desired sheet", by_title=True)
 
    #: Convert the data to points using lat/long fields, clean for uploading
-   spatial_df = pd.DataFrame.spatial.from_xy(input_df, x_column='longitude', y_column='latitude')
+   spatial_df = pd.DataFrame.spatial.from_xy(input_df, x_column="longitude", y_column="latitude")
    renamed_df = transform.DataCleaning.rename_dataframe_columns_for_agol(spatial_df)
-   cleaned_df = transform.DataCleaning.switch_to_nullable_int(renamed_df, ['an_int_field_with_null_values'])
+   cleaned_df = transform.DataCleaning.switch_to_nullable_int(renamed_df, ["an_int_field_with_null_values"])
 
    #: Truncate the existing feature service data and load the new data
-   gis = arcgis.gis.GIS('my_agol_org_url', 'username', 'super-duper-secure-password')
-   updater = load.ServiceUpdater(gis, 'feature_service_item_id')
+   gis = arcgis.gis.GIS("my_agol_org_url", "username", "super-duper-secure-password")
+   updater = load.ServiceUpdater(gis, "feature_service_item_id")
    updates = updater.truncate_and_load(cleaned_df)
 
    #: It even works with stand-alone tables!
-   table_updater = load.TableUpdater(gis, 'table_service_item_id', service_type='table')
+   table_updater = load.TableUpdater(gis, "table_service_item_id", service_type="table")
    table_updates = table_updater.truncate_and_load(cleaned_df)
    ```
 

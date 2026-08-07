@@ -6,7 +6,7 @@ import json
 import logging
 import shutil
 import warnings
-from datetime import datetime
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Literal
 
@@ -232,7 +232,7 @@ class ServiceUpdater:
             self.index,
             self.itemid,
         )
-        start = datetime.now()
+        start = datetime.now(UTC)
 
         #: Save the data to disk if desired
         if save_old:
@@ -253,7 +253,7 @@ class ServiceUpdater:
         try:
             self._class_logger.info("Loading new data...")
             append_count = self._update_service(gdb_item, upsert=False)
-            self._class_logger.debug("Total truncate and load time: %s", datetime.now() - start)
+            self._class_logger.debug("Total truncate and load time: %s", datetime.now(UTC) - start)
         except Exception:
             if save_old:
                 self._class_logger.error("Append failed. Data saved to %s", saved_layer_path)
@@ -418,7 +418,7 @@ class ServiceUpdater:
                 item_type=item_type,
                 max_items=1,
             )
-        except Exception as error:
+        except Exception as error:  # noqa: BLE001 - ArcGIS API does not expose a stable exception type
             self._class_logger.warning(f"Error searching for existing gdb item with title {title}")
             warnings.warn(repr(error))
 
@@ -463,14 +463,14 @@ class ServiceUpdater:
         if gdb_item:
             try:
                 gdb_item.delete()
-            except Exception as error:
+            except Exception as error:  # noqa: BLE001 - cleanup must not obscure the primary operation result
                 warnings.warn(f"Error deleting gdb item {gdb_item.id} from AGOL")
                 warnings.warn(repr(error))
 
         if zipped_gdb_path:
             try:
                 zipped_gdb_path.unlink()
-            except Exception as error:
+            except Exception as error:  # noqa: BLE001 - cleanup must not obscure the primary operation result
                 warnings.warn(f"Error deleting zipped gdb {zipped_gdb_path}")
                 warnings.warn(repr(error))
 
@@ -628,7 +628,7 @@ class FeatureServiceAttachmentsUpdater:
             try:
                 result = self.feature_layer.attachments.add(target_oid, filepath)
             except Exception:
-                self._class_logger.error("AGOL error while adding %s to OID %s", filepath, target_oid, exc_info=True)
+                self._class_logger.exception("AGOL error while adding %s to OID %s", filepath, target_oid)
                 self.failed_dict[target_oid] = ("add", filepath)
                 continue
 
@@ -669,13 +669,12 @@ class FeatureServiceAttachmentsUpdater:
             try:
                 result = self.feature_layer.attachments.update(target_oid, attachment_id, filepath)
             except Exception:
-                self._class_logger.error(
+                self._class_logger.exception(
                     "AGOL error while overwriting %s (attachment ID %s) on OID %s with %s",
                     old_name,
                     attachment_id,
                     target_oid,
                     filepath,
-                    exc_info=True,
                 )
                 self.failed_dict[target_oid] = ("update", filepath)
                 continue

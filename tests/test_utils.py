@@ -131,7 +131,7 @@ class TestRetry:
         ]
         mocker.patch("palletjack.utils.sleep")
 
-        with pytest.raises(Exception):
+        with pytest.raises(Exception):  # noqa: B017 - verifies retry propagates arbitrary callback failures
             answer = palletjack.utils.retry(mock.function, "a", "b")
 
         assert mock.function.call_count == 4
@@ -141,7 +141,7 @@ class TestRetry:
         mock.function.side_effect = [Exception, Exception, 42]
         mocker.patch("palletjack.utils.sleep")
 
-        with pytest.raises(Exception):
+        with pytest.raises(Exception):  # noqa: B017 - verifies retry propagates arbitrary callback failures
             answer = palletjack.utils.retry(mock.function, "a", "b")
 
         assert mock.function.call_count == 2
@@ -293,9 +293,7 @@ class TestGeocodeAddr:
         response_mock.status_code = 404
 
         def bool_mock(self):
-            if self.status_code < 400:
-                return True
-            return False
+            return self.status_code < 400
 
         response_mock.__bool__ = bool_mock
 
@@ -313,9 +311,7 @@ class TestGeocodeAddr:
         response_mock.status_code = 404
 
         def bool_mock(self):
-            if self.status_code < 400:
-                return True
-            return False
+            return self.status_code < 400
 
         response_mock.__bool__ = bool_mock
 
@@ -468,7 +464,7 @@ class TestValidateAPIKey:
         req_mock = mocker.patch("palletjack.utils.requests", autospec=True)
         mocker.patch("palletjack.utils.sleep")
         # caplog.set_level(logging.DEBUG)
-        req_mock.get.side_effect = [IOError("Random Error")] * 4
+        req_mock.get.side_effect = [OSError("Random Error")] * 4
 
         with pytest.raises(
             RuntimeError,
@@ -1007,13 +1003,13 @@ class TestCheckFieldsMatch:
         properties_mock = mocker.Mock()
         properties_mock.fields = [{"name": "ints", "type": "esriFieldTypeInteger"}]
 
+        checker = palletjack.utils.FieldChecker(properties_mock, new_df)
         with pytest.warns(
             UserWarning,
             match=re.escape(
                 "Field ints has a source 64bit dtype (int64) which may be incompatible with Esri field type esriFieldTypeInteger."
             ),
         ):
-            checker = palletjack.utils.FieldChecker(properties_mock, new_df)
             checker.check_live_and_new_field_types_match(["ints"])
 
     def test_check_geometry_types_normal(self, mocker):
@@ -1393,7 +1389,9 @@ class TestFieldLength:
         with pytest.raises(ValueError) as exc_info:
             checker.check_field_length(["foo"])
 
-        assert "Row 2, column foo length of 27 in new data exceeds the live data max length of 10" in str(exc_info.value)
+        assert "Row 2, column foo length of 27 in new data exceeds the live data max length of 10" in str(
+            exc_info.value
+        )
 
     def test_check_field_length_uses_fields_arg(self, mocker):
         properties_mock = mocker.Mock()
@@ -1877,7 +1875,7 @@ class TestDeleteUtils:
 class TestSaveDataframeToGDF:
     def test_save_to_gdb_calls_to_file_with_right_path(self, mocker):
         expected_out_path = Path("foo", "backup.gdb")
-        expected_out_layer = f"flayer_{datetime.date.today().strftime('%Y_%m_%d')}"
+        expected_out_layer = f"flayer_{datetime.datetime.now(datetime.UTC).strftime('%Y_%m_%d')}"
 
         mock_fl = mocker.Mock(spec=FeatureLayer)
         mock_fl.properties.name = "flayer"
@@ -1894,7 +1892,7 @@ class TestSaveDataframeToGDF:
 
     def test_save_to_gdb_uses_gdb_for_tables(self, mocker):
         expected_out_path = Path("foo", "backup.gdb")
-        expected_out_layer = f"table_{datetime.date.today().strftime('%Y_%m_%d')}"
+        expected_out_layer = f"table_{datetime.datetime.now(datetime.UTC).strftime('%Y_%m_%d')}"
 
         mock_tb = mocker.Mock(spec=Table)
         mock_tb.properties.name = "table"
@@ -1920,7 +1918,7 @@ class TestSaveDataframeToGDF:
 
     def test_save_to_gdb_raises_on_gdb_write_error(self, mocker):
         gdb_path = Path("/foo/bar/backup.gdb")
-        date = datetime.date.today().strftime("%Y_%m_%d")
+        date = datetime.datetime.now(datetime.UTC).strftime("%Y_%m_%d")
         expected_error = f"Error writing flayer_{date} to {gdb_path}. Verify {gdb_path.parent} exists and is writable."
 
         mock_fl = mocker.Mock(spec=FeatureLayer)

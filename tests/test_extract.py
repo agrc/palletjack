@@ -1,8 +1,9 @@
 import json
 import logging
 import re
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
+from typing import ClassVar
 
 import geodatasets
 import geopandas as gpd
@@ -44,7 +45,7 @@ class TestGSheetsLoader:
 
         extract.GSheetLoader.load_specific_worksheet_into_dataframe(gsheet_loader_mock, "foobar", "2015", by_title=True)
 
-        sheet_mock.worksheet.assert_not_called
+        sheet_mock.worksheet.assert_not_called()
         sheet_mock.worksheet_by_title.assert_called_once_with("2015")
 
     def test_load_all_worksheets_into_dataframes_single_worksheet(self, mocker):
@@ -818,9 +819,8 @@ class TestSFTPLoader:
 
         mocker.patch("palletjack.extract.paramiko.Transport", return_value=transport_mock)
 
-        with pytest.raises(Exception, match="Connection failed"):
-            with loader._sftp_connection() as sftp:
-                pass
+        with pytest.raises(Exception, match="Connection failed"), loader._sftp_connection() as sftp:
+            pass
 
         # Verify cleanup happened even though connection failed
         # sftp was never created, so it shouldn't be closed
@@ -835,9 +835,11 @@ class TestSFTPLoader:
 
         mocker.patch("palletjack.extract.paramiko.Transport", return_value=transport_mock)
 
-        with pytest.raises(paramiko.AuthenticationException, match="Authentication failed"):
-            with loader._sftp_connection() as sftp:
-                pass
+        with (
+            pytest.raises(paramiko.AuthenticationException, match="Authentication failed"),
+            loader._sftp_connection() as sftp,
+        ):
+            pass
 
         # Verify cleanup happened
         transport_mock.close.assert_called_once()
@@ -852,9 +854,8 @@ class TestSFTPLoader:
 
         mocker.patch("palletjack.extract.paramiko.Transport", return_value=transport_mock)
 
-        with pytest.raises(Exception, match="SFTP client creation failed"):
-            with loader._sftp_connection() as sftp:
-                pass
+        with pytest.raises(Exception, match="SFTP client creation failed"), loader._sftp_connection() as sftp:
+            pass
 
         # Verify cleanup happened - transport should be closed even though sftp wasn't created
         transport_mock.close.assert_called_once()
@@ -870,10 +871,9 @@ class TestSFTPLoader:
         sftp_class_mock = mocker.patch("palletjack.extract.paramiko.SFTPClient")
         sftp_class_mock.from_transport.return_value = sftp_mock
 
-        with pytest.raises(RuntimeError, match="Operation failed"):
-            with loader._sftp_connection() as sftp:
-                # Simulate an exception during file operations
-                raise RuntimeError("Operation failed")
+        with pytest.raises(RuntimeError, match="Operation failed"), loader._sftp_connection() as sftp:
+            # Simulate an exception during file operations
+            raise RuntimeError("Operation failed")
 
         # Verify cleanup happened despite the exception
         sftp_mock.close.assert_called_once()
@@ -978,7 +978,7 @@ class TestRESTServiceLoader:
     def test_get_features_gets_max_record_count_from_properties(self, mocker):
         layer_mock = mocker.patch("palletjack.extract.ServiceLayer").return_value
         layer_mock.max_record_count = 42
-        layer_mock.get_object_ids.return_value = list(range(0, 142))
+        layer_mock.get_object_ids.return_value = list(range(142))
 
         mocker.patch("palletjack.extract.pd.concat")
         mocker.patch("palletjack.extract.time.sleep")
@@ -986,13 +986,13 @@ class TestRESTServiceLoader:
 
         extract.RESTServiceLoader.get_features(mocker.Mock(), layer_mock, chunk_size=None)
 
-        chunker_mock.assert_called_once_with(list(range(0, 142)), 42)
+        chunker_mock.assert_called_once_with(list(range(142)), 42)
 
     def test_get_features_chunks_smaller_final_chunk(self, mocker):
         layer_mock = mocker.patch("palletjack.extract.ServiceLayer").return_value
         layer_mock.max_record_count = 100
         layer_mock.oid_field = "OBJECTID"
-        layer_mock.get_object_ids.return_value = list(range(0, 142))
+        layer_mock.get_object_ids.return_value = list(range(142))
 
         mocker.patch("palletjack.extract.pd.concat")
         mocker.patch("palletjack.extract.time.sleep")
@@ -1000,7 +1000,7 @@ class TestRESTServiceLoader:
         extract.RESTServiceLoader.get_features(mocker.Mock(), layer_mock)
 
         assert layer_mock.get_unique_id_list_as_dataframe.call_args_list == [
-            mocker.call("OBJECTID", list(range(0, 100))),
+            mocker.call("OBJECTID", list(range(100))),
             mocker.call("OBJECTID", list(range(100, 142))),
         ]
 
@@ -1042,7 +1042,7 @@ class TestRESTServiceLoader:
         layer_mock = mocker.patch("palletjack.extract.ServiceLayer").return_value
         layer_mock.max_record_count = 100
         layer_mock.oid_field = "OBJECTID"
-        layer_mock.get_object_ids.return_value = list(range(0, 142))
+        layer_mock.get_object_ids.return_value = list(range(142))
         layer_mock.get_unique_id_list_as_dataframe.side_effect = [
             pd.DataFrame(["a", "b", "c"], columns=["SHAPE"]),
             pd.DataFrame(["d", "e", "f"], columns=["SHAPE"]),
@@ -1061,7 +1061,7 @@ class TestRESTServiceLoader:
         layer_mock = mocker.patch("palletjack.extract.ServiceLayer").return_value
         layer_mock.max_record_count = 100
         layer_mock.oid_field = "OBJECTID"
-        layer_mock.get_object_ids.side_effect = [RuntimeError, list(range(0, 142))]
+        layer_mock.get_object_ids.side_effect = [RuntimeError, list(range(142))]
 
         mocker.patch("palletjack.extract.pd.concat")
         mocker.patch("palletjack.extract.time.sleep")
@@ -1558,7 +1558,7 @@ ORG = "ugrc"
 
 class TestSalesForceLoader:
     def ticks(self, dt):
-        return (dt - datetime(1970, 1, 1)).total_seconds() * 1000
+        return (dt - datetime(1970, 1, 1, tzinfo=UTC)).total_seconds() * 1000
 
     @pytest.fixture
     def credentials(self):
@@ -1570,7 +1570,7 @@ class TestSalesForceLoader:
     def loader(self, credentials):
         return extract.SalesforceRestLoader(ORG, credentials)
 
-    url_template_test_data = [
+    url_template_test_data: ClassVar = [
         (
             True,
             "https://ugrc.sandbox.my.salesforce.com/services/oauth2/token",
@@ -1623,19 +1623,19 @@ class TestSalesForceLoader:
         assert not loader._is_token_valid({"issued_at": "not a number"})
 
     def test_is_token_valid_returns_true_if_token_is_valid(self, loader):
-        issued_at = datetime.now() - timedelta(days=15)
+        issued_at = datetime.now(UTC) - timedelta(days=15)
         token = {"issued_at": self.ticks(issued_at)}
 
         assert loader._is_token_valid(token)
 
     def test_is_token_valid_returns_false_if_token_is_expired(self, loader):
-        issued_at = datetime.now() - timedelta(days=31)
+        issued_at = datetime.now(UTC) - timedelta(days=31)
         token = {"issued_at": self.ticks(issued_at)}
 
         assert not loader._is_token_valid(token)
 
     def test_get_token_returns_cached_token_if_valid(self, loader):
-        issued_at = datetime.now() - timedelta(days=15)
+        issued_at = datetime.now(UTC) - timedelta(days=15)
         token = {"issued_at": self.ticks(issued_at), "access_token": "token"}
 
         loader.access_token = token
@@ -1682,7 +1682,7 @@ class TestSalesForceLoader:
         )
 
     def test_get_token_returns_new_token_if_cached_token_is_expired(self, loader):
-        issued_at = datetime.now() - timedelta(days=31)
+        issued_at = datetime.now(UTC) - timedelta(days=31)
         token = {"issued_at": self.ticks(issued_at), "access_token": "token"}
 
         loader.access_token = token
@@ -1692,7 +1692,7 @@ class TestSalesForceLoader:
             assert loader._get_token() == {"access_token": "new_token", "issued_at": "now"}
 
     def test_query_records_raises_error_on_failed_request(self, loader):
-        issued_at = datetime.now() - timedelta(days=1)
+        issued_at = datetime.now(UTC) - timedelta(days=1)
         token = {"issued_at": self.ticks(issued_at), "access_token": "token"}
 
         loader.access_token = token
@@ -1866,10 +1866,10 @@ class TestWordpressRestLoader:
 
     def test_get_from_endpoint_unexpected_json_type_raises(self, loader):
         # If the endpoint returns something other than list or dict, a clear
-        # ValueError should be raised.
+        # TypeError should be raised.
         with requests_mock.Mocker() as m:
             m.get(WP_FULL_URL, json="unexpected string response", headers={"X-WP-TotalPages": "1"})
-            with pytest.raises(ValueError, match="Unexpected JSON type"):
+            with pytest.raises(TypeError, match="Unexpected JSON type"):
                 loader.get_from_endpoint(WP_ENDPOINT)
 
     def test_get_from_endpoint_missing_total_pages_header_defaults_to_1(self, loader):

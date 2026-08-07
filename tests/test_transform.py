@@ -2,10 +2,11 @@ import logging
 import re
 
 import numpy as np
-import palletjack
 import pandas as pd
 import pytest
 from pandas import testing as tm
+
+import palletjack
 
 
 class TestAPIGeocoder:
