@@ -20,29 +20,7 @@ jobs:
         with:
           show-progress: false
 
-      - name: 🐍 Set up Python
-        uses: actions/setup-python@v6.2.0
+      - name: 🧪 Test and upload coverage
+        uses: ./.github/actions/test-and-coverage
         with:
-          python-version-file: .python-version
-          cache: pip
-          cache-dependency-path: setup.py
-
-      - name: 📥 Install dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y libkrb5-dev
-
-      - name: 🏗 Install module
-        run: pip install .[tests]
-
-      - name: 🧶 Lint
-        run: ruff check --output-format=github .
-
-      - name: 🧪 Run pytest
-        run: pytest
-
-      - name: ⬆️ Upload coverage to Codecov
-        uses: codecov/codecov-action@v7
-        with:
-          token: ${{ secrets.CODECOV_TOKEN }}
-          files: ./cov.xml
+          codecov-token: ${{ secrets.CODECOV_TOKEN }}
