@@ -1,5 +1,18 @@
 # Changelog
 
+## [6.0.5](https://github.com/agrc/palletjack/compare/v6.0.4...v6.0.5) (2026-08-07)
+
+
+### Features
+
+* add optional match field parameter to update ([4c35612](https://github.com/agrc/palletjack/commit/4c35612ed58741bc38a159b03a6763ffda362418)), refs [#202](https://github.com/agrc/palletjack/issues/202)
+
+
+### Dependencies
+
+* update geodatasets requirement ([59713b4](https://github.com/agrc/palletjack/commit/59713b49bda15f981665d20fe5b954c0223301cd))
+* update paramiko requirement from &lt;5.0,&gt;=3.0 to &gt;=3.0,&lt;6.0 ([cecf061](https://github.com/agrc/palletjack/commit/cecf0611cfda5cfa04f9b9cfe28a32078a0577db))
+
 ## [6.0.4](https://github.com/agrc/palletjack/compare/v6.0.3...v6.0.4) (2026-06-23)
 
 
