@@ -3,7 +3,7 @@
 import locale
 import logging
 import warnings
-from datetime import datetime
+from datetime import UTC, datetime
 
 import arcgis
 import pandas as pd
@@ -55,7 +55,7 @@ class APIGeocoder:
             pd.DataFrame.spatial: Geocoded data as a spatially-enabled DataFrame
         """
 
-        start = datetime.now()
+        start = datetime.now(UTC)
 
         #: Should this return? Should it raise an error instead?
         if dataframe.empty:
@@ -88,7 +88,7 @@ class APIGeocoder:
 
         spatial_dataframe = pd.DataFrame.spatial.from_xy(pd.DataFrame(new_rows), "x", "y", sr=int(wkid))
 
-        end = datetime.now()
+        end = datetime.now(UTC)
         self._class_logger.info("%s Records geocoded in %s", len(spatial_dataframe.index), (end - start))
         try:
             self._class_logger.debug("Average time per record: %s", (end - start) / len(spatial_dataframe.index))

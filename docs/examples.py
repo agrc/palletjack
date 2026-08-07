@@ -7,6 +7,7 @@ from tempfile import TemporaryDirectory
 import arcgis
 import pandas as pd
 from arcgis.features import GeoAccessor, GeoSeriesAccessor
+
 from palletjack import extract, load, transform, utils
 
 
@@ -122,5 +123,5 @@ def download_from_sftp_update_agol_reclassify_map():
     #: Try to clean up the tempdir (we don't use a context manager); print any errors as a heads up
     try:
         tempdir.cleanup()
-    except Exception as error:
+    except OSError as error:
         print(error)

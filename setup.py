@@ -1,17 +1,14 @@
-#!/usr/bin/env python
-# -*- encoding: utf-8 -*-
 """
 setup.py
 A module that installs palletjack as a module
 """
 
+import runpy
 from pathlib import Path
 
 from setuptools import find_packages, setup
 
-version = {}
-with open("src/palletjack/version.py", encoding="utf-8") as fp:
-    exec(fp.read(), version)
+version = runpy.run_path("src/palletjack/version.py")
 
 setup(
     name="ugrc-palletjack",

@@ -13,7 +13,7 @@ import time
 import warnings
 from contextlib import contextmanager
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 from io import BytesIO
 from pathlib import Path
 from string import Template
@@ -251,7 +251,7 @@ class GSheetLoader:
         dataframes = list(worksheet_dfs.values())
 
         #: Make sure all the dataframes have the same columns
-        if not all([set(dataframes[0].columns) == set(df.columns) for df in dataframes]):
+        if not all(set(dataframes[0].columns) == set(df.columns) for df in dataframes):
             raise ValueError("Columns do not match; cannot create multi-index dataframe")
 
         self._class_logger.debug("Concatting worksheet dataframes %s into a single dataframe", worksheet_dfs.keys())
@@ -401,7 +401,7 @@ class GoogleDriveDownloader:
             self._class_logger.debug("Row %s: writing to %s", join_id, out_file_path)
             self._save_response_content(response, out_file_path)
             return out_file_path
-        except Exception as err:
+        except Exception as err:  # noqa: BLE001 - remote download clients expose inconsistent exception types
             self._class_logger.warning("Row %s: Couldn't download %s", join_id, sharing_link)
             self._class_logger.warning(err)
             return None
@@ -478,7 +478,7 @@ class GoogleDriveDownloader:
             self._class_logger.debug("Row %s: writing to %s", join_id, out_file_path)
             utils.retry(self._save_get_media_content, get_media_request, out_file_path)
             return out_file_path
-        except Exception as err:
+        except Exception as err:  # noqa: BLE001 - remote download clients expose inconsistent exception types
             self._class_logger.warning("Row %s: Couldn't download %s", join_id, sharing_link)
             self._class_logger.warning(err)
             return None
@@ -1100,7 +1100,7 @@ class SalesforceRestLoader:
 
     access_token_template = Template("https://$org.my.salesforce.com/services/oauth2/token")
     access_token_url = ""
-    access_token = {}
+    access_token: dict[str, str]
 
     org_template = Template("https://$org.my.salesforce.com")
     org_url = ""
@@ -1129,6 +1129,7 @@ class SalesforceRestLoader:
             sandbox (bool, optional): The credentials for sandboxes are different than API users. Defaults to False if
             it's not a sandbox instance of Salesforce.
         """
+        self.access_token = {}
         self.client_secret = credentials.client_secret
         self.client_id = credentials.client_id
 
@@ -1153,7 +1154,7 @@ class SalesforceRestLoader:
         Returns:
             bool: true if the token is valid
         """
-        if "issued_at" not in token.keys():
+        if "issued_at" not in token:
             return False
 
         issued = timedelta.max
@@ -1161,8 +1162,8 @@ class SalesforceRestLoader:
 
         try:
             ticks = int(token["issued_at"])
-            issued = datetime.fromtimestamp(ticks / 1000)
-            days_from_today = (datetime.now() - issued).days
+            issued = datetime.fromtimestamp(ticks / 1000, UTC)
+            days_from_today = (datetime.now(UTC) - issued).days
 
             self._class_logger.debug("Token is %s days old", days_from_today)
         except ValueError:
@@ -1170,7 +1171,7 @@ class SalesforceRestLoader:
 
             return False
 
-        return datetime.now() < (issued + lease)
+        return datetime.now(UTC) < (issued + lease)
 
     def _get_token(self) -> dict[str, str]:
         """Gets a new Salesforce access token if the current one is expired."""
@@ -1358,9 +1359,8 @@ class WordpressRestLoader:
                 # Treat that as a single record so we still produce a sensible DataFrame.
                 all_records.append(page_data)
             else:
-                raise ValueError(
-                    f"Unexpected JSON type {type(page_data).__name__} from {url} on page {page}; "
-                    "expected list or dict."
+                raise TypeError(
+                    f"Unexpected JSON type {type(page_data).__name__} from {url} on page {page}; expected list or dict."
                 )
             total_pages_header = response.headers.get("X-WP-TotalPages")
             if not total_pages_header:

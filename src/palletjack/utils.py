@@ -68,7 +68,7 @@ def retry(worker_method, *args, **kwargs):
                 tries += 1
                 return _inner_retry(worker_method, *args, **kwargs)
             else:
-                raise error
+                raise
 
     return _inner_retry(worker_method, *args, **kwargs)
 
@@ -158,7 +158,7 @@ def rename_fields(dataframe, field_mapping):
         pd.DataFrame: Dataframe with renamed fields
     """
 
-    for original_name in field_mapping.keys():
+    for original_name in field_mapping:
         if original_name not in dataframe.columns:
             raise ValueError(f"Field {original_name} not found in dataframe.")
 
@@ -200,9 +200,8 @@ def check_field_set_to_unique(featurelayer, field_name):
     if field_name not in fields:
         raise RuntimeError(f'{field_name} does not have a "unique constraint" set within the feature layer')
     for field in featurelayer.properties.indexes:
-        if field["fields"] == field_name:
-            if not field["isUnique"]:
-                raise RuntimeError(f'{field_name} does not have a "unique constraint" set within the feature layer')
+        if field["fields"] == field_name and not field["isUnique"]:
+            raise RuntimeError(f'{field_name} does not have a "unique constraint" set within the feature layer')
 
 
 class Geocoding:
@@ -233,7 +232,7 @@ class Geocoding:
 
         try:
             geocode_result_dict = retry(Geocoding._geocode_api_call, url, api_args)
-        except Exception as error:
+        except Exception as error:  # noqa: BLE001 - requests and retry callbacks may raise distinct exception types
             module_logger.error(error)
             return (0, 0, 0.0, "No API response")
 
@@ -409,7 +408,7 @@ def convert_to_gdf(dataframe):
 
     #: just a normal df, convert to gdf w/o geometry (allows us to write as table to gdb)
     try:
-        dataframe.spatial.geometry_type  # raises KeyError if this is a regular dataframe
+        _ = dataframe.spatial.geometry_type  # raises KeyError if this is a regular dataframe
     except KeyError:
         return gpd.GeoDataFrame(dataframe, geometry=None)
 
@@ -445,7 +444,7 @@ def save_to_gdb(table_or_layer, directory):
         gdf = gpd.GeoDataFrame(dataframe)
 
     out_path = Path(directory, "backup.gdb")
-    out_layer = f"{table_or_layer.properties.name}_{datetime.date.today().strftime('%Y_%m_%d')}"
+    out_layer = f"{table_or_layer.properties.name}_{datetime.datetime.now(datetime.UTC).strftime('%Y_%m_%d')}"
     module_logger.debug("Saving existing data to %s", out_path)
     try:
         gdf.to_file(out_path, layer=out_layer, engine="pyogrio", driver="OpenFileGDB")
@@ -618,7 +617,7 @@ class FieldChecker:
 
         try:
             new_geometry_types = self.new_dataframe.spatial.geometry_type
-        except Exception:  #: If it's not an sedf, the call to geometry_type raises a general Exception, so try gdf
+        except Exception:  # noqa: BLE001 - the ArcGIS accessor raises a generic exception for non-SEDF frames
             new_geometry_types = self._condense_geopandas_multi_types(self.new_dataframe.geom_type.unique())
 
         if len(new_geometry_types) > 1:
@@ -809,9 +808,11 @@ class FieldChecker:
         non_spatial_columns = [col for col in self.new_dataframe.columns if self.new_dataframe[col].dtype != "geometry"]
         for column in non_spatial_columns:
             #: Only check float columns; in our data model, only floating-point fields can meaningfully contain ±inf
-            if pd.api.types.is_float_dtype(self.new_dataframe[column].dtype):
-                if np.isinf(self.new_dataframe[column]).any():
-                    columns_with_inf.append(column)
+            if (
+                pd.api.types.is_float_dtype(self.new_dataframe[column].dtype)
+                and np.isinf(self.new_dataframe[column]).any()
+            ):
+                columns_with_inf.append(column)
 
         if columns_with_inf:
             warnings.warn(
@@ -972,7 +973,7 @@ class Chunking:
             )
 
         starts = range(0, df_length, chunk_size)
-        ends = [start + chunk_size if start + chunk_size < df_length else df_length for start in starts]
+        ends = [min(df_length, start + chunk_size) for start in starts]
         list_of_dataframes = [dataframe.iloc[start:end] for start, end in zip(starts, ends)]
 
         return list_of_dataframes
