@@ -85,6 +85,7 @@
     "pysftp",
     "pytest",
     "reclassifier",
+    "Referer",
     "Reproject",
     "sedf",
     "setuptools",

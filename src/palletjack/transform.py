@@ -28,14 +28,16 @@ class APIGeocoder:
     other settings.
     """
 
-    def __init__(self, api_key):
+    def __init__(self, api_key, referrer=None):
         """
         Args:
             api_key (str): API key obtained from developer.mapserv.utah.gov
+            referrer (str, optional): Referrer URL for the API requests. Defaults to None.
         """
         self.api_key = api_key
+        self.referrer = referrer
         self._class_logger = logging.getLogger(__name__).getChild(self.__class__.__name__)
-        utils.Geocoding.validate_api_key(self.api_key)
+        utils.Geocoding.validate_api_key(self.api_key, referrer=self.referrer)
 
     def geocode_dataframe(self, dataframe, street_col, zone_col, wkid, rate_limits=(0.015, 0.03), **api_args):
         """Geocode a pandas dataframe into a spatially-enabled dataframe
@@ -47,7 +49,7 @@ class APIGeocoder:
             street_col (str): The column containing the street address
             zone_col (str): The column containing either the zip code or the city name
             wkid (int): The projection to return the x/y points in
-            rate_limits(Tuple <float>): A lower and upper bound in seconds for pausing between API calls. Defaults to
+            rate_limits (Tuple <float>, optional): A lower and upper bound in seconds for pausing between API calls. Defaults to
                 (0.015, 0.03)
             **api_args (dict): Keyword arguments to be passed as parameters in the API GET call.
 
@@ -78,6 +80,7 @@ class APIGeocoder:
                 self.api_key,
                 rate_limits,
                 spatialReference=str(wkid),
+                referrer=self.referrer,
                 **api_args,
             )
             self._class_logger.debug(

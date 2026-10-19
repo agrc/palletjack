@@ -229,7 +229,7 @@ class TestGeocodeAddr:
 
         palletjack.utils.requests.get.return_value = response_mock
 
-        palletjack.utils.Geocoding.geocode_addr("foo", "bar", "foo_key", (0.015, 0.03))
+        palletjack.utils.Geocoding.geocode_addr("foo", "bar", "foo_key", (0.015, 0.03), referrer=None)
 
         palletjack.utils.requests.get.assert_called_with(
             "https://api.mapserv.utah.gov/api/v1/geocode/foo/bar", params={"apiKey": "foo_key"}
@@ -248,11 +248,14 @@ class TestGeocodeAddr:
 
         palletjack.utils.requests.get.return_value = response_mock
 
-        palletjack.utils.Geocoding.geocode_addr("foo", "bar", "foo_key", (0.015, 0.03), spatialReference=3857)
+        palletjack.utils.Geocoding.geocode_addr(
+            "foo", "bar", "foo_key", (0.015, 0.03), referrer="https://test.com", spatialReference=3857
+        )
 
         palletjack.utils.requests.get.assert_called_with(
             "https://api.mapserv.utah.gov/api/v1/geocode/foo/bar",
             params={"apiKey": "foo_key", "spatialReference": 3857},
+            headers={"Referer": "https://test.com"},
         )
 
     def test_geocode_addr_returns_coords(self, mocker):
@@ -268,7 +271,7 @@ class TestGeocodeAddr:
 
         palletjack.utils.requests.get.return_value = response_mock
 
-        result = palletjack.utils.Geocoding.geocode_addr("foo", "bar", "foo_key", (0.015, 0.03))
+        result = palletjack.utils.Geocoding.geocode_addr("foo", "bar", "foo_key", (0.015, 0.03), referrer=None)
 
         assert result == (123, 456, 100.0, "bar")
 
@@ -281,7 +284,7 @@ class TestGeocodeAddr:
 
         palletjack.utils.requests.get.return_value = response_mock
 
-        result = palletjack.utils.Geocoding.geocode_addr("foo", "bar", "foo_key", (0.015, 0.03))
+        result = palletjack.utils.Geocoding.geocode_addr("foo", "bar", "foo_key", (0.015, 0.03), referrer=None)
 
         assert result == (0, 0, 0.0, "No Match")
 
@@ -299,7 +302,7 @@ class TestGeocodeAddr:
 
         palletjack.utils.requests.get.return_value = response_mock
 
-        result = palletjack.utils.Geocoding.geocode_addr("foo", "bar", "foo_key", (0.015, 0.03))
+        result = palletjack.utils.Geocoding.geocode_addr("foo", "bar", "foo_key", (0.015, 0.03), referrer=None)
 
         assert result == (0, 0, 0.0, "No Match")
 
@@ -317,7 +320,7 @@ class TestGeocodeAddr:
 
         palletjack.utils.requests.get.return_value = response_mock
 
-        result = palletjack.utils.Geocoding.geocode_addr("foo", "bar", "foo_key", (0.015, 0.03))
+        result = palletjack.utils.Geocoding.geocode_addr("foo", "bar", "foo_key", (0.015, 0.03), referrer=None)
 
         assert "No response from GET; request timeout?" not in caplog.text
 
@@ -334,7 +337,7 @@ class TestGeocodeAddr:
 
         palletjack.utils.requests.get.side_effect = [Exception, response_mock]
 
-        result = palletjack.utils.Geocoding.geocode_addr("foo", "bar", "foo_key", (0.015, 0.03))
+        result = palletjack.utils.Geocoding.geocode_addr("foo", "bar", "foo_key", (0.015, 0.03), referrer=None)
 
         assert palletjack.utils.requests.get.call_count == 2
         assert result == (123, 456, 100.0, "bar")
@@ -353,7 +356,7 @@ class TestGeocodeAddr:
 
         palletjack.utils.requests.get.side_effect = [None, response_mock]
 
-        result = palletjack.utils.Geocoding.geocode_addr("foo", "bar", "foo_key", (0.015, 0.03))
+        result = palletjack.utils.Geocoding.geocode_addr("foo", "bar", "foo_key", (0.015, 0.03), referrer=None)
 
         assert "No response from GET; request timeout?" in caplog.text
         assert palletjack.utils.requests.get.call_count == 2
@@ -376,7 +379,7 @@ class TestGeocodeAddr:
 
         palletjack.utils.requests.get.side_effect = [first_response_mock, second_response_mock]
 
-        result = palletjack.utils.Geocoding.geocode_addr("foo", "bar", "foo_key", (0.015, 0.03))
+        result = palletjack.utils.Geocoding.geocode_addr("foo", "bar", "foo_key", (0.015, 0.03), referrer=None)
 
         assert "Did not receive a valid geocoding response; status code: 500" in caplog.text
         assert palletjack.utils.requests.get.call_count == 2
@@ -391,7 +394,7 @@ class TestGeocodeAddr:
         bad_response.status_code = 500
         palletjack.utils.requests.get.side_effect = [bad_response] * 4
 
-        result = palletjack.utils.Geocoding.geocode_addr("foo", "bar", "foo_key", (0.015, 0.03))
+        result = palletjack.utils.Geocoding.geocode_addr("foo", "bar", "foo_key", (0.015, 0.03), referrer=None)
 
         assert "Did not receive a valid geocoding response; status code: 500" in caplog.messages
         assert palletjack.utils.requests.get.call_count == 4
@@ -410,7 +413,7 @@ class TestGeocodeAddr:
 
         palletjack.utils.requests.get.return_value = response_mock
 
-        palletjack.utils.Geocoding.geocode_addr("foo", "bar", "foo_key", (0.015, 0.03))
+        palletjack.utils.Geocoding.geocode_addr("foo", "bar", "foo_key", (0.015, 0.03), referrer=None)
 
         palletjack.utils.sleep.assert_called_once()
 
@@ -438,6 +441,21 @@ class TestValidateAPIKey:
 
         #: Should not raise
         palletjack.utils.Geocoding.validate_api_key("foo")
+
+    def test_validate_api_key_passes_referrer_header(self, mocker):
+        req_mock = mocker.patch("palletjack.utils.requests", autospec=True)
+        response_mock = mocker.Mock()
+        response_mock.json.return_value = {"status": 200, "message": "foo"}
+        req_mock.get.return_value = response_mock
+        referrer = "https://example.com"
+
+        palletjack.utils.Geocoding.validate_api_key("foo", referrer=referrer)
+
+        req_mock.get.assert_called_once_with(
+            "https://api.mapserv.utah.gov/api/v1/geocode/326 east south temple street/slc",
+            params={"apiKey": "foo"},
+            headers={"Referer": referrer},
+        )
 
     def test_validate_api_key_bad_key(self, mocker):
         req_mock = mocker.patch("palletjack.utils.requests", autospec=True)
