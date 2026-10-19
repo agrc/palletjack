@@ -208,7 +208,7 @@ class Geocoding:
     """Methods for geocoding an address"""
 
     @staticmethod
-    def geocode_addr(street, zone, api_key, rate_limits, **api_args):
+    def geocode_addr(street, zone, api_key, rate_limits, referrer=None, **api_args):
         """Geocode an address through the UGRC Web API geocoder
 
         Invalid results are returned with an x,y of 0,0, a score of 0.0, and a match address of 'No Match'
@@ -219,7 +219,8 @@ class Geocoding:
             api_key (str): API key obtained from developer.mapserv.utah.gov
             rate_limits (Tuple <float>): A lower and upper bound in seconds for pausing between API calls. Defaults to
                 (0.015, 0.03)
-            **api_args (dict): Keyword arguments to be passed as parameters in the API GET call. The API key will be
+            referrer (str, optional): Referrer URL for the API requests
+            **api_args (dict): Keyword arguments to be passed as url parameters in the API GET call. The API key will be
                 added to this dict.
 
         Returns:
@@ -231,7 +232,7 @@ class Geocoding:
         api_args["apiKey"] = api_key
 
         try:
-            geocode_result_dict = retry(Geocoding._geocode_api_call, url, api_args)
+            geocode_result_dict = retry(Geocoding._geocode_api_call, url, api_args, referrer)
         except Exception as error:  # noqa: BLE001 - requests and retry callbacks may raise distinct exception types
             module_logger.error(error)
             return (0, 0, 0.0, "No API response")
@@ -244,7 +245,7 @@ class Geocoding:
         )
 
     @staticmethod
-    def _geocode_api_call(url, api_args):
+    def _geocode_api_call(url, api_args, referrer):
         """Makes a requests.get call to the geocoding API.
 
         Meant to be called through a retry wrapper so that the RuntimeErrors get tried again a couple times before
@@ -253,6 +254,7 @@ class Geocoding:
         Args:
             url (str): Base url for GET request
             api_args (dict): Dictionary of URL parameters
+            referrer (str): Referrer URL for the API requests
 
         Raises:
             RuntimeError: If the server does not return response and request.get returns a falsy object.
@@ -262,7 +264,11 @@ class Geocoding:
             dict: The 'results' dictionary of the response json (location, score, and matchAddress)
         """
 
-        response = requests.get(url, params=api_args)
+        request_kwargs = {"params": api_args}
+        if referrer is not None:
+            request_kwargs["headers"] = {"Referer": referrer}
+
+        response = requests.get(url, **request_kwargs)
 
         #: The server times out and doesn't respond
         if response is None:
@@ -285,11 +291,12 @@ class Geocoding:
         raise RuntimeError(f"Did not receive a valid geocoding response; status code: {response.status_code}")
 
     @staticmethod
-    def validate_api_key(api_key):
+    def validate_api_key(api_key, referrer=None):
         """Check to see if a Web API key is valid by geocoding a single, known address point
 
         Args:
             api_key (str): API Key
+            referrer (str, optional): Referrer URL for the API requests. Defaults to None.
 
         Raises:
             RuntimeError: If there was a network or other error attempting to geocode the known point
@@ -299,8 +306,12 @@ class Geocoding:
 
         url = "https://api.mapserv.utah.gov/api/v1/geocode/326 east south temple street/slc"
 
+        request_kwargs = {"params": {"apiKey": api_key}}
+        if referrer is not None:
+            request_kwargs["headers"] = {"Referer": referrer}
+
         try:
-            response = retry(requests.get, url=url, params={"apiKey": api_key})
+            response = retry(requests.get, url=url, **request_kwargs)
         except Exception as error:
             raise RuntimeError(
                 "Could not determine key validity; check your API key and/or network connection"

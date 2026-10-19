@@ -37,7 +37,7 @@ class TestAPIGeocoder:
             "foo",
             (0.015, 0.03),
         )
-        assert utils_mock.Geocoding.geocode_addr.call_args.kwargs == {"spatialReference": "3857"}
+        assert utils_mock.Geocoding.geocode_addr.call_args.kwargs == {"spatialReference": "3857", "referrer": None}
 
     def test_geocode_dataframe_handles_street_zone_fields_with_invalid_python_names(self, mocker):
         utils_mock = mocker.patch("palletjack.transform.utils", autospec=True)
@@ -66,7 +66,7 @@ class TestAPIGeocoder:
             "foo",
             (0.015, 0.03),
         )
-        assert utils_mock.Geocoding.geocode_addr.call_args.kwargs == {"spatialReference": "3857"}
+        assert utils_mock.Geocoding.geocode_addr.call_args.kwargs == {"spatialReference": "3857", "referrer": None}
 
     def test_geocode_dataframe_passes_kwargs_through_to_util_method(self, mocker):
         utils_mock = mocker.patch("palletjack.transform.utils", autospec=True)
@@ -95,7 +95,32 @@ class TestAPIGeocoder:
             "foo",
             (0.015, 0.03),
         )
-        assert utils_mock.Geocoding.geocode_addr.call_args.kwargs == {"spatialReference": "3857", "acceptScore": 80}
+        assert utils_mock.Geocoding.geocode_addr.call_args.kwargs == {
+            "spatialReference": "3857",
+            "acceptScore": 80,
+            "referrer": None,
+        }
+
+    def test_referrer_is_passed_to_validation_and_geocoding(self, mocker):
+        utils_mock = mocker.patch("palletjack.transform.utils", autospec=True)
+        mocker.patch("palletjack.transform.pd.DataFrame.spatial.from_xy", side_effect=lambda df, x, y, sr: df)
+        referrer = "https://example.com"
+
+        geocoder = palletjack.transform.APIGeocoder("foo", referrer=referrer)
+        utils_mock.Geocoding.validate_api_key.assert_called_once_with("foo", referrer=referrer)
+
+        utils_mock.Geocoding.geocode_addr.return_value = (123, 456, 100.0, "foo_addr")
+        test_df = pd.DataFrame({"street": ["4315 S 2700 W"], "zip": ["84129"]})
+        geocoder.geocode_dataframe(test_df, "street", "zip", 3857)
+
+        utils_mock.Geocoding.geocode_addr.assert_called_once_with(
+            "4315 S 2700 W",
+            "84129",
+            "foo",
+            (0.015, 0.03),
+            spatialReference="3857",
+            referrer=referrer,
+        )
 
     def test_geocode_dataframe_builds_output_dataframe(self, mocker, caplog):
         caplog.set_level(logging.DEBUG)
