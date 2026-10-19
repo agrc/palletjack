@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "ugrc-palletjack"
-version = "6.0.5"
+version = "6.1.0"
 description = "Updating AGOL feature services with data from external tables."
 readme = { file = "README.md", content-type = "text/markdown" }
 requires-python = ">=3.11,<3.15"

@@ -1,5 +1,12 @@
 # Changelog
 
+## [6.1.0](https://github.com/agrc/palletjack/compare/v6.0.5...v6.1.0) (2026-10-19)
+
+
+### Features
+
+* add optional referrer param to geocoding transform ([115f78a](https://github.com/agrc/palletjack/commit/115f78a2eb96b19fecb904b3b6b1c63a88f8f796))
+
 ## [6.0.5](https://github.com/agrc/palletjack/compare/v6.0.4...v6.0.5) (2026-08-07)
 
 
