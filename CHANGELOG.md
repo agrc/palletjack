@@ -1,5 +1,12 @@
 # Changelog
 
+## [6.1.1](https://github.com/agrc/palletjack/compare/v6.1.0...v6.1.1) (2026-10-27)
+
+
+### Dependencies
+
+* update setuptools requirement from &lt;83,&gt;=80 to &gt;=80,&lt;85 ([7af2e95](https://github.com/agrc/palletjack/commit/7af2e9534eb6db9fc87f14d383fc4b4ea9b565c1))
+
 ## [6.1.0](https://github.com/agrc/palletjack/compare/v6.0.5...v6.1.0) (2026-10-19)
 
 
